@@ -263,51 +263,47 @@ fn int_to_ip(n: int) -> str {
 # Returns true for 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
 fn is_private_ip(ip: str) -> bool {
     let ip_int: ?int = ip_to_int(ip)
-    match ip_int {
-        some(n) => {
-            let a: int = (n >> 24) & 255
-            let b: int = (n >> 16) & 255
-            return a == 10 or (a == 172 and b >= 16 and b <= 31) or (a == 192 and b == 168)
-        }
-        none => return false
+    if ip_int == none {
+        return false
     }
+    let n: int = ip_int!
+    let a: int = (n >> 24) & 255
+    let b: int = (n >> 16) & 255
+    return a == 10 or (a == 172 and b >= 16 and b <= 31) or (a == 192 and b == 168)
 }
 
 # Check if an IP address is a loopback address (127.0.0.0/8)
 fn is_loopback_ip(ip: str) -> bool {
     let ip_int: ?int = ip_to_int(ip)
-    match ip_int {
-        some(n) => {
-            let a: int = (n >> 24) & 255
-            return a == 127
-        }
-        none => return false
+    if ip_int == none {
+        return false
     }
+    let n: int = ip_int!
+    let a: int = (n >> 24) & 255
+    return a == 127
 }
 
 # Check if an IP address is a multicast address (224.0.0.0/4)
 fn is_multicast_ip(ip: str) -> bool {
     let ip_int: ?int = ip_to_int(ip)
-    match ip_int {
-        some(n) => {
-            let a: int = (n >> 24) & 255
-            return a >= 224 and a <= 239
-        }
-        none => return false
+    if ip_int == none {
+        return false
     }
+    let n: int = ip_int!
+    let a: int = (n >> 24) & 255
+    return a >= 224 and a <= 239
 }
 
 # Check if an IP address is a link-local address (169.254.0.0/16)
 fn is_link_local_ip(ip: str) -> bool {
     let ip_int: ?int = ip_to_int(ip)
-    match ip_int {
-        some(n) => {
-            let a: int = (n >> 24) & 255
-            let b: int = (n >> 16) & 255
-            return a == 169 and b == 254
-        }
-        none => return false
+    if ip_int == none {
+        return false
     }
+    let n: int = ip_int!
+    let a: int = (n >> 24) & 255
+    let b: int = (n >> 16) & 255
+    return a == 169 and b == 254
 }
 
 # Check if an IP address is a broadcast address (255.255.255.255)
@@ -324,28 +320,26 @@ fn is_unspecified_ip(ip: str) -> bool {
 # Example: network_address("192.168.1.100", 24) -> "192.168.1.0"
 fn network_address(ip: str, prefix_len: int) -> str {
     let ip_int: ?int = ip_to_int(ip)
-    match ip_int {
-        some(n) => {
-            let mask: int = if prefix_len == 0 then 0 else (0 - (1 << (32 - prefix_len)))
-            let network: int = n & mask
-            return int_to_ip(network)
-        }
-        none => return "0.0.0.0"
+    if ip_int == none {
+        return "0.0.0.0"
     }
+    let n: int = ip_int!
+    let mask: int = if prefix_len == 0 then 0 else (0 - (1 << (32 - prefix_len)))
+    let network: int = n & mask
+    return int_to_ip(network)
 }
 
 # Get the broadcast address for an IP with CIDR prefix
 # Example: broadcast_address("192.168.1.0", 24) -> "192.168.1.255"
 fn broadcast_address(ip: str, prefix_len: int) -> str {
     let ip_int: ?int = ip_to_int(ip)
-    match ip_int {
-        some(n) => {
-            let mask: int = if prefix_len == 0 then 0 else (0 - (1 << (32 - prefix_len)))
-            let broadcast: int = n | (~mask)
-            return int_to_ip(broadcast)
-        }
-        none => return "255.255.255.255"
+    if ip_int == none {
+        return "255.255.255.255"
     }
+    let n: int = ip_int!
+    let mask: int = if prefix_len == 0 then 0 else (0 - (1 << (32 - prefix_len)))
+    let broadcast: int = n | (~mask)
+    return int_to_ip(broadcast)
 }
 
 # --- URL Helper Functions ---
@@ -354,40 +348,41 @@ fn broadcast_address(ip: str, prefix_len: int) -> str {
 # Example: url_hostname("http://example.com:8080/path") -> "example.com"
 fn url_hostname(url: str) -> str {
     let parsed: ?URL = parse_url(url)
-    match parsed {
-        some(u) => return u.host
-        none => return ""
+    if parsed == none {
+        return ""
     }
+    return parsed!.host
 }
 
 # Extract the port from a URL string, or return default_port if not specified
 # Example: url_port("http://example.com:8080/path", 80) -> 8080
 fn url_port(url: str, default_port: int) -> int {
     let parsed: ?URL = parse_url(url)
-    match parsed {
-        some(u) => return if u.port == 0 then default_port else u.port
-        none => return default_port
+    if parsed == none {
+        return default_port
     }
+    let u: URL = parsed!
+    return if u.port == 0 then default_port else u.port
 }
 
 # Extract the path from a URL string
 # Example: url_path("http://example.com:8080/path?q=1") -> "/path?q=1"
 fn url_path(url: str) -> str {
     let parsed: ?URL = parse_url(url)
-    match parsed {
-        some(u) => return u.path
-        none => return "/"
+    if parsed == none {
+        return "/"
     }
+    return parsed!.path
 }
 
 # Extract the scheme from a URL string
 # Example: url_scheme("http://example.com") -> "http"
 fn url_scheme(url: str) -> str {
     let parsed: ?URL = parse_url(url)
-    match parsed {
-        some(u) => return u.scheme
-        none => return ""
+    if parsed == none {
+        return ""
     }
+    return parsed!.scheme
 }
 
 # Check if URL uses HTTPS

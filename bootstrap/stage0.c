@@ -2180,6 +2180,7 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                 if (tc_lookup_fn(tc, e->ident)) return new_type(TYPE_FUNCTION);
                 // Built-in functions
                 if (strcmp(e->ident, "print") == 0 || strcmp(e->ident, "print_str") == 0 ||
+                    strcmp(e->ident, "println") == 0 || strcmp(e->ident, "println_str") == 0 ||
                     strcmp(e->ident, "print_float") == 0 || strcmp(e->ident, "print_char") == 0 ||
                     strcmp(e->ident, "print_newline") == 0 || strcmp(e->ident, "flush") == 0 ||
                     strcmp(e->ident, "assert") == 0 || strcmp(e->ident, "sqrt") == 0 || 
@@ -5170,6 +5171,29 @@ static void codegen_module(CodeGen* cg) {
         cg_emit(cg, "    popq %%rbp");
         cg_emit(cg, "    retq");
         
+        // println: prints int with newline
+        cg_emit(cg, "    .globl %sprintln", pfx);
+        cg_emit(cg, "    .p2align 4");
+        cg_emit(cg, "%sprintln:", pfx);
+        cg_emit(cg, "    pushq %%rbp");
+        cg_emit(cg, "    movq %%rsp, %%rbp");
+        cg_emit(cg, "    movq %%rdi, %%rsi");
+        cg_emit(cg, "    leaq L_.lnfmt(%%rip), %%rdi");
+        cg_emit(cg, "    xorl %%eax, %%eax");
+        cg_emit(cg, "    callq %sprintf", pfx);
+        cg_emit(cg, "    popq %%rbp");
+        cg_emit(cg, "    retq");
+        
+        // println_str: prints string with newline
+        cg_emit(cg, "    .globl %sprintln_str", pfx);
+        cg_emit(cg, "    .p2align 4");
+        cg_emit(cg, "%sprintln_str:", pfx);
+        cg_emit(cg, "    pushq %%rbp");
+        cg_emit(cg, "    movq %%rsp, %%rbp");
+        cg_emit(cg, "    callq %sputs", pfx);
+        cg_emit(cg, "    popq %%rbp");
+        cg_emit(cg, "    retq");
+        
         // flush: flushes stdout
         cg_emit(cg, "    .globl %sflush", pfx);
         cg_emit(cg, "    .p2align 4");
@@ -5293,11 +5317,13 @@ static void codegen_module(CodeGen* cg) {
             cg_emit(cg, "    .data");
         }
         cg_emit(cg, "L_.fmt:");
+        cg_emit(cg, "    .asciz \"%%lld\"");
+        cg_emit(cg, "L_.lnfmt:");
         cg_emit(cg, "    .asciz \"%%lld\\n\"");
         cg_emit(cg, "L_.sfmt:");
-        cg_emit(cg, "    .asciz \"%%s\\n\"");
+        cg_emit(cg, "    .asciz \"%%s\"");
         cg_emit(cg, "L_.ffmt:");
-        cg_emit(cg, "    .asciz \"%%g\\n\"");
+        cg_emit(cg, "    .asciz \"%%g\"");
         cg_emit(cg, "L_.itsfmt:");
         cg_emit(cg, "    .asciz \"%%lld\"");
         cg_emit(cg, "L_.itsbuf:");
@@ -5419,6 +5445,35 @@ static void codegen_module(CodeGen* cg) {
     cg_emit(cg, "    mov x29, sp");
     cg_emit(cg, "    mov w0, #10");
     cg_emit(cg, "    bl %sputchar", pfx);
+    cg_emit(cg, "    ldp x29, x30, [sp]");
+    cg_emit(cg, "    add sp, sp, #16");
+    cg_emit(cg, "    ret");
+    
+    // println: prints int with newline
+    cg_emit(cg, "    .globl %sprintln", pfx);
+    cg_emit(cg, "    .p2align 2");
+    cg_emit(cg, "%sprintln:", pfx);
+    cg_emit(cg, "    sub sp, sp, #32");
+    cg_emit(cg, "    stp x29, x30, [sp, #16]");
+    cg_emit(cg, "    add x29, sp, #16");
+    cg_emit(cg, "    mov x8, x0");
+    cg_emit(cg, "    add x9, sp, #0");
+    cg_emit(cg, "    str x8, [x9]");
+    cg_emit_adrp(cg, "x0", "L_.lnfmt");
+    cg_emit_add_pageoff(cg, "x0", "x0", "L_.lnfmt");
+    cg_emit(cg, "    bl %sprintf", pfx);
+    cg_emit(cg, "    ldp x29, x30, [sp, #16]");
+    cg_emit(cg, "    add sp, sp, #32");
+    cg_emit(cg, "    ret");
+    
+    // println_str: prints string with newline
+    cg_emit(cg, "    .globl %sprintln_str", pfx);
+    cg_emit(cg, "    .p2align 2");
+    cg_emit(cg, "%sprintln_str:", pfx);
+    cg_emit(cg, "    sub sp, sp, #16");
+    cg_emit(cg, "    stp x29, x30, [sp]");
+    cg_emit(cg, "    mov x29, sp");
+    cg_emit(cg, "    bl %sputs", pfx);
     cg_emit(cg, "    ldp x29, x30, [sp]");
     cg_emit(cg, "    add sp, sp, #16");
     cg_emit(cg, "    ret");
@@ -5563,11 +5618,13 @@ static void codegen_module(CodeGen* cg) {
         cg_emit(cg, "    .data");
     }
     cg_emit(cg, "L_.fmt:");
+    cg_emit(cg, "    .asciz \"%%lld\"");
+    cg_emit(cg, "L_.lnfmt:");
     cg_emit(cg, "    .asciz \"%%lld\\n\"");
     cg_emit(cg, "L_.sfmt:");
-    cg_emit(cg, "    .asciz \"%%s\\n\"");
+    cg_emit(cg, "    .asciz \"%%s\"");
     cg_emit(cg, "L_.ffmt:");
-    cg_emit(cg, "    .asciz \"%%g\\n\"");
+    cg_emit(cg, "    .asciz \"%%g\"");
     cg_emit(cg, "L_.itsfmt:");
     cg_emit(cg, "    .asciz \"%%lld\"");
     cg_emit(cg, "L_.itsbuf:");

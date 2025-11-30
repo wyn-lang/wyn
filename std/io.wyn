@@ -27,11 +27,9 @@ fn path_exists(path: str) -> bool {
 # Get the size of a file in bytes
 # Returns ok(size) on success, or err(message) on failure
 fn get_file_size(path: str) -> Result[int, str] {
-    let content_result: Result[str, str] = read_file(path)
-    match content_result {
-        ok(content) => return ok(content.len())
-        err(e) => return err(e)
-    }
+    # Stage 0: Result type matching not fully supported
+    # Will be properly implemented in Stage 1
+    return err("not implemented")
 }
 
 # Read a line from standard input
