@@ -4527,57 +4527,59 @@ static void codegen_module(CodeGen* cg) {
             }
         }
         
+        const char* pfx = cg_sym_prefix(cg);
+        
         // print runtime for x86_64
-        cg_emit(cg, "    .globl _print");
+        cg_emit(cg, "    .globl %sprint", pfx);
         cg_emit(cg, "    .p2align 4");
-        cg_emit(cg, "_print:");
+        cg_emit(cg, "%sprint:", pfx);
         cg_emit(cg, "    pushq %%rbp");
         cg_emit(cg, "    movq %%rsp, %%rbp");
         cg_emit(cg, "    movq %%rdi, %%rsi");
         cg_emit(cg, "    leaq L_.fmt(%%rip), %%rdi");
         cg_emit(cg, "    xorl %%eax, %%eax");
-        cg_emit(cg, "    callq _printf");
+        cg_emit(cg, "    callq %sprintf", pfx);
         cg_emit(cg, "    popq %%rbp");
         cg_emit(cg, "    retq");
         
-        cg_emit(cg, "    .globl _print_str");
+        cg_emit(cg, "    .globl %sprint_str", pfx);
         cg_emit(cg, "    .p2align 4");
-        cg_emit(cg, "_print_str:");
+        cg_emit(cg, "%sprint_str:", pfx);
         cg_emit(cg, "    pushq %%rbp");
         cg_emit(cg, "    movq %%rsp, %%rbp");
         cg_emit(cg, "    movq %%rdi, %%rsi");
         cg_emit(cg, "    leaq L_.sfmt(%%rip), %%rdi");
         cg_emit(cg, "    xorl %%eax, %%eax");
-        cg_emit(cg, "    callq _printf");
+        cg_emit(cg, "    callq %sprintf", pfx);
         cg_emit(cg, "    popq %%rbp");
         cg_emit(cg, "    retq");
         
         // __wyn_read_file: reads file to malloc'd string, returns ptr (or 0 on error)
-        cg_emit(cg, "    .globl __wyn_read_file");
+        cg_emit(cg, "    .globl %s_wyn_read_file", pfx);
         cg_emit(cg, "    .p2align 4");
-        cg_emit(cg, "__wyn_read_file:");
+        cg_emit(cg, "%s_wyn_read_file:", pfx);
         cg_emit(cg, "    pushq %%rbp");
         cg_emit(cg, "    movq %%rsp, %%rbp");
         cg_emit(cg, "    pushq %%rbx");
         cg_emit(cg, "    pushq %%r12");
         cg_emit(cg, "    leaq L_.rb(%%rip), %%rsi");  // "rb" mode
-        cg_emit(cg, "    callq _fopen");
+        cg_emit(cg, "    callq %sfopen", pfx);
         cg_emit(cg, "    testq %%rax, %%rax");
         cg_emit(cg, "    jz 1f");
         cg_emit(cg, "    movq %%rax, %%rbx");         // rbx = file handle
         cg_emit(cg, "    movq %%rax, %%rdi");
         cg_emit(cg, "    xorl %%esi, %%esi");
         cg_emit(cg, "    movl $2, %%edx");            // SEEK_END
-        cg_emit(cg, "    callq _fseek");
+        cg_emit(cg, "    callq %sfseek", pfx);
         cg_emit(cg, "    movq %%rbx, %%rdi");
-        cg_emit(cg, "    callq _ftell");
+        cg_emit(cg, "    callq %sftell", pfx);
         cg_emit(cg, "    movq %%rax, %%r12");         // r12 = file size
         cg_emit(cg, "    movq %%rbx, %%rdi");
         cg_emit(cg, "    xorl %%esi, %%esi");
         cg_emit(cg, "    xorl %%edx, %%edx");         // SEEK_SET
-        cg_emit(cg, "    callq _fseek");
+        cg_emit(cg, "    callq %sfseek", pfx);
         cg_emit(cg, "    leaq 1(%%r12), %%rdi");      // size + 1 for null
-        cg_emit(cg, "    callq _malloc");
+        cg_emit(cg, "    callq %smalloc", pfx);
         cg_emit(cg, "    testq %%rax, %%rax");
         cg_emit(cg, "    jz 2f");
         cg_emit(cg, "    pushq %%rax");               // save buffer ptr
@@ -4585,16 +4587,16 @@ static void codegen_module(CodeGen* cg) {
         cg_emit(cg, "    movq $1, %%rsi");
         cg_emit(cg, "    movq %%r12, %%rdx");
         cg_emit(cg, "    movq %%rbx, %%rcx");
-        cg_emit(cg, "    callq _fread");
+        cg_emit(cg, "    callq %sfread", pfx);
         cg_emit(cg, "    popq %%rax");                // restore buffer ptr
         cg_emit(cg, "    movb $0, (%%rax,%%r12)");    // null terminate
         cg_emit(cg, "    pushq %%rax");
         cg_emit(cg, "    movq %%rbx, %%rdi");
-        cg_emit(cg, "    callq _fclose");
+        cg_emit(cg, "    callq %sfclose", pfx);
         cg_emit(cg, "    popq %%rax");
         cg_emit(cg, "    jmp 3f");
         cg_emit(cg, "2:  movq %%rbx, %%rdi");         // malloc failed, close file
-        cg_emit(cg, "    callq _fclose");
+        cg_emit(cg, "    callq %sfclose", pfx);
         cg_emit(cg, "1:  xorl %%eax, %%eax");         // return 0 on error
         cg_emit(cg, "3:  popq %%r12");
         cg_emit(cg, "    popq %%rbx");
