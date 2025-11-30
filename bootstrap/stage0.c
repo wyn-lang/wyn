@@ -2159,6 +2159,7 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     strcmp(e->ident, "str_to_int") == 0 || strcmp(e->ident, "int_to_float") == 0 ||
                     strcmp(e->ident, "float_to_int") == 0 ||
                     strcmp(e->ident, "read_file") == 0 || strcmp(e->ident, "write_file") == 0 ||
+                    strcmp(e->ident, "read_line") == 0 ||
                     strcmp(e->ident, "ord") == 0 || strcmp(e->ident, "chr") == 0) {
                     return new_type(TYPE_FUNCTION);
                 }
@@ -3035,6 +3036,11 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_emit(cg, "    callq %s_wyn_read_file", cg_sym_prefix(cg));
                     break;
                 }
+                // Handle built-in read_line() - reads a line from stdin
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "read_line") == 0) {
+                    cg_emit(cg, "    callq %s_wyn_read_line", cg_sym_prefix(cg));
+                    break;
+                }
                 if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "assert") == 0) {
                     int ok_lbl = cg_new_label(cg);
                     cg_expr(cg, e->call.args[0]);
@@ -3825,6 +3831,11 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "read_file") == 0) {
                 cg_expr(cg, e->call.args[0]);
                 cg_emit(cg, "    bl %s_wyn_read_file", cg_sym_prefix(cg));
+                break;
+            }
+            // Handle built-in read_line() - reads a line from stdin
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "read_line") == 0) {
+                cg_emit(cg, "    bl %s_wyn_read_line", cg_sym_prefix(cg));
                 break;
             }
             // Handle built-in assert()
@@ -4843,6 +4854,36 @@ static void codegen_module(CodeGen* cg) {
         cg_emit(cg, "    popq %%rbp");
         cg_emit(cg, "    retq");
         
+        // __wyn_read_line: reads a line from stdin, returns ptr to static buffer
+        cg_emit(cg, "    .globl %s_wyn_read_line", pfx);
+        cg_emit(cg, "    .p2align 4");
+        cg_emit(cg, "%s_wyn_read_line:", pfx);
+        cg_emit(cg, "    pushq %%rbp");
+        cg_emit(cg, "    movq %%rsp, %%rbp");
+        cg_emit(cg, "    leaq L_.linebuf(%%rip), %%rdi");
+        cg_emit(cg, "    movq $1024, %%rsi");
+        cg_emit(cg, "    movq %s__stdinp(%%rip), %%rdx", pfx);
+        cg_emit(cg, "    callq %sfgets", pfx);
+        cg_emit(cg, "    testq %%rax, %%rax");
+        cg_emit(cg, "    jz 1f");
+        // Strip trailing newline
+        cg_emit(cg, "    leaq L_.linebuf(%%rip), %%rdi");
+        cg_emit(cg, "    xorq %%rcx, %%rcx");
+        cg_emit(cg, "2:  movb (%%rdi,%%rcx), %%al");
+        cg_emit(cg, "    testb %%al, %%al");
+        cg_emit(cg, "    jz 3f");
+        cg_emit(cg, "    cmpb $10, %%al");
+        cg_emit(cg, "    je 4f");
+        cg_emit(cg, "    incq %%rcx");
+        cg_emit(cg, "    jmp 2b");
+        cg_emit(cg, "4:  movb $0, (%%rdi,%%rcx)");
+        cg_emit(cg, "3:  leaq L_.linebuf(%%rip), %%rax");
+        cg_emit(cg, "    jmp 5f");
+        cg_emit(cg, "1:  leaq L_.linebuf(%%rip), %%rax");
+        cg_emit(cg, "    movb $0, (%%rax)");
+        cg_emit(cg, "5:  popq %%rbp");
+        cg_emit(cg, "    retq");
+        
         if (cg->os == OS_MACOS) {
             cg_emit(cg, "    .section __DATA,__data");
         } else {
@@ -4862,6 +4903,8 @@ static void codegen_module(CodeGen* cg) {
         cg_emit(cg, "    .space 2");
         cg_emit(cg, "L_.rb:");
         cg_emit(cg, "    .asciz \"rb\"");
+        cg_emit(cg, "L_.linebuf:");
+        cg_emit(cg, "    .space 1024");
         
         for (int i = 0; i < cg->string_count; i++) {
             cg_emit(cg, "L_.str%d:", cg->strings[i].label);
@@ -4993,6 +5036,47 @@ static void codegen_module(CodeGen* cg) {
     cg_emit(cg, "    add sp, sp, #64");
     cg_emit(cg, "    ret");
     
+    // __wyn_read_line: reads a line from stdin, returns ptr to static buffer
+    cg_emit(cg, "    .globl %s_wyn_read_line", pfx);
+    cg_emit(cg, "    .p2align 2");
+    cg_emit(cg, "%s_wyn_read_line:", pfx);
+    cg_emit(cg, "    sub sp, sp, #32");
+    cg_emit(cg, "    stp x29, x30, [sp, #16]");
+    cg_emit(cg, "    add x29, sp, #16");
+    cg_emit_adrp(cg, "x0", "L_.linebuf");
+    cg_emit_add_pageoff(cg, "x0", "x0", "L_.linebuf");
+    cg_emit(cg, "    mov x1, #1024");
+    // Load stdin pointer
+    if (cg->os == OS_MACOS) {
+        cg_emit(cg, "    adrp x2, %s__stdinp@GOTPAGE", pfx);
+        cg_emit(cg, "    ldr x2, [x2, %s__stdinp@GOTPAGEOFF]", pfx);
+        cg_emit(cg, "    ldr x2, [x2]");
+    } else {
+        cg_emit(cg, "    adrp x2, stdin");
+        cg_emit(cg, "    ldr x2, [x2, :lo12:stdin]");
+    }
+    cg_emit(cg, "    bl %sfgets", pfx);
+    cg_emit(cg, "    cbz x0, 1f");
+    // Strip trailing newline
+    cg_emit_adrp(cg, "x0", "L_.linebuf");
+    cg_emit_add_pageoff(cg, "x0", "x0", "L_.linebuf");
+    cg_emit(cg, "    mov x1, #0");
+    cg_emit(cg, "2:  ldrb w2, [x0, x1]");
+    cg_emit(cg, "    cbz w2, 3f");
+    cg_emit(cg, "    cmp w2, #10");
+    cg_emit(cg, "    b.eq 4f");
+    cg_emit(cg, "    add x1, x1, #1");
+    cg_emit(cg, "    b 2b");
+    cg_emit(cg, "4:  strb wzr, [x0, x1]");
+    cg_emit(cg, "3:  b 5f");
+    cg_emit(cg, "1:");
+    cg_emit_adrp(cg, "x0", "L_.linebuf");
+    cg_emit_add_pageoff(cg, "x0", "x0", "L_.linebuf");
+    cg_emit(cg, "    strb wzr, [x0]");
+    cg_emit(cg, "5:  ldp x29, x30, [sp, #16]");
+    cg_emit(cg, "    add sp, sp, #32");
+    cg_emit(cg, "    ret");
+    
     if (cg->os == OS_MACOS) {
         cg_emit(cg, "    .section __DATA,__data");
     } else {
@@ -5012,6 +5096,8 @@ static void codegen_module(CodeGen* cg) {
     cg_emit(cg, "    .space 2");
     cg_emit(cg, "L_.rb:");
     cg_emit(cg, "    .asciz \"rb\"");
+    cg_emit(cg, "L_.linebuf:");
+    cg_emit(cg, "    .space 1024");
     
     // Emit string literals
     for (int i = 0; i < cg->string_count; i++) {
