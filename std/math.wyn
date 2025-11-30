@@ -618,3 +618,53 @@ fn round_to_multiple(value: int, n: int) -> int {
     return ((value + n / 2) / n) * n
 }
 
+# Divide and get both quotient and remainder
+fn divmod(a: int, b: int) -> (int, int) {
+    return (a / b, a % b)
+}
+
+# Find next power of two greater than or equal to n
+fn next_power_of_two(n: int) -> int {
+    if n <= 1 { return 1 }
+    let mut p: int = 1
+    while p < n {
+        p = p * 2
+    }
+    return p
+}
+
+# Count trailing zeros in binary representation
+fn trailing_zeros(n: int) -> int {
+    if n == 0 { return 0 }
+    let mut count: int = 0
+    let mut num: int = n
+    while num % 2 == 0 {
+        count = count + 1
+        num = num / 2
+    }
+    return count
+}
+
+# Count leading zeros in 32-bit representation
+fn leading_zeros(n: int) -> int {
+    if n == 0 { return 32 }
+    let mut count: int = 0
+    let mut bit: int = 1 << 31
+    while (n & bit) == 0 and count < 32 {
+        count = count + 1
+        bit = bit >> 1
+    }
+    return count
+}
+
+# Count number of set bits (population count)
+fn popcount(n: int) -> int {
+    let mut count: int = 0
+    let mut num: int = n
+    while num != 0 {
+        count = count + (num & 1)
+        num = num >> 1
+    }
+    return count
+}
+
