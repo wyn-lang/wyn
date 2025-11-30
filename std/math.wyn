@@ -533,8 +533,8 @@ fn mode(arr: [int]) -> ?int {
     return some(mode_val)
 }
 
-# Calculate variance of integer array (returns scaled integer, divide by 100 for actual)
-fn variance(arr: [int]) -> ?int {
+# Calculate variance of integer array
+fn variance(arr: [int]) -> ?float {
     let len: int = arr.len()
     if len == 0 { return none }
     let mut sum: int = 0
@@ -543,23 +543,23 @@ fn variance(arr: [int]) -> ?int {
         sum = sum + arr[i]
         i = i + 1
     }
-    let mean: int = sum / len
-    let mut sq_diff_sum: int = 0
+    let mean: float = sum.to_float() / len.to_float()
+    let mut sq_diff_sum: float = 0.0
     i = 0
     while i < len {
-        let diff: int = arr[i] - mean
+        let diff: float = arr[i].to_float() - mean
         sq_diff_sum = sq_diff_sum + (diff * diff)
         i = i + 1
     }
-    return some(sq_diff_sum / len)
+    return some(sq_diff_sum / len.to_float())
 }
 
-# Calculate standard deviation (integer approximation)
-fn std_dev(arr: [int]) -> ?int {
-    let var: ?int = variance(arr)
-    let val: int = var ?? -1
-    if val < 0 { return none }
-    return some(isqrt(val))
+# Calculate standard deviation
+fn std_dev(arr: [int]) -> ?float {
+    let var: ?float = variance(arr)
+    let val: float = var ?? -1.0
+    if val < 0.0 { return none }
+    return some(sqrt(val))
 }
 
 # Calculate percentile (0-100) of sorted array
