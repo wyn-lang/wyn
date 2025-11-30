@@ -74,7 +74,7 @@ wyn-lang/
 - [x] Self-hosting compiler (Stage 1 - 2,176 lines)
 - [x] Package manager (basic)
 - [x] GUI framework (basic)
-- [ ] Mobile support
+- [x] Mobile support (basic)
 
 ## Currently Supported
 
