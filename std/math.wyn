@@ -473,30 +473,7 @@ fn product_range(start: int, end: int) -> int {
     return result
 }
 
-# Sum of digits in a positive integer
-fn digits_sum(n: int) -> int {
-    let mut sum: int = 0
-    let mut num: int = abs(n)
-    while num > 0 {
-        sum = sum + (num % 10)
-        num = num / 10
-    }
-    return sum
-}
 
-# Count number of digits in an integer
-fn digits_count(n: int) -> int {
-    if n == 0 {
-        return 1
-    }
-    let mut count: int = 0
-    let mut num: int = abs(n)
-    while num > 0 {
-        count = count + 1
-        num = num / 10
-    }
-    return count
-}
 
 # Calculate median of integer array (must be sorted)
 fn median(arr: [int]) -> ?int {
@@ -729,14 +706,14 @@ fn popcount(n: int) -> int {
 # Round float to nearest integer
 fn round_nearest(x: float) -> int {
     if x >= 0.0 {
-        return float_to_int(x + 0.5)
+        return (x + 0.5).to_int()
     }
-    return float_to_int(x - 0.5)
+    return (x - 0.5).to_int()
 }
 
 # Floor of float (round down)
 fn floor_float(x: float) -> int {
-    let i: int = float_to_int(x)
+    let i: int = x.to_int()
     if x < 0.0 and i.to_float() != x {
         return i - 1
     }
@@ -745,7 +722,7 @@ fn floor_float(x: float) -> int {
 
 # Ceiling of float (round up)
 fn ceil_float(x: float) -> int {
-    let i: int = float_to_int(x)
+    let i: int = x.to_int()
     if x > 0.0 and i.to_float() != x {
         return i + 1
     }
@@ -754,12 +731,12 @@ fn ceil_float(x: float) -> int {
 
 # Truncate float to integer (round toward zero)
 fn trunc(x: float) -> int {
-    return float_to_int(x)
+    return x.to_int()
 }
 
 # Get fractional part of float
 fn fract(x: float) -> float {
-    return x - float_to_int(x).to_float()
+    return x - x.to_int().to_float()
 }
 
 # Average of array of integers as float
@@ -821,29 +798,6 @@ fn array_variance(arr: [int]) -> float {
     }
     return sum_sq_diff / arr.len().to_float()
 }
-
-# Convert int to float helper
-fn float_to_int(x: float) -> int {
-    # This is a placeholder - actual implementation depends on runtime
-    # For now, assume truncation toward zero
-    if x >= 0.0 {
-        let mut result: int = 0
-        let mut val: float = x
-        while val >= 1.0 {
-            result = result + 1
-            val = val - 1.0
-        }
-        return result
-    }
-    let mut result: int = 0
-    let mut val: float = 0.0 - x
-    while val >= 1.0 {
-        result = result + 1
-        val = val - 1.0
-    }
-    return 0 - result
-}
-
 
 
 # Inverse lerp: find t where value is between a and b

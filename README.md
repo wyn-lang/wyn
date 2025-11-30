@@ -69,7 +69,7 @@ wyn-lang/
 - [x] Type checker (Stage 0 - C)
 - [x] ARM64 code generation (macOS)
 - [x] x86_64 code generation (macOS)
-- [x] Test suite (37 tests)
+- [x] Test suite (39 tests)
 - [x] Standard library (500+ functions)
 - [x] Self-hosting compiler (Stage 1 - 2,176 lines)
 - [x] Package manager (basic)
@@ -112,6 +112,9 @@ The Stage 0 compiler can compile programs with:
 - `getenv(name)` for environment variables
 - `system(cmd)` for running shell commands
 - `defer` statement for cleanup on function exit
+- Default parameters (`fn connect(host: str, port: int = 8080)`)
+- Lambda/anonymous functions (`fn(x: int) -> int { return x * 2 }`)
+- Function pointers and indirect calls
 - Method syntax on primitives (`.len()`, `.abs()`, `.to_str()`, `.to_int()`, `.to_float()`)
 - Array literals and indexing (`[1, 2, 3]`, `arr[i]`)
 - Array slicing (`arr[1:3]`, `arr[:2]`, `arr[3:]`, `arr[-2:]`)

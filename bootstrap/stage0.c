@@ -1394,7 +1394,7 @@ static int get_precedence(TokenKind op) {
         case TOK_PIPE: return 3;        // bitwise or
         case TOK_CARET: return 4;       // bitwise xor
         case TOK_AMPERSAND: return 5;   // bitwise and
-        case TOK_EQEQ: case TOK_NOTEQ: return 6;
+        case TOK_EQEQ: case TOK_NOTEQ: case TOK_IN: return 6;  // in is comparison-level
         case TOK_LT: case TOK_GT: case TOK_LTEQ: case TOK_GTEQ: return 7;
         case TOK_LTLT: case TOK_GTGT: return 8;  // shifts
         case TOK_DOTDOT: case TOK_DOTDOTEQ: return 9;  // range operators
@@ -2198,6 +2198,12 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                 return t;
             }
             
+            // 'in' operator: elem in array -> bool
+            if (op == TOK_IN) {
+                // Right side should be an array
+                return new_type(TYPE_BOOL);
+            }
+            
             // String concatenation
             if (op == TOK_PLUS && left->kind == TYPE_STR && right->kind == TYPE_STR) {
                 return new_type(TYPE_STR);
@@ -2840,6 +2846,33 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                         cg_emit(cg, "    movzbq %%al, %%rax");
                         break;
                     }
+                }
+                
+                // Handle 'in' operator: elem in array
+                if (e->binary.op == TOK_IN) {
+                    // Evaluate element to search for
+                    cg_expr(cg, e->binary.left);
+                    cg_emit(cg, "    pushq %%rax");  // save element
+                    // Evaluate array
+                    cg_expr(cg, e->binary.right);
+                    cg_emit(cg, "    movq %%rax, %%rsi");  // array ptr
+                    cg_emit(cg, "    popq %%rdx");  // element to find
+                    cg_emit(cg, "    movq (%%rsi), %%rcx");  // array length
+                    cg_emit(cg, "    addq $8, %%rsi");  // skip length field
+                    cg_emit(cg, "    xorq %%rax, %%rax");  // result = false
+                    int loop_lbl = cg_new_label(cg), found_lbl = cg_new_label(cg), end_lbl = cg_new_label(cg);
+                    cg_emit(cg, "L%d:", loop_lbl);
+                    cg_emit(cg, "    testq %%rcx, %%rcx");
+                    cg_emit(cg, "    jz L%d", end_lbl);
+                    cg_emit(cg, "    cmpq %%rdx, (%%rsi)");
+                    cg_emit(cg, "    je L%d", found_lbl);
+                    cg_emit(cg, "    addq $8, %%rsi");
+                    cg_emit(cg, "    decq %%rcx");
+                    cg_emit(cg, "    jmp L%d", loop_lbl);
+                    cg_emit(cg, "L%d:", found_lbl);
+                    cg_emit(cg, "    movq $1, %%rax");
+                    cg_emit(cg, "L%d:", end_lbl);
+                    break;
                 }
                 
                 // Check if this is a float operation
@@ -3681,6 +3714,32 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_emit(cg, "    cset x0, %s", e->binary.op == TOK_EQEQ ? "eq" : "ne");
                     break;
                 }
+            }
+            
+            // Handle 'in' operator: elem in array
+            if (e->binary.op == TOK_IN) {
+                // Evaluate element to search for
+                cg_expr(cg, e->binary.left);
+                cg_emit(cg, "    str x0, [sp, #-16]!");  // save element
+                // Evaluate array
+                cg_expr(cg, e->binary.right);
+                cg_emit(cg, "    mov x2, x0");  // array ptr
+                cg_emit(cg, "    ldr x1, [sp], #16");  // element to find
+                cg_emit(cg, "    ldr x3, [x2]");  // array length
+                cg_emit(cg, "    add x2, x2, #8");  // skip length field
+                cg_emit(cg, "    mov x0, #0");  // result = false
+                int loop_lbl = cg_new_label(cg), found_lbl = cg_new_label(cg), end_lbl = cg_new_label(cg);
+                cg_emit(cg, "L%d:", loop_lbl);
+                cg_emit(cg, "    cbz x3, L%d", end_lbl);
+                cg_emit(cg, "    ldr x4, [x2], #8");
+                cg_emit(cg, "    cmp x4, x1");
+                cg_emit(cg, "    b.eq L%d", found_lbl);
+                cg_emit(cg, "    sub x3, x3, #1");
+                cg_emit(cg, "    b L%d", loop_lbl);
+                cg_emit(cg, "L%d:", found_lbl);
+                cg_emit(cg, "    mov x0, #1");
+                cg_emit(cg, "L%d:", end_lbl);
+                break;
             }
             
             // Check if this is a float operation

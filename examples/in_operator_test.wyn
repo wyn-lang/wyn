@@ -1,0 +1,38 @@
+// Test 'in' operator for array membership
+
+fn main() {
+    let arr: [int] = [1, 2, 3, 4, 5]
+    
+    // Test element found
+    if 3 in arr {
+        print_str("Found 3: OK")
+        print_newline()
+    } else {
+        print_str("FAIL: 3 should be in array")
+        print_newline()
+        exit(1)
+    }
+    
+    // Test element not found
+    if 10 in arr {
+        print_str("FAIL: 10 should not be in array")
+        print_newline()
+        exit(1)
+    } else {
+        print_str("Not found 10: OK")
+        print_newline()
+    }
+    
+    // Test first element
+    assert(1 in arr)
+    
+    // Test last element
+    assert(5 in arr)
+    
+    // Test not in
+    let found: bool = 99 in arr
+    assert(found == false)
+    
+    print_str("In operator: OK")
+    print_newline()
+}
