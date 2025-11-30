@@ -252,3 +252,215 @@ fn divmod(a: int, b: int) -> (int, int) {
 fn signum(n: int) -> int {
     return sign(n)
 }
+
+# Three-way comparison: returns -1, 0, or 1
+fn compare(a: int, b: int) -> int {
+    if a < b { return 0 - 1 }
+    if a > b { return 1 }
+    return 0
+}
+
+# Three-way comparison for floats
+fn compare_float(a: float, b: float) -> int {
+    if a < b { return 0 - 1 }
+    if a > b { return 1 }
+    return 0
+}
+
+# Check if value is within range [min, max] inclusive
+fn in_range(value: int, min_val: int, max_val: int) -> bool {
+    return value >= min_val and value <= max_val
+}
+
+# Check if float value is within range
+fn in_range_float(value: float, min_val: float, max_val: float) -> bool {
+    return value >= min_val and value <= max_val
+}
+
+# Wrap value to range [0, max)
+fn wrap(value: int, max_val: int) -> int {
+    if max_val <= 0 { return 0 }
+    let mut result: int = value % max_val
+    if result < 0 {
+        result = result + max_val
+    }
+    return result
+}
+
+# Ping-pong value between 0 and length
+fn ping_pong(t: int, length: int) -> int {
+    if length <= 0 { return 0 }
+    let cycle: int = t / length
+    let offset: int = t % length
+    return if cycle % 2 == 0 then offset else length - offset
+}
+
+# Approximately equal for floats (within epsilon)
+fn approx_equal(a: float, b: float, epsilon: float) -> bool {
+    let diff: float = abs_float(a - b)
+    return diff < epsilon
+}
+
+# Normalize value from range to 0-1
+fn normalize(value: float, min_val: float, max_val: float) -> float {
+    if max_val == min_val { return 0.0 }
+    return (value - min_val) / (max_val - min_val)
+}
+
+# Denormalize value from 0-1 to range
+fn denormalize(value: float, min_val: float, max_val: float) -> float {
+    return min_val + value * (max_val - min_val)
+}
+
+# Snap value to nearest multiple of step
+fn snap(value: float, step: float) -> float {
+    if step == 0.0 { return value }
+    return round(value / step).to_float() * step
+}
+
+# Move value towards target by max_delta
+fn move_towards(current: float, target: float, max_delta: float) -> float {
+    let diff: float = target - current
+    if abs_float(diff) <= max_delta {
+        return target
+    }
+    return current + sign_float(diff) * max_delta
+}
+
+# Exponential decay
+fn exp_decay(current: float, target: float, decay: float, dt: float) -> float {
+    return target + (current - target) * exp(0.0 - decay * dt)
+}
+
+# Spring interpolation (damped harmonic oscillator)
+fn spring(current: float, target: float, velocity: float, stiffness: float, damping: float, dt: float) -> (float, float) {
+    let force: float = (target - current) * stiffness
+    let damping_force: float = velocity * damping
+    let new_velocity: float = velocity + (force - damping_force) * dt
+    let new_position: float = current + new_velocity * dt
+    return (new_position, new_velocity)
+}
+
+# Ease in (quadratic)
+fn ease_in(t: float) -> float {
+    return t * t
+}
+
+# Ease out (quadratic)
+fn ease_out(t: float) -> float {
+    return t * (2.0 - t)
+}
+
+# Ease in-out (quadratic)
+fn ease_in_out(t: float) -> float {
+    if t < 0.5 {
+        return 2.0 * t * t
+    }
+    return 1.0 - 2.0 * (1.0 - t) * (1.0 - t)
+}
+
+# Cubic ease in
+fn ease_in_cubic(t: float) -> float {
+    return t * t * t
+}
+
+# Cubic ease out
+fn ease_out_cubic(t: float) -> float {
+    let f: float = t - 1.0
+    return f * f * f + 1.0
+}
+
+# Cubic ease in-out
+fn ease_in_out_cubic(t: float) -> float {
+    if t < 0.5 {
+        return 4.0 * t * t * t
+    }
+    let f: float = 2.0 * t - 2.0
+    return 0.5 * f * f * f + 1.0
+}
+
+# Bounce ease out
+fn ease_out_bounce(t: float) -> float {
+    if t < 1.0 / 2.75 {
+        return 7.5625 * t * t
+    }
+    if t < 2.0 / 2.75 {
+        let t2: float = t - 1.5 / 2.75
+        return 7.5625 * t2 * t2 + 0.75
+    }
+    if t < 2.5 / 2.75 {
+        let t2: float = t - 2.25 / 2.75
+        return 7.5625 * t2 * t2 + 0.9375
+    }
+    let t2: float = t - 2.625 / 2.75
+    return 7.5625 * t2 * t2 + 0.984375
+}
+
+# Elastic ease out
+fn ease_out_elastic(t: float) -> float {
+    if t == 0.0 or t == 1.0 { return t }
+    let p: float = 0.3
+    let s: float = p / 4.0
+    return pow_float(2.0, 0.0 - 10.0 * t) * sin((t - s) * (2.0 * 3.14159265359) / p) + 1.0
+}
+
+# Back ease in
+fn ease_in_back(t: float) -> float {
+    let s: float = 1.70158
+    return t * t * ((s + 1.0) * t - s)
+}
+
+# Back ease out
+fn ease_out_back(t: float) -> float {
+    let s: float = 1.70158
+    let t2: float = t - 1.0
+    return t2 * t2 * ((s + 1.0) * t2 + s) + 1.0
+}
+
+# Helper functions
+fn abs_float(n: float) -> float {
+    return if n < 0.0 then 0.0 - n else n
+}
+
+fn sign_float(n: float) -> float {
+    if n > 0.0 { return 1.0 }
+    if n < 0.0 { return 0.0 - 1.0 }
+    return 0.0
+}
+
+fn pow_float(base: float, exp: float) -> float {
+    if exp == 0.0 { return 1.0 }
+    if base == 0.0 { return 0.0 }
+    return exp(exp * ln(base))
+}
+
+fn sin(x: float) -> float {
+    return 0.0
+}
+
+fn exp(x: float) -> float {
+    let mut result: float = 1.0
+    let mut term: float = 1.0
+    let mut i: int = 1
+    while i < 20 {
+        term = term * x / i.to_float()
+        result = result + term
+        i = i + 1
+    }
+    return result
+}
+
+fn ln(x: float) -> float {
+    if x <= 0.0 { return 0.0 }
+    let mut result: float = 0.0
+    let mut y: float = (x - 1.0) / (x + 1.0)
+    let mut y_sq: float = y * y
+    let mut term: float = y
+    let mut i: int = 1
+    while i < 20 {
+        result = result + term / i.to_float()
+        term = term * y_sq
+        i = i + 2
+    }
+    return 2.0 * result
+}

@@ -1,0 +1,9 @@
+# Test random() builtin
+
+fn main() {
+    print_str("Random numbers:")
+    for i in 0..5 {
+        let r: int = random() % 100
+        print(r)
+    }
+}

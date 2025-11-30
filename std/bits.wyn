@@ -210,3 +210,193 @@ fn gray_to_binary(n: int) -> int {
     }
     return result
 }
+
+# Isolate rightmost 1-bit
+fn isolate_rightmost_one(n: int) -> int {
+    return n & (0 - n)
+}
+
+# Isolate rightmost 0-bit
+fn isolate_rightmost_zero(n: int) -> int {
+    return ~n & (n + 1)
+}
+
+# Turn off rightmost 1-bit
+fn turn_off_rightmost_one(n: int) -> int {
+    return n & (n - 1)
+}
+
+# Turn on rightmost 0-bit
+fn turn_on_rightmost_zero(n: int) -> int {
+    return n | (n + 1)
+}
+
+# Check if bits form a contiguous sequence of 1s
+fn is_contiguous_ones(n: int) -> bool {
+    return (n & (n + 1)) == 0
+}
+
+# Count number of bit flips needed to convert a to b
+fn bit_flip_count(a: int, b: int) -> int {
+    return popcount(a ^ b)
+}
+
+# Interleave bits of two 16-bit numbers (Morton code / Z-order curve)
+fn interleave_bits(x: int, y: int) -> int {
+    let mut result: int = 0
+    let mut i: int = 0
+    while i < 16 {
+        result = result | ((x & (1 << i)) << i) | ((y & (1 << i)) << (i + 1))
+        i = i + 1
+    }
+    return result
+}
+
+# Deinterleave bits (reverse of interleave)
+fn deinterleave_bits(n: int) -> (int, int) {
+    let mut x: int = 0
+    let mut y: int = 0
+    let mut i: int = 0
+    while i < 16 {
+        x = x | ((n & (1 << (2 * i))) >> i)
+        y = y | ((n & (1 << (2 * i + 1))) >> (i + 1))
+        i = i + 1
+    }
+    return (x, y)
+}
+
+# Compute parity of all bytes in parallel
+fn byte_parity(n: int) -> int {
+    let mut x: int = n
+    x = x ^ (x >> 16)
+    x = x ^ (x >> 8)
+    x = x ^ (x >> 4)
+    x = x ^ (x >> 2)
+    x = x ^ (x >> 1)
+    return x & 1
+}
+
+# Count consecutive 1-bits from right
+fn count_trailing_ones(n: int) -> int {
+    return trailing_zeros(~n)
+}
+
+# Count consecutive 1-bits from left
+fn count_leading_ones(n: int) -> int {
+    return leading_zeros(~n)
+}
+
+# Round up to next power of 2
+fn next_power_of_two(n: int) -> int {
+    if n <= 1 { return 1 }
+    let mut p: int = 1
+    while p < n {
+        p = p << 1
+    }
+    return p
+}
+
+# Round down to previous power of 2
+fn prev_power_of_two(n: int) -> int {
+    if n <= 1 { return 1 }
+    let mut p: int = 1
+    while p <= n / 2 {
+        p = p << 1
+    }
+    return p
+}
+
+# Sign extend from bit position
+fn sign_extend(value: int, bits: int) -> int {
+    let sign_bit: int = 1 << (bits - 1)
+    if (value & sign_bit) != 0 {
+        let mask: int = (0 - 1) << bits
+        return value | mask
+    }
+    return value
+}
+
+# Pack four bytes into int
+fn pack_bytes(b0: int, b1: int, b2: int, b3: int) -> int {
+    return (b0 & 0xff) | ((b1 & 0xff) << 8) | ((b2 & 0xff) << 16) | ((b3 & 0xff) << 24)
+}
+
+# Unpack int into four bytes
+fn unpack_bytes(n: int) -> (int, int, int, int) {
+    let b0: int = n & 0xff
+    let b1: int = (n >> 8) & 0xff
+    let b2: int = (n >> 16) & 0xff
+    let b3: int = (n >> 24) & 0xff
+    return (b0, b1, b2, b3)
+}
+
+# Compute absolute value without branching
+fn abs_branchless(n: int) -> int {
+    let mask: int = n >> 31
+    return (n + mask) ^ mask
+}
+
+# Compute min without branching
+fn min_branchless(a: int, b: int) -> int {
+    return b ^ ((a ^ b) & (0 - (if a < b then 1 else 0)))
+}
+
+# Compute max without branching
+fn max_branchless(a: int, b: int) -> int {
+    return a ^ ((a ^ b) & (0 - (if a < b then 1 else 0)))
+}
+
+# Check if number has alternating bit pattern
+fn has_alternating_bits(n: int) -> bool {
+    let xor: int = n ^ (n >> 1)
+    return (xor & (xor + 1)) == 0
+}
+
+# Bit reversal for 8-bit value
+fn reverse_byte(n: int) -> int {
+    let mut result: int = 0
+    let mut val: int = n & 0xff
+    let mut i: int = 0
+    while i < 8 {
+        result = (result << 1) | (val & 1)
+        val = val >> 1
+        i = i + 1
+    }
+    return result
+}
+
+# Bit reversal for 16-bit value
+fn reverse_short(n: int) -> int {
+    let mut result: int = 0
+    let mut val: int = n & 0xffff
+    let mut i: int = 0
+    while i < 16 {
+        result = (result << 1) | (val & 1)
+        val = val >> 1
+        i = i + 1
+    }
+    return result
+}
+
+# Compute log2 of power of 2 (position of highest bit)
+fn log2_pow2(n: int) -> int {
+    if n <= 0 { return 0 - 1 }
+    return 31 - leading_zeros(n)
+}
+
+# Check if exactly one bit differs between two numbers
+fn differs_by_one_bit(a: int, b: int) -> bool {
+    let xor: int = a ^ b
+    return is_power_of_two(xor)
+}
+
+# Broadcast bit to all positions
+fn broadcast_bit(n: int, pos: int) -> int {
+    return if bit_test(n, pos) then 0 - 1 else 0
+}
+
+# Replicate low byte to all bytes
+fn replicate_byte(b: int) -> int {
+    let byte: int = b & 0xff
+    return byte | (byte << 8) | (byte << 16) | (byte << 24)
+}
