@@ -96,13 +96,22 @@ The Stage 0 compiler can compile programs with:
 - String concatenation (`"hello" + "world"`)
 - String comparison (`==`, `!=`)
 - `print()` for integer output
+- `print_float()` for float output
 - `assert()` for runtime assertions
 - `exit()` for program termination
 - `abs()`, `min()`, `max()` math builtins
 - `int_to_str()`, `str_to_int()` type conversions
+- `int_to_float()`, `float_to_int()` float conversions
 - `ord()`, `chr()` character code conversions
 - `read_file()` for reading files to strings
-- Method syntax on primitives (`.len()`, `.abs()`, `.to_str()`, `.to_int()`)
+- `read_line()` for reading stdin input
+- `clock()` for timing/benchmarking
+- `random()` for random number generation
+- `sleep(seconds)` for pausing execution
+- `getenv(name)` for environment variables
+- `system(cmd)` for running shell commands
+- `defer` statement for cleanup on function exit
+- Method syntax on primitives (`.len()`, `.abs()`, `.to_str()`, `.to_int()`, `.to_float()`)
 - Array literals and indexing (`[1, 2, 3]`, `arr[i]`)
 - Array slicing (`arr[1:3]`, `arr[:2]`, `arr[3:]`, `arr[-2:]`)
 - Array iteration in for loops (`for item in arr`)
