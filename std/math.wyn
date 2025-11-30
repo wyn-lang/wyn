@@ -668,3 +668,122 @@ fn popcount(n: int) -> int {
     return count
 }
 
+# Round float to nearest integer
+fn round_nearest(x: float) -> int {
+    if x >= 0.0 {
+        return float_to_int(x + 0.5)
+    }
+    return float_to_int(x - 0.5)
+}
+
+# Floor of float (round down)
+fn floor_float(x: float) -> int {
+    let i: int = float_to_int(x)
+    if x < 0.0 and i.to_float() != x {
+        return i - 1
+    }
+    return i
+}
+
+# Ceiling of float (round up)
+fn ceil_float(x: float) -> int {
+    let i: int = float_to_int(x)
+    if x > 0.0 and i.to_float() != x {
+        return i + 1
+    }
+    return i
+}
+
+# Truncate float to integer (round toward zero)
+fn trunc(x: float) -> int {
+    return float_to_int(x)
+}
+
+# Get fractional part of float
+fn fract(x: float) -> float {
+    return x - float_to_int(x).to_float()
+}
+
+# Average of array of integers as float
+fn array_average(arr: [int]) -> float {
+    if arr.len() == 0 {
+        return 0.0
+    }
+    let mut sum: int = 0
+    let mut i: int = 0
+    while i < arr.len() {
+        sum = sum + arr[i]
+        i = i + 1
+    }
+    return sum.to_float() / arr.len().to_float()
+}
+
+# Median of sorted array
+fn array_median(sorted_arr: [int]) -> float {
+    let len: int = sorted_arr.len()
+    if len == 0 {
+        return 0.0
+    }
+    if len % 2 == 1 {
+        return sorted_arr[len / 2].to_float()
+    }
+    let mid1: int = sorted_arr[len / 2 - 1]
+    let mid2: int = sorted_arr[len / 2]
+    return (mid1 + mid2).to_float() / 2.0
+}
+
+# Standard deviation of array
+fn array_std_dev(arr: [int]) -> float {
+    if arr.len() == 0 {
+        return 0.0
+    }
+    let avg: float = array_average(arr)
+    let mut sum_sq_diff: float = 0.0
+    let mut i: int = 0
+    while i < arr.len() {
+        let diff: float = arr[i].to_float() - avg
+        sum_sq_diff = sum_sq_diff + diff * diff
+        i = i + 1
+    }
+    return sqrt(sum_sq_diff / arr.len().to_float())
+}
+
+# Variance of array
+fn array_variance(arr: [int]) -> float {
+    if arr.len() == 0 {
+        return 0.0
+    }
+    let avg: float = array_average(arr)
+    let mut sum_sq_diff: float = 0.0
+    let mut i: int = 0
+    while i < arr.len() {
+        let diff: float = arr[i].to_float() - avg
+        sum_sq_diff = sum_sq_diff + diff * diff
+        i = i + 1
+    }
+    return sum_sq_diff / arr.len().to_float()
+}
+
+# Convert int to float helper
+fn float_to_int(x: float) -> int {
+    # This is a placeholder - actual implementation depends on runtime
+    # For now, assume truncation toward zero
+    if x >= 0.0 {
+        let mut result: int = 0
+        let mut val: float = x
+        while val >= 1.0 {
+            result = result + 1
+            val = val - 1.0
+        }
+        return result
+    }
+    let mut result: int = 0
+    let mut val: float = 0.0 - x
+    while val >= 1.0 {
+        result = result + 1
+        val = val - 1.0
+    }
+    return 0 - result
+}
+
+
