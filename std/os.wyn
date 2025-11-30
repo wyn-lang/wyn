@@ -170,9 +170,8 @@ fn setenv(key: str, value: str) -> Result[(), str] {
 
 # Exit program with status code
 # Requires: Runtime support (process exit syscall)
-fn exit(code: int) -> () {
+fn exit(code: int) {
     # Will be implemented via syscall or FFI
-    return ()
 }
 
 # Execute external command

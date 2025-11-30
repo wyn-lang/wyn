@@ -669,6 +669,7 @@ typedef struct {
     char name[MAX_IDENT_LEN];
     Type* type;
     Expr* default_val;
+    bool is_variadic;
 } Param;
 
 struct FnDef {
@@ -1456,11 +1457,16 @@ static Stmt* parse_stmt(Parser* p) {
     
     // Let statement: let x, let mut x, pub let x, pub let mut x
     if (parser_check(p, TOK_LET) || 
-        (parser_check(p, TOK_PUB) && lexer_peek(p->lexer).kind == TOK_LET)) {
+        (parser_check(p, TOK_PUB) && lexer_peek(p->lexer).kind == TOK_LET) ||
+        parser_check(p, TOK_MUT)) {
         Stmt* s = new_stmt(STMT_LET, line, col);
         s->let.is_pub = parser_match(p, TOK_PUB);
-        parser_expect(p, TOK_LET, "let");
-        s->let.is_mut = parser_match(p, TOK_MUT);
+        if (!parser_match(p, TOK_MUT)) {
+            parser_expect(p, TOK_LET, "let");
+            s->let.is_mut = parser_match(p, TOK_MUT);
+        } else {
+            s->let.is_mut = true;  // standalone mut
+        }
         
         Token name = parser_expect(p, TOK_IDENT, "variable name");
         strcpy(s->let.name, name.ident);
@@ -1633,7 +1639,16 @@ static FnDef* parse_function(Parser* p, bool is_pub, bool is_async) {
             }
             (void)is_mut; // TODO: store mutability
             if (parser_match(p, TOK_COLON)) {
-                fn->params[fn->param_count].type = parse_type(p);
+                // Check for variadic: ...Type
+                if (parser_match(p, TOK_DOTDOTDOT)) {
+                    fn->params[fn->param_count].is_variadic = true;
+                    Type* inner = parse_type(p);
+                    Type* arr = new_type(TYPE_ARRAY);
+                    arr->inner = inner;
+                    fn->params[fn->param_count].type = arr;
+                } else {
+                    fn->params[fn->param_count].type = parse_type(p);
+                }
             }
             if (parser_match(p, TOK_EQ)) {
                 fn->params[fn->param_count].default_val = parse_expr(p);

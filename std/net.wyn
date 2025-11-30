@@ -341,7 +341,7 @@ fn broadcast_address(ip: str, prefix_len: int) -> str {
     match ip_int {
         some(n) => {
             let mask: int = if prefix_len == 0 then 0 else (0 - (1 << (32 - prefix_len)))
-            let broadcast: int = n | (^mask)
+            let broadcast: int = n | (~mask)
             return int_to_ip(broadcast)
         }
         none => return "255.255.255.255"

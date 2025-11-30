@@ -2,10 +2,9 @@
 # Basic I/O operations for reading and writing files
 
 # Print a string followed by a newline
-fn print_line(s: str) -> () {
+fn print_line(s: str) {
     print_str(s)
     print_str("\n")
-    return ()
 }
 
 # Read entire file contents as a string
@@ -223,20 +222,18 @@ fn format_bin(n: int) -> str {
 }
 
 # Print multiple strings in sequence without newline
-fn print_all(parts: [str]) -> () {
+fn print_all(parts: [str]) {
     let mut i: int = 0
     while i < parts.len() {
         print_str(parts[i])
         i = i + 1
     }
-    return ()
 }
 
 # Print an integer followed by a newline
-fn println_int(n: int) -> () {
+fn println_int(n: int) {
     print(n)
     print_str("\n")
-    return ()
 }
 
 # Repeat a character n times
@@ -284,44 +281,38 @@ fn format_percent(value: int, decimals: int) -> str {
 }
 
 # Print a horizontal line of specified character and width
-fn print_line_char(c: str, width: int) -> () {
+fn print_line_char(c: str, width: int) {
     print_str(repeat_char(c, width))
     print_str("\n")
-    return ()
 }
 
 # Print a box around text
-fn print_box(text: str) -> () {
+fn print_box(text: str) {
     let len: int = text.len()
     let border: str = repeat_char("-", len + 4)
     print_str(border + "\n")
     print_str("| " + text + " |\n")
     print_str(border + "\n")
-    return ()
 }
 
 # Print error message to stderr (simulated with prefix)
-fn print_error(msg: str) -> () {
+fn print_error(msg: str) {
     print_str("ERROR: " + msg + "\n")
-    return ()
 }
 
 # Print warning message
-fn print_warning(msg: str) -> () {
+fn print_warning(msg: str) {
     print_str("WARNING: " + msg + "\n")
-    return ()
 }
 
 # Print info message
-fn print_info(msg: str) -> () {
+fn print_info(msg: str) {
     print_str("INFO: " + msg + "\n")
-    return ()
 }
 
 # Print success message
-fn print_success(msg: str) -> () {
+fn print_success(msg: str) {
     print_str("SUCCESS: " + msg + "\n")
-    return ()
 }
 
 # Format Result error for display
@@ -333,24 +324,22 @@ fn format_result_error[T](result: Result[T, str], context: str) -> str {
 }
 
 # Print Result error if present
-fn print_result_error[T](result: Result[T, str], context: str) -> () {
+fn print_result_error[T](result: Result[T, str], context: str) {
     match result {
-        ok(_) => return ()
+        ok(_) => {}
         err(e) => {
             print_error(context + ": " + e)
-            return ()
         }
     }
 }
 
 # Print debug message with DEBUG prefix
-fn print_debug(msg: str) -> () {
+fn print_debug(msg: str) {
     print_str("DEBUG: " + msg + "\n")
-    return ()
 }
 
 # Print separator line for visual organization
-fn print_separator(width: int, char: str) -> () {
+fn print_separator(width: int, char: str) {
     let mut line: str = ""
     let mut i: int = 0
     while i < width {
@@ -358,13 +347,11 @@ fn print_separator(width: int, char: str) -> () {
         i = i + 1
     }
     print_line(line)
-    return ()
 }
 
 # Print formatted key-value pair
-fn print_kv(key: str, value: str) -> () {
+fn print_kv(key: str, value: str) {
     print_str(key + ": " + value + "\n")
-    return ()
 }
 
 # Format bytes as human-readable size (KB, MB, GB)
@@ -397,7 +384,7 @@ fn format_elapsed(seconds: int) -> str {
 }
 
 # Print a table row with columns
-fn print_table_row(cols: [str], widths: [int]) -> () {
+fn print_table_row(cols: [str], widths: [int]) {
     let mut i: int = 0
     while i < cols.len() {
         let col: str = cols[i]
@@ -415,11 +402,10 @@ fn print_table_row(cols: [str], widths: [int]) -> () {
         i = i + 1
     }
     print_str("\n")
-    return ()
 }
 
 # Print table header with separator
-fn print_table_header(headers: [str], widths: [int]) -> () {
+fn print_table_header(headers: [str], widths: [int]) {
     print_table_row(headers, widths)
     let mut total_width: int = 0
     let mut i: int = 0
@@ -431,7 +417,6 @@ fn print_table_header(headers: [str], widths: [int]) -> () {
         i = i + 1
     }
     print_separator(total_width, "-")
-    return ()
 }
 
 # Format number with sign prefix
@@ -456,7 +441,7 @@ fn format_optional_int(opt: ?int) -> str {
 }
 
 # Print progress bar
-fn print_progress(current: int, total: int, width: int) -> () {
+fn print_progress(current: int, total: int, width: int) {
     let percent: int = (current * 100) / total
     let filled: int = (current * width) / total
     print_str("[")
@@ -470,11 +455,10 @@ fn print_progress(current: int, total: int, width: int) -> () {
         i = i + 1
     }
     print_str("] " + int_to_str(percent) + "%\n")
-    return ()
 }
 
 # Print centered text
-fn print_centered(text: str, width: int) -> () {
+fn print_centered(text: str, width: int) {
     let padding: int = (width - text.len()) / 2
     let mut i: int = 0
     while i < padding {
@@ -482,7 +466,6 @@ fn print_centered(text: str, width: int) -> () {
         i = i + 1
     }
     print_line(text)
-    return ()
 }
 
 # Format list with bullets
@@ -491,23 +474,21 @@ fn format_list_item(item: str, bullet: str) -> str {
 }
 
 # Print numbered list
-fn print_numbered_list(items: [str]) -> () {
+fn print_numbered_list(items: [str]) {
     let mut i: int = 0
     while i < items.len() {
         print_str(int_to_str(i + 1) + ". " + items[i] + "\n")
         i = i + 1
     }
-    return ()
 }
 
 # Print bulleted list
-fn print_bulleted_list(items: [str]) -> () {
+fn print_bulleted_list(items: [str]) {
     let mut i: int = 0
     while i < items.len() {
         print_str("• " + items[i] + "\n")
         i = i + 1
     }
-    return ()
 }
 
 # Format time in HH:MM:SS
@@ -519,11 +500,10 @@ fn format_time(hours: int, minutes: int, seconds: int) -> str {
 }
 
 # Print banner with title
-fn print_banner(title: str, width: int) -> () {
+fn print_banner(title: str, width: int) {
     print_separator(width, "=")
     print_centered(title, width)
     print_separator(width, "=")
-    return ()
 }
 
 # Format integer in octal (no prefix)
@@ -543,24 +523,63 @@ fn format_roman(n: int) -> str {
     if n <= 0 or n >= 4000 { return "?" }
     let mut result: str = ""
     let mut num: int = n
-    while num >= 1000 { result = result + "M"; num = num - 1000 }
-    while num >= 900 { result = result + "CM"; num = num - 900 }
-    while num >= 500 { result = result + "D"; num = num - 500 }
-    while num >= 400 { result = result + "CD"; num = num - 400 }
-    while num >= 100 { result = result + "C"; num = num - 100 }
-    while num >= 90 { result = result + "XC"; num = num - 90 }
-    while num >= 50 { result = result + "L"; num = num - 50 }
-    while num >= 40 { result = result + "XL"; num = num - 40 }
-    while num >= 10 { result = result + "X"; num = num - 10 }
-    while num >= 9 { result = result + "IX"; num = num - 9 }
-    while num >= 5 { result = result + "V"; num = num - 5 }
-    while num >= 4 { result = result + "IV"; num = num - 4 }
-    while num >= 1 { result = result + "I"; num = num - 1 }
+    while num >= 1000 {
+        result = result + "M"
+        num = num - 1000
+    }
+    while num >= 900 {
+        result = result + "CM"
+        num = num - 900
+    }
+    while num >= 500 {
+        result = result + "D"
+        num = num - 500
+    }
+    while num >= 400 {
+        result = result + "CD"
+        num = num - 400
+    }
+    while num >= 100 {
+        result = result + "C"
+        num = num - 100
+    }
+    while num >= 90 {
+        result = result + "XC"
+        num = num - 90
+    }
+    while num >= 50 {
+        result = result + "L"
+        num = num - 50
+    }
+    while num >= 40 {
+        result = result + "XL"
+        num = num - 40
+    }
+    while num >= 10 {
+        result = result + "X"
+        num = num - 10
+    }
+    while num >= 9 {
+        result = result + "IX"
+        num = num - 9
+    }
+    while num >= 5 {
+        result = result + "V"
+        num = num - 5
+    }
+    while num >= 4 {
+        result = result + "IV"
+        num = num - 4
+    }
+    while num >= 1 {
+        result = result + "I"
+        num = num - 1
+    }
     return result
 }
 
 # Print 2D grid of integers
-fn print_grid(grid: [[int]], cell_width: int) -> () {
+fn print_grid(grid: [[int]], cell_width: int) {
     let mut i: int = 0
     while i < grid.len() {
         let row: [int] = grid[i]
@@ -582,7 +601,6 @@ fn print_grid(grid: [[int]], cell_width: int) -> () {
         print_str("\n")
         i = i + 1
     }
-    return ()
 }
 
 # Format integer with custom base (2-36)
@@ -601,7 +619,7 @@ fn format_base(n: int, base: int) -> str {
 }
 
 # Print aligned columns (left, center, right)
-fn print_aligned(left: str, center: str, right: str, width: int) -> () {
+fn print_aligned(left: str, center: str, right: str, width: int) {
     let center_start: int = (width - center.len()) / 2
     let right_start: int = width - right.len()
     print_str(left)
@@ -617,5 +635,4 @@ fn print_aligned(left: str, center: str, right: str, width: int) -> () {
         i = i + 1
     }
     print_str(right + "\n")
-    return ()
 }
