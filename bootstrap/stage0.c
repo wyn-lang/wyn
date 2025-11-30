@@ -2155,7 +2155,8 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     strcmp(e->ident, "len") == 0 || strcmp(e->ident, "exit") == 0 ||
                     strcmp(e->ident, "abs") == 0 || strcmp(e->ident, "min") == 0 ||
                     strcmp(e->ident, "max") == 0 || strcmp(e->ident, "int_to_str") == 0 ||
-                    strcmp(e->ident, "str_to_int") == 0 ||
+                    strcmp(e->ident, "str_to_int") == 0 || strcmp(e->ident, "int_to_float") == 0 ||
+                    strcmp(e->ident, "float_to_int") == 0 ||
                     strcmp(e->ident, "read_file") == 0 || strcmp(e->ident, "write_file") == 0 ||
                     strcmp(e->ident, "ord") == 0 || strcmp(e->ident, "chr") == 0) {
                     return new_type(TYPE_FUNCTION);
@@ -2947,6 +2948,20 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_emit(cg, "    movq %%rcx, %%rax");
                     break;
                 }
+                // Handle built-in int_to_float() - convert int to float
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "int_to_float") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    cvtsi2sdq %%rax, %%xmm0");  // Convert int to double
+                    cg_emit(cg, "    movq %%xmm0, %%rax");       // Move to rax for return
+                    break;
+                }
+                // Handle built-in float_to_int() - convert float to int
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "float_to_int") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movq %%rax, %%xmm0");       // Move to xmm0
+                    cg_emit(cg, "    cvttsd2siq %%xmm0, %%rax"); // Convert to int (truncate)
+                    break;
+                }
                 // Handle built-in read_file() - reads entire file to string
                 if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "read_file") == 0) {
                     cg_expr(cg, e->call.args[0]);
@@ -3021,6 +3036,13 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                         cg_emit(cg, "    xorl %%esi, %%esi");
                         cg_emit(cg, "    movl $10, %%edx");
                         cg_emit(cg, "    callq %sstrtol", cg_sym_prefix(cg));
+                        break;
+                    }
+                    // .to_float() -> int_to_float(obj)
+                    if (strcmp(method, "to_float") == 0 && e->call.arg_count == 0) {
+                        cg_expr(cg, obj);
+                        cg_emit(cg, "    cvtsi2sdq %%rax, %%xmm0");
+                        cg_emit(cg, "    movq %%xmm0, %%rax");
                         break;
                     }
                 }
@@ -3669,6 +3691,20 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_emit(cg, "    mov x0, x1");
                 break;
             }
+            // Handle built-in int_to_float() - convert int to float
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "int_to_float") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    scvtf d0, x0");  // Signed convert to float
+                cg_emit(cg, "    fmov x0, d0");   // Move to x0 for return
+                break;
+            }
+            // Handle built-in float_to_int() - convert float to int
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "float_to_int") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    fmov d0, x0");   // Move to d0
+                cg_emit(cg, "    fcvtzs x0, d0"); // Convert to signed int (truncate)
+                break;
+            }
             // Handle built-in read_file() - reads entire file to string
             if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "read_file") == 0) {
                 cg_expr(cg, e->call.args[0]);
@@ -3741,6 +3777,13 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_emit(cg, "    mov x1, #0");
                     cg_emit(cg, "    mov x2, #10");
                     cg_emit(cg, "    bl %sstrtol", cg_sym_prefix(cg));
+                    break;
+                }
+                // .to_float() -> int_to_float(obj)
+                if (strcmp(method, "to_float") == 0 && e->call.arg_count == 0) {
+                    cg_expr(cg, obj);
+                    cg_emit(cg, "    scvtf d0, x0");
+                    cg_emit(cg, "    fmov x0, d0");
                     break;
                 }
             }
