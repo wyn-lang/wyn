@@ -1,0 +1,9 @@
+# Test read_line builtin
+
+fn main() {
+    print_str("Enter your name: ")
+    let name: str = read_line()
+    print_str("Hello, ")
+    print_str(name)
+    print_str("!")
+}
