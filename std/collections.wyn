@@ -1029,3 +1029,162 @@ fn array_is_geometric(arr: [int]) -> bool {
 fn abs(n: int) -> int {
     return if n < 0 then 0 - n else n
 }
+
+# Find index of first occurrence of element, returns -1 if not found
+fn array_index_of(arr: [int], target: int) -> int {
+    let mut i: int = 0
+    while i < arr.len() {
+        if arr[i] == target {
+            return i
+        }
+        i = i + 1
+    }
+    return 0 - 1
+}
+
+# Find index of last occurrence of element, returns -1 if not found
+fn array_last_index_of(arr: [int], target: int) -> int {
+    let mut i: int = arr.len() - 1
+    while i >= 0 {
+        if arr[i] == target {
+            return i
+        }
+        i = i - 1
+    }
+    return 0 - 1
+}
+
+# Count occurrences of element in array
+fn array_count(arr: [int], target: int) -> int {
+    let mut count: int = 0
+    let mut i: int = 0
+    while i < arr.len() {
+        if arr[i] == target {
+            count = count + 1
+        }
+        i = i + 1
+    }
+    return count
+}
+
+# Check if array contains element
+fn array_contains(arr: [int], target: int) -> bool {
+    return array_index_of(arr, target) != 0 - 1
+}
+
+# Get first element of array, returns none if empty
+fn array_first(arr: [int]) -> ?int {
+    if arr.len() == 0 {
+        return none
+    }
+    return some(arr[0])
+}
+
+# Get last element of array, returns none if empty
+fn array_last(arr: [int]) -> ?int {
+    if arr.len() == 0 {
+        return none
+    }
+    return some(arr[arr.len() - 1])
+}
+
+# Take first n elements from array
+fn array_take(arr: [int], n: int) -> [int] {
+    if n <= 0 {
+        return []
+    }
+    if n >= arr.len() {
+        return arr
+    }
+    return arr[:n]
+}
+
+# Skip first n elements from array
+fn array_skip(arr: [int], n: int) -> [int] {
+    if n <= 0 {
+        return arr
+    }
+    if n >= arr.len() {
+        return []
+    }
+    return arr[n:]
+}
+
+# Chunk array into groups of size n
+fn array_chunk_count(arr: [int], chunk_size: int) -> int {
+    if chunk_size <= 0 {
+        return 0
+    }
+    let len: int = arr.len()
+    return (len + chunk_size - 1) / chunk_size
+}
+
+# Get specific chunk from array
+fn array_get_chunk(arr: [int], chunk_index: int, chunk_size: int) -> [int] {
+    let start: int = chunk_index * chunk_size
+    if start >= arr.len() {
+        return []
+    }
+    let end: int = min(start + chunk_size, arr.len())
+    return arr[start:end]
+}
+
+# Rotate array left by n positions
+fn array_rotate_left(arr: [int], n: int) -> [int] {
+    let len: int = arr.len()
+    if len == 0 or n == 0 {
+        return arr
+    }
+    let shift: int = n % len
+    if shift == 0 {
+        return arr
+    }
+    return arr[shift:] + arr[:shift]
+}
+
+# Rotate array right by n positions
+fn array_rotate_right(arr: [int], n: int) -> [int] {
+    let len: int = arr.len()
+    if len == 0 or n == 0 {
+        return arr
+    }
+    let shift: int = n % len
+    if shift == 0 {
+        return arr
+    }
+    return arr[len - shift:] + arr[:len - shift]
+}
+
+# Interleave two arrays
+fn array_interleave(a: [int], b: [int]) -> [int] {
+    let len_a: int = a.len()
+    let len_b: int = b.len()
+    let min_len: int = min(len_a, len_b)
+    
+    if min_len == 0 {
+        if len_a > 0 { return a }
+        return b
+    }
+    
+    # Build result by alternating elements
+    let mut result: [int] = []
+    let mut i: int = 0
+    while i < min_len {
+        result = result + [a[i], b[i]]
+        i = i + 1
+    }
+    
+    # Append remaining elements
+    if len_a > min_len {
+        result = result + a[min_len:]
+    }
+    if len_b > min_len {
+        result = result + b[min_len:]
+    }
+    
+    return result
+}
+
+fn min(a: int, b: int) -> int {
+    return if a < b then a else b
+}
