@@ -73,7 +73,7 @@ wyn-lang/
 - [x] Standard library (400+ functions)
 - [x] Self-hosting compiler (Stage 1 - 2,176 lines)
 - [x] Package manager (basic)
-- [ ] GUI framework
+- [x] GUI framework (basic)
 - [ ] Mobile support
 
 ## Currently Supported
