@@ -2543,11 +2543,13 @@ static bool typecheck_module(TypeChecker* tc) {
 // ============================================================================
 
 typedef enum { ARCH_ARM64, ARCH_X86_64 } Arch;
+typedef enum { OS_MACOS, OS_LINUX } TargetOS;
 
 typedef struct {
     FILE* out;
     Module* module;
     Arch arch;
+    TargetOS os;
     int label_count;
     int stack_offset;
     struct { char name[MAX_IDENT_LEN]; int offset; Type* type; } locals[256];
@@ -2561,16 +2563,22 @@ typedef struct {
     TypeChecker* tc;       // For type checking during codegen
 } CodeGen;
 
-static CodeGen* codegen_new(FILE* out, Module* m, Arch arch, TypeChecker* tc) {
+static CodeGen* codegen_new(FILE* out, Module* m, Arch arch, TargetOS os, TypeChecker* tc) {
     CodeGen* cg = calloc(1, sizeof(CodeGen));
     cg->out = out;
     cg->module = m;
     cg->arch = arch;
+    cg->os = os;
     cg->tc = tc;
     return cg;
 }
 
 static int cg_new_label(CodeGen* cg) { return cg->label_count++; }
+
+// Returns "_" for macOS, "" for Linux (symbol prefix)
+static const char* cg_sym_prefix(CodeGen* cg) {
+    return cg->os == OS_MACOS ? "_" : "";
+}
 
 static void cg_emit(CodeGen* cg, const char* fmt, ...) {
     va_list args;
@@ -3033,7 +3041,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 }
                 if (e->call.func->kind == EXPR_IDENT) {
                     cg_emit(cg, "    xorl %%eax, %%eax");  // Clear AL for varargs
-                    cg_emit(cg, "    callq _%s", e->call.func->ident);
+                    cg_emit(cg, "    callq %s%s", cg_sym_prefix(cg), e->call.func->ident);
                 }
                 break;
             }
@@ -3743,7 +3751,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_emit(cg, "    ldr x%d, [sp], #16", i);
             }
             if (e->call.func->kind == EXPR_IDENT) {
-                cg_emit(cg, "    bl _%s", e->call.func->ident);
+                cg_emit(cg, "    bl %s%s", cg_sym_prefix(cg), e->call.func->ident);
             }
             break;
         }
@@ -4407,11 +4415,12 @@ static void cg_method(CodeGen* cg, const char* struct_name, FnDef* fn) {
     
     char mangled[256];
     snprintf(mangled, 256, "%s_%s", struct_name, fn->name);
+    const char* pfx = cg_sym_prefix(cg);
     
     if (cg->arch == ARCH_X86_64) {
-        cg_emit(cg, "    .globl _%s", mangled);
+        cg_emit(cg, "    .globl %s%s", pfx, mangled);
         cg_emit(cg, "    .p2align 4");
-        cg_emit(cg, "_%s:", mangled);
+        cg_emit(cg, "%s%s:", pfx, mangled);
         cg_emit(cg, "    pushq %%rbp");
         cg_emit(cg, "    movq %%rsp, %%rbp");
         cg_emit(cg, "    subq $256, %%rsp");
@@ -4432,9 +4441,9 @@ static void cg_method(CodeGen* cg, const char* struct_name, FnDef* fn) {
     }
     
     // ARM64
-    cg_emit(cg, "    .globl _%s", mangled);
+    cg_emit(cg, "    .globl %s%s", pfx, mangled);
     cg_emit(cg, "    .p2align 2");
-    cg_emit(cg, "_%s:", mangled);
+    cg_emit(cg, "%s%s:", pfx, mangled);
     cg_emit(cg, "    stp x29, x30, [sp, #-256]!");
     cg_emit(cg, "    mov x29, sp");
     
@@ -4453,11 +4462,12 @@ static void cg_method(CodeGen* cg, const char* struct_name, FnDef* fn) {
 static void cg_function(CodeGen* cg, FnDef* fn) {
     cg->stack_offset = 0;
     cg->local_count = 0;
+    const char* pfx = cg_sym_prefix(cg);
     
     if (cg->arch == ARCH_X86_64) {
-        cg_emit(cg, "    .globl _%s", fn->name);
+        cg_emit(cg, "    .globl %s%s", pfx, fn->name);
         cg_emit(cg, "    .p2align 4");
-        cg_emit(cg, "_%s:", fn->name);
+        cg_emit(cg, "%s%s:", pfx, fn->name);
         cg_emit(cg, "    pushq %%rbp");
         cg_emit(cg, "    movq %%rsp, %%rbp");
         cg_emit(cg, "    subq $256, %%rsp");
@@ -4478,9 +4488,9 @@ static void cg_function(CodeGen* cg, FnDef* fn) {
     }
     
     // ARM64
-    cg_emit(cg, "    .globl _%s", fn->name);
+    cg_emit(cg, "    .globl %s%s", pfx, fn->name);
     cg_emit(cg, "    .p2align 2");
-    cg_emit(cg, "_%s:", fn->name);
+    cg_emit(cg, "%s%s:", pfx, fn->name);
     cg_emit(cg, "    stp x29, x30, [sp, #-256]!");
     cg_emit(cg, "    mov x29, sp");
     
@@ -4752,6 +4762,7 @@ void print_usage(const char* prog) {
     printf("  -c              Compile only, don't link\n");
     printf("  -S              Output assembly\n");
     printf("  --target <arch> Target architecture (arm64, x86_64)\n");
+    printf("  --target-os <os> Target OS (macos, linux)\n");
     printf("  --emit-ir       Output intermediate representation\n");
     printf("  -O0             No optimization (default)\n");
     printf("  -O1             Basic optimization\n");
@@ -4871,10 +4882,14 @@ int main(int argc, char** argv) {
     bool emit_ir = false;
     int opt_level = 0;
     Arch target_arch = ARCH_ARM64;  // Default for macOS ARM
+    TargetOS target_os = OS_MACOS;  // Default OS
     
-    // Detect host architecture
+    // Detect host architecture and OS
 #if defined(__x86_64__) || defined(_M_X64)
     target_arch = ARCH_X86_64;
+#endif
+#if defined(__linux__)
+    target_os = OS_LINUX;
 #endif
     
     for (int i = 1; i < argc; i++) {
@@ -4903,6 +4918,11 @@ int main(int argc, char** argv) {
             if (strcmp(argv[i], "arm64") == 0) target_arch = ARCH_ARM64;
             else if (strcmp(argv[i], "x86_64") == 0) target_arch = ARCH_X86_64;
             else { fprintf(stderr, "unknown target: %s\n", argv[i]); return 1; }
+        } else if (strcmp(argv[i], "--target-os") == 0 && i + 1 < argc) {
+            i++;
+            if (strcmp(argv[i], "macos") == 0 || strcmp(argv[i], "darwin") == 0) target_os = OS_MACOS;
+            else if (strcmp(argv[i], "linux") == 0) target_os = OS_LINUX;
+            else { fprintf(stderr, "unknown target OS: %s\n", argv[i]); return 1; }
         } else if (argv[i][0] != '-') {
             input_file = argv[i];
         } else {
@@ -4955,7 +4975,7 @@ int main(int argc, char** argv) {
             fprintf(stderr, "Cannot open %s for writing\n", asm_file);
             return 1;
         }
-        CodeGen* cg = codegen_new(asm_out, module, target_arch, tc);
+        CodeGen* cg = codegen_new(asm_out, module, target_arch, target_os, tc);
         codegen_module(cg);
         fclose(asm_out);
         printf("Assembly written to: %s\n", asm_file);
@@ -4966,7 +4986,7 @@ int main(int argc, char** argv) {
         snprintf(obj_file, 256, "/tmp/wyn_%d.o", getpid());
         
         FILE* asm_out = fopen(asm_file, "w");
-        CodeGen* cg = codegen_new(asm_out, module, target_arch, tc);
+        CodeGen* cg = codegen_new(asm_out, module, target_arch, target_os, tc);
         codegen_module(cg);
         fclose(asm_out);
         
