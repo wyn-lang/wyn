@@ -200,31 +200,14 @@ fn last_index_of(s: str, substr: str) -> int {
 }
 
 # Check if string starts with prefix
-fn starts_with(s: str, prefix: str) -> bool {
-    let plen: int = prefix.len()
-    if plen > s.len() {
-        return false
-    }
     return s[:plen] == prefix
 }
 
 # Check if string ends with suffix
-fn ends_with(s: str, suffix: str) -> bool {
-    let slen: int = suffix.len()
-    let len: int = s.len()
-    if slen > len {
-        return false
-    }
     return s[len - slen:] == suffix
 }
 
 # Find first occurrence of substring, returns -1 if not found
-fn index_of(s: str, substr: str) -> int {
-    let slen: int = s.len()
-    let sublen: int = substr.len()
-    if sublen > slen {
-        return 0 - 1
-    }
     let mut i: int = 0
     while i <= slen - sublen {
         if s[i:i + sublen] == substr {
@@ -256,10 +239,6 @@ fn count_substr(s: str, substr: str) -> int {
 }
 
 # Repeat string n times
-fn repeat(s: str, n: int) -> str {
-    if n <= 0 {
-        return ""
-    }
     let mut result: str = ""
     let mut i: int = 0
     while i < n {
@@ -270,11 +249,6 @@ fn repeat(s: str, n: int) -> str {
 }
 
 # Reverse string
-fn reverse(s: str) -> str {
-    let len: int = s.len()
-    if len <= 1 {
-        return s
-    }
     let mut result: str = ""
     let mut i: int = len - 1
     while i >= 0 {
@@ -428,13 +402,6 @@ fn center(s: str, width: int, fill: str) -> str {
 }
 
 # Check if string contains substring
-fn contains(s: str, substr: str) -> bool {
-    let slen: int = s.len()
-    let sublen: int = substr.len()
-    
-    if sublen == 0 {
-        return true
-    }
     if sublen > slen {
         return false
     }
@@ -450,13 +417,6 @@ fn contains(s: str, substr: str) -> bool {
 }
 
 # Check if string starts with prefix
-fn starts_with(s: str, prefix: str) -> bool {
-    let slen: int = s.len()
-    let plen: int = prefix.len()
-    
-    if plen > slen {
-        return false
-    }
     if plen == 0 {
         return true
     }
@@ -465,13 +425,6 @@ fn starts_with(s: str, prefix: str) -> bool {
 }
 
 # Check if string ends with suffix
-fn ends_with(s: str, suffix: str) -> bool {
-    let slen: int = s.len()
-    let suflen: int = suffix.len()
-    
-    if suflen > slen {
-        return false
-    }
     if suflen == 0 {
         return true
     }
@@ -480,14 +433,8 @@ fn ends_with(s: str, suffix: str) -> bool {
 }
 
 # Convert string to uppercase
-fn to_upper(s: str) -> str {
-    return to_upper_str(s)
-}
 
 # Convert string to lowercase
-fn to_lower(s: str) -> str {
-    return to_lower_str(s)
-}
 
 # Extract substring from start to end index
 fn substring(s: str, start: int, end: int) -> str {
@@ -499,13 +446,6 @@ fn substring(s: str, start: int, end: int) -> str {
 }
 
 # Find first occurrence of substring, returns index or none
-fn index_of(s: str, substr: str) -> ?int {
-    let slen: int = s.len()
-    let sublen: int = substr.len()
-    
-    if sublen == 0 {
-        return some(0)
-    }
     if sublen > slen {
         return none
     }
@@ -521,13 +461,6 @@ fn index_of(s: str, substr: str) -> ?int {
 }
 
 # Find last occurrence of substring, returns index or none
-fn last_index_of(s: str, substr: str) -> ?int {
-    let slen: int = s.len()
-    let sublen: int = substr.len()
-    
-    if sublen == 0 {
-        return some(slen)
-    }
     if sublen > slen {
         return none
     }
@@ -543,10 +476,6 @@ fn last_index_of(s: str, substr: str) -> ?int {
 }
 
 # Repeat string count times
-fn repeat(s: str, count: int) -> str {
-    if count <= 0 {
-        return ""
-    }
     
     let mut result: str = ""
     let mut i: int = 0
@@ -558,11 +487,6 @@ fn repeat(s: str, count: int) -> str {
 }
 
 # Reverse string character order
-fn reverse(s: str) -> str {
-    let len: int = s.len()
-    if len <= 1 {
-        return s
-    }
     
     let mut result: str = ""
     let mut i: int = len - 1
@@ -618,11 +542,6 @@ fn to_lower_str(s: str) -> str {
     return result
 }
 
-fn pad_left(s: str, width: int, fill: str) -> str {
-    let len: int = s.len()
-    if len >= width {
-        return s
-    }
     let padding: int = width - len
     let mut result: str = ""
     let mut i: int = 0
@@ -633,11 +552,6 @@ fn pad_left(s: str, width: int, fill: str) -> str {
     return result + s
 }
 
-fn pad_right(s: str, width: int, fill: str) -> str {
-    let len: int = s.len()
-    if len >= width {
-        return s
-    }
     let padding: int = width - len
     let mut result: str = s
     let mut i: int = 0
@@ -674,12 +588,6 @@ fn pad_center(s: str, width: int, fill: str) -> str {
 }
 
 # Count occurrences of substring
-fn count_substr(s: str, substr: str) -> int {
-    let slen: int = s.len()
-    let sublen: int = substr.len()
-    if sublen == 0 or sublen > slen {
-        return 0
-    }
     let mut count: int = 0
     let mut i: int = 0
     while i <= slen - sublen {
@@ -694,10 +602,6 @@ fn count_substr(s: str, substr: str) -> int {
 }
 
 # Check if string contains only digits
-fn is_numeric(s: str) -> bool {
-    if s.len() == 0 {
-        return false
-    }
     let mut i: int = 0
     while i < s.len() {
         let code: int = ord(s[i:i+1])
@@ -710,10 +614,6 @@ fn is_numeric(s: str) -> bool {
 }
 
 # Check if string contains only alphabetic characters
-fn is_alpha(s: str) -> bool {
-    if s.len() == 0 {
-        return false
-    }
     let mut i: int = 0
     while i < s.len() {
         let code: int = ord(s[i:i+1])
@@ -1018,13 +918,6 @@ fn strip_suffix(s: str, suffix: str) -> str {
 }
 
 # Count occurrences of a single character
-fn count_char(s: str, ch: str) -> int {
-    let mut count: int = 0
-    let mut i: int = 0
-    while i < s.len() {
-        if s[i:i+1] == ch {
-            count = count + 1
-        }
         i = i + 1
     }
     return count
@@ -1215,10 +1108,6 @@ fn min(a: int, b: int) -> int {
 }
 
 # Count occurrences of substring in string
-fn count_substr(s: str, substr: str) -> int {
-    if substr.len() == 0 or substr.len() > s.len() {
-        return 0
-    }
     let mut count: int = 0
     let mut i: int = 0
     while i <= s.len() - substr.len() {
@@ -1233,10 +1122,6 @@ fn count_substr(s: str, substr: str) -> int {
 }
 
 # Find index of first occurrence of substring, returns -1 if not found
-fn index_of(s: str, substr: str) -> int {
-    if substr.len() == 0 or substr.len() > s.len() {
-        return 0 - 1
-    }
     let mut i: int = 0
     while i <= s.len() - substr.len() {
         if s[i:i + substr.len()] == substr {
@@ -1248,10 +1133,6 @@ fn index_of(s: str, substr: str) -> int {
 }
 
 # Find index of last occurrence of substring, returns -1 if not found
-fn last_index_of(s: str, substr: str) -> int {
-    if substr.len() == 0 or substr.len() > s.len() {
-        return 0 - 1
-    }
     let mut i: int = s.len() - substr.len()
     while i >= 0 {
         if s[i:i + substr.len()] == substr {
@@ -1263,10 +1144,6 @@ fn last_index_of(s: str, substr: str) -> int {
 }
 
 # Truncate string to max length, add suffix if truncated
-fn truncate(s: str, max_len: int, suffix: str) -> str {
-    if s.len() <= max_len {
-        return s
-    }
     let truncate_at: int = max_len - suffix.len()
     if truncate_at <= 0 {
         return suffix
@@ -1275,10 +1152,6 @@ fn truncate(s: str, max_len: int, suffix: str) -> str {
 }
 
 # Center string in field of given width with padding
-fn center(s: str, width: int, pad: str) -> str {
-    if s.len() >= width {
-        return s
-    }
     let total_pad: int = width - s.len()
     let left_pad: int = total_pad / 2
     let right_pad: int = total_pad - left_pad
@@ -1286,10 +1159,6 @@ fn center(s: str, width: int, pad: str) -> str {
 }
 
 # Check if string is numeric (all digits)
-fn is_numeric(s: str) -> bool {
-    if s.len() == 0 {
-        return false
-    }
     let mut i: int = 0
     while i < s.len() {
         let c: str = s[i:i+1]
@@ -1302,10 +1171,6 @@ fn is_numeric(s: str) -> bool {
 }
 
 # Check if string is alphabetic (all letters)
-fn is_alpha(s: str) -> bool {
-    if s.len() == 0 {
-        return false
-    }
     let mut i: int = 0
     while i < s.len() {
         let c: str = s[i:i+1]
@@ -1320,10 +1185,6 @@ fn is_alpha(s: str) -> bool {
 }
 
 # Check if string is alphanumeric
-fn is_alphanumeric(s: str) -> bool {
-    if s.len() == 0 {
-        return false
-    }
     let mut i: int = 0
     while i < s.len() {
         let c: str = s[i:i+1]
@@ -1339,13 +1200,6 @@ fn is_alphanumeric(s: str) -> bool {
 }
 
 # Reverse a string
-fn reverse(s: str) -> str {
-    let mut result: str = ""
-    let mut i: int = s.len() - 1
-    while i >= 0 {
-        result = result + s[i:i+1]
-        i = i - 1
-    }
     return result
 }
 
@@ -1363,40 +1217,12 @@ fn is_palindrome_str(s: str) -> bool {
 }
 
 # Swap case of string (upper to lower, lower to upper)
-fn swap_case(s: str) -> str {
-    let mut result: str = ""
-    let mut i: int = 0
-    while i < s.len() {
-        let c: str = s[i:i+1]
-        if c >= "A" and c <= "Z" {
-            result = result + to_lower_char(c)
-        } else if c >= "a" and c <= "z" {
-            result = result + to_upper_char(c)
-        } else {
-            result = result + c
-        }
         i = i + 1
     }
     return result
 }
 
 # Title case: capitalize first letter of each word
-fn title_case(s: str) -> str {
-    let mut result: str = ""
-    let mut capitalize_next: bool = true
-    let mut i: int = 0
-    while i < s.len() {
-        let c: str = s[i:i+1]
-        if c == " " or c == "\t" or c == "\n" {
-            result = result + c
-            capitalize_next = true
-        } else if capitalize_next and c >= "a" and c <= "z" {
-            result = result + to_upper_char(c)
-            capitalize_next = false
-        } else {
-            result = result + c
-            capitalize_next = false
-        }
         i = i + 1
     }
     return result
@@ -1571,36 +1397,12 @@ fn count_consonants(s: str) -> int {
 
 
 # Pad string on left to reach target length
-fn pad_left(s: str, len: int, pad: str) -> str {
-    let slen: int = s.len()
-    if slen >= len { return s }
-    let needed: int = len - slen
-    return repeat(pad, needed) + s
-}
 
 # Pad string on right to reach target length
-fn pad_right(s: str, len: int, pad: str) -> str {
-    let slen: int = s.len()
-    if slen >= len { return s }
-    let needed: int = len - slen
-    return s + repeat(pad, needed)
-}
 
 # Center string within target length
-fn center(s: str, len: int, pad: str) -> str {
-    let slen: int = s.len()
-    if slen >= len { return s }
-    let total_pad: int = len - slen
-    let left_pad: int = total_pad / 2
-    let right_pad: int = total_pad - left_pad
-    return repeat(pad, left_pad) + s + repeat(pad, right_pad)
-}
 
 # Truncate string to max length
-fn truncate(s: str, max_len: int) -> str {
-    if s.len() <= max_len { return s }
-    return s[:max_len]
-}
 
 # Truncate with ellipsis if too long
 fn truncate_ellipsis(s: str, max_len: int) -> str {
@@ -1610,62 +1412,26 @@ fn truncate_ellipsis(s: str, max_len: int) -> str {
 }
 
 # Check if string is empty or only whitespace
-fn is_blank(s: str) -> bool {
-    return trim(s).len() == 0
-}
 
 # Check if string is numeric (all digits)
-fn is_numeric(s: str) -> bool {
-    if s.len() == 0 { return false }
-    let mut i: int = 0
-    while i < s.len() {
-        let c: str = s[i:i+1]
-        if c < "0" or c > "9" {
-            return false
-        }
         i = i + 1
     }
     return true
 }
 
 # Check if string is alphabetic (all letters)
-fn is_alpha(s: str) -> bool {
-    if s.len() == 0 { return false }
-    let mut i: int = 0
-    while i < s.len() {
-        let c: str = to_lower_str(s[i:i+1])
-        if c < "a" or c > "z" {
-            return false
-        }
         i = i + 1
     }
     return true
 }
 
 # Check if string is alphanumeric
-fn is_alphanumeric(s: str) -> bool {
-    if s.len() == 0 { return false }
-    let mut i: int = 0
-    while i < s.len() {
-        let c: str = to_lower_str(s[i:i+1])
-        let is_letter: bool = c >= "a" and c <= "z"
-        let is_digit: bool = c >= "0" and c <= "9"
-        if not is_letter and not is_digit {
-            return false
-        }
         i = i + 1
     }
     return true
 }
 
 # Remove all occurrences of character from string
-fn remove_char(s: str, c: str) -> str {
-    let mut result: str = ""
-    let mut i: int = 0
-    while i < s.len() {
-        if s[i:i+1] != c {
-            result = result + s[i:i+1]
-        }
         i = i + 1
     }
     return result
@@ -1706,24 +1472,8 @@ fn extract_letters(s: str) -> str {
 }
 
 # Compare strings ignoring case
-fn equals_ignore_case(a: str, b: str) -> bool {
-    return to_lower(a) == to_lower(b)
-}
 
 # Count words in string (space-separated)
-fn word_count(s: str) -> int {
-    let trimmed: str = trim(s)
-    if trimmed.len() == 0 { return 0 }
-    let mut count: int = 1
-    let mut i: int = 0
-    let mut in_space: bool = false
-    while i < trimmed.len() {
-        let c: str = trimmed[i:i+1]
-        if c == " " {
-            if not in_space {
-                count = count + 1
-                in_space = true
-            }
         } else {
             in_space = false
         }
@@ -1733,38 +1483,10 @@ fn word_count(s: str) -> int {
 }
 
 # Get substring between two delimiters
-fn substring_between(s: str, start_delim: str, end_delim: str) -> str {
-    let start_idx: int = index_of(s, start_delim)
-    if start_idx == 0 - 1 { return "" }
-    let search_start: int = start_idx + start_delim.len()
-    let end_idx: int = index_of(s[search_start:], end_delim)
-    if end_idx == 0 - 1 { return "" }
-    return s[search_start:search_start + end_idx]
-}
 
 # Capitalize first letter of string
-fn capitalize(s: str) -> str {
-    if s.len() == 0 { return s }
-    return to_upper_str(s[0:1]) + s[1:]
-}
 
 # Convert to title case (capitalize each word)
-fn title_case(s: str) -> str {
-    let mut result: str = ""
-    let mut capitalize_next: bool = true
-    let mut i: int = 0
-    while i < s.len() {
-        let c: str = s[i:i+1]
-        if c == " " {
-            result = result + c
-            capitalize_next = true
-        } else {
-            if capitalize_next {
-                result = result + to_upper_str(c)
-                capitalize_next = false
-            } else {
-                result = result + to_lower_str(c)
-            }
         }
         i = i + 1
     }
@@ -1772,17 +1494,6 @@ fn title_case(s: str) -> str {
 }
 
 # Swap case of all letters
-fn swap_case(s: str) -> str {
-    let mut result: str = ""
-    let mut i: int = 0
-    while i < s.len() {
-        let c: str = s[i:i+1]
-        let lower: str = to_lower_str(c)
-        if c == lower {
-            result = result + to_upper_str(c)
-        } else {
-            result = result + lower
-        }
         i = i + 1
     }
     return result
@@ -1795,19 +1506,6 @@ fn is_palindrome(s: str) -> bool {
 }
 
 # Levenshtein distance between two strings
-fn levenshtein_distance(a: str, b: str) -> int {
-    let alen: int = a.len()
-    let blen: int = b.len()
-    if alen == 0 { return blen }
-    if blen == 0 { return alen }
-    # Simplified: just count character differences
-    let mut diff: int = abs(alen - blen)
-    let minlen: int = if alen < blen then alen else blen
-    let mut i: int = 0
-    while i < minlen {
-        if a[i:i+1] != b[i:i+1] {
-            diff = diff + 1
-        }
         i = i + 1
     }
     return diff

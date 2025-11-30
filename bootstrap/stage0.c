@@ -2152,6 +2152,7 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                 // Built-in functions
                 if (strcmp(e->ident, "print") == 0 || strcmp(e->ident, "print_str") == 0 ||
                     strcmp(e->ident, "print_float") == 0 || strcmp(e->ident, "print_char") == 0 ||
+                    strcmp(e->ident, "print_newline") == 0 ||
                     strcmp(e->ident, "assert") == 0 || strcmp(e->ident, "sqrt") == 0 || 
                     strcmp(e->ident, "len") == 0 || strcmp(e->ident, "exit") == 0 ||
                     strcmp(e->ident, "abs") == 0 || strcmp(e->ident, "min") == 0 ||
@@ -4896,6 +4897,17 @@ static void codegen_module(CodeGen* cg) {
         cg_emit(cg, "    popq %%rbp");
         cg_emit(cg, "    retq");
         
+        // print_newline: prints a newline character
+        cg_emit(cg, "    .globl %sprint_newline", pfx);
+        cg_emit(cg, "    .p2align 4");
+        cg_emit(cg, "%sprint_newline:", pfx);
+        cg_emit(cg, "    pushq %%rbp");
+        cg_emit(cg, "    movq %%rsp, %%rbp");
+        cg_emit(cg, "    movl $10, %%edi");
+        cg_emit(cg, "    callq %sputchar", pfx);
+        cg_emit(cg, "    popq %%rbp");
+        cg_emit(cg, "    retq");
+        
         // __wyn_read_file: reads file to malloc'd string, returns ptr (or 0 on error)
         cg_emit(cg, "    .globl %s_wyn_read_file", pfx);
         cg_emit(cg, "    .p2align 4");
@@ -5117,6 +5129,19 @@ static void codegen_module(CodeGen* cg) {
     cg_emit(cg, "    sub sp, sp, #16");
     cg_emit(cg, "    stp x29, x30, [sp]");
     cg_emit(cg, "    mov x29, sp");
+    cg_emit(cg, "    bl %sputchar", pfx);
+    cg_emit(cg, "    ldp x29, x30, [sp]");
+    cg_emit(cg, "    add sp, sp, #16");
+    cg_emit(cg, "    ret");
+    
+    // print_newline: prints a newline character
+    cg_emit(cg, "    .globl %sprint_newline", pfx);
+    cg_emit(cg, "    .p2align 2");
+    cg_emit(cg, "%sprint_newline:", pfx);
+    cg_emit(cg, "    sub sp, sp, #16");
+    cg_emit(cg, "    stp x29, x30, [sp]");
+    cg_emit(cg, "    mov x29, sp");
+    cg_emit(cg, "    mov w0, #10");
     cg_emit(cg, "    bl %sputchar", pfx);
     cg_emit(cg, "    ldp x29, x30, [sp]");
     cg_emit(cg, "    add sp, sp, #16");
