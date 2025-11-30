@@ -2151,7 +2151,7 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                 if (tc_lookup_fn(tc, e->ident)) return new_type(TYPE_FUNCTION);
                 // Built-in functions
                 if (strcmp(e->ident, "print") == 0 || strcmp(e->ident, "print_str") == 0 ||
-                    strcmp(e->ident, "print_float") == 0 ||
+                    strcmp(e->ident, "print_float") == 0 || strcmp(e->ident, "print_char") == 0 ||
                     strcmp(e->ident, "assert") == 0 || strcmp(e->ident, "sqrt") == 0 || 
                     strcmp(e->ident, "len") == 0 || strcmp(e->ident, "exit") == 0 ||
                     strcmp(e->ident, "abs") == 0 || strcmp(e->ident, "min") == 0 ||
@@ -4886,6 +4886,16 @@ static void codegen_module(CodeGen* cg) {
         cg_emit(cg, "    popq %%rbp");
         cg_emit(cg, "    retq");
         
+        // print_char: prints a single character
+        cg_emit(cg, "    .globl %sprint_char", pfx);
+        cg_emit(cg, "    .p2align 4");
+        cg_emit(cg, "%sprint_char:", pfx);
+        cg_emit(cg, "    pushq %%rbp");
+        cg_emit(cg, "    movq %%rsp, %%rbp");
+        cg_emit(cg, "    callq %sputchar", pfx);
+        cg_emit(cg, "    popq %%rbp");
+        cg_emit(cg, "    retq");
+        
         // __wyn_read_file: reads file to malloc'd string, returns ptr (or 0 on error)
         cg_emit(cg, "    .globl %s_wyn_read_file", pfx);
         cg_emit(cg, "    .p2align 4");
@@ -5098,6 +5108,18 @@ static void codegen_module(CodeGen* cg) {
     cg_emit(cg, "    bl %sprintf", pfx);
     cg_emit(cg, "    ldp x29, x30, [sp, #16]");
     cg_emit(cg, "    add sp, sp, #32");
+    cg_emit(cg, "    ret");
+    
+    // print_char: prints a single character
+    cg_emit(cg, "    .globl %sprint_char", pfx);
+    cg_emit(cg, "    .p2align 2");
+    cg_emit(cg, "%sprint_char:", pfx);
+    cg_emit(cg, "    sub sp, sp, #16");
+    cg_emit(cg, "    stp x29, x30, [sp]");
+    cg_emit(cg, "    mov x29, sp");
+    cg_emit(cg, "    bl %sputchar", pfx);
+    cg_emit(cg, "    ldp x29, x30, [sp]");
+    cg_emit(cg, "    add sp, sp, #16");
     cg_emit(cg, "    ret");
     
     // __wyn_read_file: reads file to malloc'd string, returns ptr (or 0 on error)
