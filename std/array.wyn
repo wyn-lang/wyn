@@ -1,0 +1,473 @@
+# std/array.wyn
+# Array and slice utility functions
+
+# Sum all integers in array
+fn sum(arr: [int]) -> int {
+    let mut total: int = 0
+    let mut i: int = 0
+    while i < arr.len() {
+        total = total + arr[i]
+        i = i + 1
+    }
+    return total
+}
+
+# Product of all integers in array
+fn product(arr: [int]) -> int {
+    if arr.len() == 0 { return 0 }
+    let mut result: int = 1
+    let mut i: int = 0
+    while i < arr.len() {
+        result = result * arr[i]
+        i = i + 1
+    }
+    return result
+}
+
+# Find minimum value in array
+fn min_array(arr: [int]) -> ?int {
+    if arr.len() == 0 { return none }
+    let mut min_val: int = arr[0]
+    let mut i: int = 1
+    while i < arr.len() {
+        if arr[i] < min_val {
+            min_val = arr[i]
+        }
+        i = i + 1
+    }
+    return some(min_val)
+}
+
+# Find maximum value in array
+fn max_array(arr: [int]) -> ?int {
+    if arr.len() == 0 { return none }
+    let mut max_val: int = arr[0]
+    let mut i: int = 1
+    while i < arr.len() {
+        if arr[i] > max_val {
+            max_val = arr[i]
+        }
+        i = i + 1
+    }
+    return some(max_val)
+}
+
+# Calculate average of array
+fn average(arr: [int]) -> float {
+    if arr.len() == 0 { return 0.0 }
+    let total: int = sum(arr)
+    return total.to_float() / arr.len().to_float()
+}
+
+# Check if array contains value
+fn contains(arr: [int], value: int) -> bool {
+    let mut i: int = 0
+    while i < arr.len() {
+        if arr[i] == value {
+            return true
+        }
+        i = i + 1
+    }
+    return false
+}
+
+# Find index of first occurrence of value, returns -1 if not found
+fn index_of(arr: [int], value: int) -> int {
+    let mut i: int = 0
+    while i < arr.len() {
+        if arr[i] == value {
+            return i
+        }
+        i = i + 1
+    }
+    return 0 - 1
+}
+
+# Find index of last occurrence of value, returns -1 if not found
+fn last_index_of(arr: [int], value: int) -> int {
+    let mut i: int = arr.len() - 1
+    while i >= 0 {
+        if arr[i] == value {
+            return i
+        }
+        i = i - 1
+    }
+    return 0 - 1
+}
+
+# Count occurrences of value in array
+fn count(arr: [int], value: int) -> int {
+    let mut count: int = 0
+    let mut i: int = 0
+    while i < arr.len() {
+        if arr[i] == value {
+            count = count + 1
+        }
+        i = i + 1
+    }
+    return count
+}
+
+# Reverse array
+fn reverse(arr: [int]) -> [int] {
+    let len: int = arr.len()
+    let mut result: [int] = []
+    let mut i: int = len - 1
+    while i >= 0 {
+        result = result + [arr[i]]
+        i = i - 1
+    }
+    return result
+}
+
+# Check if array is sorted in ascending order
+fn is_sorted(arr: [int]) -> bool {
+    let mut i: int = 1
+    while i < arr.len() {
+        if arr[i] < arr[i - 1] {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+# Check if array is sorted in descending order
+fn is_sorted_desc(arr: [int]) -> bool {
+    let mut i: int = 1
+    while i < arr.len() {
+        if arr[i] > arr[i - 1] {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+# Rotate array left by n positions
+fn rotate_left(arr: [int], n: int) -> [int] {
+    let len: int = arr.len()
+    if len == 0 { return arr }
+    let shift: int = n % len
+    return arr[shift:] + arr[:shift]
+}
+
+# Rotate array right by n positions
+fn rotate_right(arr: [int], n: int) -> [int] {
+    let len: int = arr.len()
+    if len == 0 { return arr }
+    let shift: int = n % len
+    return arr[len-shift:] + arr[:len-shift]
+}
+
+# Fill array with value
+fn fill(size: int, value: int) -> [int] {
+    let mut result: [int] = []
+    let mut i: int = 0
+    while i < size {
+        result = result + [value]
+        i = i + 1
+    }
+    return result
+}
+
+# Create range array from start to end (exclusive)
+fn range(start: int, end: int) -> [int] {
+    let mut result: [int] = []
+    let mut i: int = start
+    while i < end {
+        result = result + [i]
+        i = i + 1
+    }
+    return result
+}
+
+# Create range array with step
+fn range_step(start: int, end: int, step: int) -> [int] {
+    if step == 0 { return [] }
+    let mut result: [int] = []
+    if step > 0 {
+        let mut i: int = start
+        while i < end {
+            result = result + [i]
+            i = i + step
+        }
+    } else {
+        let mut i: int = start
+        while i > end {
+            result = result + [i]
+            i = i + step
+        }
+    }
+    return result
+}
+
+# Chunk array into subarrays of size n
+fn chunk(arr: [int], size: int) -> [[int]] {
+    if size <= 0 { return [] }
+    let mut result: [[int]] = []
+    let mut i: int = 0
+    while i < arr.len() {
+        let end: int = if i + size < arr.len() then i + size else arr.len()
+        result = result + [arr[i:end]]
+        i = i + size
+    }
+    return result
+}
+
+# Take first n elements
+fn take(arr: [int], n: int) -> [int] {
+    if n <= 0 { return [] }
+    if n >= arr.len() { return arr }
+    return arr[:n]
+}
+
+# Drop first n elements
+fn drop(arr: [int], n: int) -> [int] {
+    if n <= 0 { return arr }
+    if n >= arr.len() { return [] }
+    return arr[n:]
+}
+
+# Take last n elements
+fn take_last(arr: [int], n: int) -> [int] {
+    if n <= 0 { return [] }
+    if n >= arr.len() { return arr }
+    return arr[arr.len()-n:]
+}
+
+# Drop last n elements
+fn drop_last(arr: [int], n: int) -> [int] {
+    if n <= 0 { return arr }
+    if n >= arr.len() { return [] }
+    return arr[:arr.len()-n]
+}
+
+# Flatten 2D array into 1D array
+fn flatten(arr: [[int]]) -> [int] {
+    let mut result: [int] = []
+    let mut i: int = 0
+    while i < arr.len() {
+        result = result + arr[i]
+        i = i + 1
+    }
+    return result
+}
+
+# Zip two arrays into array of pairs (as 2-element arrays)
+fn zip(a: [int], b: [int]) -> [[int]] {
+    let len: int = if a.len() < b.len() then a.len() else b.len()
+    let mut result: [[int]] = []
+    let mut i: int = 0
+    while i < len {
+        result = result + [[a[i], b[i]]]
+        i = i + 1
+    }
+    return result
+}
+
+# Remove duplicates from array (keeps first occurrence)
+fn unique(arr: [int]) -> [int] {
+    let mut result: [int] = []
+    let mut i: int = 0
+    while i < arr.len() {
+        if not contains(result, arr[i]) {
+            result = result + [arr[i]]
+        }
+        i = i + 1
+    }
+    return result
+}
+
+# Note: Partition function requires tuple support (Stage 1)
+# fn partition(arr: [int], pivot: int) -> ([int], [int])
+
+
+# Interleave two arrays
+fn interleave(a: [int], b: [int]) -> [int] {
+    let mut result: [int] = []
+    let max_len: int = if a.len() > b.len() then a.len() else b.len()
+    let mut i: int = 0
+    while i < max_len {
+        if i < a.len() {
+            result = result + [a[i]]
+        }
+        if i < b.len() {
+            result = result + [b[i]]
+        }
+        i = i + 1
+    }
+    return result
+}
+
+# Find all indices where value occurs
+fn find_all(arr: [int], value: int) -> [int] {
+    let mut indices: [int] = []
+    let mut i: int = 0
+    while i < arr.len() {
+        if arr[i] == value {
+            indices = indices + [i]
+        }
+        i = i + 1
+    }
+    return indices
+}
+
+# Swap elements at two indices
+fn swap(arr: [int], i: int, j: int) -> [int] {
+    if i < 0 or i >= arr.len() or j < 0 or j >= arr.len() {
+        return arr
+    }
+    let mut result: [int] = arr
+    let temp: int = result[i]
+    result[i] = result[j]
+    result[j] = temp
+    return result
+}
+
+# Check if all elements satisfy condition (all > 0)
+fn all_positive(arr: [int]) -> bool {
+    let mut i: int = 0
+    while i < arr.len() {
+        if arr[i] <= 0 {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+# Check if any element satisfies condition (any > 0)
+fn any_positive(arr: [int]) -> bool {
+    let mut i: int = 0
+    while i < arr.len() {
+        if arr[i] > 0 {
+            return true
+        }
+        i = i + 1
+    }
+    return false
+}
+
+# Count elements that satisfy condition (> 0)
+fn count_positive(arr: [int]) -> int {
+    let mut count: int = 0
+    let mut i: int = 0
+    while i < arr.len() {
+        if arr[i] > 0 {
+            count = count + 1
+        }
+        i = i + 1
+    }
+    return count
+}
+
+# Filter array keeping only positive values
+fn filter_positive(arr: [int]) -> [int] {
+    let mut result: [int] = []
+    let mut i: int = 0
+    while i < arr.len() {
+        if arr[i] > 0 {
+            result = result + [arr[i]]
+        }
+        i = i + 1
+    }
+    return result
+}
+
+# Filter array keeping only even values
+fn filter_even(arr: [int]) -> [int] {
+    let mut result: [int] = []
+    let mut i: int = 0
+    while i < arr.len() {
+        if arr[i] % 2 == 0 {
+            result = result + [arr[i]]
+        }
+        i = i + 1
+    }
+    return result
+}
+
+# Filter array keeping only odd values
+fn filter_odd(arr: [int]) -> [int] {
+    let mut result: [int] = []
+    let mut i: int = 0
+    while i < arr.len() {
+        if arr[i] % 2 != 0 {
+            result = result + [arr[i]]
+        }
+        i = i + 1
+    }
+    return result
+}
+
+# Map array by doubling each value
+fn map_double(arr: [int]) -> [int] {
+    let mut result: [int] = []
+    let mut i: int = 0
+    while i < arr.len() {
+        result = result + [arr[i] * 2]
+        i = i + 1
+    }
+    return result
+}
+
+# Map array by squaring each value
+fn map_square(arr: [int]) -> [int] {
+    let mut result: [int] = []
+    let mut i: int = 0
+    while i < arr.len() {
+        result = result + [arr[i] * arr[i]]
+        i = i + 1
+    }
+    return result
+}
+
+# Map array by taking absolute value
+fn map_abs(arr: [int]) -> [int] {
+    let mut result: [int] = []
+    let mut i: int = 0
+    while i < arr.len() {
+        let val: int = arr[i]
+        result = result + [if val < 0 then 0 - val else val]
+        i = i + 1
+    }
+    return result
+}
+
+# Sliding window of size n
+fn sliding_window(arr: [int], size: int) -> [[int]] {
+    if size <= 0 or size > arr.len() { return [] }
+    let mut result: [[int]] = []
+    let mut i: int = 0
+    while i <= arr.len() - size {
+        result = result + [arr[i:i+size]]
+        i = i + 1
+    }
+    return result
+}
+
+# Cumulative sum array
+fn cumsum(arr: [int]) -> [int] {
+    let mut result: [int] = []
+    let mut sum: int = 0
+    let mut i: int = 0
+    while i < arr.len() {
+        sum = sum + arr[i]
+        result = result + [sum]
+        i = i + 1
+    }
+    return result
+}
+
+# Pairwise differences
+fn diff(arr: [int]) -> [int] {
+    if arr.len() <= 1 { return [] }
+    let mut result: [int] = []
+    let mut i: int = 1
+    while i < arr.len() {
+        result = result + [arr[i] - arr[i-1]]
+        i = i + 1
+    }
+    return result
+}
