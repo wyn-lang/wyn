@@ -2668,6 +2668,34 @@ static Type* cg_local_type(CodeGen* cg, const char* name) {
     return NULL;
 }
 
+// Infer expression type for codegen (simplified)
+static bool cg_is_float_expr(CodeGen* cg, Expr* e) {
+    if (!e) return false;
+    switch (e->kind) {
+        case EXPR_FLOAT: return true;
+        case EXPR_INT: return false;
+        case EXPR_IDENT: {
+            Type* t = cg_local_type(cg, e->ident);
+            return t && t->kind == TYPE_FLOAT;
+        }
+        case EXPR_BINARY:
+            return cg_is_float_expr(cg, e->binary.left) || cg_is_float_expr(cg, e->binary.right);
+        case EXPR_CALL:
+            // Check for float conversion builtins
+            if (e->call.func->kind == EXPR_IDENT) {
+                if (strcmp(e->call.func->ident, "int_to_float") == 0) return true;
+                if (strcmp(e->call.func->ident, "float_to_int") == 0) return false;
+            }
+            // Check for .to_float() method
+            if (e->call.func->kind == EXPR_FIELD) {
+                const char* method = e->call.func->field.field;
+                if (strcmp(method, "to_float") == 0) return true;
+            }
+            return false;
+        default: return false;
+    }
+}
+
 static void cg_expr(CodeGen* cg, Expr* e);
 
 static void cg_expr(CodeGen* cg, Expr* e) {
@@ -2784,10 +2812,45 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                         break;
                     }
                 }
+                
+                // Check if this is a float operation
+                bool is_float = cg_is_float_expr(cg, e);
+                
                 cg_expr(cg, e->binary.right);
                 cg_emit(cg, "    pushq %%rax");
                 cg_expr(cg, e->binary.left);
                 cg_emit(cg, "    popq %%rcx");
+                
+                if (is_float) {
+                    // Float arithmetic: convert bit patterns to xmm0/xmm1
+                    cg_emit(cg, "    movq %%rax, %%xmm0");
+                    cg_emit(cg, "    movq %%rcx, %%xmm1");
+                    switch (e->binary.op) {
+                        case TOK_PLUS:  cg_emit(cg, "    addsd %%xmm1, %%xmm0"); break;
+                        case TOK_MINUS: cg_emit(cg, "    subsd %%xmm1, %%xmm0"); break;
+                        case TOK_STAR:  cg_emit(cg, "    mulsd %%xmm1, %%xmm0"); break;
+                        case TOK_SLASH: cg_emit(cg, "    divsd %%xmm1, %%xmm0"); break;
+                        case TOK_LT: case TOK_GT: case TOK_LTEQ: case TOK_GTEQ:
+                        case TOK_EQEQ: case TOK_NOTEQ:
+                            cg_emit(cg, "    ucomisd %%xmm1, %%xmm0");
+                            cg_emit(cg, "    set%s %%al",
+                                e->binary.op == TOK_EQEQ ? "e" : e->binary.op == TOK_NOTEQ ? "ne" :
+                                e->binary.op == TOK_LT ? "b" : e->binary.op == TOK_GT ? "a" :
+                                e->binary.op == TOK_LTEQ ? "be" : "ae");
+                            cg_emit(cg, "    movzbq %%al, %%rax");
+                            break;
+                        default:
+                            goto x86_int_arith;
+                    }
+                    // For arithmetic ops, move result back to rax
+                    if (e->binary.op == TOK_PLUS || e->binary.op == TOK_MINUS ||
+                        e->binary.op == TOK_STAR || e->binary.op == TOK_SLASH) {
+                        cg_emit(cg, "    movq %%xmm0, %%rax");
+                    }
+                    break;
+                }
+                
+                x86_int_arith:
                 switch (e->binary.op) {
                     case TOK_PLUS:  cg_emit(cg, "    addq %%rcx, %%rax"); break;
                     case TOK_MINUS: cg_emit(cg, "    subq %%rcx, %%rax"); break;
@@ -3505,11 +3568,61 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     break;
                 }
             }
+            
+            // Check if this is a float operation
+            bool is_float = cg_is_float_expr(cg, e);
+            
             cg_expr(cg, e->binary.right);
             cg_emit(cg, "    str x0, [sp, #-16]!");
             cg_expr(cg, e->binary.left);
             cg_emit(cg, "    ldr x1, [sp], #16");
             
+            if (is_float) {
+                // Float arithmetic: convert bit patterns to d0/d1
+                cg_emit(cg, "    fmov d0, x0");
+                cg_emit(cg, "    fmov d1, x1");
+                switch (e->binary.op) {
+                    case TOK_PLUS:  cg_emit(cg, "    fadd d0, d0, d1"); break;
+                    case TOK_MINUS: cg_emit(cg, "    fsub d0, d0, d1"); break;
+                    case TOK_STAR:  cg_emit(cg, "    fmul d0, d0, d1"); break;
+                    case TOK_SLASH: cg_emit(cg, "    fdiv d0, d0, d1"); break;
+                    case TOK_LT:
+                        cg_emit(cg, "    fcmp d0, d1");
+                        cg_emit(cg, "    cset x0, lt");
+                        break;
+                    case TOK_GT:
+                        cg_emit(cg, "    fcmp d0, d1");
+                        cg_emit(cg, "    cset x0, gt");
+                        break;
+                    case TOK_LTEQ:
+                        cg_emit(cg, "    fcmp d0, d1");
+                        cg_emit(cg, "    cset x0, le");
+                        break;
+                    case TOK_GTEQ:
+                        cg_emit(cg, "    fcmp d0, d1");
+                        cg_emit(cg, "    cset x0, ge");
+                        break;
+                    case TOK_EQEQ:
+                        cg_emit(cg, "    fcmp d0, d1");
+                        cg_emit(cg, "    cset x0, eq");
+                        break;
+                    case TOK_NOTEQ:
+                        cg_emit(cg, "    fcmp d0, d1");
+                        cg_emit(cg, "    cset x0, ne");
+                        break;
+                    default:
+                        // Fall through to integer for unsupported ops
+                        goto int_arith;
+                }
+                // For arithmetic ops, move result back to x0
+                if (e->binary.op == TOK_PLUS || e->binary.op == TOK_MINUS ||
+                    e->binary.op == TOK_STAR || e->binary.op == TOK_SLASH) {
+                    cg_emit(cg, "    fmov x0, d0");
+                }
+                break;
+            }
+            
+            int_arith:
             switch (e->binary.op) {
                 case TOK_PLUS:  cg_emit(cg, "    add x0, x0, x1"); break;
                 case TOK_MINUS: cg_emit(cg, "    sub x0, x0, x1"); break;
