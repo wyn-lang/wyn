@@ -2160,7 +2160,7 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     strcmp(e->ident, "float_to_int") == 0 ||
                     strcmp(e->ident, "read_file") == 0 || strcmp(e->ident, "write_file") == 0 ||
                     strcmp(e->ident, "read_line") == 0 || strcmp(e->ident, "clock") == 0 ||
-                    strcmp(e->ident, "random") == 0 ||
+                    strcmp(e->ident, "random") == 0 || strcmp(e->ident, "sleep") == 0 ||
                     strcmp(e->ident, "ord") == 0 || strcmp(e->ident, "chr") == 0) {
                     return new_type(TYPE_FUNCTION);
                 }
@@ -3052,6 +3052,13 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_emit(cg, "    callq %srand", cg_sym_prefix(cg));
                     break;
                 }
+                // Handle built-in sleep(seconds) - pause execution
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "sleep") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movl %%eax, %%edi");
+                    cg_emit(cg, "    callq %ssleep", cg_sym_prefix(cg));
+                    break;
+                }
                 if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "assert") == 0) {
                     int ok_lbl = cg_new_label(cg);
                     cg_expr(cg, e->call.args[0]);
@@ -3857,6 +3864,12 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             // Handle built-in random() - returns random integer
             if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "random") == 0) {
                 cg_emit(cg, "    bl %srand", cg_sym_prefix(cg));
+                break;
+            }
+            // Handle built-in sleep(seconds) - pause execution
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "sleep") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    bl %ssleep", cg_sym_prefix(cg));
                 break;
             }
             // Handle built-in assert()
