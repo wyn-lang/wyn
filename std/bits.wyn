@@ -128,3 +128,85 @@ fn lowest_set_bit(n: int) -> int {
 fn clear_lowest_set_bit(n: int) -> int {
     return n & (n - 1)
 }
+
+# Check if bit pattern has alternating bits
+fn has_alternating_bits(n: int) -> bool {
+    let xor: int = n ^ (n >> 1)
+    return (xor & (xor + 1)) == 0
+}
+
+# Count set bits in range [start, end]
+fn popcount_range(n: int, start: int, end: int) -> int {
+    let extracted: int = extract_bits(n, start, end)
+    return popcount(extracted)
+}
+
+# Set multiple consecutive bits
+fn set_bits_range(n: int, start: int, end: int) -> int {
+    let len: int = end - start + 1
+    let mask: int = ((1 << len) - 1) << start
+    return n | mask
+}
+
+# Clear multiple consecutive bits
+fn clear_bits_range(n: int, start: int, end: int) -> int {
+    let len: int = end - start + 1
+    let mask: int = ((1 << len) - 1) << start
+    return n & ~mask
+}
+
+# Get bit at position (0 or 1)
+fn get_bit(n: int, pos: int) -> int {
+    return if bit_test(n, pos) then 1 else 0
+}
+
+# Count consecutive zeros from right
+fn count_trailing_zeros(n: int) -> int {
+    return trailing_zeros(n)
+}
+
+# Count consecutive ones from right
+fn count_trailing_ones(n: int) -> int {
+    return trailing_zeros(~n)
+}
+
+# Check if only one bit is set
+fn is_single_bit(n: int) -> bool {
+    return is_power_of_two(n)
+}
+
+# Get position of lowest set bit (0-indexed, -1 if none)
+fn find_first_set(n: int) -> int {
+    if n == 0 { return 0 - 1 }
+    return trailing_zeros(n)
+}
+
+# Get position of highest set bit (0-indexed, -1 if none)
+fn find_last_set(n: int) -> int {
+    if n == 0 { return 0 - 1 }
+    return 31 - leading_zeros(n)
+}
+
+# Swap two bits at positions i and j
+fn swap_bits(n: int, i: int, j: int) -> int {
+    let bit_i: bool = bit_test(n, i)
+    let bit_j: bool = bit_test(n, j)
+    if bit_i == bit_j { return n }
+    return bit_toggle(bit_toggle(n, i), j)
+}
+
+# Gray code: convert binary to Gray code
+fn binary_to_gray(n: int) -> int {
+    return n ^ (n >> 1)
+}
+
+# Gray code: convert Gray code to binary
+fn gray_to_binary(n: int) -> int {
+    let mut result: int = n
+    let mut shift: int = 1
+    while shift < 32 {
+        result = result ^ (n >> shift)
+        shift = shift + 1
+    }
+    return result
+}

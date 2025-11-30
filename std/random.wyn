@@ -64,3 +64,54 @@ fn choice(arr: [int]) -> ?int {
     }
     return some(arr[rand_range(0, arr.len())])
 }
+
+# Generate random integer with n bits
+fn rand_bits(n: int) -> int {
+    if n <= 0 { return 0 }
+    if n >= 31 { return rand() }
+    return rand() & ((1 << n) - 1)
+}
+
+# Generate random byte (0-255)
+fn rand_byte() -> int {
+    return rand_range(0, 256)
+}
+
+# Coin flip: true or false with equal probability
+fn coin_flip() -> bool {
+    return rand_bool()
+}
+
+# Roll n-sided die (1 to n)
+fn roll_die(sides: int) -> int {
+    return rand_range(1, sides + 1)
+}
+
+# Generate random percentage (0-100)
+fn rand_percent() -> int {
+    return rand_range(0, 101)
+}
+
+# Random choice with probability p (0.0 to 1.0)
+fn rand_chance(p: float) -> bool {
+    return rand_float() < p
+}
+
+# Generate array of n random integers in range
+fn rand_array(n: int, min_val: int, max_val: int) -> [int] {
+    let mut result: [int] = []
+    let mut i: int = 0
+    while i < n {
+        result = result + [rand_range(min_val, max_val)]
+        i = i + 1
+    }
+    return result
+}
+
+# Sample k elements from array without replacement
+fn sample(arr: [int], k: int) -> [int] {
+    if k <= 0 or arr.len() == 0 { return [] }
+    let shuffled: [int] = shuffle(arr)
+    let count: int = if k > arr.len() then arr.len() else k
+    return shuffled[:count]
+}

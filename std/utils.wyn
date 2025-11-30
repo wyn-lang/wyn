@@ -219,3 +219,36 @@ fn percentage(value: float, total: float) -> float {
 fn apply_percentage(value: float, percent: float) -> float {
     return value * (percent / 100.0)
 }
+
+# Absolute value helper
+fn abs(n: int) -> int {
+    return if n < 0 then 0 - n else n
+}
+
+# Absolute difference between two integers
+fn abs_diff(a: int, b: int) -> int {
+    return abs(a - b)
+}
+
+# Square root approximation using Newton's method
+fn sqrt(n: float) -> float {
+    if n < 0.0 { return 0.0 }
+    if n == 0.0 { return 0.0 }
+    let mut x: float = n
+    let mut i: int = 0
+    while i < 20 {
+        x = (x + n / x) / 2.0
+        i = i + 1
+    }
+    return x
+}
+
+# Integer division with remainder
+fn divmod(a: int, b: int) -> (int, int) {
+    return (a / b, a % b)
+}
+
+# Signum function: -1, 0, or 1
+fn signum(n: int) -> int {
+    return sign(n)
+}

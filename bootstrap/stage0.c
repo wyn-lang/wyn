@@ -2563,6 +2563,8 @@ typedef struct {
     int loop_start_label;  // For continue
     int loop_end_label;    // For break
     TypeChecker* tc;       // For type checking during codegen
+    Expr* defers[64];      // Deferred expressions (LIFO)
+    int defer_count;
 } CodeGen;
 
 static CodeGen* codegen_new(FILE* out, Module* m, Arch arch, TargetOS os, TypeChecker* tc) {
