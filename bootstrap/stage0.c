@@ -638,6 +638,7 @@ struct Expr {
         struct { Expr* value; } some;  // also used for ok/err
         struct { Expr* value; Expr* default_val; } default_expr;
         struct { Expr* object; Expr* start; Expr* end; Expr* step; } slice;
+        struct { char params[8][MAX_IDENT_LEN]; Type* param_types[8]; int param_count; Type* return_type; Stmt** body; int body_count; int id; } lambda;
     };
 };
 
@@ -771,6 +772,7 @@ typedef struct {
     Token current;
     const char* filename;
     bool had_error;
+    int lambda_count;
 } Parser;
 
 static Parser* parser_new(Lexer* lexer, const char* filename) {
@@ -778,6 +780,7 @@ static Parser* parser_new(Lexer* lexer, const char* filename) {
     p->lexer = lexer;
     p->filename = filename;
     p->had_error = false;
+    p->lambda_count = 0;
     p->current = lexer_next(lexer);
     return p;
 }
@@ -1135,19 +1138,30 @@ static Expr* parse_primary(Parser* p) {
     // Lambda: fn(params) { body } or fn(params) -> Type { body }
     if (parser_match(p, TOK_FN)) {
         Expr* e = new_expr(EXPR_LAMBDA, line, col);
-        // Simplified: just parse as call-like for now
+        e->lambda.param_count = 0;
+        e->lambda.return_type = NULL;
+        e->lambda.id = p->lambda_count++;
+        
         parser_expect(p, TOK_LPAREN, "(");
-        // Skip params for now
         while (!parser_check(p, TOK_RPAREN) && !parser_check(p, TOK_EOF)) {
-            parser_advance(p);
+            if (e->lambda.param_count > 0) parser_expect(p, TOK_COMMA, ",");
+            Token name = parser_expect(p, TOK_IDENT, "parameter name");
+            strcpy(e->lambda.params[e->lambda.param_count], name.ident);
+            parser_expect(p, TOK_COLON, ":");
+            e->lambda.param_types[e->lambda.param_count] = parse_type(p);
+            e->lambda.param_count++;
         }
         parser_expect(p, TOK_RPAREN, ")");
+        
         if (parser_match(p, TOK_ARROW)) {
-            parse_type(p); // skip return type
+            e->lambda.return_type = parse_type(p);
         }
+        
         parser_expect(p, TOK_LBRACE, "{");
+        e->lambda.body = malloc(sizeof(Stmt*) * 256);
+        e->lambda.body_count = 0;
         while (!parser_check(p, TOK_RBRACE) && !parser_check(p, TOK_EOF)) {
-            parser_advance(p);
+            e->lambda.body[e->lambda.body_count++] = parse_stmt(p);
         }
         parser_expect(p, TOK_RBRACE, "}");
         return e;
@@ -2569,6 +2583,8 @@ typedef struct {
     TypeChecker* tc;       // For type checking during codegen
     Expr* defers[64];      // Deferred expressions (LIFO)
     int defer_count;
+    Expr* lambdas[64];     // Collected lambdas to emit
+    int lambda_count;
 } CodeGen;
 
 static CodeGen* codegen_new(FILE* out, Module* m, Arch arch, TargetOS os, TypeChecker* tc) {
@@ -3233,7 +3249,20 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 }
                 if (e->call.func->kind == EXPR_IDENT) {
                     cg_emit(cg, "    xorl %%eax, %%eax");  // Clear AL for varargs
-                    cg_emit(cg, "    callq %s%s", cg_sym_prefix(cg), e->call.func->ident);
+                    // Check if it's a local variable (function pointer) or global function
+                    if (fn) {
+                        // Direct call to known function
+                        cg_emit(cg, "    callq %s%s", cg_sym_prefix(cg), e->call.func->ident);
+                    } else {
+                        // Indirect call through function pointer variable
+                        int off = cg_local_offset(cg, e->call.func->ident);
+                        if (off > 0) {
+                            cg_emit(cg, "    callq *-%d(%%rbp)", off);
+                        } else {
+                            // Fallback to direct call
+                            cg_emit(cg, "    callq %s%s", cg_sym_prefix(cg), e->call.func->ident);
+                        }
+                    }
                 }
                 break;
             }
@@ -3501,6 +3530,12 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_emit(cg, "L%d:", else_lbl);
                 cg_expr(cg, e->if_expr.else_expr);
                 cg_emit(cg, "L%d:", end_lbl);
+                break;
+            }
+            case EXPR_LAMBDA: {
+                // Store lambda for later emission, return function pointer
+                cg->lambdas[cg->lambda_count++] = e;
+                cg_emit(cg, "    leaq _lambda%d(%%rip), %%rax", e->lambda.id);
                 break;
             }
             default: cg_emit(cg, "    # unsupported expr");
@@ -4082,7 +4117,21 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_emit(cg, "    ldr x%d, [sp], #16", i);
             }
             if (e->call.func->kind == EXPR_IDENT) {
-                cg_emit(cg, "    bl %s%s", cg_sym_prefix(cg), e->call.func->ident);
+                // Check if it's a local variable (function pointer) or global function
+                if (fn) {
+                    // Direct call to known function
+                    cg_emit(cg, "    bl %s%s", cg_sym_prefix(cg), e->call.func->ident);
+                } else {
+                    // Indirect call through function pointer variable
+                    int off = cg_local_offset(cg, e->call.func->ident);
+                    if (off > 0) {
+                        cg_emit(cg, "    ldr x9, [x29, #%d]", 16 + off);
+                        cg_emit(cg, "    blr x9");
+                    } else {
+                        // Fallback to direct call
+                        cg_emit(cg, "    bl %s%s", cg_sym_prefix(cg), e->call.func->ident);
+                    }
+                }
             }
             break;
         }
@@ -4292,6 +4341,16 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             cg_emit(cg, "L%d:", else_lbl);
             cg_expr(cg, e->if_expr.else_expr);
             cg_emit(cg, "L%d:", end_lbl);
+            break;
+        }
+        
+        case EXPR_LAMBDA: {
+            // Store lambda for later emission, return function pointer
+            cg->lambdas[cg->lambda_count++] = e;
+            char label[64];
+            snprintf(label, sizeof(label), "%s_lambda%d", cg_sym_prefix(cg), e->lambda.id);
+            cg_emit_adrp(cg, "x0", label);
+            cg_emit_add_pageoff(cg, "x0", "x0", label);
             break;
         }
         
@@ -4870,6 +4929,87 @@ static void cg_function(CodeGen* cg, FnDef* fn) {
     cg_emit(cg, "    ret");
 }
 
+static void cg_emit_lambda_x86(CodeGen* cg, Expr* e) {
+    const char* pfx = cg_sym_prefix(cg);
+    cg_emit(cg, "    .p2align 4");
+    cg_emit(cg, "%s_lambda%d:", pfx, e->lambda.id);
+    cg_emit(cg, "    pushq %%rbp");
+    cg_emit(cg, "    movq %%rsp, %%rbp");
+    cg_emit(cg, "    subq $128, %%rsp");
+    
+    // Save parameters to locals
+    const char* regs[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+    int saved_local_count = cg->local_count;
+    int saved_stack_offset = cg->stack_offset;
+    cg->local_count = 0;
+    cg->stack_offset = 0;
+    
+    for (int i = 0; i < e->lambda.param_count && i < 6; i++) {
+        cg->stack_offset += 8;
+        strcpy(cg->locals[cg->local_count].name, e->lambda.params[i]);
+        cg->locals[cg->local_count].offset = cg->stack_offset;
+        cg->locals[cg->local_count].type = e->lambda.param_types[i];
+        cg->local_count++;
+        cg_emit(cg, "    movq %%%s, -%d(%%rbp)", regs[i], cg->stack_offset);
+    }
+    
+    for (int i = 0; i < e->lambda.body_count; i++) {
+        cg_stmt(cg, e->lambda.body[i]);
+    }
+    
+    cg_emit(cg, "    xorl %%eax, %%eax");
+    cg_emit(cg, "    leave");
+    cg_emit(cg, "    retq");
+    
+    cg->local_count = saved_local_count;
+    cg->stack_offset = saved_stack_offset;
+}
+
+static void cg_emit_lambda_arm(CodeGen* cg, Expr* e) {
+    const char* pfx = cg_sym_prefix(cg);
+    cg_emit(cg, "    .p2align 2");
+    cg_emit(cg, "%s_lambda%d:", pfx, e->lambda.id);
+    cg_emit(cg, "    stp x29, x30, [sp, #-256]!");
+    cg_emit(cg, "    mov x29, sp");
+    
+    // Save parameters to locals
+    int saved_local_count = cg->local_count;
+    int saved_stack_offset = cg->stack_offset;
+    cg->local_count = 0;
+    cg->stack_offset = 0;
+    
+    for (int i = 0; i < e->lambda.param_count && i < 8; i++) {
+        cg->stack_offset += 8;
+        strcpy(cg->locals[cg->local_count].name, e->lambda.params[i]);
+        cg->locals[cg->local_count].offset = cg->stack_offset;
+        cg->locals[cg->local_count].type = e->lambda.param_types[i];
+        cg->local_count++;
+        cg_emit(cg, "    str x%d, [x29, #%d]", i, 16 + cg->stack_offset);
+    }
+    
+    for (int i = 0; i < e->lambda.body_count; i++) {
+        cg_stmt(cg, e->lambda.body[i]);
+    }
+    
+    cg_emit(cg, "    mov x0, #0");
+    cg_emit(cg, "    ldp x29, x30, [sp], #256");
+    cg_emit(cg, "    ret");
+    
+    cg->local_count = saved_local_count;
+    cg->stack_offset = saved_stack_offset;
+}
+
+static void cg_emit_lambdas(CodeGen* cg) {
+    for (int i = 0; i < cg->lambda_count; i++) {
+        if (cg->arch == ARCH_X86_64) {
+            cg_emit_lambda_x86(cg, cg->lambdas[i]);
+        } else {
+            cg_emit_lambda_arm(cg, cg->lambdas[i]);
+        }
+        cg_emit(cg, "");
+    }
+}
+
 static void codegen_module(CodeGen* cg) {
     if (cg->arch == ARCH_X86_64) {
         if (cg->os == OS_MACOS) {
@@ -4892,6 +5032,9 @@ static void codegen_module(CodeGen* cg) {
                 cg_emit(cg, "");
             }
         }
+        
+        // Emit lambdas
+        cg_emit_lambdas(cg);
         
         const char* pfx = cg_sym_prefix(cg);
         
@@ -5122,6 +5265,9 @@ static void codegen_module(CodeGen* cg) {
             cg_emit(cg, "");
         }
     }
+    
+    // Emit lambdas
+    cg_emit_lambdas(cg);
     
     const char* pfx = cg_sym_prefix(cg);
     
