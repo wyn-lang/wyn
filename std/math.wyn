@@ -498,3 +498,123 @@ fn digits_count(n: int) -> int {
     return count
 }
 
+# Calculate median of integer array (must be sorted)
+fn median(arr: [int]) -> ?int {
+    let len: int = arr.len()
+    if len == 0 { return none }
+    let mid: int = len / 2
+    if len % 2 == 0 {
+        return some((arr[mid - 1] + arr[mid]) / 2)
+    }
+    return some(arr[mid])
+}
+
+# Calculate mode (most frequent value) in array
+fn mode(arr: [int]) -> ?int {
+    if arr.len() == 0 { return none }
+    let mut max_count: int = 0
+    let mut mode_val: int = arr[0]
+    let mut i: int = 0
+    while i < arr.len() {
+        let mut count: int = 0
+        let mut j: int = 0
+        while j < arr.len() {
+            if arr[j] == arr[i] {
+                count = count + 1
+            }
+            j = j + 1
+        }
+        if count > max_count {
+            max_count = count
+            mode_val = arr[i]
+        }
+        i = i + 1
+    }
+    return some(mode_val)
+}
+
+# Calculate variance of integer array (returns scaled integer, divide by 100 for actual)
+fn variance(arr: [int]) -> ?int {
+    let len: int = arr.len()
+    if len == 0 { return none }
+    let mut sum: int = 0
+    let mut i: int = 0
+    while i < len {
+        sum = sum + arr[i]
+        i = i + 1
+    }
+    let mean: int = sum / len
+    let mut sq_diff_sum: int = 0
+    i = 0
+    while i < len {
+        let diff: int = arr[i] - mean
+        sq_diff_sum = sq_diff_sum + (diff * diff)
+        i = i + 1
+    }
+    return some(sq_diff_sum / len)
+}
+
+# Calculate standard deviation (integer approximation)
+fn std_dev(arr: [int]) -> ?int {
+    let var: ?int = variance(arr)
+    let val: int = var ?? -1
+    if val < 0 { return none }
+    return some(isqrt(val))
+}
+
+# Calculate percentile (0-100) of sorted array
+fn percentile(arr: [int], p: int) -> ?int {
+    let len: int = arr.len()
+    if len == 0 or p < 0 or p > 100 { return none }
+    let idx: int = (len * p) / 100
+    if idx >= len { return some(arr[len - 1]) }
+    return some(arr[idx])
+}
+
+# Constrain angle to 0-360 range
+fn normalize_angle(degrees: int) -> int {
+    let mut angle: int = degrees % 360
+    if angle < 0 {
+        angle = angle + 360
+    }
+    return angle
+}
+
+# Convert degrees to radians
+fn deg_to_rad(degrees: float) -> float {
+    return degrees * 3.14159265359 / 180.0
+}
+
+# Convert radians to degrees
+fn rad_to_deg(radians: float) -> float {
+    return radians * 180.0 / 3.14159265359
+}
+
+# Calculate hypotenuse (Pythagorean theorem)
+fn hypot(a: float, b: float) -> float {
+    return sqrt(a * a + b * b)
+}
+
+# Calculate distance between two 2D points
+fn distance_2d(x1: float, y1: float, x2: float, y2: float) -> float {
+    let dx: float = x2 - x1
+    let dy: float = y2 - y1
+    return sqrt(dx * dx + dy * dy)
+}
+
+# Calculate Manhattan distance
+fn manhattan_distance(x1: int, y1: int, x2: int, y2: int) -> int {
+    return abs(x2 - x1) + abs(y2 - y1)
+}
+
+# Check if number is power of two
+fn is_power_of_two(n: int) -> bool {
+    return n > 0 and (n & (n - 1)) == 0
+}
+
+# Round to nearest multiple of n
+fn round_to_multiple(value: int, n: int) -> int {
+    if n == 0 { return value }
+    return ((value + n / 2) / n) * n
+}
+

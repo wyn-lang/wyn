@@ -366,3 +366,162 @@ fn print_kv(key: str, value: str) -> () {
     print_str(key + ": " + value + "\n")
     return ()
 }
+
+# Format bytes as human-readable size (KB, MB, GB)
+fn format_bytes(bytes: int) -> str {
+    if bytes < 1024 {
+        return int_to_str(bytes) + " B"
+    }
+    if bytes < 1048576 {
+        return int_to_str(bytes / 1024) + " KB"
+    }
+    if bytes < 1073741824 {
+        return int_to_str(bytes / 1048576) + " MB"
+    }
+    return int_to_str(bytes / 1073741824) + " GB"
+}
+
+# Format elapsed time in seconds as human-readable
+fn format_elapsed(seconds: int) -> str {
+    if seconds < 60 {
+        return int_to_str(seconds) + "s"
+    }
+    if seconds < 3600 {
+        let mins: int = seconds / 60
+        let secs: int = seconds % 60
+        return int_to_str(mins) + "m " + int_to_str(secs) + "s"
+    }
+    let hours: int = seconds / 3600
+    let mins: int = (seconds % 3600) / 60
+    return int_to_str(hours) + "h " + int_to_str(mins) + "m"
+}
+
+# Print a table row with columns
+fn print_table_row(cols: [str], widths: [int]) -> () {
+    let mut i: int = 0
+    while i < cols.len() {
+        let col: str = cols[i]
+        let width: int = widths[i]
+        let padding: int = width - col.len()
+        print_str(col)
+        let mut j: int = 0
+        while j < padding {
+            print_str(" ")
+            j = j + 1
+        }
+        if i < cols.len() - 1 {
+            print_str(" | ")
+        }
+        i = i + 1
+    }
+    print_str("\n")
+    return ()
+}
+
+# Print table header with separator
+fn print_table_header(headers: [str], widths: [int]) -> () {
+    print_table_row(headers, widths)
+    let mut total_width: int = 0
+    let mut i: int = 0
+    while i < widths.len() {
+        total_width = total_width + widths[i]
+        if i < widths.len() - 1 {
+            total_width = total_width + 3
+        }
+        i = i + 1
+    }
+    print_separator(total_width, "-")
+    return ()
+}
+
+# Format number with sign prefix
+fn format_signed(n: int) -> str {
+    if n > 0 {
+        return "+" + int_to_str(n)
+    }
+    return int_to_str(n)
+}
+
+# Format boolean as Yes/No
+fn format_yes_no(b: bool) -> str {
+    return if b then "Yes" else "No"
+}
+
+# Format optional int for display
+fn format_optional_int(opt: ?int) -> str {
+    match opt {
+        some(n) => return int_to_str(n)
+        none => return "N/A"
+    }
+}
+
+# Print progress bar
+fn print_progress(current: int, total: int, width: int) -> () {
+    let percent: int = (current * 100) / total
+    let filled: int = (current * width) / total
+    print_str("[")
+    let mut i: int = 0
+    while i < width {
+        if i < filled {
+            print_str("=")
+        } else {
+            print_str(" ")
+        }
+        i = i + 1
+    }
+    print_str("] " + int_to_str(percent) + "%\n")
+    return ()
+}
+
+# Print centered text
+fn print_centered(text: str, width: int) -> () {
+    let padding: int = (width - text.len()) / 2
+    let mut i: int = 0
+    while i < padding {
+        print_str(" ")
+        i = i + 1
+    }
+    print_line(text)
+    return ()
+}
+
+# Format list with bullets
+fn format_list_item(item: str, bullet: str) -> str {
+    return bullet + " " + item
+}
+
+# Print numbered list
+fn print_numbered_list(items: [str]) -> () {
+    let mut i: int = 0
+    while i < items.len() {
+        print_str(int_to_str(i + 1) + ". " + items[i] + "\n")
+        i = i + 1
+    }
+    return ()
+}
+
+# Print bulleted list
+fn print_bulleted_list(items: [str]) -> () {
+    let mut i: int = 0
+    while i < items.len() {
+        print_str("• " + items[i] + "\n")
+        i = i + 1
+    }
+    return ()
+}
+
+# Format time in HH:MM:SS
+fn format_time(hours: int, minutes: int, seconds: int) -> str {
+    let h: str = if hours < 10 then "0" + int_to_str(hours) else int_to_str(hours)
+    let m: str = if minutes < 10 then "0" + int_to_str(minutes) else int_to_str(minutes)
+    let s: str = if seconds < 10 then "0" + int_to_str(seconds) else int_to_str(seconds)
+    return h + ":" + m + ":" + s
+}
+
+# Print banner with title
+fn print_banner(title: str, width: int) -> () {
+    print_separator(width, "=")
+    print_centered(title, width)
+    print_separator(width, "=")
+    return ()
+}

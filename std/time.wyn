@@ -518,3 +518,142 @@ fn start_of_day(timestamp: int) -> int {
 fn end_of_day(timestamp: int) -> int {
     return start_of_day(timestamp) + 86399
 }
+
+# Get quarter of year (1-4) from month
+fn quarter_of_year(month: int) -> int {
+    if month >= 1 and month <= 3 { return 1 }
+    if month >= 4 and month <= 6 { return 2 }
+    if month >= 7 and month <= 9 { return 3 }
+    return 4
+}
+
+# Check if date is weekend (Saturday or Sunday)
+fn is_weekend(year: int, month: int, day: int) -> bool {
+    let dow: int = day_of_week(year, month, day)
+    return dow == 0 or dow == 6
+}
+
+# Check if date is weekday (Monday-Friday)
+fn is_weekday(year: int, month: int, day: int) -> bool {
+    return not is_weekend(year, month, day)
+}
+
+# Get start of week (Monday) for a given date
+fn start_of_week(year: int, month: int, day: int) -> [int] {
+    let dow: int = day_of_week(year, month, day)
+    let days_back: int = if dow == 0 then 6 else dow - 1
+    return add_days(year, month, day, 0 - days_back)
+}
+
+# Get end of week (Sunday) for a given date
+fn end_of_week(year: int, month: int, day: int) -> [int] {
+    let dow: int = day_of_week(year, month, day)
+    let days_forward: int = if dow == 0 then 0 else 7 - dow
+    return add_days(year, month, day, days_forward)
+}
+
+# Get start of month (first day)
+fn start_of_month(year: int, month: int) -> [int] {
+    return [year, month, 1]
+}
+
+# Get end of month (last day)
+fn end_of_month(year: int, month: int) -> [int] {
+    return [year, month, days_in_month(month, year)]
+}
+
+# Get start of year (January 1)
+fn start_of_year(year: int) -> [int] {
+    return [year, 1, 1]
+}
+
+# Get end of year (December 31)
+fn end_of_year(year: int) -> [int] {
+    return [year, 12, 31]
+}
+
+# Add months to a date
+fn add_months(year: int, month: int, day: int, months_to_add: int) -> [int] {
+    let mut m: int = month + months_to_add
+    let mut y: int = year
+    while m > 12 {
+        m = m - 12
+        y = y + 1
+    }
+    while m < 1 {
+        m = m + 12
+        y = y - 1
+    }
+    let max_day: int = days_in_month(m, y)
+    let d: int = if day > max_day then max_day else day
+    return [y, m, d]
+}
+
+# Add years to a date
+fn add_years(year: int, month: int, day: int, years_to_add: int) -> [int] {
+    let y: int = year + years_to_add
+    let max_day: int = days_in_month(month, y)
+    let d: int = if day > max_day then max_day else day
+    return [y, month, d]
+}
+
+# Calculate business days between two dates (excludes weekends)
+fn business_days_between(y1: int, m1: int, d1: int, y2: int, m2: int, d2: int) -> int {
+    let total_days: int = days_between(y1, m1, d1, y2, m2, d2)
+    let mut count: int = 0
+    let mut i: int = 0
+    while i <= total_days {
+        let date: [int] = add_days(y1, m1, d1, i)
+        if is_weekday(date[0], date[1], date[2]) {
+            count = count + 1
+        }
+        i = i + 1
+    }
+    return count
+}
+
+# Format duration in words (e.g., "2 hours 30 minutes")
+fn format_duration_words(d: Duration) -> str {
+    let secs: int = d.seconds
+    if secs < 60 { return int_to_str(secs) + " seconds" }
+    if secs < 3600 {
+        let mins: int = secs / 60
+        return int_to_str(mins) + " minutes"
+    }
+    if secs < 86400 {
+        let hours: int = secs / 3600
+        return int_to_str(hours) + " hours"
+    }
+    let days: int = secs / 86400
+    return int_to_str(days) + " days"
+}
+
+# Compare two dates (-1 if first is earlier, 0 if equal, 1 if later)
+fn compare_dates(y1: int, m1: int, d1: int, y2: int, m2: int, d2: int) -> int {
+    if y1 < y2 { return -1 }
+    if y1 > y2 { return 1 }
+    if m1 < m2 { return -1 }
+    if m1 > m2 { return 1 }
+    if d1 < d2 { return -1 }
+    if d1 > d2 { return 1 }
+    return 0
+}
+
+# Get elapsed time string (e.g., "2 days ago", "in 3 hours")
+fn time_ago(timestamp: int, current: int) -> str {
+    let diff: int = current - timestamp
+    if diff < 0 {
+        return "in the future"
+    }
+    if diff < 60 { return int_to_str(diff) + " seconds ago" }
+    if diff < 3600 {
+        let mins: int = diff / 60
+        return int_to_str(mins) + " minutes ago"
+    }
+    if diff < 86400 {
+        let hours: int = diff / 3600
+        return int_to_str(hours) + " hours ago"
+    }
+    let days: int = diff / 86400
+    return int_to_str(days) + " days ago"
+}

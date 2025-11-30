@@ -4510,8 +4510,12 @@ static void cg_function(CodeGen* cg, FnDef* fn) {
 
 static void codegen_module(CodeGen* cg) {
     if (cg->arch == ARCH_X86_64) {
-        cg_emit(cg, "    .section __TEXT,__text,regular,pure_instructions");
-        cg_emit(cg, "    .build_version macos, 14, 0");
+        if (cg->os == OS_MACOS) {
+            cg_emit(cg, "    .section __TEXT,__text,regular,pure_instructions");
+            cg_emit(cg, "    .build_version macos, 14, 0");
+        } else {
+            cg_emit(cg, "    .text");
+        }
         
         for (int i = 0; i < cg->module->function_count; i++) {
             cg_function(cg, &cg->module->functions[i]);
@@ -4603,7 +4607,11 @@ static void codegen_module(CodeGen* cg) {
         cg_emit(cg, "    popq %%rbp");
         cg_emit(cg, "    retq");
         
-        cg_emit(cg, "    .section __DATA,__data");
+        if (cg->os == OS_MACOS) {
+            cg_emit(cg, "    .section __DATA,__data");
+        } else {
+            cg_emit(cg, "    .data");
+        }
         cg_emit(cg, "L_.fmt:");
         cg_emit(cg, "    .asciz \"%%lld\\n\"");
         cg_emit(cg, "L_.sfmt:");
@@ -4625,8 +4633,12 @@ static void codegen_module(CodeGen* cg) {
     }
     
     // ARM64
-    cg_emit(cg, "    .section __TEXT,__text,regular,pure_instructions");
-    cg_emit(cg, "    .build_version macos, 14, 0");
+    if (cg->os == OS_MACOS) {
+        cg_emit(cg, "    .section __TEXT,__text,regular,pure_instructions");
+        cg_emit(cg, "    .build_version macos, 14, 0");
+    } else {
+        cg_emit(cg, "    .text");
+    }
     
     for (int i = 0; i < cg->module->function_count; i++) {
         cg_function(cg, &cg->module->functions[i]);
@@ -4726,7 +4738,11 @@ static void codegen_module(CodeGen* cg) {
     cg_emit(cg, "    add sp, sp, #64");
     cg_emit(cg, "    ret");
     
-    cg_emit(cg, "    .section __DATA,__data");
+    if (cg->os == OS_MACOS) {
+        cg_emit(cg, "    .section __DATA,__data");
+    } else {
+        cg_emit(cg, "    .data");
+    }
     cg_emit(cg, "L_.fmt:");
     cg_emit(cg, "    .asciz \"%%lld\\n\"");
     cg_emit(cg, "L_.sfmt:");

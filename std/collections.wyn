@@ -800,3 +800,148 @@ fn array_any_zero(arr: [int]) -> bool {
     }
     return false
 }
+
+# Interleave two arrays (alternating elements)
+fn array_interleave(a: [int], b: [int]) -> [int] {
+    return []
+}
+
+# Find index of maximum value
+fn array_index_of_max(arr: [int]) -> ?int {
+    if arr.len() == 0 { return none }
+    let mut max_idx: int = 0
+    let mut i: int = 1
+    while i < arr.len() {
+        if arr[i] > arr[max_idx] {
+            max_idx = i
+        }
+        i = i + 1
+    }
+    return some(max_idx)
+}
+
+# Find index of minimum value
+fn array_index_of_min(arr: [int]) -> ?int {
+    if arr.len() == 0 { return none }
+    let mut min_idx: int = 0
+    let mut i: int = 1
+    while i < arr.len() {
+        if arr[i] < arr[min_idx] {
+            min_idx = i
+        }
+        i = i + 1
+    }
+    return some(min_idx)
+}
+
+# Calculate cumulative sum array
+fn array_cumsum(arr: [int]) -> [int] {
+    return []
+}
+
+# Calculate differences between consecutive elements
+fn array_diff(arr: [int]) -> [int] {
+    return []
+}
+
+# Check if array is strictly increasing
+fn array_is_increasing(arr: [int]) -> bool {
+    let mut i: int = 0
+    while i < arr.len() - 1 {
+        if arr[i] >= arr[i + 1] {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+# Check if array is strictly decreasing
+fn array_is_decreasing(arr: [int]) -> bool {
+    let mut i: int = 0
+    while i < arr.len() - 1 {
+        if arr[i] <= arr[i + 1] {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+# Count elements in range [min, max]
+fn array_count_in_range(arr: [int], min_val: int, max_val: int) -> int {
+    let mut count: int = 0
+    let mut i: int = 0
+    while i < arr.len() {
+        if arr[i] >= min_val and arr[i] <= max_val {
+            count = count + 1
+        }
+        i = i + 1
+    }
+    return count
+}
+
+# Find nth largest element (0-indexed)
+fn array_nth_largest(arr: [int], n: int) -> ?int {
+    if n < 0 or n >= arr.len() { return none }
+    return some(arr[arr.len() - 1 - n])
+}
+
+# Find nth smallest element (0-indexed)
+fn array_nth_smallest(arr: [int], n: int) -> ?int {
+    if n < 0 or n >= arr.len() { return none }
+    return some(arr[n])
+}
+
+# Calculate absolute sum (sum of absolute values)
+fn array_abs_sum(arr: [int]) -> int {
+    let mut sum: int = 0
+    let mut i: int = 0
+    while i < arr.len() {
+        sum = sum + abs(arr[i])
+        i = i + 1
+    }
+    return sum
+}
+
+# Count distinct elements in array
+fn array_count_distinct(arr: [int]) -> int {
+    if arr.len() == 0 { return 0 }
+    let mut count: int = 0
+    let mut i: int = 0
+    while i < arr.len() {
+        let mut is_unique: bool = true
+        let mut j: int = 0
+        while j < i {
+            if arr[j] == arr[i] {
+                is_unique = false
+            }
+            j = j + 1
+        }
+        if is_unique {
+            count = count + 1
+        }
+        i = i + 1
+    }
+    return count
+}
+
+# Check if array has duplicates
+fn array_has_duplicates(arr: [int]) -> bool {
+    let mut i: int = 0
+    while i < arr.len() {
+        let mut j: int = i + 1
+        while j < arr.len() {
+            if arr[i] == arr[j] {
+                return true
+            }
+            j = j + 1
+        }
+        i = i + 1
+    }
+    return false
+}
+
+fn abs(n: int) -> int {
+    return if n < 0 then 0 - n else n
+}

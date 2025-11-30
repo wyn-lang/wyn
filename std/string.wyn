@@ -700,3 +700,112 @@ fn count_char(s: str, ch: str) -> int {
     }
     return count
 }
+
+# Check if string is a valid email (basic check)
+fn is_valid_email(s: str) -> bool {
+    let at_idx: ?int = index_of(s, "@")
+    match at_idx {
+        none => return false
+        some(idx) => {
+            if idx == 0 or idx == s.len() - 1 {
+                return false
+            }
+            let dot_idx: ?int = last_index_of(s, ".")
+            match dot_idx {
+                none => return false
+                some(d) => return d > idx and d < s.len() - 1
+            }
+        }
+    }
+}
+
+# Check if string is a valid URL (basic check)
+fn is_valid_url(s: str) -> bool {
+    return starts_with(s, "http://") or starts_with(s, "https://")
+}
+
+# Extract substring between two delimiters
+fn substring_between(s: str, start_delim: str, end_delim: str) -> ?str {
+    let start_idx: ?int = index_of(s, start_delim)
+    match start_idx {
+        none => return none
+        some(si) => {
+            let search_start: int = si + start_delim.len()
+            let remaining: str = s[search_start:]
+            let end_idx: ?int = index_of(remaining, end_delim)
+            match end_idx {
+                none => return none
+                some(ei) => return some(remaining[:ei])
+            }
+        }
+    }
+}
+
+# Levenshtein distance between two strings
+fn levenshtein_distance(a: str, b: str) -> int {
+    let alen: int = a.len()
+    let blen: int = b.len()
+    if alen == 0 { return blen }
+    if blen == 0 { return alen }
+    let mut prev: int = 0
+    let mut curr: int = 0
+    let mut i: int = 0
+    while i <= alen {
+        let mut j: int = 0
+        while j <= blen {
+            if i == 0 {
+                curr = j
+            } else if j == 0 {
+                curr = i
+            } else {
+                let cost: int = if a[i-1:i] == b[j-1:j] then 0 else 1
+                let del: int = prev + 1
+                let ins: int = curr + 1
+                let sub: int = prev + cost
+                curr = min(min(del, ins), sub)
+            }
+            prev = curr
+            j = j + 1
+        }
+        i = i + 1
+    }
+    return curr
+}
+
+# Swap case of all letters
+fn swap_case(s: str) -> str {
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < s.len() {
+        let c: str = s[i:i+1]
+        let code: int = ord(c)
+        if code >= 65 and code <= 90 {
+            result = result + chr(code + 32)
+        } else if code >= 97 and code <= 122 {
+            result = result + chr(code - 32)
+        } else {
+            result = result + c
+        }
+        i = i + 1
+    }
+    return result
+}
+
+# Check if string matches a simple wildcard pattern (* and ?)
+fn matches_wildcard(s: str, pattern: str) -> bool {
+    if pattern == "*" { return true }
+    if pattern.len() == 0 { return s.len() == 0 }
+    if s.len() == 0 { return pattern.len() == 0 }
+    let p_first: str = pattern[0:1]
+    if p_first == "*" {
+        return matches_wildcard(s, pattern[1:]) or matches_wildcard(s[1:], pattern)
+    }
+    if p_first == "?" or p_first == s[0:1] {
+        return matches_wildcard(s[1:], pattern[1:])
+    }
+    return false
+}
+
+fn min(a: int, b: int) -> int {
+    return if a < b then a else b
+}
