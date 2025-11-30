@@ -844,3 +844,135 @@ fn float_to_int(x: float) -> int {
     return 0 - result
 }
 
+
+
+# Inverse lerp: find t where value is between a and b
+fn inverse_lerp(a: float, b: float, value: float) -> float {
+    if a == b { return 0.0 }
+    return (value - a) / (b - a)
+}
+
+# Map value from one range to another (remap)
+fn remap(value: float, in_min: float, in_max: float, out_min: float, out_max: float) -> float {
+    if in_min == in_max { return out_min }
+    let t: float = (value - in_min) / (in_max - in_min)
+    return out_min + t * (out_max - out_min)
+}
+
+# Binomial coefficient (n choose k)
+fn binomial(n: int, k: int) -> int {
+    if k > n { return 0 }
+    if k == 0 or k == n { return 1 }
+    let k_adj: int = if k > n - k then n - k else k
+    let mut result: int = 1
+    let mut i: int = 0
+    while i < k_adj {
+        result = result * (n - i) / (i + 1)
+        i = i + 1
+    }
+    return result
+}
+
+# Next prime after n
+fn next_prime(n: int) -> int {
+    let mut candidate: int = n + 1
+    while not is_prime(candidate) {
+        candidate = candidate + 1
+    }
+    return candidate
+}
+
+# Count primes up to n
+fn count_primes(n: int) -> int {
+    if n < 2 { return 0 }
+    let mut count: int = 0
+    let mut i: int = 2
+    while i <= n {
+        if is_prime(i) {
+            count = count + 1
+        }
+        i = i + 1
+    }
+    return count
+}
+
+# Cube root approximation
+fn cbrt(n: float) -> float {
+    if n == 0.0 { return 0.0 }
+    let mut x: float = n
+    let mut i: int = 0
+    while i < 20 {
+        x = (2.0 * x + n / (x * x)) / 3.0
+        i = i + 1
+    }
+    return x
+}
+
+# Natural logarithm approximation (ln(x))
+fn ln(x: float) -> float {
+    if x <= 0.0 { return 0.0 }
+    let mut result: float = 0.0
+    let mut y: float = (x - 1.0) / (x + 1.0)
+    let mut y_sq: float = y * y
+    let mut term: float = y
+    let mut i: int = 1
+    while i < 20 {
+        result = result + term / i.to_float()
+        term = term * y_sq
+        i = i + 2
+    }
+    return 2.0 * result
+}
+
+# Logarithm base 2
+fn log2(x: float) -> float {
+    return ln(x) / 0.693147181
+}
+
+# Power function for floats
+fn pow_float(base: float, exp: float) -> float {
+    if exp == 0.0 { return 1.0 }
+    if base == 0.0 { return 0.0 }
+    return exp(exp * ln(base))
+}
+
+# Hyperbolic sine
+fn sinh(x: float) -> float {
+    let ex: float = exp(x)
+    let e_neg_x: float = exp(0.0 - x)
+    return (ex - e_neg_x) / 2.0
+}
+
+# Hyperbolic cosine
+fn cosh(x: float) -> float {
+    let ex: float = exp(x)
+    let e_neg_x: float = exp(0.0 - x)
+    return (ex + e_neg_x) / 2.0
+}
+
+# Hyperbolic tangent
+fn tanh(x: float) -> float {
+    let ex: float = exp(x)
+    let e_neg_x: float = exp(0.0 - x)
+    return (ex - e_neg_x) / (ex + e_neg_x)
+}
+
+# Distance between two 3D points
+fn distance_3d(x1: float, y1: float, z1: float, x2: float, y2: float, z2: float) -> float {
+    let dx: float = x2 - x1
+    let dy: float = y2 - y1
+    let dz: float = z2 - z1
+    return sqrt(dx * dx + dy * dy + dz * dz)
+}
+
+# Chebyshev distance (2D)
+fn chebyshev_distance(x1: int, y1: int, x2: int, y2: int) -> int {
+    let dx: int = abs(x2 - x1)
+    let dy: int = abs(y2 - y1)
+    return if dx > dy then dx else dy
+}
+
+# Modular inverse (a^-1 mod m) using Fermat's little theorem
+fn mod_inverse(a: int, m: int) -> int {
+    return mod_pow(a, m - 2, m)
+}
