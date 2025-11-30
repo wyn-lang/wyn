@@ -525,3 +525,97 @@ fn print_banner(title: str, width: int) -> () {
     print_separator(width, "=")
     return ()
 }
+
+# Format integer in octal (no prefix)
+fn format_octal(n: int) -> str {
+    if n == 0 { return "0" }
+    let mut result: str = ""
+    let mut val: int = n
+    while val > 0 {
+        result = int_to_str(val % 8) + result
+        val = val / 8
+    }
+    return result
+}
+
+# Format integer as Roman numerals (1-3999)
+fn format_roman(n: int) -> str {
+    if n <= 0 or n >= 4000 { return "?" }
+    let mut result: str = ""
+    let mut num: int = n
+    while num >= 1000 { result = result + "M"; num = num - 1000 }
+    while num >= 900 { result = result + "CM"; num = num - 900 }
+    while num >= 500 { result = result + "D"; num = num - 500 }
+    while num >= 400 { result = result + "CD"; num = num - 400 }
+    while num >= 100 { result = result + "C"; num = num - 100 }
+    while num >= 90 { result = result + "XC"; num = num - 90 }
+    while num >= 50 { result = result + "L"; num = num - 50 }
+    while num >= 40 { result = result + "XL"; num = num - 40 }
+    while num >= 10 { result = result + "X"; num = num - 10 }
+    while num >= 9 { result = result + "IX"; num = num - 9 }
+    while num >= 5 { result = result + "V"; num = num - 5 }
+    while num >= 4 { result = result + "IV"; num = num - 4 }
+    while num >= 1 { result = result + "I"; num = num - 1 }
+    return result
+}
+
+# Print 2D grid of integers
+fn print_grid(grid: [[int]], cell_width: int) -> () {
+    let mut i: int = 0
+    while i < grid.len() {
+        let row: [int] = grid[i]
+        let mut j: int = 0
+        while j < row.len() {
+            let s: str = int_to_str(row[j])
+            let padding: int = cell_width - s.len()
+            let mut k: int = 0
+            while k < padding {
+                print_str(" ")
+                k = k + 1
+            }
+            print_str(s)
+            if j < row.len() - 1 {
+                print_str(" ")
+            }
+            j = j + 1
+        }
+        print_str("\n")
+        i = i + 1
+    }
+    return ()
+}
+
+# Format integer with custom base (2-36)
+fn format_base(n: int, base: int) -> str {
+    if base < 2 or base > 36 { return "?" }
+    if n == 0 { return "0" }
+    let digits: str = "0123456789abcdefghijklmnopqrstuvwxyz"
+    let mut result: str = ""
+    let mut val: int = n
+    while val > 0 {
+        let digit: int = val % base
+        result = digits[digit:digit+1] + result
+        val = val / base
+    }
+    return result
+}
+
+# Print aligned columns (left, center, right)
+fn print_aligned(left: str, center: str, right: str, width: int) -> () {
+    let center_start: int = (width - center.len()) / 2
+    let right_start: int = width - right.len()
+    print_str(left)
+    let mut i: int = left.len()
+    while i < center_start {
+        print_str(" ")
+        i = i + 1
+    }
+    print_str(center)
+    i = center_start + center.len()
+    while i < right_start {
+        print_str(" ")
+        i = i + 1
+    }
+    print_str(right + "\n")
+    return ()
+}
