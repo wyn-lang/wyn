@@ -942,6 +942,90 @@ fn array_has_duplicates(arr: [int]) -> bool {
     return false
 }
 
+# Find kth smallest element using selection (0-indexed, requires sorted array)
+fn array_kth_smallest(arr: [int], k: int) -> ?int {
+    if k < 0 or k >= arr.len() { return none }
+    return some(arr[k])
+}
+
+# Check if array is a permutation of another
+fn array_is_permutation(a: [int], b: [int]) -> bool {
+    if a.len() != b.len() { return false }
+    let mut i: int = 0
+    while i < a.len() {
+        if array_count(b, a[i]) != array_count(a, a[i]) {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+# Find longest increasing subsequence length
+fn array_lis_length(arr: [int]) -> int {
+    if arr.len() == 0 { return 0 }
+    let mut max_len: int = 1
+    let mut i: int = 0
+    while i < arr.len() {
+        let mut len: int = 1
+        let mut j: int = i + 1
+        let mut prev: int = arr[i]
+        while j < arr.len() {
+            if arr[j] > prev {
+                len = len + 1
+                prev = arr[j]
+            }
+            j = j + 1
+        }
+        if len > max_len {
+            max_len = len
+        }
+        i = i + 1
+    }
+    return max_len
+}
+
+# Calculate dot product of two integer arrays
+fn array_dot_product(a: [int], b: [int]) -> ?int {
+    if a.len() != b.len() { return none }
+    let mut sum: int = 0
+    let mut i: int = 0
+    while i < a.len() {
+        sum = sum + (a[i] * b[i])
+        i = i + 1
+    }
+    return some(sum)
+}
+
+# Check if array is arithmetic progression
+fn array_is_arithmetic(arr: [int]) -> bool {
+    if arr.len() < 2 { return true }
+    let diff: int = arr[1] - arr[0]
+    let mut i: int = 1
+    while i < arr.len() - 1 {
+        if arr[i + 1] - arr[i] != diff {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+# Check if array is geometric progression
+fn array_is_geometric(arr: [int]) -> bool {
+    if arr.len() < 2 { return true }
+    if arr[0] == 0 { return false }
+    let ratio: int = arr[1] / arr[0]
+    let mut i: int = 1
+    while i < arr.len() - 1 {
+        if arr[i] == 0 or arr[i + 1] / arr[i] != ratio {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
 fn abs(n: int) -> int {
     return if n < 0 then 0 - n else n
 }
