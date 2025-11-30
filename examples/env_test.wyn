@@ -1,0 +1,7 @@
+# Test getenv() builtin
+
+fn main() {
+    let home: str = getenv("HOME")
+    print_str("HOME=")
+    print_str(home)
+}
