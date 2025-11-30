@@ -46,7 +46,7 @@ fn checksum_add(data: [int]) -> int {
         sum = sum + data[i]
         i = i + 1
     }
-    return sum & 0xff
+    return sum & 255
 }
 
 # XOR checksum
@@ -94,8 +94,8 @@ fn crc8(data: [int]) -> int {
         crc = crc ^ data[i]
         let mut j: int = 0
         while j < 8 {
-            if (crc & 0x80) != 0 {
-                crc = (crc << 1) ^ 0x07
+            if (crc & 128) != 0 {
+                crc = (crc << 1) ^ 7
             } else {
                 crc = crc << 1
             }
@@ -103,7 +103,7 @@ fn crc8(data: [int]) -> int {
         }
         i = i + 1
     }
-    return crc & 0xff
+    return crc & 255
 }
 
 # Luhn algorithm (credit card validation)
@@ -193,7 +193,7 @@ fn pearson_hash(data: [int]) -> int {
     let mut hash: int = 0
     let mut i: int = 0
     while i < data.len() {
-        hash = ((hash + data[i]) * 31) & 0xff
+        hash = ((hash + data[i]) * 31) & 255
         i = i + 1
     }
     return hash
@@ -205,19 +205,19 @@ fn murmur3(data: [int], seed: int) -> int {
     let mut i: int = 0
     while i < data.len() {
         let mut k: int = data[i]
-        k = k * 0xcc9e2d51
+        k = k * 3432918353
         k = (k << 15) | (k >> 17)
-        k = k * 0x1b873593
+        k = k * 461845907
         hash = hash ^ k
         hash = (hash << 13) | (hash >> 19)
-        hash = hash * 5 + 0xe6546b64
+        hash = hash * 5 + 3864292196
         i = i + 1
     }
     hash = hash ^ data.len()
     hash = hash ^ (hash >> 16)
-    hash = hash * 0x85ebca6b
+    hash = hash * 2246822507
     hash = hash ^ (hash >> 13)
-    hash = hash * 0xc2b2ae35
+    hash = hash * 3266489909
     hash = hash ^ (hash >> 16)
     return hash
 }
@@ -268,7 +268,7 @@ fn cityhash(data: [int]) -> int {
     let mut i: int = 0
     while i < data.len() {
         hash = hash ^ data[i]
-        hash = hash * 0x9e3779b9
+        hash = hash * 2654435769
         hash = hash ^ (hash >> 16)
         i = i + 1
     }

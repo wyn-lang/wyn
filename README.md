@@ -104,6 +104,7 @@ The Stage 0 compiler can compile programs with:
 - `int_to_float()`, `float_to_int()` float conversions
 - `ord()`, `chr()` character code conversions
 - `read_file()` for reading files to strings
+- `write_file()` for writing strings to files
 - `read_line()` for reading stdin input
 - `clock()` for timing/benchmarking
 - `random()` for random number generation

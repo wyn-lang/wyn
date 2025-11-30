@@ -116,7 +116,7 @@ fn parity(n: int) -> int {
 
 # Swap adjacent bits
 fn swap_adjacent_bits(n: int) -> int {
-    return ((n & 0xaaaaaaaa) >> 1) | ((n & 0x55555555) << 1)
+    return ((n & 2863311530) >> 1) | ((n & 1431655765) << 1)
 }
 
 # Get lowest set bit
@@ -318,15 +318,15 @@ fn sign_extend(value: int, bits: int) -> int {
 
 # Pack four bytes into int
 fn pack_bytes(b0: int, b1: int, b2: int, b3: int) -> int {
-    return (b0 & 0xff) | ((b1 & 0xff) << 8) | ((b2 & 0xff) << 16) | ((b3 & 0xff) << 24)
+    return (b0 & 255) | ((b1 & 255) << 8) | ((b2 & 255) << 16) | ((b3 & 255) << 24)
 }
 
 # Unpack int into four bytes
 fn unpack_bytes(n: int) -> (int, int, int, int) {
-    let b0: int = n & 0xff
-    let b1: int = (n >> 8) & 0xff
-    let b2: int = (n >> 16) & 0xff
-    let b3: int = (n >> 24) & 0xff
+    let b0: int = n & 255
+    let b1: int = (n >> 8) & 255
+    let b2: int = (n >> 16) & 255
+    let b3: int = (n >> 24) & 255
     return (b0, b1, b2, b3)
 }
 
@@ -355,7 +355,7 @@ fn has_alternating_bits(n: int) -> bool {
 # Bit reversal for 8-bit value
 fn reverse_byte(n: int) -> int {
     let mut result: int = 0
-    let mut val: int = n & 0xff
+    let mut val: int = n & 255
     let mut i: int = 0
     while i < 8 {
         result = (result << 1) | (val & 1)
@@ -368,7 +368,7 @@ fn reverse_byte(n: int) -> int {
 # Bit reversal for 16-bit value
 fn reverse_short(n: int) -> int {
     let mut result: int = 0
-    let mut val: int = n & 0xffff
+    let mut val: int = n & 65535
     let mut i: int = 0
     while i < 16 {
         result = (result << 1) | (val & 1)
@@ -397,6 +397,6 @@ fn broadcast_bit(n: int, pos: int) -> int {
 
 # Replicate low byte to all bytes
 fn replicate_byte(b: int) -> int {
-    let byte: int = b & 0xff
+    let byte: int = b & 255
     return byte | (byte << 8) | (byte << 16) | (byte << 24)
 }

@@ -564,17 +564,13 @@ fn array_count_less(arr: [int], value: int) -> int {
 
 # Find range (max - min) of array, returns none if empty
 fn array_range(arr: [int]) -> ?int {
+    if arr.len() == 0 {
+        return none
+    }
     let max_val: ?int = array_max(arr)
     let min_val: ?int = array_min(arr)
-    match max_val {
-        some(max) => {
-            match min_val {
-                some(min) => return some(max - min)
-                none => return none
-            }
-        }
-        none => return none
-    }
+    # Unwrap with !! since we know array is not empty
+    return some(max_val! - min_val!)
 }
 
 # Binary search in sorted array, returns index if found or none

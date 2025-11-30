@@ -273,20 +273,22 @@ fn parse_header(header: str) -> ?[str] {
 # Example: header_key("Content-Type: application/json") -> "Content-Type"
 fn header_key(header: str) -> str {
     let parsed: ?[str] = parse_header(header)
-    match parsed {
-        some(parts) => return parts[0]
-        none => return ""
+    if parsed == none {
+        return ""
     }
+    let parts: [str] = parsed!
+    return parts[0]
 }
 
 # Get header value from a header string
 # Example: header_value("Content-Type: application/json") -> "application/json"
 fn header_value(header: str) -> str {
     let parsed: ?[str] = parse_header(header)
-    match parsed {
-        some(parts) => return parts[1]
-        none => return ""
+    if parsed == none {
+        return ""
     }
+    let parts: [str] = parsed!
+    return parts[1]
 }
 
 # Common header name constants

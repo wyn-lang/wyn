@@ -11,7 +11,7 @@ fn seed(s: int) {
 
 # Generate next random integer (LCG algorithm)
 fn rand() -> int {
-    rng_state = (rng_state * 1103515245 + 12345) & 0x7fffffff
+    rng_state = (rng_state * 1103515245 + 12345) & 2147483647
     return rng_state
 }
 
