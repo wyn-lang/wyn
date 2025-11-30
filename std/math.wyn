@@ -585,9 +585,67 @@ fn deg_to_rad(degrees: float) -> float {
     return degrees * 3.14159265359 / 180.0
 }
 
-# Convert radians to degrees
-fn rad_to_deg(radians: float) -> float {
-    return radians * 180.0 / 3.14159265359
+        let q: int = mm / aa
+        let r: int = mm % aa
+        let nx: int = u - q * x
+        let ny: int = v - q * y
+        mm = aa
+        aa = r
+        u = x
+        v = y
+        x = nx
+        y = ny
+    }
+    let result: int = u % m
+    return some(if result < 0 then result + m else result)
+}
+
+# Check if three numbers form Pythagorean triple
+fn is_pythagorean_triple(a: int, b: int, c: int) -> bool {
+    return a * a + b * b == c * c or a * a + c * c == b * b or b * b + c * c == a * a
+}
+
+# Collatz sequence length (3n+1 problem)
+fn collatz_length(n: int) -> int {
+    if n <= 0 { return 0 }
+    let mut len: int = 0
+    let mut num: int = n
+    while num != 1 {
+        if num % 2 == 0 {
+            num = num / 2
+        } else {
+            num = 3 * num + 1
+        }
+        len = len + 1
+    }
+    return len
+}
+
+# Sum of divisors
+fn divisor_sum(n: int) -> int {
+    if n <= 0 { return 0 }
+    let mut sum: int = 0
+    let mut i: int = 1
+    while i * i <= n {
+        if n % i == 0 {
+            sum = sum + i
+            if i != n / i {
+                sum = sum + n / i
+            }
+        }
+        i = i + 1
+    }
+    return sum
+}
+
+# Check if number is abundant (sum of divisors > number)
+fn is_abundant(n: int) -> bool {
+    return divisor_sum(n) - n > n
+}
+
+# Check if number is deficient (sum of divisors < number)
+fn is_deficient(n: int) -> bool {
+    return divisor_sum(n) - n < n
 }
 
 # Calculate hypotenuse (Pythagorean theorem)
@@ -785,5 +843,4 @@ fn float_to_int(x: float) -> int {
     }
     return 0 - result
 }
-
 
