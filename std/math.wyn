@@ -976,3 +976,182 @@ fn chebyshev_distance(x1: int, y1: int, x2: int, y2: int) -> int {
 fn mod_inverse(a: int, m: int) -> int {
     return mod_pow(a, m - 2, m)
 }
+
+# Check if number is perfect (sum of proper divisors equals number)
+fn is_perfect(n: int) -> bool {
+    if n <= 1 { return false }
+    return divisor_sum(n) - n == n
+}
+
+# Nth triangular number (1+2+3+...+n)
+fn triangular(n: int) -> int {
+    if n <= 0 { return 0 }
+    return n * (n + 1) / 2
+}
+
+# Nth pentagonal number
+fn pentagonal(n: int) -> int {
+    return n * (3 * n - 1) / 2
+}
+
+# Nth hexagonal number
+fn hexagonal(n: int) -> int {
+    return n * (2 * n - 1)
+}
+
+# Check if number is triangular
+fn is_triangular(n: int) -> bool {
+    if n < 0 { return false }
+    let x: int = isqrt(8 * n + 1)
+    return x * x == 8 * n + 1 and (x - 1) % 2 == 0
+}
+
+# Catalan number (combinatorial)
+fn catalan(n: int) -> int {
+    if n <= 1 { return 1 }
+    return binomial(2 * n, n) / (n + 1)
+}
+
+# Bell number (number of partitions of a set)
+fn bell(n: int) -> int {
+    if n == 0 { return 1 }
+    if n == 1 { return 1 }
+    let mut result: int = 0
+    let mut k: int = 0
+    while k <= n - 1 {
+        result = result + binomial(n - 1, k) * bell(k)
+        k = k + 1
+    }
+    return result
+}
+
+# Stirling number of second kind (approximation for small n)
+fn stirling_second(n: int, k: int) -> int {
+    if n == 0 and k == 0 { return 1 }
+    if n == 0 or k == 0 { return 0 }
+    if k > n { return 0 }
+    if k == 1 or k == n { return 1 }
+    return k * stirling_second(n - 1, k) + stirling_second(n - 1, k - 1)
+}
+
+# Harmonic number H(n) = 1 + 1/2 + 1/3 + ... + 1/n
+fn harmonic(n: int) -> float {
+    if n <= 0 { return 0.0 }
+    let mut sum: float = 0.0
+    let mut i: int = 1
+    while i <= n {
+        sum = sum + 1.0 / i.to_float()
+        i = i + 1
+    }
+    return sum
+}
+
+# Euler's totient function (count of coprimes less than n)
+fn totient(n: int) -> int {
+    if n == 1 { return 1 }
+    let mut result: int = n
+    let mut p: int = 2
+    let mut num: int = n
+    while p * p <= num {
+        if num % p == 0 {
+            while num % p == 0 {
+                num = num / p
+            }
+            result = result - result / p
+        }
+        p = p + 1
+    }
+    if num > 1 {
+        result = result - result / num
+    }
+    return result
+}
+
+# Mobius function
+fn mobius(n: int) -> int {
+    if n == 1 { return 1 }
+    let mut prime_factors: int = 0
+    let mut temp: int = n
+    let mut i: int = 2
+    while i * i <= temp {
+        if temp % i == 0 {
+            if temp % (i * i) == 0 {
+                return 0
+            }
+            prime_factors = prime_factors + 1
+            temp = temp / i
+        }
+        i = i + 1
+    }
+    if temp > 1 {
+        prime_factors = prime_factors + 1
+    }
+    return if prime_factors % 2 == 0 then 1 else 0 - 1
+}
+
+# Partition function p(n) - number of ways to write n as sum of positive integers
+fn partition_count(n: int) -> int {
+    if n < 0 { return 0 }
+    if n == 0 { return 1 }
+    let mut p: [int] = fill(n + 1, 0)
+    p[0] = 1
+    let mut i: int = 1
+    while i <= n {
+        let mut j: int = i
+        while j <= n {
+            p[j] = p[j] + p[j - i]
+            j = j + 1
+        }
+        i = i + 1
+    }
+    return p[n]
+}
+
+# Helper for partition_count
+fn fill(size: int, value: int) -> [int] {
+    let mut result: [int] = []
+    let mut i: int = 0
+    while i < size {
+        result = result + [value]
+        i = i + 1
+    }
+    return result
+}
+
+# Smooth step interpolation (0 to 1)
+fn smoothstep(edge0: float, edge1: float, x: float) -> float {
+    let t: float = clamp_float((x - edge0) / (edge1 - edge0), 0.0, 1.0)
+    return t * t * (3.0 - 2.0 * t)
+}
+
+# Smoother step interpolation
+fn smootherstep(edge0: float, edge1: float, x: float) -> float {
+    let t: float = clamp_float((x - edge0) / (edge1 - edge0), 0.0, 1.0)
+    return t * t * t * (t * (t * 6.0 - 15.0) + 10.0)
+}
+
+# Sigmoid function
+fn sigmoid(x: float) -> float {
+    return 1.0 / (1.0 + exp(0.0 - x))
+}
+
+# ReLU activation function
+fn relu(x: float) -> float {
+    return if x > 0.0 then x else 0.0
+}
+
+# Leaky ReLU activation function
+fn leaky_relu(x: float, alpha: float) -> float {
+    return if x > 0.0 then x else alpha * x
+}
+
+# Softplus activation function
+fn softplus(x: float) -> float {
+    return ln(1.0 + exp(x))
+}
+
+# Gaussian function
+fn gaussian(x: float, mu: float, sigma: float) -> float {
+    let diff: float = x - mu
+    return exp(0.0 - (diff * diff) / (2.0 * sigma * sigma))
+}

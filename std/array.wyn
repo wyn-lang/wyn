@@ -471,3 +471,158 @@ fn diff(arr: [int]) -> [int] {
     }
     return result
 }
+
+# Binary search in sorted array, returns index or -1
+fn binary_search(arr: [int], target: int) -> int {
+    let mut left: int = 0
+    let mut right: int = arr.len() - 1
+    while left <= right {
+        let mid: int = left + (right - left) / 2
+        if arr[mid] == target {
+            return mid
+        }
+        if arr[mid] < target {
+            left = mid + 1
+        } else {
+            right = mid - 1
+        }
+    }
+    return 0 - 1
+}
+
+# Partition array into two: elements < pivot and elements >= pivot
+fn partition(arr: [int], pivot: int) -> ([int], [int]) {
+    let mut less: [int] = []
+    let mut greater_equal: [int] = []
+    let mut i: int = 0
+    while i < arr.len() {
+        if arr[i] < pivot {
+            less = less + [arr[i]]
+        } else {
+            greater_equal = greater_equal + [arr[i]]
+        }
+        i = i + 1
+    }
+    return (less, greater_equal)
+}
+
+# Find median of three values (for quicksort pivot selection)
+fn median_of_three(a: int, b: int, c: int) -> int {
+    if a > b {
+        if b > c { return b }
+        if a > c { return c }
+        return a
+    }
+    if a > c { return a }
+    if b > c { return c }
+    return b
+}
+
+# Merge two sorted arrays
+fn merge_sorted(a: [int], b: [int]) -> [int] {
+    let mut result: [int] = []
+    let mut i: int = 0
+    let mut j: int = 0
+    while i < a.len() and j < b.len() {
+        if a[i] <= b[j] {
+            result = result + [a[i]]
+            i = i + 1
+        } else {
+            result = result + [b[j]]
+            j = j + 1
+        }
+    }
+    while i < a.len() {
+        result = result + [a[i]]
+        i = i + 1
+    }
+    while j < b.len() {
+        result = result + [b[j]]
+        j = j + 1
+    }
+    return result
+}
+
+# Find all local maxima (elements greater than neighbors)
+fn local_maxima(arr: [int]) -> [int] {
+    if arr.len() < 3 { return [] }
+    let mut result: [int] = []
+    let mut i: int = 1
+    while i < arr.len() - 1 {
+        if arr[i] > arr[i-1] and arr[i] > arr[i+1] {
+            result = result + [i]
+        }
+        i = i + 1
+    }
+    return result
+}
+
+# Find all local minima (elements less than neighbors)
+fn local_minima(arr: [int]) -> [int] {
+    if arr.len() < 3 { return [] }
+    let mut result: [int] = []
+    let mut i: int = 1
+    while i < arr.len() - 1 {
+        if arr[i] < arr[i-1] and arr[i] < arr[i+1] {
+            result = result + [i]
+        }
+        i = i + 1
+    }
+    return result
+}
+
+# Check if array has duplicates
+fn has_duplicates(arr: [int]) -> bool {
+    let mut i: int = 0
+    while i < arr.len() {
+        let mut j: int = i + 1
+        while j < arr.len() {
+            if arr[i] == arr[j] {
+                return true
+            }
+            j = j + 1
+        }
+        i = i + 1
+    }
+    return false
+}
+
+# Find longest increasing subsequence length
+fn longest_increasing_length(arr: [int]) -> int {
+    if arr.len() == 0 { return 0 }
+    let mut max_len: int = 1
+    let mut current_len: int = 1
+    let mut i: int = 1
+    while i < arr.len() {
+        if arr[i] > arr[i-1] {
+            current_len = current_len + 1
+            if current_len > max_len {
+                max_len = current_len
+            }
+        } else {
+            current_len = 1
+        }
+        i = i + 1
+    }
+    return max_len
+}
+
+# Find longest decreasing subsequence length
+fn longest_decreasing_length(arr: [int]) -> int {
+    if arr.len() == 0 { return 0 }
+    let mut max_len: int = 1
+    let mut current_len: int = 1
+    let mut i: int = 1
+    while i < arr.len() {
+        if arr[i] < arr[i-1] {
+            current_len = current_len + 1
+            if current_len > max_len {
+                max_len = current_len
+            }
+        } else {
+            current_len = 1
+        }
+        i = i + 1
+    }
+    return max_len
+}

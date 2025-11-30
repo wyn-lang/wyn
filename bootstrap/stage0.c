@@ -2159,7 +2159,7 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     strcmp(e->ident, "str_to_int") == 0 || strcmp(e->ident, "int_to_float") == 0 ||
                     strcmp(e->ident, "float_to_int") == 0 ||
                     strcmp(e->ident, "read_file") == 0 || strcmp(e->ident, "write_file") == 0 ||
-                    strcmp(e->ident, "read_line") == 0 ||
+                    strcmp(e->ident, "read_line") == 0 || strcmp(e->ident, "clock") == 0 ||
                     strcmp(e->ident, "ord") == 0 || strcmp(e->ident, "chr") == 0) {
                     return new_type(TYPE_FUNCTION);
                 }
@@ -3041,6 +3041,11 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_emit(cg, "    callq %s_wyn_read_line", cg_sym_prefix(cg));
                     break;
                 }
+                // Handle built-in clock() - returns CPU time in microseconds
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "clock") == 0) {
+                    cg_emit(cg, "    callq %sclock", cg_sym_prefix(cg));
+                    break;
+                }
                 if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "assert") == 0) {
                     int ok_lbl = cg_new_label(cg);
                     cg_expr(cg, e->call.args[0]);
@@ -3836,6 +3841,11 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             // Handle built-in read_line() - reads a line from stdin
             if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "read_line") == 0) {
                 cg_emit(cg, "    bl %s_wyn_read_line", cg_sym_prefix(cg));
+                break;
+            }
+            // Handle built-in clock() - returns CPU time in microseconds
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "clock") == 0) {
+                cg_emit(cg, "    bl %sclock", cg_sym_prefix(cg));
                 break;
             }
             // Handle built-in assert()

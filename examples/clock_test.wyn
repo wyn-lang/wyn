@@ -1,0 +1,17 @@
+# Test clock() builtin for timing
+
+fn main() {
+    let start: int = clock()
+    
+    # Do some work
+    let mut sum: int = 0
+    for i in 0..1000 {
+        sum = sum + i
+    }
+    
+    let end: int = clock()
+    print_str("Sum: ")
+    print(sum)
+    print_str("Time (clocks): ")
+    print(end - start)
+}
