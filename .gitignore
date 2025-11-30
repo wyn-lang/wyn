@@ -6,6 +6,10 @@ build/
 a.out
 a.out.s
 
+# Package manager
+.wyn/
+wyn.lock
+
 # Test binaries (root level)
 demo
 *_test

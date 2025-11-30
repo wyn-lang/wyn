@@ -1,0 +1,165 @@
+# Wyn Package Manager - Semantic Versioning
+# Parses and compares semver versions
+
+struct Version {
+    major: int
+    minor: int
+    patch: int
+    prerelease: str
+}
+
+# Parse version string like "1.2.3" or "v1.2.3-beta"
+fn parse_version(s: str) -> Result[Version, str] {
+    let input: str = s
+    
+    # Strip leading 'v' if present
+    if starts_with(input, "v") {
+        input = input[1:]
+    }
+    
+    # Split on '-' for prerelease
+    let prerelease: str = ""
+    let dash: int = find(input, "-")
+    if dash >= 0 {
+        prerelease = input[dash+1:]
+        input = input[:dash]
+    }
+    
+    # Split on '.'
+    let parts: [str] = split(input, ".")
+    if parts.len() < 1 {
+        return err("Invalid version: " + s)
+    }
+    
+    let major: int = str_to_int(parts[0]) ?? 0
+    let minor: int = 0
+    let patch: int = 0
+    
+    if parts.len() >= 2 {
+        minor = str_to_int(parts[1]) ?? 0
+    }
+    if parts.len() >= 3 {
+        patch = str_to_int(parts[2]) ?? 0
+    }
+    
+    return ok(Version{
+        major: major,
+        minor: minor,
+        patch: patch,
+        prerelease: prerelease
+    })
+}
+
+# Convert version to string
+fn version_to_str(v: Version) -> str {
+    let s: str = int_to_str(v.major) + "." + int_to_str(v.minor) + "." + int_to_str(v.patch)
+    if v.prerelease != "" {
+        s = s + "-" + v.prerelease
+    }
+    return s
+}
+
+# Compare two versions: -1 if a < b, 0 if equal, 1 if a > b
+fn compare_versions(a: Version, b: Version) -> int {
+    if a.major != b.major {
+        return if a.major < b.major then -1 else 1
+    }
+    if a.minor != b.minor {
+        return if a.minor < b.minor then -1 else 1
+    }
+    if a.patch != b.patch {
+        return if a.patch < b.patch then -1 else 1
+    }
+    
+    # Prerelease versions are lower than release
+    if a.prerelease == "" and b.prerelease != "" {
+        return 1
+    }
+    if a.prerelease != "" and b.prerelease == "" {
+        return -1
+    }
+    
+    # Both have prerelease - compare lexically
+    if a.prerelease < b.prerelease {
+        return -1
+    }
+    if a.prerelease > b.prerelease {
+        return 1
+    }
+    
+    return 0
+}
+
+# Check if version satisfies a constraint
+# Supports: "*", "1.0.0", "^1.0.0", "~1.0.0", ">=1.0.0", ">1.0.0", "<=1.0.0", "<1.0.0"
+fn satisfies(v: Version, constraint: str) -> bool {
+    if constraint == "*" or constraint == "" {
+        return true
+    }
+    
+    # Parse operator and version
+    let op: str = ""
+    let ver_str: str = constraint
+    
+    if starts_with(constraint, ">=") {
+        op = ">="
+        ver_str = constraint[2:]
+    } else if starts_with(constraint, "<=") {
+        op = "<="
+        ver_str = constraint[2:]
+    } else if starts_with(constraint, "^") {
+        op = "^"
+        ver_str = constraint[1:]
+    } else if starts_with(constraint, "~") {
+        op = "~"
+        ver_str = constraint[1:]
+    } else if starts_with(constraint, ">") {
+        op = ">"
+        ver_str = constraint[1:]
+    } else if starts_with(constraint, "<") {
+        op = "<"
+        ver_str = constraint[1:]
+    } else if starts_with(constraint, "=") {
+        op = "="
+        ver_str = constraint[1:]
+    }
+    
+    let target: Result[Version, str] = parse_version(ver_str)
+    match target {
+        err(_) => return false
+        ok(t) => {
+            let cmp: int = compare_versions(v, t)
+            
+            match op {
+                ">=" => return cmp >= 0
+                "<=" => return cmp <= 0
+                ">" => return cmp > 0
+                "<" => return cmp < 0
+                "=" => return cmp == 0
+                "" => return cmp == 0
+                "^" => {
+                    # Compatible: same major, >= minor.patch
+                    return v.major == t.major and cmp >= 0
+                }
+                "~" => {
+                    # Approximately: same major.minor, >= patch
+                    return v.major == t.major and v.minor == t.minor and cmp >= 0
+                }
+                _ => return cmp == 0
+            }
+        }
+    }
+}
+
+# Increment version
+fn bump_major(v: Version) -> Version {
+    return Version{major: v.major + 1, minor: 0, patch: 0, prerelease: ""}
+}
+
+fn bump_minor(v: Version) -> Version {
+    return Version{major: v.major, minor: v.minor + 1, patch: 0, prerelease: ""}
+}
+
+fn bump_patch(v: Version) -> Version {
+    return Version{major: v.major, minor: v.minor, patch: v.patch + 1, prerelease: ""}
+}

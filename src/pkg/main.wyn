@@ -1,0 +1,323 @@
+# Wyn Package Manager
+# CLI tool for managing Wyn packages and dependencies
+
+import manifest
+import resolver
+
+fn main() {
+    let args: [str] = get_args()
+    
+    if args.len() < 2 {
+        print_usage()
+        exit(1)
+    }
+    
+    let cmd: str = args[1]
+    
+    match cmd {
+        "new" => cmd_new(args)
+        "init" => cmd_init()
+        "add" => cmd_add(args)
+        "remove" => cmd_remove(args)
+        "update" => cmd_update()
+        "install" => cmd_install()
+        "clean" => cmd_clean()
+        "help" => print_usage()
+        "--help" => print_usage()
+        "-h" => print_usage()
+        _ => {
+            print_str("Unknown command: " + cmd)
+            print_usage()
+            exit(1)
+        }
+    }
+}
+
+fn print_usage() {
+    print_str("Wyn Package Manager")
+    print_str("")
+    print_str("Usage: wyn <command> [options]")
+    print_str("")
+    print_str("Commands:")
+    print_str("  new <name>      Create a new Wyn project")
+    print_str("  init            Initialize project in current directory")
+    print_str("  add <pkg>       Add a dependency")
+    print_str("  remove <pkg>    Remove a dependency")
+    print_str("  update          Update all dependencies")
+    print_str("  install         Install dependencies from wyn.lock")
+    print_str("  clean           Remove build artifacts and cache")
+    print_str("  help            Show this help message")
+}
+
+# Create a new project
+fn cmd_new(args: [str]) {
+    if args.len() < 3 {
+        print_str("Usage: wyn new <project-name>")
+        exit(1)
+    }
+    
+    let name: str = args[2]
+    
+    # Create project directory
+    mkdir(name)
+    mkdir(name + "/src")
+    
+    # Create wyn.toml
+    let manifest: Manifest = Manifest{
+        name: name,
+        version: "0.1.0",
+        description: "",
+        authors: [],
+        license: "MIT",
+        entry: "src/main.wyn",
+        dependencies: []
+    }
+    write_file(name + "/wyn.toml", generate_manifest(manifest))
+    
+    # Create main.wyn
+    let main_content: str = "fn main() {\n    print_str(\"Hello, " + name + "!\")\n}\n"
+    write_file(name + "/src/main.wyn", main_content)
+    
+    # Create .gitignore
+    write_file(name + "/.gitignore", "build/\n.wyn/\n*.o\n")
+    
+    print_str("Created project: " + name)
+    print_str("")
+    print_str("  cd " + name)
+    print_str("  wyn build")
+}
+
+# Initialize in current directory
+fn cmd_init() {
+    if exists("wyn.toml") {
+        print_str("Error: wyn.toml already exists")
+        exit(1)
+    }
+    
+    let name: str = get_current_dir_name()
+    
+    let manifest: Manifest = Manifest{
+        name: name,
+        version: "0.1.0",
+        description: "",
+        authors: [],
+        license: "MIT",
+        entry: "src/main.wyn",
+        dependencies: []
+    }
+    
+    write_file("wyn.toml", generate_manifest(manifest))
+    
+    if not exists("src") {
+        mkdir("src")
+    }
+    
+    if not exists("src/main.wyn") {
+        write_file("src/main.wyn", "fn main() {\n    print_str(\"Hello, World!\")\n}\n")
+    }
+    
+    print_str("Initialized Wyn project: " + name)
+}
+
+# Add a dependency
+fn cmd_add(args: [str]) {
+    if args.len() < 3 {
+        print_str("Usage: wyn add <package>")
+        print_str("")
+        print_str("Examples:")
+        print_str("  wyn add github.com/user/repo")
+        print_str("  wyn add github.com/user/repo@v1.0.0")
+        exit(1)
+    }
+    
+    let pkg_spec: str = args[2]
+    let name: str = pkg_spec
+    let version: str = "*"
+    
+    # Parse version if specified
+    let at_pos: int = find(pkg_spec, "@")
+    if at_pos > 0 {
+        name = pkg_spec[:at_pos]
+        version = pkg_spec[at_pos+1:]
+    }
+    
+    # Load existing manifest
+    let content: Result[str, str] = read_file("wyn.toml")
+    match content {
+        err(_) => {
+            print_str("Error: No wyn.toml found. Run 'wyn init' first.")
+            exit(1)
+        }
+        ok(c) => {
+            let m: Result[Manifest, str] = parse_manifest(c)
+            match m {
+                err(e) => {
+                    print_str("Error parsing wyn.toml: " + e)
+                    exit(1)
+                }
+                ok(manifest) => {
+                    # Check if already added
+                    for dep in manifest.dependencies {
+                        if dep.name == name {
+                            print_str("Package already in dependencies: " + name)
+                            exit(1)
+                        }
+                    }
+                    
+                    # Add new dependency
+                    let dep: Dependency = Dependency{
+                        name: name,
+                        version: version,
+                        source: infer_source(name),
+                        path: name
+                    }
+                    manifest.dependencies = append(manifest.dependencies, dep)
+                    
+                    # Write updated manifest
+                    write_file("wyn.toml", generate_manifest(manifest))
+                    
+                    print_str("Added: " + name + " @ " + version)
+                    
+                    # Fetch the package
+                    cmd_install()
+                }
+            }
+        }
+    }
+}
+
+# Remove a dependency
+fn cmd_remove(args: [str]) {
+    if args.len() < 3 {
+        print_str("Usage: wyn remove <package>")
+        exit(1)
+    }
+    
+    let name: str = args[2]
+    
+    let content: Result[str, str] = read_file("wyn.toml")
+    match content {
+        err(_) => {
+            print_str("Error: No wyn.toml found")
+            exit(1)
+        }
+        ok(c) => {
+            let m: Result[Manifest, str] = parse_manifest(c)
+            match m {
+                ok(manifest) => {
+                    let new_deps: [Dependency] = []
+                    let found: bool = false
+                    
+                    for dep in manifest.dependencies {
+                        if dep.name == name {
+                            found = true
+                        } else {
+                            new_deps = append(new_deps, dep)
+                        }
+                    }
+                    
+                    if not found {
+                        print_str("Package not found: " + name)
+                        exit(1)
+                    }
+                    
+                    manifest.dependencies = new_deps
+                    write_file("wyn.toml", generate_manifest(manifest))
+                    
+                    print_str("Removed: " + name)
+                }
+                err(e) => {
+                    print_str("Error: " + e)
+                    exit(1)
+                }
+            }
+        }
+    }
+}
+
+# Update all dependencies
+fn cmd_update() {
+    print_str("Updating dependencies...")
+    
+    # Remove lock file to force re-resolution
+    if exists("wyn.lock") {
+        remove("wyn.lock")
+    }
+    
+    cmd_install()
+    
+    print_str("Dependencies updated")
+}
+
+# Install dependencies from manifest
+fn cmd_install() {
+    let content: Result[str, str] = read_file("wyn.toml")
+    match content {
+        err(_) => {
+            print_str("Error: No wyn.toml found")
+            exit(1)
+        }
+        ok(c) => {
+            let m: Result[Manifest, str] = parse_manifest(c)
+            match m {
+                ok(manifest) => {
+                    if manifest.dependencies.len() == 0 {
+                        print_str("No dependencies to install")
+                        return
+                    }
+                    
+                    # Create deps directory
+                    mkdir(".wyn")
+                    mkdir(".wyn/deps")
+                    
+                    # Resolve dependencies
+                    let resolved: Result[[ResolvedPackage], str] = resolve(manifest)
+                    match resolved {
+                        ok(packages) => {
+                            for pkg in packages {
+                                print_str("  Installing " + pkg.name + " @ " + pkg.version)
+                            }
+                            
+                            # Write lock file
+                            write_file("wyn.lock", generate_lock(packages))
+                            
+                            print_str("Installed " + int_to_str(packages.len()) + " packages")
+                        }
+                        err(e) => {
+                            print_str("Error resolving dependencies: " + e)
+                            exit(1)
+                        }
+                    }
+                }
+                err(e) => {
+                    print_str("Error: " + e)
+                    exit(1)
+                }
+            }
+        }
+    }
+}
+
+# Clean build artifacts
+fn cmd_clean() {
+    print_str("Cleaning...")
+    
+    if exists("build") {
+        remove_dir("build")
+        print_str("  Removed build/")
+    }
+    
+    if exists(".wyn/cache") {
+        remove_dir(".wyn/cache")
+        print_str("  Removed .wyn/cache/")
+    }
+    
+    print_str("Done")
+}
+
+# Helper: Get current directory name
+fn get_current_dir_name() -> str {
+    # Requires: Runtime support for getcwd
+    # Stage 1: Will use os.cwd()
+    return "project"
+}

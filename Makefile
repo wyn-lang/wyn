@@ -73,20 +73,45 @@ rebuild: clean all
 version:
 	@echo "Wyn $(VERSION)"
 
+# Package manager commands (wrappers for future wyn pkg tool)
+.PHONY: new init add
+new:
+	@echo "Usage: make new NAME=<project-name>"
+	@test -n "$(NAME)" || (echo "Error: NAME required" && exit 1)
+	@mkdir -p $(NAME)/src
+	@echo '[package]\nname = "$(NAME)"\nversion = "0.1.0"\nlicense = "MIT"\n\n[build]\nentry = "src/main.wyn"' > $(NAME)/wyn.toml
+	@echo 'fn main() {\n    print_str("Hello, $(NAME)!")\n}' > $(NAME)/src/main.wyn
+	@echo 'build/\n.wyn/' > $(NAME)/.gitignore
+	@echo "Created project: $(NAME)"
+
+init:
+	@test ! -f wyn.toml || (echo "Error: wyn.toml already exists" && exit 1)
+	@echo '[package]\nname = "project"\nversion = "0.1.0"\nlicense = "MIT"\n\n[build]\nentry = "src/main.wyn"' > wyn.toml
+	@mkdir -p src
+	@echo "Initialized Wyn project"
+
 # Help
 .PHONY: help
 help:
 	@echo "Wyn Language Build System v$(VERSION)"
 	@echo ""
-	@echo "Targets:"
+	@echo "Build Targets:"
 	@echo "  all          - Build Stage 0 compiler (default)"
 	@echo "  stage0       - Build Stage 0 (C bootstrap compiler)"
 	@echo "  stage0-debug - Build Stage 0 with debug symbols"
 	@echo "  test         - Run all tests"
 	@echo "  demo         - Build and run demo"
+	@echo ""
+	@echo "Project Management:"
+	@echo "  new NAME=x   - Create new project named x"
+	@echo "  init         - Initialize project in current dir"
+	@echo ""
+	@echo "Installation:"
 	@echo "  install      - Install to $(PREFIX)/bin"
 	@echo "  uninstall    - Remove installed binary"
 	@echo "  clean        - Remove build artifacts"
 	@echo "  rebuild      - Clean and rebuild"
+	@echo ""
+	@echo "Info:"
 	@echo "  version      - Show version"
 	@echo "  help         - Show this help"

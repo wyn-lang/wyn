@@ -1,0 +1,204 @@
+# Wyn Package Manager - Dependency Resolver
+# Resolves and downloads package dependencies
+
+import manifest
+
+struct ResolvedPackage {
+    name: str
+    version: str
+    path: str       # Local path to package
+    dependencies: [str]
+}
+
+struct LockEntry {
+    name: str
+    version: str
+    source: str
+    checksum: str
+}
+
+struct LockFile {
+    packages: [LockEntry]
+}
+
+# Resolve all dependencies for a manifest
+fn resolve(m: Manifest) -> Result[[ResolvedPackage], str] {
+    let resolved: [ResolvedPackage] = []
+    let visited: [str] = []
+    
+    for dep in m.dependencies {
+        let result: Result[[ResolvedPackage], str] = resolve_dep(dep, visited)
+        match result {
+            ok(pkgs) => {
+                for pkg in pkgs {
+                    if not contains(visited, pkg.name) {
+                        resolved = append(resolved, pkg)
+                        visited = append(visited, pkg.name)
+                    }
+                }
+            }
+            err(e) => return err(e)
+        }
+    }
+    
+    return ok(resolved)
+}
+
+# Resolve a single dependency and its transitive deps
+fn resolve_dep(dep: Dependency, visited: [str]) -> Result[[ResolvedPackage], str] {
+    if contains(visited, dep.name) {
+        return ok([])  # Already resolved
+    }
+    
+    let local_path: str = get_cache_path(dep)
+    
+    # Check if already cached
+    if not exists(local_path) {
+        let fetch_result: Result[bool, str] = fetch_package(dep, local_path)
+        match fetch_result {
+            err(e) => return err("Failed to fetch " + dep.name + ": " + e)
+            ok(_) => {}
+        }
+    }
+    
+    # Parse the package's manifest for transitive deps
+    let manifest_path: str = local_path + "/wyn.toml"
+    let manifest_content: Result[str, str] = read_file(manifest_path)
+    
+    let pkg: ResolvedPackage = ResolvedPackage{
+        name: dep.name,
+        version: dep.version,
+        path: local_path,
+        dependencies: []
+    }
+    
+    match manifest_content {
+        ok(content) => {
+            let sub_manifest: Result[Manifest, str] = parse_manifest(content)
+            match sub_manifest {
+                ok(m) => {
+                    for sub_dep in m.dependencies {
+                        pkg.dependencies = append(pkg.dependencies, sub_dep.name)
+                    }
+                }
+                err(_) => {}  # No manifest or invalid - that's ok
+            }
+        }
+        err(_) => {}  # No manifest file
+    }
+    
+    return ok([pkg])
+}
+
+# Get local cache path for a dependency
+fn get_cache_path(dep: Dependency) -> str {
+    let base: str = ".wyn/deps/"
+    
+    match dep.source {
+        "github" => {
+            # github.com/user/repo -> .wyn/deps/github.com/user/repo
+            return base + dep.path
+        }
+        "local" => {
+            return dep.path
+        }
+        _ => {
+            # Registry packages
+            return base + "registry/" + dep.name + "/" + dep.version
+        }
+    }
+}
+
+# Fetch a package from its source
+fn fetch_package(dep: Dependency, dest: str) -> Result[bool, str] {
+    match dep.source {
+        "github" => return fetch_github(dep.path, dep.version, dest)
+        "local" => return ok(true)  # Already local
+        _ => return err("Unknown source: " + dep.source)
+    }
+}
+
+# Fetch from GitHub
+fn fetch_github(repo: str, version: str, dest: str) -> Result[bool, str] {
+    # Requires: Runtime support for process execution
+    # git clone --depth 1 --branch <version> https://<repo> <dest>
+    let url: str = "https://" + repo + ".git"
+    let cmd: str = "git clone --depth 1"
+    
+    if version != "" and version != "*" {
+        cmd = cmd + " --branch " + version
+    }
+    
+    cmd = cmd + " " + url + " " + dest
+    
+    # Stage 1: Will execute via os.exec()
+    return ok(true)
+}
+
+# Parse wyn.lock file
+fn parse_lock(content: str) -> LockFile {
+    let lock: LockFile = LockFile{packages: []}
+    let lines: [str] = split_lines(content)
+    let current: ?LockEntry = none
+    
+    for line in lines {
+        let trimmed: str = trim(line)
+        
+        if starts_with(trimmed, "[[package]]") {
+            match current {
+                some(entry) => {
+                    lock.packages = append(lock.packages, entry)
+                }
+                none => {}
+            }
+            current = some(LockEntry{name: "", version: "", source: "", checksum: ""})
+        }
+        
+        match current {
+            some(entry) => {
+                let kv: ?[str] = parse_kv(trimmed)
+                match kv {
+                    some(pair) => {
+                        match pair[0] {
+                            "name" => entry.name = pair[1]
+                            "version" => entry.version = pair[1]
+                            "source" => entry.source = pair[1]
+                            "checksum" => entry.checksum = pair[1]
+                            _ => {}
+                        }
+                        current = some(entry)
+                    }
+                    none => {}
+                }
+            }
+            none => {}
+        }
+    }
+    
+    # Don't forget the last entry
+    match current {
+        some(entry) => {
+            if entry.name != "" {
+                lock.packages = append(lock.packages, entry)
+            }
+        }
+        none => {}
+    }
+    
+    return lock
+}
+
+# Generate wyn.lock content
+fn generate_lock(packages: [ResolvedPackage]) -> str {
+    let out: str = "# This file is auto-generated by wyn\n"
+    out = out + "# Do not edit manually\n\n"
+    
+    for pkg in packages {
+        out = out + "[[package]]\n"
+        out = out + "name = \"" + pkg.name + "\"\n"
+        out = out + "version = \"" + pkg.version + "\"\n"
+        out = out + "source = \"" + pkg.path + "\"\n\n"
+    }
+    
+    return out
+}
