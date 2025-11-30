@@ -342,3 +342,27 @@ fn print_result_error[T](result: Result[T, str], context: str) -> () {
         }
     }
 }
+
+# Print debug message with DEBUG prefix
+fn print_debug(msg: str) -> () {
+    print_str("DEBUG: " + msg + "\n")
+    return ()
+}
+
+# Print separator line for visual organization
+fn print_separator(width: int, char: str) -> () {
+    let mut line: str = ""
+    let mut i: int = 0
+    while i < width {
+        line = line + char
+        i = i + 1
+    }
+    print_line(line)
+    return ()
+}
+
+# Print formatted key-value pair
+fn print_kv(key: str, value: str) -> () {
+    print_str(key + ": " + value + "\n")
+    return ()
+}

@@ -284,3 +284,62 @@ fn assert_in_range(value: int, min_val: int, max_val: int, msg: str) -> () {
     return ()
 }
 
+# Assert value is greater than threshold
+fn assert_greater(value: int, threshold: int, msg: str) -> () {
+    if value <= threshold {
+        print_str("ASSERTION FAILED: " + msg + " (")
+        print(value)
+        print_str(" not greater than ")
+        print(threshold)
+        print_str(")\n")
+        exit(1)
+    }
+    return ()
+}
+
+# Assert value is less than threshold
+fn assert_less(value: int, threshold: int, msg: str) -> () {
+    if value >= threshold {
+        print_str("ASSERTION FAILED: " + msg + " (")
+        print(value)
+        print_str(" not less than ")
+        print(threshold)
+        print_str(")\n")
+        exit(1)
+    }
+    return ()
+}
+
+# Assert value is between min and max (exclusive)
+fn assert_between(value: int, min_val: int, max_val: int, msg: str) -> () {
+    if value <= min_val or value >= max_val {
+        print_str("ASSERTION FAILED: " + msg + " (")
+        print(value)
+        print_str(" not between ")
+        print(min_val)
+        print_str(" and ")
+        print(max_val)
+        print_str(")\n")
+        exit(1)
+    }
+    return ()
+}
+
+# Assert string is not empty
+fn assert_not_empty(s: str, msg: str) -> () {
+    if s.len() == 0 {
+        print_str("ASSERTION FAILED: " + msg + " (string is empty)\n")
+        exit(1)
+    }
+    return ()
+}
+
+# Assert array is not empty
+fn assert_array_not_empty[T](arr: [T], msg: str) -> () {
+    if arr.len() == 0 {
+        print_str("ASSERTION FAILED: " + msg + " (array is empty)\n")
+        exit(1)
+    }
+    return ()
+}
+

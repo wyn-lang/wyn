@@ -450,3 +450,51 @@ fn avg_float(a: float, b: float) -> float {
     return (a + b) / 2.0
 }
 
+# Sum of integers from start to end (inclusive)
+fn sum_range(start: int, end: int) -> int {
+    if start > end {
+        return 0
+    }
+    let n: int = end - start + 1
+    return n * (start + end) / 2
+}
+
+# Product of integers from start to end (inclusive)
+fn product_range(start: int, end: int) -> int {
+    if start > end {
+        return 1
+    }
+    let mut result: int = 1
+    let mut i: int = start
+    while i <= end {
+        result = result * i
+        i = i + 1
+    }
+    return result
+}
+
+# Sum of digits in a positive integer
+fn digits_sum(n: int) -> int {
+    let mut sum: int = 0
+    let mut num: int = abs(n)
+    while num > 0 {
+        sum = sum + (num % 10)
+        num = num / 10
+    }
+    return sum
+}
+
+# Count number of digits in an integer
+fn digits_count(n: int) -> int {
+    if n == 0 {
+        return 1
+    }
+    let mut count: int = 0
+    let mut num: int = abs(n)
+    while num > 0 {
+        count = count + 1
+        num = num / 10
+    }
+    return count
+}
+

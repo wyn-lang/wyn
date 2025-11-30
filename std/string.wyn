@@ -670,3 +670,33 @@ fn is_palindrome_ignore_case(s: str) -> bool {
     let lower: str = to_lower_str(s)
     return lower == reverse(lower)
 }
+
+# Remove prefix from string if present, otherwise return original
+fn strip_prefix(s: str, prefix: str) -> str {
+    if starts_with(s, prefix) {
+        return s[prefix.len():]
+    }
+    return s
+}
+
+# Remove suffix from string if present, otherwise return original
+fn strip_suffix(s: str, suffix: str) -> str {
+    if ends_with(s, suffix) {
+        let end: int = s.len() - suffix.len()
+        return s[:end]
+    }
+    return s
+}
+
+# Count occurrences of a single character
+fn count_char(s: str, ch: str) -> int {
+    let mut count: int = 0
+    let mut i: int = 0
+    while i < s.len() {
+        if s[i:i+1] == ch {
+            count = count + 1
+        }
+        i = i + 1
+    }
+    return count
+}

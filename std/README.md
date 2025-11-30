@@ -36,7 +36,14 @@
 
 ## Recent Additions
 
-### Latest Update (2025-11-30 - Error Handling & Utilities)
+### Latest Update (2025-11-30 - Additional Utilities)
+- **string.wyn**: Added strip_prefix, strip_suffix, count_char
+- **collections.wyn**: Added array_all_positive, array_any_positive, array_all_negative, array_any_negative, array_all_zero, array_any_zero
+- **io.wyn**: Added print_debug, print_separator, print_kv
+- **math.wyn**: Added sum_range, product_range, digits_sum, digits_count
+- **test.wyn**: Added assert_greater, assert_less, assert_between, assert_not_empty, assert_array_not_empty
+
+### Previous Update (2025-11-30 - Error Handling & Utilities)
 - **error.wyn**: New module with comprehensive error handling utilities
   - unwrap, unwrap_or, expect, unwrap_or_default for Result and Optional types
   - is_ok, is_err, is_some, is_none type checking helpers
