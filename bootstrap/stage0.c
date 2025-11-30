@@ -2588,6 +2588,33 @@ static void cg_emit(CodeGen* cg, const char* fmt, ...) {
     fprintf(cg->out, "\n");
 }
 
+// Emit adrp instruction with correct syntax for target OS
+static void cg_emit_adrp(CodeGen* cg, const char* reg, const char* label) {
+    if (cg->os == OS_MACOS) {
+        cg_emit(cg, "    adrp %s, %s@PAGE", reg, label);
+    } else {
+        cg_emit(cg, "    adrp %s, %s", reg, label);
+    }
+}
+
+// Emit add instruction for page offset with correct syntax
+static void cg_emit_add_pageoff(CodeGen* cg, const char* dst, const char* src, const char* label) {
+    if (cg->os == OS_MACOS) {
+        cg_emit(cg, "    add %s, %s, %s@PAGEOFF", dst, src, label);
+    } else {
+        cg_emit(cg, "    add %s, %s, :lo12:%s", dst, src, label);
+    }
+}
+
+// Emit ldr instruction with page offset for floats
+static void cg_emit_ldr_pageoff(CodeGen* cg, const char* reg, const char* base, const char* label) {
+    if (cg->os == OS_MACOS) {
+        cg_emit(cg, "    ldr %s, [%s, %s@PAGEOFF]", reg, base, label);
+    } else {
+        cg_emit(cg, "    ldr %s, [%s, :lo12:%s]", reg, base, label);
+    }
+}
+
 static int cg_local_offset(CodeGen* cg, const char* name) {
     // Search from end to find most recent variable with this name
     for (int i = cg->local_count - 1; i >= 0; i--) {
@@ -3337,8 +3364,10 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             cg->floats[cg->float_count].val = e->float_val;
             cg->floats[cg->float_count].label = lbl;
             cg->float_count++;
-            cg_emit(cg, "    adrp x0, L_.flt%d@PAGE", lbl);
-            cg_emit(cg, "    ldr d0, [x0, L_.flt%d@PAGEOFF]", lbl);
+            char label[32];
+            snprintf(label, sizeof(label), "L_.flt%d", lbl);
+            cg_emit_adrp(cg, "x0", label);
+            cg_emit_ldr_pageoff(cg, "d0", "x0", label);
             cg_emit(cg, "    fmov x0, d0");
             break;
         }
@@ -3352,8 +3381,10 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             cg->strings[cg->string_count].str = e->str_val;
             cg->strings[cg->string_count].label = lbl;
             cg->string_count++;
-            cg_emit(cg, "    adrp x0, L_.str%d@PAGE", lbl);
-            cg_emit(cg, "    add x0, x0, L_.str%d@PAGEOFF", lbl);
+            char label[32];
+            snprintf(label, sizeof(label), "L_.str%d", lbl);
+            cg_emit_adrp(cg, "x0", label);
+            cg_emit_add_pageoff(cg, "x0", "x0", label);
             break;
         }
         
@@ -3432,10 +3463,13 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg->strings[cg->string_count].str = e->binary.right->str_val;
                     cg->strings[cg->string_count].label = lbl2;
                     cg->string_count++;
-                    cg_emit(cg, "    adrp x1, L_.str%d@PAGE", lbl1);
-                    cg_emit(cg, "    add x1, x1, L_.str%d@PAGEOFF", lbl1);
-                    cg_emit(cg, "    adrp x2, L_.str%d@PAGE", lbl2);
-                    cg_emit(cg, "    add x2, x2, L_.str%d@PAGEOFF", lbl2);
+                    char label1[32], label2[32];
+                    snprintf(label1, sizeof(label1), "L_.str%d", lbl1);
+                    snprintf(label2, sizeof(label2), "L_.str%d", lbl2);
+                    cg_emit_adrp(cg, "x1", label1);
+                    cg_emit_add_pageoff(cg, "x1", "x1", label1);
+                    cg_emit_adrp(cg, "x2", label2);
+                    cg_emit_add_pageoff(cg, "x2", "x2", label2);
                     cg_emit(cg, "L%d:", loop_lbl);
                     cg_emit(cg, "    ldrb w3, [x1], #1");
                     cg_emit(cg, "    ldrb w4, [x2], #1");
@@ -3602,13 +3636,13 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_expr(cg, e->call.args[0]);
                 cg_emit(cg, "    mov x8, sp");
                 cg_emit(cg, "    str x0, [x8]");
-                cg_emit(cg, "    adrp x0, L_.itsbuf@PAGE");
-                cg_emit(cg, "    add x0, x0, L_.itsbuf@PAGEOFF");
-                cg_emit(cg, "    adrp x1, L_.itsfmt@PAGE");
-                cg_emit(cg, "    add x1, x1, L_.itsfmt@PAGEOFF");
+                cg_emit_adrp(cg, "x0", "L_.itsbuf");
+                cg_emit_add_pageoff(cg, "x0", "x0", "L_.itsbuf");
+                cg_emit_adrp(cg, "x1", "L_.itsfmt");
+                cg_emit_add_pageoff(cg, "x1", "x1", "L_.itsfmt");
                 cg_emit(cg, "    bl %ssprintf", cg_sym_prefix(cg));
-                cg_emit(cg, "    adrp x0, L_.itsbuf@PAGE");
-                cg_emit(cg, "    add x0, x0, L_.itsbuf@PAGEOFF");
+                cg_emit_adrp(cg, "x0", "L_.itsbuf");
+                cg_emit_add_pageoff(cg, "x0", "x0", "L_.itsbuf");
                 break;
             }
             // Handle built-in str_to_int()
@@ -3628,8 +3662,8 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             // Handle built-in chr() - create single-char string
             if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "chr") == 0) {
                 cg_expr(cg, e->call.args[0]);
-                cg_emit(cg, "    adrp x1, L_.chrbuf@PAGE");
-                cg_emit(cg, "    add x1, x1, L_.chrbuf@PAGEOFF");
+                cg_emit_adrp(cg, "x1", "L_.chrbuf");
+                cg_emit_add_pageoff(cg, "x1", "x1", "L_.chrbuf");
                 cg_emit(cg, "    strb w0, [x1]");
                 cg_emit(cg, "    strb wzr, [x1, #1]");
                 cg_emit(cg, "    mov x0, x1");
@@ -3692,13 +3726,13 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_expr(cg, obj);
                     cg_emit(cg, "    mov x8, sp");
                     cg_emit(cg, "    str x0, [x8]");
-                    cg_emit(cg, "    adrp x0, L_.itsbuf@PAGE");
-                    cg_emit(cg, "    add x0, x0, L_.itsbuf@PAGEOFF");
-                    cg_emit(cg, "    adrp x1, L_.itsfmt@PAGE");
-                    cg_emit(cg, "    add x1, x1, L_.itsfmt@PAGEOFF");
+                    cg_emit_adrp(cg, "x0", "L_.itsbuf");
+                    cg_emit_add_pageoff(cg, "x0", "x0", "L_.itsbuf");
+                    cg_emit_adrp(cg, "x1", "L_.itsfmt");
+                    cg_emit_add_pageoff(cg, "x1", "x1", "L_.itsfmt");
                     cg_emit(cg, "    bl %ssprintf", cg_sym_prefix(cg));
-                    cg_emit(cg, "    adrp x0, L_.itsbuf@PAGE");
-                    cg_emit(cg, "    add x0, x0, L_.itsbuf@PAGEOFF");
+                    cg_emit_adrp(cg, "x0", "L_.itsbuf");
+                    cg_emit_add_pageoff(cg, "x0", "x0", "L_.itsbuf");
                     break;
                 }
                 // .to_int() -> str_to_int(obj)
@@ -4667,8 +4701,8 @@ static void codegen_module(CodeGen* cg) {
     cg_emit(cg, "    ldr x8, [sp, #8]");  // Load arg
     cg_emit(cg, "    mov x9, sp");
     cg_emit(cg, "    str x8, [x9]");  // Store at sp for variadic
-    cg_emit(cg, "    adrp x0, L_.fmt@PAGE");
-    cg_emit(cg, "    add x0, x0, L_.fmt@PAGEOFF");
+    cg_emit_adrp(cg, "x0", "L_.fmt");
+    cg_emit_add_pageoff(cg, "x0", "x0", "L_.fmt");
     cg_emit(cg, "    bl %sprintf", pfx);
     cg_emit(cg, "    ldp x29, x30, [sp, #16]");
     cg_emit(cg, "    add sp, sp, #32");
@@ -4685,8 +4719,8 @@ static void codegen_module(CodeGen* cg) {
     cg_emit(cg, "    ldr x8, [sp, #8]");
     cg_emit(cg, "    mov x9, sp");
     cg_emit(cg, "    str x8, [x9]");
-    cg_emit(cg, "    adrp x0, L_.sfmt@PAGE");
-    cg_emit(cg, "    add x0, x0, L_.sfmt@PAGEOFF");
+    cg_emit_adrp(cg, "x0", "L_.sfmt");
+    cg_emit_add_pageoff(cg, "x0", "x0", "L_.sfmt");
     cg_emit(cg, "    bl %sprintf", pfx);
     cg_emit(cg, "    ldp x29, x30, [sp, #16]");
     cg_emit(cg, "    add sp, sp, #32");
@@ -4700,8 +4734,8 @@ static void codegen_module(CodeGen* cg) {
     cg_emit(cg, "    stp x29, x30, [sp, #48]");
     cg_emit(cg, "    stp x19, x20, [sp, #32]");
     cg_emit(cg, "    add x29, sp, #48");
-    cg_emit(cg, "    adrp x1, L_.rb@PAGE");
-    cg_emit(cg, "    add x1, x1, L_.rb@PAGEOFF");
+    cg_emit_adrp(cg, "x1", "L_.rb");
+    cg_emit_add_pageoff(cg, "x1", "x1", "L_.rb");
     cg_emit(cg, "    bl %sfopen", pfx);
     cg_emit(cg, "    cbz x0, 1f");
     cg_emit(cg, "    mov x19, x0");                   // x19 = file handle
