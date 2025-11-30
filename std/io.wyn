@@ -36,98 +36,112 @@ fn get_file_size(path: str) -> Result[int, str] {
 }
 
 # Read a line from standard input
-# Requires runtime support
+# Requires: Runtime support (stdin syscall)
 fn read_line() -> str {
+    # Will be implemented via syscall or FFI
     return ""
 }
 
 # Read entire file contents as a string (low-level)
 # Returns ok(content) on success, or err(message) on failure
-# Requires runtime support
+# Requires: Runtime support (file I/O syscalls)
 fn read_file(path: str) -> Result[str, str] {
+    # Will be implemented via syscall or FFI
     return ok("")
 }
 
 # Write content to a file, overwriting if it exists (low-level)
 # Returns ok(true) on success, or err(message) on failure
-# Requires runtime support
+# Requires: Runtime support (file I/O syscalls)
 fn write_file(path: str, content: str) -> Result[bool, str] {
+    # Will be implemented via syscall or FFI
     return ok(false)
 }
 
 # Append content to the end of a file
 # Returns ok(true) on success, or err(message) on failure
-# Requires runtime support
+# Requires: Runtime support (file I/O syscalls)
 fn append_file(path: str, content: str) -> Result[bool, str] {
+    # Will be implemented via syscall or FFI
     return ok(false)
 }
 
 # Check if a file exists at the given path (low-level)
-# Requires runtime support
+# Requires: Runtime support (file stat syscall)
 fn file_exists(path: str) -> bool {
+    # Will be implemented via syscall or FFI
     return false
 }
 
 # Delete a file at the given path
 # Returns ok(true) on success, or err(message) on failure
-# Requires runtime support
+# Requires: Runtime support (file I/O syscalls)
 fn delete_file(path: str) -> Result[bool, str] {
+    # Will be implemented via syscall or FFI
     return ok(false)
 }
 
 # Read file contents as an array of bytes
 # Returns ok(bytes) on success, or err(message) on failure
-# Requires runtime support
+# Requires: Runtime support (file I/O syscalls)
 fn read_bytes(path: str) -> Result[[byte], str] {
+    # Will be implemented via syscall or FFI
     return ok([])
 }
 
 # Write an array of bytes to a file
 # Returns ok(true) on success, or err(message) on failure
-# Requires runtime support
+# Requires: Runtime support (file I/O syscalls)
 fn write_bytes(path: str, data: [byte]) -> Result[bool, str] {
+    # Will be implemented via syscall or FFI
     return ok(false)
 }
 
 # Read file contents as an array of lines
 # Returns ok(lines) on success, or err(message) on failure
-# Requires runtime support
+# Requires: Runtime support (file I/O syscalls)
 fn read_lines(path: str) -> Result[[str], str] {
+    # Will be implemented via syscall or FFI
     return ok([])
 }
 
 # Create a directory at the given path
 # Returns ok(true) on success, or err(message) on failure
-# Requires runtime support
+# Requires: Runtime support (directory syscalls)
 fn create_dir(path: str) -> Result[bool, str] {
+    # Will be implemented via syscall or FFI
     return ok(false)
 }
 
 # Remove a directory at the given path
 # Returns ok(true) on success, or err(message) on failure
-# Requires runtime support
+# Requires: Runtime support (directory syscalls)
 fn remove_dir(path: str) -> Result[bool, str] {
+    # Will be implemented via syscall or FFI
     return ok(false)
 }
 
 # List all files and directories in the given path
 # Returns ok(entries) on success, or err(message) on failure
-# Requires runtime support
+# Requires: Runtime support (directory syscalls)
 fn list_dir(path: str) -> Result[[str], str] {
+    # Will be implemented via syscall or FFI
     return ok([])
 }
 
 # Copy a file from src to dst
 # Returns ok(true) on success, or err(message) on failure
-# Requires runtime support
+# Requires: Runtime support (file I/O syscalls)
 fn copy_file(src: str, dst: str) -> Result[bool, str] {
+    # Will be implemented via syscall or FFI
     return ok(false)
 }
 
 # Move a file from src to dst
 # Returns ok(true) on success, or err(message) on failure
-# Requires runtime support
+# Requires: Runtime support (file I/O syscalls)
 fn move_file(src: str, dst: str) -> Result[bool, str] {
+    # Will be implemented via syscall or FFI
     return ok(false)
 }
 
@@ -239,3 +253,50 @@ fn repeat_char(c: str, n: int) -> str {
     }
     return result
 }
+
+# Format integer with thousands separator
+# Example: format_thousands(1234567) -> "1,234,567"
+fn format_thousands(n: int) -> str {
+    let s: str = int_to_str(n)
+    let len: int = s.len()
+    if len <= 3 {
+        return s
+    }
+    let mut result: str = ""
+    let mut count: int = 0
+    let mut i: int = len - 1
+    while i >= 0 {
+        if count == 3 {
+            result = "," + result
+            count = 0
+        }
+        result = s[i:i+1] + result
+        count = count + 1
+        i = i - 1
+    }
+    return result
+}
+
+# Format percentage with specified decimal places
+# Example: format_percent(75, 1) -> "75.0%"
+fn format_percent(value: int, decimals: int) -> str {
+    return int_to_str(value) + "%"
+}
+
+# Print a horizontal line of specified character and width
+fn print_line_char(c: str, width: int) -> () {
+    print_str(repeat_char(c, width))
+    print_str("\n")
+    return ()
+}
+
+# Print a box around text
+fn print_box(text: str) -> () {
+    let len: int = text.len()
+    let border: str = repeat_char("-", len + 4)
+    print_str(border + "\n")
+    print_str("| " + text + " |\n")
+    print_str(border + "\n")
+    return ()
+}
+

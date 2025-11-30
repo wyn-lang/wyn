@@ -7,59 +7,89 @@ struct Socket {
 
 # Connect to a TCP server at the given host and port
 # Returns a Socket on success, or an error message on failure
+# Requires: Runtime support for socket syscalls
 fn tcp_connect(host: str, port: int) -> Result[Socket, str] {
     return err("not implemented")
 }
 
 # Start a TCP server listening on the given host and port
 # Returns a listening Socket on success, or an error message on failure
+# Requires: Runtime support for socket syscalls
 fn tcp_listen(host: str, port: int) -> Result[Socket, str] {
     return err("not implemented")
 }
 
 # Accept an incoming connection on a listening socket
 # Returns a new Socket for the connection, or an error message on failure
+# Requires: Runtime support for socket syscalls
 fn accept(socket: Socket) -> Result[Socket, str] {
     return err("not implemented")
 }
 
 # Send data through a TCP socket
 # Returns the number of bytes sent, or an error message on failure
+# Requires: Runtime support for socket syscalls
 fn send(socket: Socket, data: str) -> Result[int, str] {
     return err("not implemented")
 }
 
 # Receive up to size bytes from a TCP socket
 # Returns the received data, or an error message on failure
+# Requires: Runtime support for socket syscalls
 fn recv(socket: Socket, size: int) -> Result[str, str] {
     return err("not implemented")
 }
 
 # Close a socket and release its resources
 # Returns unit on success, or an error message on failure
+# Requires: Runtime support for socket syscalls
 fn close(socket: Socket) -> Result[(), str] {
     return err("not implemented")
 }
 
 # Bind a UDP socket to the given host and port
 # Returns a Socket on success, or an error message on failure
+# Requires: Runtime support for socket syscalls
 fn udp_bind(host: str, port: int) -> Result[Socket, str] {
     return err("not implemented")
 }
 
 # Send data to a specific host and port via UDP
 # Returns the number of bytes sent, or an error message on failure
+# Requires: Runtime support for socket syscalls
 fn sendto(socket: Socket, data: str, host: str, port: int) -> Result[int, str] {
     return err("not implemented")
 }
 
 # Receive up to size bytes from a UDP socket
 # Returns the received data, or an error message on failure
+# Requires: Runtime support for socket syscalls
 fn recvfrom(socket: Socket, size: int) -> Result[str, str] {
     return err("not implemented")
 }
 
-# URL parsing
+# Set socket timeout in milliseconds
+# Returns unit on success, or an error message on failure
+# Requires: Runtime support for socket options
+fn set_timeout(socket: Socket, timeout_ms: int) -> Result[(), str] {
+    return err("not implemented")
+}
+
+# Set socket to non-blocking mode
+# Returns unit on success, or an error message on failure
+# Requires: Runtime support for socket options
+fn set_nonblocking(socket: Socket) -> Result[(), str] {
+    return err("not implemented")
+}
+
+# Enable SO_REUSEADDR on socket
+# Returns unit on success, or an error message on failure
+# Requires: Runtime support for socket options
+fn set_reuseaddr(socket: Socket) -> Result[(), str] {
+    return err("not implemented")
+}
+
+# --- URL Parsing ---
 
 struct URL {
     scheme: str
@@ -124,7 +154,44 @@ fn parse_url(url: str) -> ?URL {
     return some(URL { scheme: scheme, host: host, port: port, path: path })
 }
 
-# IP address utilities
+# Build a URL string from components
+# Example: build_url("http", "example.com", 8080, "/path") -> "http://example.com:8080/path"
+fn build_url(scheme: str, host: str, port: int, path: str) -> str {
+    let mut result: str = scheme + "://" + host
+    if port != 0 {
+        result = result + ":" + int_to_str(port)
+    }
+    result = result + path
+    return result
+}
+
+# Extract query string from path (part after ?)
+# Example: extract_query("/path?key=value") -> "key=value"
+fn extract_query(path: str) -> str {
+    let mut i: int = 0
+    while i < path.len() {
+        if path[i:i+1] == "?" {
+            return path[i+1:path.len()]
+        }
+        i = i + 1
+    }
+    return ""
+}
+
+# Remove query string from path
+# Example: strip_query("/path?key=value") -> "/path"
+fn strip_query(path: str) -> str {
+    let mut i: int = 0
+    while i < path.len() {
+        if path[i:i+1] == "?" {
+            return path[0:i]
+        }
+        i = i + 1
+    }
+    return path
+}
+
+# --- IP Address Utilities ---
 
 # Check if a string is a valid IPv4 address (e.g., "192.168.1.1")
 # Returns true if valid, false otherwise
@@ -218,6 +285,71 @@ fn is_loopback_ip(ip: str) -> bool {
     }
 }
 
+# Check if an IP address is a multicast address (224.0.0.0/4)
+fn is_multicast_ip(ip: str) -> bool {
+    let ip_int: ?int = ip_to_int(ip)
+    match ip_int {
+        some(n) => {
+            let a: int = (n >> 24) & 255
+            return a >= 224 and a <= 239
+        }
+        none => return false
+    }
+}
+
+# Check if an IP address is a link-local address (169.254.0.0/16)
+fn is_link_local_ip(ip: str) -> bool {
+    let ip_int: ?int = ip_to_int(ip)
+    match ip_int {
+        some(n) => {
+            let a: int = (n >> 24) & 255
+            let b: int = (n >> 16) & 255
+            return a == 169 and b == 254
+        }
+        none => return false
+    }
+}
+
+# Check if an IP address is a broadcast address (255.255.255.255)
+fn is_broadcast_ip(ip: str) -> bool {
+    return ip == "255.255.255.255"
+}
+
+# Check if an IP address is unspecified (0.0.0.0)
+fn is_unspecified_ip(ip: str) -> bool {
+    return ip == "0.0.0.0"
+}
+
+# Get the network address for an IP with CIDR prefix
+# Example: network_address("192.168.1.100", 24) -> "192.168.1.0"
+fn network_address(ip: str, prefix_len: int) -> str {
+    let ip_int: ?int = ip_to_int(ip)
+    match ip_int {
+        some(n) => {
+            let mask: int = if prefix_len == 0 then 0 else (0 - (1 << (32 - prefix_len)))
+            let network: int = n & mask
+            return int_to_ip(network)
+        }
+        none => return "0.0.0.0"
+    }
+}
+
+# Get the broadcast address for an IP with CIDR prefix
+# Example: broadcast_address("192.168.1.0", 24) -> "192.168.1.255"
+fn broadcast_address(ip: str, prefix_len: int) -> str {
+    let ip_int: ?int = ip_to_int(ip)
+    match ip_int {
+        some(n) => {
+            let mask: int = if prefix_len == 0 then 0 else (0 - (1 << (32 - prefix_len)))
+            let broadcast: int = n | (^mask)
+            return int_to_ip(broadcast)
+        }
+        none => return "255.255.255.255"
+    }
+}
+
+# --- URL Helper Functions ---
+
 # Extract the hostname from a URL string
 # Example: url_hostname("http://example.com:8080/path") -> "example.com"
 fn url_hostname(url: str) -> str {
@@ -236,4 +368,48 @@ fn url_port(url: str, default_port: int) -> int {
         some(u) => return if u.port == 0 then default_port else u.port
         none => return default_port
     }
+}
+
+# Extract the path from a URL string
+# Example: url_path("http://example.com:8080/path?q=1") -> "/path?q=1"
+fn url_path(url: str) -> str {
+    let parsed: ?URL = parse_url(url)
+    match parsed {
+        some(u) => return u.path
+        none => return "/"
+    }
+}
+
+# Extract the scheme from a URL string
+# Example: url_scheme("http://example.com") -> "http"
+fn url_scheme(url: str) -> str {
+    let parsed: ?URL = parse_url(url)
+    match parsed {
+        some(u) => return u.scheme
+        none => return ""
+    }
+}
+
+# Check if URL uses HTTPS
+fn is_https(url: str) -> bool {
+    return url_scheme(url) == "https"
+}
+
+# Check if URL uses HTTP (including HTTPS)
+fn is_http(url: str) -> bool {
+    let scheme: str = url_scheme(url)
+    return scheme == "http" or scheme == "https"
+}
+
+# Get default port for common schemes
+# Returns 0 if scheme is unknown
+fn default_port_for_scheme(scheme: str) -> int {
+    if scheme == "http" { return 80 }
+    if scheme == "https" { return 443 }
+    if scheme == "ftp" { return 21 }
+    if scheme == "ssh" { return 22 }
+    if scheme == "telnet" { return 23 }
+    if scheme == "smtp" { return 25 }
+    if scheme == "dns" { return 53 }
+    return 0
 }

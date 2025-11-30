@@ -1,6 +1,7 @@
 # std/log.wyn
-# Logging utilities
+# Logging utilities for structured output
 
+# Log severity levels
 enum LogLevel {
     Debug
     Info
@@ -8,6 +9,7 @@ enum LogLevel {
     Error
 }
 
+# Convert log level to string representation
 fn level_to_str(level: LogLevel) -> str {
     match level {
         LogLevel::Debug => return "DEBUG"
@@ -17,43 +19,65 @@ fn level_to_str(level: LogLevel) -> str {
     }
 }
 
+# Log a message with the specified level
 fn log(level: LogLevel, msg: str) -> () {
     print_str("[" + level_to_str(level) + "] " + msg + "\n")
     return ()
 }
 
+# Log a debug message
 fn debug(msg: str) -> () {
     log(LogLevel::Debug, msg)
     return ()
 }
 
+# Log an info message
 fn info(msg: str) -> () {
     log(LogLevel::Info, msg)
     return ()
 }
 
+# Log a warning message
 fn warn(msg: str) -> () {
     log(LogLevel::Warn, msg)
     return ()
 }
 
+# Log an error message
 fn error(msg: str) -> () {
     log(LogLevel::Error, msg)
     return ()
 }
 
+# Set minimum log level (placeholder for future filtering)
 fn set_level(level: str) -> () {
     return ()
 }
 
+# Log a debug message with an integer value
 fn debug_int(label: str, value: int) -> () {
     print_str("[DEBUG] " + label + ": ")
     print(value)
     return ()
 }
 
+# Log an info message with an integer value
 fn info_int(label: str, value: int) -> () {
     print_str("[INFO] " + label + ": ")
+    print(value)
+    return ()
+}
+
+# Log a warning message with an integer value
+fn warn_int(label: str, value: int) -> () {
+    print_str("[WARN] " + label + ": ")
+    print(value)
+    return ()
+}
+
+# Log an error message with an integer value
+fn error_int(label: str, value: int) -> () {
+    print_str("[ERROR] " + label + ": ")
     print(value)
     return ()
 }

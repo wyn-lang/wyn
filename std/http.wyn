@@ -14,37 +14,67 @@ struct Response {
     body: str
 }
 
+# --- HTTP Client Methods ---
+
 # Perform an HTTP GET request to the given URL
 # Returns a Response on success, or an error message on failure
+# Requires: Runtime support for HTTP client
 fn get(url: str) -> Result[Response, str] {
     return err("not implemented")
 }
 
 # Perform an HTTP POST request with the given body
 # Returns a Response on success, or an error message on failure
+# Requires: Runtime support for HTTP client
 fn post(url: str, body: str) -> Result[Response, str] {
     return err("not implemented")
 }
 
 # Perform an HTTP PUT request with the given body
 # Returns a Response on success, or an error message on failure
+# Requires: Runtime support for HTTP client
 fn put(url: str, body: str) -> Result[Response, str] {
     return err("not implemented")
 }
 
 # Perform an HTTP DELETE request to the given URL
 # Returns a Response on success, or an error message on failure
+# Requires: Runtime support for HTTP client
 fn delete(url: str) -> Result[Response, str] {
     return err("not implemented")
 }
 
+# Perform an HTTP PATCH request with the given body
+# Returns a Response on success, or an error message on failure
+# Requires: Runtime support for HTTP client
+fn patch(url: str, body: str) -> Result[Response, str] {
+    return err("not implemented")
+}
+
+# Perform an HTTP HEAD request to the given URL
+# Returns a Response on success, or an error message on failure
+# Requires: Runtime support for HTTP client
+fn head(url: str) -> Result[Response, str] {
+    return err("not implemented")
+}
+
+# Perform an HTTP OPTIONS request to the given URL
+# Returns a Response on success, or an error message on failure
+# Requires: Runtime support for HTTP client
+fn options(url: str) -> Result[Response, str] {
+    return err("not implemented")
+}
+
+# --- HTTP Server ---
+
 # Start an HTTP server listening on the given host and port
 # Returns unit on success, or an error message on failure
+# Requires: Runtime support for HTTP server
 fn serve(host: str, port: int) -> Result[(), str] {
     return err("not implemented")
 }
 
-# HTTP method constants
+# --- HTTP Method Constants ---
 
 # Return the HTTP GET method string
 fn method_get() -> str {
@@ -81,7 +111,17 @@ fn method_options() -> str {
     return "OPTIONS"
 }
 
-# Status code helpers
+# Return the HTTP TRACE method string
+fn method_trace() -> str {
+    return "TRACE"
+}
+
+# Return the HTTP CONNECT method string
+fn method_connect() -> str {
+    return "CONNECT"
+}
+
+# --- Status Code Helpers ---
 
 # Return HTTP 200 OK status code
 fn status_ok() -> int {
@@ -123,6 +163,53 @@ fn status_internal_error() -> int {
     return 500
 }
 
+# Return HTTP 501 Not Implemented status code
+fn status_not_implemented() -> int {
+    return 501
+}
+
+# Return HTTP 502 Bad Gateway status code
+fn status_bad_gateway() -> int {
+    return 502
+}
+
+# Return HTTP 503 Service Unavailable status code
+fn status_service_unavailable() -> int {
+    return 503
+}
+
+# Return HTTP 504 Gateway Timeout status code
+fn status_gateway_timeout() -> int {
+    return 504
+}
+
+# Return HTTP 301 Moved Permanently status code
+fn status_moved_permanently() -> int {
+    return 301
+}
+
+# Return HTTP 302 Found status code
+fn status_found() -> int {
+    return 302
+}
+
+# Return HTTP 304 Not Modified status code
+fn status_not_modified() -> int {
+    return 304
+}
+
+# Return HTTP 307 Temporary Redirect status code
+fn status_temporary_redirect() -> int {
+    return 307
+}
+
+# Return HTTP 308 Permanent Redirect status code
+fn status_permanent_redirect() -> int {
+    return 308
+}
+
+# --- Status Code Checks ---
+
 # Check if a status code indicates success (2xx)
 fn is_success(status: int) -> bool {
     return status >= 200 and status < 300
@@ -143,7 +230,17 @@ fn is_server_error(status: int) -> bool {
     return status >= 500 and status < 600
 }
 
-# Header utilities
+# Check if a status code indicates an error (4xx or 5xx)
+fn is_error(status: int) -> bool {
+    return status >= 400
+}
+
+# Check if a status code indicates informational response (1xx)
+fn is_informational(status: int) -> bool {
+    return status >= 100 and status < 200
+}
+
+# --- Header Utilities ---
 
 # Create an HTTP header string from a key-value pair
 # Example: make_header("Content-Type", "application/json") -> "Content-Type: application/json"
@@ -154,6 +251,7 @@ fn make_header(key: str, value: str) -> str {
 # Parse an HTTP header string into a key-value array
 # Returns some([key, value]) on success, or none if malformed
 # Example: parse_header("Content-Type: application/json") -> some(["Content-Type", "application/json"])
+# Stage 1: Will support array building for return value
 fn parse_header(header: str) -> ?[str] {
     let mut i: int = 0
     while i < header.len() {
@@ -170,6 +268,48 @@ fn parse_header(header: str) -> ?[str] {
     }
     return none
 }
+
+# Get header key from a header string
+# Example: header_key("Content-Type: application/json") -> "Content-Type"
+fn header_key(header: str) -> str {
+    let parsed: ?[str] = parse_header(header)
+    match parsed {
+        some(parts) => return parts[0]
+        none => return ""
+    }
+}
+
+# Get header value from a header string
+# Example: header_value("Content-Type: application/json") -> "application/json"
+fn header_value(header: str) -> str {
+    let parsed: ?[str] = parse_header(header)
+    match parsed {
+        some(parts) => return parts[1]
+        none => return ""
+    }
+}
+
+# Common header name constants
+fn header_content_type() -> str { return "Content-Type" }
+fn header_content_length() -> str { return "Content-Length" }
+fn header_authorization() -> str { return "Authorization" }
+fn header_accept() -> str { return "Accept" }
+fn header_user_agent() -> str { return "User-Agent" }
+fn header_host() -> str { return "Host" }
+fn header_cookie() -> str { return "Cookie" }
+fn header_set_cookie() -> str { return "Set-Cookie" }
+fn header_location() -> str { return "Location" }
+fn header_cache_control() -> str { return "Cache-Control" }
+
+# Common content types
+fn content_type_json() -> str { return "application/json" }
+fn content_type_html() -> str { return "text/html" }
+fn content_type_text() -> str { return "text/plain" }
+fn content_type_xml() -> str { return "application/xml" }
+fn content_type_form() -> str { return "application/x-www-form-urlencoded" }
+fn content_type_multipart() -> str { return "multipart/form-data" }
+
+# --- Response Builders ---
 
 # Get a human-readable description of an HTTP status code
 # Example: status_text(404) -> "Not Found"
@@ -220,7 +360,48 @@ fn html_response(status: int, html_body: str) -> Response {
     }
 }
 
-# Check if a method is safe (GET, HEAD, OPTIONS)
+# Create a plain text response with appropriate Content-Type header
+fn text_response(status: int, text_body: str) -> Response {
+    return Response { 
+        status: status, 
+        headers: [make_header("Content-Type", "text/plain")], 
+        body: text_body 
+    }
+}
+
+# Create an XML response with appropriate Content-Type header
+fn xml_response(status: int, xml_body: str) -> Response {
+    return Response { 
+        status: status, 
+        headers: [make_header("Content-Type", "application/xml")], 
+        body: xml_body 
+    }
+}
+
+# Create a redirect response
+fn redirect_response(location: str) -> Response {
+    return Response { 
+        status: 302, 
+        headers: [make_header("Location", location)], 
+        body: "" 
+    }
+}
+
+# Create a permanent redirect response
+fn permanent_redirect_response(location: str) -> Response {
+    return Response { 
+        status: 301, 
+        headers: [make_header("Location", location)], 
+        body: "" 
+    }
+}
+
+# Create an error response with status and message
+fn error_response(status: int, message: str) -> Response {
+    return text_response(status, message)
+}
+
+# --- Method Checks ---
 fn is_safe_method(method: str) -> bool {
     return method == "GET" or method == "HEAD" or method == "OPTIONS"
 }
@@ -228,4 +409,21 @@ fn is_safe_method(method: str) -> bool {
 # Check if a method is idempotent (GET, HEAD, PUT, DELETE, OPTIONS)
 fn is_idempotent_method(method: str) -> bool {
     return method == "GET" or method == "HEAD" or method == "PUT" or method == "DELETE" or method == "OPTIONS"
+}
+
+# Check if a method typically has a request body
+fn has_request_body(method: str) -> bool {
+    return method == "POST" or method == "PUT" or method == "PATCH"
+}
+
+# Check if a method typically has a response body
+fn has_response_body(method: str) -> bool {
+    return method != "HEAD"
+}
+
+# Validate HTTP method string
+fn is_valid_method(method: str) -> bool {
+    return method == "GET" or method == "POST" or method == "PUT" or 
+           method == "DELETE" or method == "PATCH" or method == "HEAD" or 
+           method == "OPTIONS" or method == "TRACE" or method == "CONNECT"
 }

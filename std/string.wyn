@@ -1,23 +1,30 @@
 # std/string.wyn
 # String manipulation and utility functions
 
+# Get string length (alias for .len())
 fn str_len(s: str) -> int {
     return s.len()
 }
 
+# Concatenate two strings (alias for +)
 fn str_concat(a: str, b: str) -> str {
     return a + b
 }
 
+# Compare two strings for equality (alias for ==)
 fn str_eq(a: str, b: str) -> bool {
     return a == b
 }
 
+# Split string by delimiter
+# Stage 1: Will support dynamic array building
 fn split(s: str, delimiter: str) -> [str] {
     # Stage 0 limitation: cannot dynamically build arrays
+    # Stage 1 will support: find delimiters and build array of parts
     return []
 }
 
+# Join array of strings with separator between each element
 fn join(parts: [str], separator: str) -> str {
     let len: int = parts.len()
     if len == 0 {
@@ -35,6 +42,7 @@ fn join(parts: [str], separator: str) -> str {
     return result
 }
 
+# Remove leading and trailing whitespace (spaces, tabs, newlines)
 fn trim(s: str) -> str {
     let mut start: int = 0
     let mut end: int = s.len()
@@ -53,6 +61,7 @@ fn trim(s: str) -> str {
     return s[start:end]
 }
 
+# Remove leading whitespace only
 fn trim_start(s: str) -> str {
     let mut start: int = 0
     let len: int = s.len()
@@ -67,6 +76,7 @@ fn trim_start(s: str) -> str {
     return s[start:]
 }
 
+# Remove trailing whitespace only
 fn trim_end(s: str) -> str {
     let mut end: int = s.len()
     
@@ -80,11 +90,15 @@ fn trim_end(s: str) -> str {
     return s[:end]
 }
 
+# Replace all occurrences of old with new
+# Stage 1: Will support dynamic string building
 fn replace(s: str, old: str, new: str) -> str {
     # Stage 0 limitation: requires dynamic string building
+    # Stage 1 will support: find and replace all occurrences
     return ""
 }
 
+# Check if string contains substring
 fn contains(s: str, substr: str) -> bool {
     let slen: int = s.len()
     let sublen: int = substr.len()
@@ -106,6 +120,7 @@ fn contains(s: str, substr: str) -> bool {
     return false
 }
 
+# Check if string starts with prefix
 fn starts_with(s: str, prefix: str) -> bool {
     let slen: int = s.len()
     let plen: int = prefix.len()
@@ -120,6 +135,7 @@ fn starts_with(s: str, prefix: str) -> bool {
     return s[:plen] == prefix
 }
 
+# Check if string ends with suffix
 fn ends_with(s: str, suffix: str) -> bool {
     let slen: int = s.len()
     let suflen: int = suffix.len()
@@ -134,14 +150,17 @@ fn ends_with(s: str, suffix: str) -> bool {
     return s[slen-suflen:] == suffix
 }
 
+# Convert string to uppercase
 fn to_upper(s: str) -> str {
     return to_upper_str(s)
 }
 
+# Convert string to lowercase
 fn to_lower(s: str) -> str {
     return to_lower_str(s)
 }
 
+# Extract substring from start to end index
 fn substring(s: str, start: int, end: int) -> str {
     let len: int = s.len()
     if start < 0 or start >= len or end <= start or end > len {
@@ -150,6 +169,7 @@ fn substring(s: str, start: int, end: int) -> str {
     return s[start:end]
 }
 
+# Find first occurrence of substring, returns index or none
 fn index_of(s: str, substr: str) -> ?int {
     let slen: int = s.len()
     let sublen: int = substr.len()
@@ -171,6 +191,7 @@ fn index_of(s: str, substr: str) -> ?int {
     return none
 }
 
+# Find last occurrence of substring, returns index or none
 fn last_index_of(s: str, substr: str) -> ?int {
     let slen: int = s.len()
     let sublen: int = substr.len()
@@ -192,6 +213,7 @@ fn last_index_of(s: str, substr: str) -> ?int {
     return none
 }
 
+# Repeat string count times
 fn repeat(s: str, count: int) -> str {
     if count <= 0 {
         return ""
@@ -206,6 +228,7 @@ fn repeat(s: str, count: int) -> str {
     return result
 }
 
+# Reverse string character order
 fn reverse(s: str) -> str {
     let len: int = s.len()
     if len <= 1 {
@@ -221,10 +244,12 @@ fn reverse(s: str) -> str {
     return result
 }
 
+# Check if string is empty (length is 0)
 fn is_empty(s: str) -> bool {
     return s.len() == 0
 }
 
+# Get character at index, returns none if out of bounds
 fn char_at(s: str, index: int) -> ?str {
     if index < 0 or index >= s.len() {
         return none
@@ -420,4 +445,162 @@ fn truncate(s: str, max_len: int) -> str {
 # Compare strings ignoring case
 fn equals_ignore_case(a: str, b: str) -> bool {
     return to_lower_str(a) == to_lower_str(b)
+}
+
+# Check if string is a valid integer
+fn is_valid_int(s: str) -> bool {
+    if s.len() == 0 {
+        return false
+    }
+    let mut start: int = 0
+    if s[0:1] == "-" or s[0:1] == "+" {
+        if s.len() == 1 {
+            return false
+        }
+        start = 1
+    }
+    let mut i: int = start
+    while i < s.len() {
+        let code: int = ord(s[i:i+1])
+        if code < 48 or code > 57 {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+# Count total characters (alias for len)
+fn char_count(s: str) -> int {
+    return s.len()
+}
+
+# Count lines in string
+fn line_count(s: str) -> int {
+    if s.len() == 0 {
+        return 0
+    }
+    let mut count: int = 1
+    let mut i: int = 0
+    while i < s.len() {
+        if s[i:i+1] == "\n" {
+            count = count + 1
+        }
+        i = i + 1
+    }
+    return count
+}
+
+# Count words (space-separated)
+fn word_count(s: str) -> int {
+    let trimmed: str = trim(s)
+    if trimmed.len() == 0 {
+        return 0
+    }
+    let mut count: int = 1
+    let mut i: int = 0
+    let mut in_space: bool = false
+    while i < trimmed.len() {
+        let c: str = trimmed[i:i+1]
+        if c == " " or c == "\t" or c == "\n" {
+            if not in_space {
+                count = count + 1
+                in_space = true
+            }
+        } else {
+            in_space = false
+        }
+        i = i + 1
+    }
+    return count
+}
+
+# Remove all whitespace from string
+fn remove_whitespace(s: str) -> str {
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < s.len() {
+        let c: str = s[i:i+1]
+        if c != " " and c != "\t" and c != "\n" and c != "\r" {
+            result = result + c
+        }
+        i = i + 1
+    }
+    return result
+}
+
+# Capitalize first character of string
+fn capitalize(s: str) -> str {
+    if s.len() == 0 {
+        return s
+    }
+    let first: str = s[0:1]
+    let code: int = ord(first)
+    if code >= 97 and code <= 122 {
+        return chr(code - 32) + s[1:]
+    }
+    return s
+}
+
+# Convert first character of each word to uppercase
+fn title_case(s: str) -> str {
+    if s.len() == 0 {
+        return s
+    }
+    let mut result: str = ""
+    let mut capitalize_next: bool = true
+    let mut i: int = 0
+    while i < s.len() {
+        let c: str = s[i:i+1]
+        if c == " " or c == "\t" or c == "\n" {
+            result = result + c
+            capitalize_next = true
+        } else {
+            if capitalize_next {
+                let code: int = ord(c)
+                if code >= 97 and code <= 122 {
+                    result = result + chr(code - 32)
+                } else {
+                    result = result + c
+                }
+                capitalize_next = false
+            } else {
+                result = result + c
+            }
+        }
+        i = i + 1
+    }
+    return result
+}
+
+# Check if string contains only lowercase letters
+fn is_lower(s: str) -> bool {
+    if s.len() == 0 {
+        return false
+    }
+    let mut i: int = 0
+    while i < s.len() {
+        let code: int = ord(s[i:i+1])
+        if not (code >= 97 and code <= 122) {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+# Check if string contains only uppercase letters
+fn is_upper(s: str) -> bool {
+    if s.len() == 0 {
+        return false
+    }
+    let mut i: int = 0
+    while i < s.len() {
+        let code: int = ord(s[i:i+1])
+        if not (code >= 65 and code <= 90) {
+            return false
+        }
+        i = i + 1
+    }
+    return true
 }

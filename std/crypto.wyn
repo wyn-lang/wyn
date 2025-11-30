@@ -3,36 +3,63 @@
 
 # Compute a generic hash of the input data
 # Returns a hash string (implementation-dependent)
+# Requires: Runtime support for cryptographic hashing (syscall or FFI)
 fn hash(data: str) -> str {
     return ""
 }
 
 # Compute SHA-256 hash of the input data
 # Returns a 64-character hexadecimal string
+# Requires: Runtime support for SHA-256 (syscall or FFI)
 fn sha256(data: str) -> str {
     return ""
 }
 
 # Compute MD5 hash of the input data
 # Returns a 32-character hexadecimal string
+# Requires: Runtime support for MD5 (syscall or FFI)
 fn md5(data: str) -> str {
+    return ""
+}
+
+# Compute SHA-1 hash of the input data
+# Returns a 40-character hexadecimal string
+# Requires: Runtime support for SHA-1 (syscall or FFI)
+fn sha1(data: str) -> str {
+    return ""
+}
+
+# Compute SHA-512 hash of the input data
+# Returns a 128-character hexadecimal string
+# Requires: Runtime support for SHA-512 (syscall or FFI)
+fn sha512(data: str) -> str {
     return ""
 }
 
 # Generate n random bytes
 # Returns an array of random integers in range 0-255
+# Stage 1: Will support array building for random byte generation
+# Requires: Runtime support for secure random number generation
 fn random_bytes(n: int) -> [int] {
     return []
 }
 
+# Generate a random integer in range [min, max]
+# Requires: Runtime support for random number generation
+fn random_int(min: int, max: int) -> int {
+    return min
+}
+
 # Encrypt data using the given key
 # Returns ok(encrypted) on success, or err(message) on failure
+# Requires: Runtime support for encryption (syscall or FFI)
 fn encrypt(data: str, key: str) -> Result[str, str] {
     return err("not implemented")
 }
 
 # Decrypt data using the given key
 # Returns ok(decrypted) on success, or err(message) on failure
+# Requires: Runtime support for decryption (syscall or FFI)
 fn decrypt(data: str, key: str) -> Result[str, str] {
     return err("not implemented")
 }
@@ -329,4 +356,91 @@ fn hex_char_to_int(c: str) -> int {
         return code - 65 + 10
     }
     return -1
+}
+
+# Constant-time string comparison (prevents timing attacks)
+# Returns true if strings are equal, false otherwise
+fn constant_time_compare(a: str, b: str) -> bool {
+    if a.len() != b.len() {
+        return false
+    }
+    
+    let mut result: int = 0
+    let mut i: int = 0
+    while i < a.len() {
+        result = result | (ord(a[i:i+1][0]) ^ ord(b[i:i+1][0]))
+        i = i + 1
+    }
+    
+    return result == 0
+}
+
+# Compute HMAC (Hash-based Message Authentication Code)
+# Returns HMAC as hexadecimal string
+# Requires: Runtime support for HMAC computation
+fn hmac_sha256(data: str, key: str) -> str {
+    return ""
+}
+
+# Hash a password with a salt (for secure password storage)
+# Returns hashed password as hexadecimal string
+# Requires: Runtime support for password hashing (e.g., bcrypt, argon2)
+fn hash_password(password: str, salt: str) -> str {
+    return ""
+}
+
+# Verify a password against a hash
+# Returns true if password matches, false otherwise
+# Requires: Runtime support for password verification
+fn verify_password(password: str, hash: str) -> bool {
+    return false
+}
+
+# Generate a cryptographically secure random string of given length
+# Uses alphanumeric characters (A-Z, a-z, 0-9)
+# Requires: Runtime support for secure random generation
+fn random_string(length: int) -> str {
+    return ""
+}
+
+# Compute CRC32 checksum (commonly used for data integrity)
+# Returns a 32-bit checksum value
+fn crc32(data: str) -> int {
+    let mut crc: int = 0xFFFFFFFF
+    let mut i: int = 0
+    
+    while i < data.len() {
+        let byte: int = ord(data[i:i+1][0])
+        crc = crc ^ byte
+        
+        let mut j: int = 0
+        while j < 8 {
+            if (crc & 1) != 0 {
+                crc = (crc >> 1) ^ 0xEDB88320
+            } else {
+                crc = crc >> 1
+            }
+            j = j + 1
+        }
+        i = i + 1
+    }
+    
+    return crc ^ 0xFFFFFFFF
+}
+
+# Compute Adler-32 checksum (faster than CRC32, used in zlib)
+# Returns a 32-bit checksum value
+fn adler32(data: str) -> int {
+    let mod_adler: int = 65521
+    let mut a: int = 1
+    let mut b: int = 0
+    let mut i: int = 0
+    
+    while i < data.len() {
+        a = (a + ord(data[i:i+1][0])) % mod_adler
+        b = (b + a) % mod_adler
+        i = i + 1
+    }
+    
+    return (b << 16) | a
 }

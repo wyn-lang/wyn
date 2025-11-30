@@ -14,12 +14,15 @@ fn stack_new[T]() -> Stack[T] {
 }
 
 # Push item onto stack
+# Stage 1: Will support dynamic array append
 fn stack_push[T](mut s: Stack[T], item: T) -> Stack[T] {
     # Stage 0 limitation: cannot dynamically append to arrays
+    # Stage 1 will support: s.items = s.items + [item]
     return s
 }
 
 # Pop item from stack, returns none if empty
+# Stage 1: Will support removing elements
 fn stack_pop[T](mut s: Stack[T]) -> ?T {
     let len: int = s.items.len()
     if len == 0 {
@@ -27,6 +30,7 @@ fn stack_pop[T](mut s: Stack[T]) -> ?T {
     }
     let item: T = s.items[len - 1]
     # Stage 0 limitation: cannot remove from arrays
+    # Stage 1 will support: s.items = s.items[:len-1]
     return some(item)
 }
 
@@ -62,12 +66,15 @@ fn queue_new[T]() -> Queue[T] {
 }
 
 # Add item to back of queue
+# Stage 1: Will support dynamic array append
 fn queue_enqueue[T](mut q: Queue[T], item: T) -> Queue[T] {
     # Stage 0 limitation: cannot dynamically append to arrays
+    # Stage 1 will support: q.items = q.items + [item]
     return q
 }
 
 # Remove item from front of queue
+# Stage 1: Will support removing elements
 fn queue_dequeue[T](mut q: Queue[T]) -> ?T {
     let len: int = q.items.len()
     if len == 0 {
@@ -75,6 +82,7 @@ fn queue_dequeue[T](mut q: Queue[T]) -> ?T {
     }
     let item: T = q.items[0]
     # Stage 0 limitation: cannot remove from arrays
+    # Stage 1 will support: q.items = q.items[1:]
     return some(item)
 }
 
@@ -99,12 +107,11 @@ fn queue_size[T](q: Queue[T]) -> int {
 # --- Array Utilities ---
 
 # Push item to end of array
+# Stage 1: Will support dynamic array growth
 fn array_push[T](arr: [T], item: T) -> [T] {
-    let len: int = arr.len()
-    let mut result: [T] = arr
-    # Note: Stage 0 doesn't support dynamic array growth
-    # This is a conceptual implementation
-    return result
+    # Stage 0 limitation: cannot dynamically append to arrays
+    # Stage 1 will support: return arr + [item]
+    return arr
 }
 
 # Pop last item from array
@@ -116,7 +123,7 @@ fn array_pop[T](arr: [T]) -> ?T {
     return some(arr[len - 1])
 }
 
-# Get first element of array
+# Get first element of array, returns none if empty
 fn array_first[T](arr: [T]) -> ?T {
     if arr.len() == 0 {
         return none
@@ -124,7 +131,7 @@ fn array_first[T](arr: [T]) -> ?T {
     return some(arr[0])
 }
 
-# Get last element of array
+# Get last element of array, returns none if empty
 fn array_last[T](arr: [T]) -> ?T {
     let len: int = arr.len()
     if len == 0 {
@@ -133,7 +140,7 @@ fn array_last[T](arr: [T]) -> ?T {
     return some(arr[len - 1])
 }
 
-# Check if array contains item
+# Check if array contains item (uses == comparison)
 fn array_contains[T](arr: [T], item: T) -> bool {
     let mut i: int = 0
     while i < arr.len() {
@@ -145,7 +152,7 @@ fn array_contains[T](arr: [T], item: T) -> bool {
     return false
 }
 
-# Find first index of item in array
+# Find first index of item in array, returns none if not found
 fn array_index_of[T](arr: [T], item: T) -> ?int {
     let mut i: int = 0
     while i < arr.len() {
@@ -158,49 +165,61 @@ fn array_index_of[T](arr: [T], item: T) -> ?int {
 }
 
 # Reverse array order
-# Note: Returns empty array due to Stage 0 limitations with dynamic array building
+# Stage 1: Will support building reversed arrays
 fn array_reverse[T](arr: [T]) -> [T] {
     let len: int = arr.len()
     if len <= 1 {
         return arr
     }
     # Stage 0 limitation: cannot dynamically build arrays
-    # Would need: result[i] = arr[len - 1 - i]
+    # Stage 1 will support: result[i] = arr[len - 1 - i]
     return []
 }
 
 # Sort integer array using bubble sort
+# Stage 1: Will support in-place array modification
 fn array_sort(arr: [int]) -> [int] {
     # Stage 0 limitation: arrays are immutable, cannot modify in place
+    # Stage 1 will support: arr[i] = arr[j] swaps
     return arr
 }
 
-# Filter array by predicate (stub - requires function types)
+# Filter array by predicate
+# Requires: Function type support
 fn array_filter[T](arr: [T], predicate: fn(T) -> bool) -> [T] {
+    # Requires function types (planned for Stage 1+)
     return []
 }
 
-# Map array elements (stub - requires function types)
+# Map array elements
+# Requires: Function type support
 fn array_map[T, U](arr: [T], transform: fn(T) -> U) -> [U] {
+    # Requires function types (planned for Stage 1+)
     return []
 }
 
-# Reduce array to single value (stub - requires function types)
+# Reduce array to single value
+# Requires: Function type support
 fn array_reduce[T, U](arr: [T], initial: U, reducer: fn(U, T) -> U) -> U {
+    # Requires function types (planned for Stage 1+)
     return initial
 }
 
-# Check if any element matches predicate (stub - requires function types)
+# Check if any element matches predicate
+# Requires: Function type support
 fn array_any[T](arr: [T], predicate: fn(T) -> bool) -> bool {
+    # Requires function types (planned for Stage 1+)
     return false
 }
 
-# Check if all elements match predicate (stub - requires function types)
+# Check if all elements match predicate
+# Requires: Function type support
 fn array_all[T](arr: [T], predicate: fn(T) -> bool) -> bool {
+    # Requires function types (planned for Stage 1+)
     return false
 }
 
-# Take first n elements
+# Take first n elements from array
 fn array_take[T](arr: [T], n: int) -> [T] {
     if n <= 0 {
         return []
@@ -212,7 +231,7 @@ fn array_take[T](arr: [T], n: int) -> [T] {
     return arr[:n]
 }
 
-# Skip first n elements
+# Skip first n elements from array
 fn array_skip[T](arr: [T], n: int) -> [T] {
     if n <= 0 {
         return arr
@@ -225,42 +244,54 @@ fn array_skip[T](arr: [T], n: int) -> [T] {
 }
 
 # Concatenate two arrays
-# Note: Returns empty array due to Stage 0 limitations with dynamic array building
+# Stage 1: Will support dynamic array building
 fn array_concat[T](a: [T], b: [T]) -> [T] {
     # Stage 0 limitation: cannot dynamically build arrays
-    # Would need to append all elements from a, then all from b
+    # Stage 1 will support: append all elements from a, then all from b
     return []
 }
 
-# Flatten nested array (stub)
+# Flatten nested array
+# Stage 1: Will support dynamic array building
 fn array_flatten[T](arr: [[T]]) -> [T] {
+    # Stage 0 limitation: cannot dynamically build arrays
+    # Stage 1 will support: iterate and append all sub-arrays
     return []
 }
 
-# Remove duplicates from array (stub)
+# Remove duplicates from array
+# Stage 1: Will support dynamic array building
 fn array_unique[T](arr: [T]) -> [T] {
+    # Stage 0 limitation: cannot dynamically build arrays
+    # Stage 1 will support: track seen items and build result
     return []
 }
 
-# Zip two arrays into pairs (stub)
+# Zip two arrays into pairs
+# Stage 1: Will support dynamic array building
 fn array_zip[T, U](a: [T], b: [U]) -> [(T, U)] {
+    # Stage 0 limitation: cannot dynamically build arrays
+    # Stage 1 will support: pair up elements from both arrays
     return []
 }
 
 # Generate range of integers [start, end)
-# Note: Returns empty array due to Stage 0 limitations with dynamic array building
+# Stage 1: Will support dynamic array building
 fn range(start: int, end: int) -> [int] {
     # Stage 0 limitation: cannot dynamically build arrays
+    # Stage 1 will support: build array with values from start to end-1
     return []
 }
 
 # Generate range with custom step
-# Note: Returns empty array due to Stage 0 limitations with dynamic array building
+# Stage 1: Will support dynamic array building
 fn range_step(start: int, end: int, step: int) -> [int] {
     # Stage 0 limitation: cannot dynamically build arrays
+    # Stage 1 will support: build array with custom step size
     return []
 }
 
+# Calculate sum of all integers in array
 fn array_sum(arr: [int]) -> int {
     let mut sum: int = 0
     let mut i: int = 0
@@ -271,6 +302,7 @@ fn array_sum(arr: [int]) -> int {
     return sum
 }
 
+# Find maximum value in array, returns none if empty
 fn array_max(arr: [int]) -> ?int {
     if arr.len() == 0 {
         return none
@@ -286,6 +318,7 @@ fn array_max(arr: [int]) -> ?int {
     return some(max_val)
 }
 
+# Find minimum value in array, returns none if empty
 fn array_min(arr: [int]) -> ?int {
     if arr.len() == 0 {
         return none
@@ -301,12 +334,15 @@ fn array_min(arr: [int]) -> ?int {
     return some(min_val)
 }
 
+# Filter positive integers from array
+# Stage 1: Will support dynamic array building
 fn array_filter_positive(arr: [int]) -> [int] {
     # Stage 0 limitation: cannot dynamically build arrays
+    # Stage 1 will support: iterate and append positive values
     return []
 }
 
-# Calculate average of integer array
+# Calculate average of integer array, returns none if empty
 fn array_avg(arr: [int]) -> ?int {
     if arr.len() == 0 {
         return none
@@ -329,8 +365,10 @@ fn array_count(arr: [int], value: int) -> int {
 }
 
 # Find all indices where value appears
+# Stage 1: Will support dynamic array building
 fn array_find_all(arr: [int], value: int) -> [int] {
     # Stage 0 limitation: cannot dynamically build arrays
+    # Stage 1 will support: collect all matching indices
     return []
 }
 
@@ -346,7 +384,7 @@ fn array_is_sorted(arr: [int]) -> bool {
     return true
 }
 
-# Get slice of array (safe bounds checking)
+# Get slice of array with safe bounds checking
 fn array_slice(arr: [int], start: int, end: int) -> [int] {
     let len: int = arr.len()
     if start < 0 or start >= len or end <= start or end > len {
@@ -356,18 +394,23 @@ fn array_slice(arr: [int], start: int, end: int) -> [int] {
 }
 
 # Partition array into chunks of size n
+# Stage 1: Will support dynamic array building
 fn array_chunk_size(arr: [int], n: int) -> [[int]] {
     # Stage 0 limitation: cannot dynamically build arrays
+    # Stage 1 will support: split array into chunks
     return []
 }
 
 # Remove duplicates from sorted array
+# Stage 1: Will support dynamic array building
 fn array_dedup_sorted(arr: [int]) -> [int] {
     # Stage 0 limitation: cannot dynamically build arrays
+    # Stage 1 will support: skip consecutive duplicates
     return []
 }
 
 # Rotate array left by n positions
+# Stage 1: Will support array concatenation
 fn array_rotate_left(arr: [int], n: int) -> [int] {
     let len: int = arr.len()
     if len == 0 or n == 0 {
@@ -375,10 +418,12 @@ fn array_rotate_left(arr: [int], n: int) -> [int] {
     }
     let shift: int = n % len
     # Stage 0 limitation: would need array concatenation
+    # Stage 1 will support: arr[shift:] + arr[:shift]
     return arr
 }
 
 # Rotate array right by n positions
+# Stage 1: Will support array concatenation
 fn array_rotate_right(arr: [int], n: int) -> [int] {
     let len: int = arr.len()
     if len == 0 or n == 0 {
@@ -389,18 +434,22 @@ fn array_rotate_right(arr: [int], n: int) -> [int] {
 }
 
 # Swap two elements in array (returns new array)
+# Stage 1: Will support array element assignment
 fn array_swap(arr: [int], i: int, j: int) -> [int] {
     # Stage 0 limitation: arrays are immutable, cannot modify
+    # Stage 1 will support: result[i] = arr[j], result[j] = arr[i]
     return arr
 }
 
 # Fill array with value
+# Stage 1: Will support dynamic array building
 fn array_fill(size: int, value: int) -> [int] {
     # Stage 0 limitation: cannot dynamically build arrays
+    # Stage 1 will support: create array of given size with value
     return []
 }
 
-# Product of all elements in array
+# Calculate product of all elements in array
 fn array_product(arr: [int]) -> int {
     let mut prod: int = 1
     let mut i: int = 0
@@ -411,7 +460,7 @@ fn array_product(arr: [int]) -> int {
     return prod
 }
 
-# Check if array is empty
+# Check if array is empty (length is 0)
 fn array_is_empty[T](arr: [T]) -> bool {
     return arr.len() == 0
 }
@@ -421,7 +470,7 @@ fn array_length[T](arr: [T]) -> int {
     return arr.len()
 }
 
-# Find last index of item in array
+# Find last index of item in array, returns none if not found
 fn array_last_index_of(arr: [int], value: int) -> ?int {
     let mut i: int = arr.len() - 1
     while i >= 0 {
@@ -433,7 +482,7 @@ fn array_last_index_of(arr: [int], value: int) -> ?int {
     return none
 }
 
-# Check if array starts with prefix
+# Check if array starts with prefix array
 fn array_starts_with(arr: [int], prefix: [int]) -> bool {
     if prefix.len() > arr.len() {
         return false
@@ -448,7 +497,7 @@ fn array_starts_with(arr: [int], prefix: [int]) -> bool {
     return true
 }
 
-# Check if array ends with suffix
+# Check if array ends with suffix array
 fn array_ends_with(arr: [int], suffix: [int]) -> bool {
     if suffix.len() > arr.len() {
         return false
@@ -465,14 +514,16 @@ fn array_ends_with(arr: [int], suffix: [int]) -> bool {
 }
 
 # Partition array into two based on value
+# Stage 1: Will support dynamic array building
 fn array_partition(arr: [int], pivot: int) -> ([int], [int]) {
     # Stage 0 limitation: cannot dynamically build arrays
+    # Stage 1 will support: split into elements < pivot and >= pivot
     let left: [int] = []
     let right: [int] = []
     return (left, right)
 }
 
-# Get median value from sorted array
+# Get median value from sorted array, returns none if empty
 fn array_median_sorted(arr: [int]) -> ?int {
     let len: int = arr.len()
     if len == 0 {
@@ -511,7 +562,7 @@ fn array_count_less(arr: [int], value: int) -> int {
     return count
 }
 
-# Find range (max - min) of array
+# Find range (max - min) of array, returns none if empty
 fn array_range(arr: [int]) -> ?int {
     let max_val: ?int = array_max(arr)
     let min_val: ?int = array_min(arr)
@@ -524,4 +575,92 @@ fn array_range(arr: [int]) -> ?int {
         }
         none => return none
     }
+}
+
+# Binary search in sorted array, returns index if found or none
+fn array_binary_search(arr: [int], target: int) -> ?int {
+    let mut left: int = 0
+    let mut right: int = arr.len() - 1
+    
+    while left <= right {
+        let mid: int = left + (right - left) / 2
+        if arr[mid] == target {
+            return some(mid)
+        }
+        if arr[mid] < target {
+            left = mid + 1
+        } else {
+            right = mid - 1
+        }
+    }
+    return none
+}
+
+# Check if two arrays are equal (same length and elements)
+fn array_equals[T](a: [T], b: [T]) -> bool {
+    if a.len() != b.len() {
+        return false
+    }
+    let mut i: int = 0
+    while i < a.len() {
+        if a[i] != b[i] {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+# Find second largest element in array, returns none if not found
+fn array_second_max(arr: [int]) -> ?int {
+    if arr.len() < 2 {
+        return none
+    }
+    let mut max1: int = arr[0]
+    let mut max2: int = arr[0]
+    let mut i: int = 1
+    
+    while i < arr.len() {
+        if arr[i] > max1 {
+            max2 = max1
+            max1 = arr[i]
+        } else {
+            if arr[i] > max2 and arr[i] != max1 {
+                max2 = arr[i]
+            }
+        }
+        i = i + 1
+    }
+    
+    if max1 == max2 {
+        return none
+    }
+    return some(max2)
+}
+
+# Find second smallest element in array, returns none if not found
+fn array_second_min(arr: [int]) -> ?int {
+    if arr.len() < 2 {
+        return none
+    }
+    let mut min1: int = arr[0]
+    let mut min2: int = arr[0]
+    let mut i: int = 1
+    
+    while i < arr.len() {
+        if arr[i] < min1 {
+            min2 = min1
+            min1 = arr[i]
+        } else {
+            if arr[i] < min2 and arr[i] != min1 {
+                min2 = arr[i]
+            }
+        }
+        i = i + 1
+    }
+    
+    if min1 == min2 {
+        return none
+    }
+    return some(min2)
 }

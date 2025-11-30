@@ -1,62 +1,106 @@
 # std/fs.wyn
 # Filesystem operations and path manipulation utilities
 
+# --- File I/O Operations ---
+
 # Read entire file contents as string
-# Requires runtime support
+# Requires: Runtime support for file I/O syscalls
 fn read(path: str) -> Result[str, str] {
     return err("not implemented")
 }
 
 # Write string to file, overwriting if exists
-# Requires runtime support
+# Requires: Runtime support for file I/O syscalls
 fn write(path: str, content: str) -> Result[(), str] {
     return err("not implemented")
 }
 
 # Append string to end of file
-# Requires runtime support
+# Requires: Runtime support for file I/O syscalls
 fn append(path: str, content: str) -> Result[(), str] {
     return err("not implemented")
 }
 
+# Read file as lines
+# Stage 1: Will support array building for return value
+# Requires: Runtime support for file I/O syscalls
+fn read_lines(path: str) -> Result[[str], str] {
+    return err("not implemented")
+}
+
+# Write lines to file with newline separators
+# Requires: Runtime support for file I/O syscalls
+fn write_lines(path: str, lines: [str]) -> Result[(), str] {
+    return err("not implemented")
+}
+
+# --- Directory Operations ---
+
 # Check if file or directory exists
-# Requires runtime support
+# Requires: Runtime support for filesystem syscalls
 fn exists(path: str) -> bool {
     return false
 }
 
 # Create directory
-# Requires runtime support
+# Requires: Runtime support for filesystem syscalls
 fn mkdir(path: str) -> Result[(), str] {
     return err("not implemented")
 }
 
+# Create directory and all parent directories
+# Requires: Runtime support for filesystem syscalls
+fn mkdir_all(path: str) -> Result[(), str] {
+    return err("not implemented")
+}
+
 # Remove directory
-# Requires runtime support
+# Requires: Runtime support for filesystem syscalls
 fn rmdir(path: str) -> Result[(), str] {
     return err("not implemented")
 }
 
 # Remove file
-# Requires runtime support
+# Requires: Runtime support for filesystem syscalls
 fn remove(path: str) -> Result[(), str] {
     return err("not implemented")
 }
 
+# Remove file or directory recursively
+# Requires: Runtime support for filesystem syscalls
+fn remove_all(path: str) -> Result[(), str] {
+    return err("not implemented")
+}
+
 # List directory contents
-# Requires runtime support
+# Stage 1: Will support array building for return value
+# Requires: Runtime support for filesystem syscalls
 fn list(path: str) -> Result[[str], str] {
     return err("not implemented")
 }
 
+# Copy file from src to dst
+# Requires: Runtime support for filesystem syscalls
+fn copy(src: str, dst: str) -> Result[(), str] {
+    return err("not implemented")
+}
+
+# Move/rename file from src to dst
+# Requires: Runtime support for filesystem syscalls
+fn move(src: str, dst: str) -> Result[(), str] {
+    return err("not implemented")
+}
+
+# --- File Metadata ---
+
 # Check if path is a file
-# Requires runtime support
+# Requires: Runtime support for filesystem syscalls
 fn is_file(path: str) -> bool {
     return false
 }
 
 # Check if path is a directory
-# Requires runtime support
+# Requires: Runtime support for filesystem syscalls
 fn is_dir(path: str) -> bool {
     return false
 }
@@ -69,8 +113,14 @@ struct FileInfo {
 }
 
 # Get file metadata
-# Requires runtime support
+# Requires: Runtime support for filesystem syscalls
 fn stat(path: str) -> Result[FileInfo, str] {
+    return err("not implemented")
+}
+
+# Get file size in bytes
+# Requires: Runtime support for filesystem syscalls
+fn file_size(path: str) -> Result[int, str] {
     return err("not implemented")
 }
 
@@ -289,3 +339,69 @@ fn path_depth(path: str) -> int {
 fn is_filename_only(path: str) -> bool {
     return dirname(path) == "."
 }
+
+# Check if path contains parent directory references (..)
+fn has_parent_refs(path: str) -> bool {
+    let mut i: int = 0
+    while i < path.len() - 1 {
+        if path[i:i+2] == ".." {
+            if i == 0 or ord(path[i-1:i][0]) == 47 {  # '/'
+                if i + 2 >= path.len() or ord(path[i+2:i+3][0]) == 47 {
+                    return true
+                }
+            }
+        }
+        i = i + 1
+    }
+    return false
+}
+
+# Check if path is hidden (starts with .)
+fn is_hidden(path: str) -> bool {
+    let base: str = basename(path)
+    if base.len() == 0 {
+        return false
+    }
+    return ord(base[0:1][0]) == 46  # '.'
+}
+
+# Get common file extensions
+fn ext_text() -> str { return ".txt" }
+fn ext_json() -> str { return ".json" }
+fn ext_xml() -> str { return ".xml" }
+fn ext_html() -> str { return ".html" }
+fn ext_css() -> str { return ".css" }
+fn ext_js() -> str { return ".js" }
+fn ext_md() -> str { return ".md" }
+fn ext_wyn() -> str { return ".wyn" }
+
+# Check if path is a text file by extension
+fn is_text_file(path: str) -> bool {
+    let ext: str = extension(path)
+    return ext == ".txt" or ext == ".md" or ext == ".json" or 
+           ext == ".xml" or ext == ".html" or ext == ".css" or 
+           ext == ".js" or ext == ".wyn"
+}
+
+# Sanitize filename by removing invalid characters
+fn sanitize_filename(name: str) -> str {
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < name.len() {
+        let c: int = ord(name[i:i+1][0])
+        if c == 47 or c == 0 or c == 92 {  # '/', null, '\'
+            result = result + "_"
+        } else {
+            result = result + name[i:i+1]
+        }
+        i = i + 1
+    }
+    return result
+}
+
+# Create a safe path by joining and normalizing
+fn safe_join(base: str, path: str) -> str {
+    let joined: str = join_path(base, path)
+    return normalize_path(joined)
+}
+

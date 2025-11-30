@@ -1,8 +1,7 @@
 # std/os.wyn
 # Operating system interaction and command-line argument parsing
 
-# Get command-line argument at index (0 = program name)
-# Returns none if index is out of bounds
+# Get command-line argument at index (0 = program name), returns none if out of bounds
 fn get_arg(index: int) -> ?str {
     let all_args: [str] = args()
     if index < 0 or index >= all_args.len() {
@@ -11,12 +10,12 @@ fn get_arg(index: int) -> ?str {
     return some(all_args[index])
 }
 
-# Get total number of command-line arguments
+# Get total number of command-line arguments (including program name)
 fn arg_count() -> int {
     return args().len()
 }
 
-# Check if environment variable exists
+# Check if environment variable exists and has a value
 fn has_env(key: str) -> bool {
     let val: ?str = getenv(key)
     match val {
@@ -25,24 +24,24 @@ fn has_env(key: str) -> bool {
     }
 }
 
-# Get environment variable or return default
+# Get environment variable value or return default if not set
 fn getenv_or(key: str, default: str) -> str {
     let val: ?str = getenv(key)
     return val ?? default
 }
 
-# Check if argument exists at index
+# Check if argument exists at index (bounds check)
 fn has_arg(index: int) -> bool {
     return index >= 0 and index < arg_count()
 }
 
-# Get program name (first argument)
+# Get program name (first argument, defaults to "program" if not available)
 fn program_name() -> str {
     let name: ?str = get_arg(0)
     return name ?? "program"
 }
 
-# Parse integer from command-line argument
+# Parse integer from command-line argument, returns none if invalid or missing
 fn get_arg_int(index: int) -> ?int {
     let arg: ?str = get_arg(index)
     match arg {
@@ -92,6 +91,7 @@ fn get_flag_value(flag: str) -> ?str {
 }
 
 # Get all arguments after index (useful for collecting remaining args)
+# Stage 1: Will support dynamic array building
 fn get_args_from(start: int) -> [str] {
     let mut result: [str] = []
     let mut i: int = start
@@ -99,7 +99,7 @@ fn get_args_from(start: int) -> [str] {
         let arg: ?str = get_arg(i)
         match arg {
             some(s) => {
-                # Would append s to result
+                # Stage 1 will support: result = result + [s]
             }
             none => {}
         }
@@ -109,11 +109,12 @@ fn get_args_from(start: int) -> [str] {
 }
 
 # Get all arguments except program name
+# Stage 1: Will support dynamic array building
 fn get_args() -> [str] {
     return get_args_from(1)
 }
 
-# Check if any flag from list is present
+# Check if any flag from list is present in arguments
 fn has_any_flag(flags: [str]) -> bool {
     let mut i: int = 0
     while i < flags.len() {
@@ -125,7 +126,7 @@ fn has_any_flag(flags: [str]) -> bool {
     return false
 }
 
-# Get environment variable as integer
+# Get environment variable as integer, returns none if not set or invalid
 fn getenv_int(key: str) -> ?int {
     let val: ?str = getenv(key)
     match val {
@@ -134,43 +135,49 @@ fn getenv_int(key: str) -> ?int {
     }
 }
 
-# Check if running in debug mode (DEBUG env var set)
+# Check if running in debug mode (DEBUG environment variable is set)
 fn is_debug() -> bool {
     return has_env("DEBUG")
 }
 
 # Get all command-line arguments
-# Requires runtime support
+# Requires: Runtime support (process arguments)
 fn args() -> [str] {
+    # Will be implemented via runtime or FFI
     return []
 }
 
 # Get all environment variables
-# Requires runtime support
+# Requires: Runtime support (environment access)
 fn env() -> [str] {
+    # Will be implemented via runtime or FFI
     return []
 }
 
 # Get environment variable value
-# Requires runtime support
+# Requires: Runtime support (environment access)
 fn getenv(key: str) -> ?str {
+    # Will be implemented via runtime or FFI
     return none
 }
 
 # Set environment variable
-# Requires runtime support
+# Requires: Runtime support (environment modification)
 fn setenv(key: str, value: str) -> Result[(), str] {
+    # Will be implemented via runtime or FFI
     return err("not implemented")
 }
 
 # Exit program with status code
-# Requires runtime support
+# Requires: Runtime support (process exit syscall)
 fn exit(code: int) -> () {
+    # Will be implemented via syscall or FFI
     return ()
 }
 
 # Execute external command
-# Requires runtime support
+# Requires: Runtime support (process spawning)
 fn exec(command: str, args: [str]) -> Result[int, str] {
+    # Will be implemented via syscall or FFI
     return err("not implemented")
 }

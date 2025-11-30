@@ -7,36 +7,44 @@ struct Regex {
 
 # Compile a regular expression pattern
 # Returns ok(Regex) on success, or err(message) if the pattern is invalid
+# Requires: Runtime support for regex compilation
 fn compile(pattern: str) -> Result[Regex, str] {
     return err("not implemented")
 }
 
 # Test if the regex matches the entire text
 # Returns true if the text matches, false otherwise
+# Requires: Runtime support for regex matching
 fn match(regex: Regex, text: str) -> bool {
     return false
 }
 
 # Find the first occurrence of the regex in the text
 # Returns some(match) if found, or none if not found
+# Requires: Runtime support for regex matching
 fn find(regex: Regex, text: str) -> ?str {
     return none
 }
 
 # Find all occurrences of the regex in the text
 # Returns an array of all matches
+# Stage 1: Will support array building for match collection
+# Requires: Runtime support for regex matching
 fn find_all(regex: Regex, text: str) -> [str] {
     return []
 }
 
 # Replace all occurrences of the regex with the replacement string
 # Returns the modified text
+# Requires: Runtime support for regex replacement
 fn replace(regex: Regex, text: str, replacement: str) -> str {
     return ""
 }
 
 # Split the text by the regex pattern
 # Returns an array of substrings
+# Stage 1: Will support array building for split results
+# Requires: Runtime support for regex splitting
 fn split(regex: Regex, text: str) -> [str] {
     return []
 }
@@ -369,4 +377,264 @@ fn pad_right(text: str, length: int, pad_char: str) -> str {
         result = result + pad_char
     }
     return result
+}
+
+# Center a string within a given width using padding
+fn center(text: str, width: int, pad_char: str) -> str {
+    if text.len() >= width {
+        return text
+    }
+    
+    let total_padding: int = width - text.len()
+    let left_padding: int = total_padding / 2
+    let right_padding: int = total_padding - left_padding
+    
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < left_padding {
+        result = result + pad_char
+        i = i + 1
+    }
+    result = result + text
+    i = 0
+    while i < right_padding {
+        result = result + pad_char
+        i = i + 1
+    }
+    
+    return result
+}
+
+# Convert entire string to uppercase
+fn to_uppercase(text: str) -> str {
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < text.len() {
+        result = result + to_upper(text[i:i+1])
+        i = i + 1
+    }
+    return result
+}
+
+# Convert entire string to lowercase
+fn to_lowercase(text: str) -> str {
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < text.len() {
+        result = result + to_lower(text[i:i+1])
+        i = i + 1
+    }
+    return result
+}
+
+# Convert string to title case (first letter of each word capitalized)
+fn to_titlecase(text: str) -> str {
+    let mut result: str = ""
+    let mut capitalize_next: bool = true
+    let mut i: int = 0
+    
+    while i < text.len() {
+        let c: str = text[i:i+1]
+        if is_space(c) {
+            result = result + c
+            capitalize_next = true
+        } else if capitalize_next {
+            result = result + to_upper(c)
+            capitalize_next = false
+        } else {
+            result = result + to_lower(c)
+        }
+        i = i + 1
+    }
+    
+    return result
+}
+
+# Check if string is all uppercase letters
+fn is_all_upper(text: str) -> bool {
+    let mut i: int = 0
+    let mut has_letter: bool = false
+    
+    while i < text.len() {
+        let c: str = text[i:i+1]
+        if is_alpha(c) {
+            has_letter = true
+            if not is_upper(c) {
+                return false
+            }
+        }
+        i = i + 1
+    }
+    
+    return has_letter
+}
+
+# Check if string is all lowercase letters
+fn is_all_lower(text: str) -> bool {
+    let mut i: int = 0
+    let mut has_letter: bool = false
+    
+    while i < text.len() {
+        let c: str = text[i:i+1]
+        if is_alpha(c) {
+            has_letter = true
+            if not is_lower(c) {
+                return false
+            }
+        }
+        i = i + 1
+    }
+    
+    return has_letter
+}
+
+# Check if string is in title case
+fn is_titlecase(text: str) -> bool {
+    let mut expect_upper: bool = true
+    let mut i: int = 0
+    
+    while i < text.len() {
+        let c: str = text[i:i+1]
+        if is_alpha(c) {
+            if expect_upper and not is_upper(c) {
+                return false
+            }
+            if not expect_upper and is_upper(c) {
+                return false
+            }
+            expect_upper = false
+        } else if is_space(c) {
+            expect_upper = true
+        }
+        i = i + 1
+    }
+    
+    return true
+}
+
+# Check if string contains only alphanumeric characters
+fn is_alnum_string(text: str) -> bool {
+    if text.len() == 0 {
+        return false
+    }
+    
+    let mut i: int = 0
+    while i < text.len() {
+        if not is_alnum(text[i:i+1]) {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+# Check if string contains only alphabetic characters
+fn is_alpha_string(text: str) -> bool {
+    if text.len() == 0 {
+        return false
+    }
+    
+    let mut i: int = 0
+    while i < text.len() {
+        if not is_alpha(text[i:i+1]) {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+# Check if string contains only digits
+fn is_digit_string(text: str) -> bool {
+    if text.len() == 0 {
+        return false
+    }
+    
+    let mut i: int = 0
+    while i < text.len() {
+        if not is_digit(text[i:i+1]) {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+# Check if string contains only whitespace
+fn is_whitespace_string(text: str) -> bool {
+    if text.len() == 0 {
+        return false
+    }
+    
+    let mut i: int = 0
+    while i < text.len() {
+        if not is_space(text[i:i+1]) {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+# Remove all occurrences of a character from string
+fn remove_char(text: str, char_to_remove: str) -> str {
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < text.len() {
+        if text[i:i+1] != char_to_remove {
+            result = result + text[i:i+1]
+        }
+        i = i + 1
+    }
+    return result
+}
+
+# Keep only characters that match a predicate (simulated with character class)
+# For now, supports "alpha", "digit", "alnum", "space" as filter types
+fn filter_chars(text: str, filter_type: str) -> str {
+    let mut result: str = ""
+    let mut i: int = 0
+    
+    while i < text.len() {
+        let c: str = text[i:i+1]
+        let keep: bool = false
+        
+        if filter_type == "alpha" {
+            keep = is_alpha(c)
+        } else if filter_type == "digit" {
+            keep = is_digit(c)
+        } else if filter_type == "alnum" {
+            keep = is_alnum(c)
+        } else if filter_type == "space" {
+            keep = is_space(c)
+        }
+        
+        if keep {
+            result = result + c
+        }
+        i = i + 1
+    }
+    
+    return result
+}
+
+# Truncate string to maximum length, optionally adding suffix
+fn truncate(text: str, max_len: int, suffix: str) -> str {
+    if text.len() <= max_len {
+        return text
+    }
+    
+    let truncate_at: int = max_len - suffix.len()
+    if truncate_at < 0 {
+        truncate_at = 0
+    }
+    
+    return text[0:truncate_at] + suffix
+}
+
+# Wrap text to a maximum line width
+# Returns array of lines
+# Stage 1: Will support array building for line wrapping
+fn wrap_text(text: str, width: int) -> [str] {
+    return [text]
 }

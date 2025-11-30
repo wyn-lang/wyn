@@ -1,6 +1,7 @@
 # std/math.wyn
 # Mathematical functions and utilities
 
+# Return absolute value of an integer
 fn abs(n: int) -> int {
     if n < 0 {
         return 0 - n
@@ -8,6 +9,7 @@ fn abs(n: int) -> int {
     return n
 }
 
+# Return minimum of two integers
 fn min(a: int, b: int) -> int {
     if a < b {
         return a
@@ -15,6 +17,7 @@ fn min(a: int, b: int) -> int {
     return b
 }
 
+# Return maximum of two integers
 fn max(a: int, b: int) -> int {
     if a > b {
         return a
@@ -22,6 +25,7 @@ fn max(a: int, b: int) -> int {
     return b
 }
 
+# Raise base to the power of exp (base^exp)
 fn pow(base: int, exp: int) -> int {
     if exp == 0 {
         return 1
@@ -35,6 +39,7 @@ fn pow(base: int, exp: int) -> int {
     return result
 }
 
+# Calculate square root using Newton's method
 fn sqrt(n: float) -> float {
     if n < 0.0 {
         return 0.0
@@ -56,6 +61,7 @@ fn sqrt(n: float) -> float {
     return x
 }
 
+# Round down to nearest integer (toward negative infinity)
 fn floor(n: float) -> int {
     # Simple truncation toward negative infinity
     let i: int = n.to_int()
@@ -68,6 +74,7 @@ fn floor(n: float) -> int {
     return i
 }
 
+# Round up to nearest integer (toward positive infinity)
 fn ceil(n: float) -> int {
     # Simple truncation toward positive infinity
     let i: int = n.to_int()
@@ -78,6 +85,7 @@ fn ceil(n: float) -> int {
     return i
 }
 
+# Round to nearest integer (0.5 rounds away from zero)
 fn round(n: float) -> int {
     if n >= 0.0 {
         return (n + 0.5).to_int()
@@ -85,56 +93,87 @@ fn round(n: float) -> int {
     return (n - 0.5).to_int()
 }
 
+# Sine function
+# Requires: Runtime support for transcendental functions
 fn sin(x: float) -> float {
-    # Requires runtime support (transcendental function)
+    # Requires hardware/library support for trigonometric functions
+    # Will be implemented via FFI or compiler builtin
     return 0.0
 }
 
+# Cosine function
+# Requires: Runtime support for transcendental functions
 fn cos(x: float) -> float {
-    # Requires runtime support (transcendental function)
+    # Requires hardware/library support for trigonometric functions
+    # Will be implemented via FFI or compiler builtin
     return 0.0
 }
 
+# Tangent function
+# Requires: Runtime support for transcendental functions
 fn tan(x: float) -> float {
-    # Requires runtime support (transcendental function)
+    # Requires hardware/library support for trigonometric functions
+    # Will be implemented via FFI or compiler builtin
     return 0.0
 }
 
+# Arcsine function
+# Requires: Runtime support for transcendental functions
 fn asin(x: float) -> float {
-    # Requires runtime support (transcendental function)
+    # Requires hardware/library support for inverse trig functions
+    # Will be implemented via FFI or compiler builtin
     return 0.0
 }
 
+# Arccosine function
+# Requires: Runtime support for transcendental functions
 fn acos(x: float) -> float {
-    # Requires runtime support (transcendental function)
+    # Requires hardware/library support for inverse trig functions
+    # Will be implemented via FFI or compiler builtin
     return 0.0
 }
 
+# Arctangent function
+# Requires: Runtime support for transcendental functions
 fn atan(x: float) -> float {
-    # Requires runtime support (transcendental function)
+    # Requires hardware/library support for inverse trig functions
+    # Will be implemented via FFI or compiler builtin
     return 0.0
 }
 
+# Two-argument arctangent function
+# Requires: Runtime support for transcendental functions
 fn atan2(y: float, x: float) -> float {
-    # Requires runtime support (transcendental function)
+    # Requires hardware/library support for inverse trig functions
+    # Will be implemented via FFI or compiler builtin
     return 0.0
 }
 
+# Natural logarithm
+# Requires: Runtime support for transcendental functions
 fn log(x: float) -> float {
-    # Requires runtime support (transcendental function)
+    # Requires hardware/library support for logarithms
+    # Will be implemented via FFI or compiler builtin
     return 0.0
 }
 
+# Base-10 logarithm
+# Requires: Runtime support for transcendental functions
 fn log10(x: float) -> float {
-    # Requires runtime support (transcendental function)
+    # Requires hardware/library support for logarithms
+    # Will be implemented via FFI or compiler builtin
     return 0.0
 }
 
+# Exponential function (e^x)
+# Requires: Runtime support for transcendental functions
 fn exp(x: float) -> float {
-    # Requires runtime support (transcendental function)
+    # Requires hardware/library support for exponential
+    # Will be implemented via FFI or compiler builtin
     return 0.0
 }
 
+# Return absolute value of a float
 fn abs_float(n: float) -> float {
     if n < 0.0 {
         return 0.0 - n
@@ -142,6 +181,7 @@ fn abs_float(n: float) -> float {
     return n
 }
 
+# Return minimum of two floats
 fn min_float(a: float, b: float) -> float {
     if a < b {
         return a
@@ -149,6 +189,7 @@ fn min_float(a: float, b: float) -> float {
     return b
 }
 
+# Return maximum of two floats
 fn max_float(a: float, b: float) -> float {
     if a > b {
         return a
@@ -156,6 +197,7 @@ fn max_float(a: float, b: float) -> float {
     return b
 }
 
+# Clamp value between min and max bounds
 fn clamp(value: int, min_val: int, max_val: int) -> int {
     if value < min_val {
         return min_val
@@ -166,6 +208,7 @@ fn clamp(value: int, min_val: int, max_val: int) -> int {
     return value
 }
 
+# Clamp float value between min and max bounds
 fn clamp_float(value: float, min_val: float, max_val: float) -> float {
     if value < min_val {
         return min_val
@@ -176,6 +219,7 @@ fn clamp_float(value: float, min_val: float, max_val: float) -> float {
     return value
 }
 
+# Return sign of number: 1 for positive, -1 for negative, 0 for zero
 fn sign(n: int) -> int {
     if n > 0 {
         return 1
@@ -186,14 +230,17 @@ fn sign(n: int) -> int {
     return 0
 }
 
+# Check if number is even
 fn is_even(n: int) -> bool {
     return n % 2 == 0
 }
 
+# Check if number is odd
 fn is_odd(n: int) -> bool {
     return n % 2 != 0
 }
 
+# Calculate greatest common divisor using Euclidean algorithm
 fn gcd(a: int, b: int) -> int {
     let mut x: int = abs(a)
     let mut y: int = abs(b)
@@ -205,6 +252,7 @@ fn gcd(a: int, b: int) -> int {
     return x
 }
 
+# Calculate least common multiple
 fn lcm(a: int, b: int) -> int {
     if a == 0 or b == 0 {
         return 0
@@ -212,6 +260,7 @@ fn lcm(a: int, b: int) -> int {
     return abs(a * b) / gcd(a, b)
 }
 
+# Compute factorial
 fn factorial(n: int) -> int {
     if n < 0 {
         return 0
@@ -227,3 +276,166 @@ fn factorial(n: int) -> int {
     }
     return result
 }
+
+# Check if number is prime
+fn is_prime(n: int) -> bool {
+    if n < 2 {
+        return false
+    }
+    if n == 2 {
+        return true
+    }
+    if n % 2 == 0 {
+        return false
+    }
+    let mut i: int = 3
+    while i * i <= n {
+        if n % i == 0 {
+            return false
+        }
+        i = i + 2
+    }
+    return true
+}
+
+# Compute nth Fibonacci number
+fn fibonacci(n: int) -> int {
+    if n <= 0 {
+        return 0
+    }
+    if n == 1 {
+        return 1
+    }
+    let mut a: int = 0
+    let mut b: int = 1
+    let mut i: int = 2
+    while i <= n {
+        let temp: int = a + b
+        a = b
+        b = temp
+        i = i + 1
+    }
+    return b
+}
+
+# Check if number is perfect square
+fn is_perfect_square(n: int) -> bool {
+    if n < 0 {
+        return false
+    }
+    if n == 0 or n == 1 {
+        return true
+    }
+    # Use integer square root approximation
+    let mut x: int = n
+    let mut y: int = (x + 1) / 2
+    while y < x {
+        x = y
+        y = (x + n / x) / 2
+    }
+    return x * x == n
+}
+
+# Compute integer square root (floor)
+fn isqrt(n: int) -> int {
+    if n < 0 {
+        return 0
+    }
+    if n == 0 or n == 1 {
+        return n
+    }
+    # Newton's method for integer square root
+    let mut x: int = n
+    let mut y: int = (x + 1) / 2
+    while y < x {
+        x = y
+        y = (x + n / x) / 2
+    }
+    return x
+}
+
+# Compute modular exponentiation (base^exp mod m)
+fn mod_pow(base: int, exp: int, m: int) -> int {
+    if m == 1 {
+        return 0
+    }
+    let mut result: int = 1
+    let mut b: int = base % m
+    let mut e: int = exp
+    while e > 0 {
+        if e % 2 == 1 {
+            result = (result * b) % m
+        }
+        e = e / 2
+        b = (b * b) % m
+    }
+    return result
+}
+
+# Sum of digits
+fn digit_sum(n: int) -> int {
+    let mut sum: int = 0
+    let mut num: int = abs(n)
+    while num > 0 {
+        sum = sum + (num % 10)
+        num = num / 10
+    }
+    return sum
+}
+
+# Count number of digits
+fn digit_count(n: int) -> int {
+    if n == 0 {
+        return 1
+    }
+    let mut count: int = 0
+    let mut num: int = abs(n)
+    while num > 0 {
+        count = count + 1
+        num = num / 10
+    }
+    return count
+}
+
+# Reverse digits of a number
+fn reverse_digits(n: int) -> int {
+    let mut result: int = 0
+    let mut num: int = abs(n)
+    while num > 0 {
+        result = result * 10 + (num % 10)
+        num = num / 10
+    }
+    if n < 0 {
+        return 0 - result
+    }
+    return result
+}
+
+# Check if number is palindrome
+fn is_palindrome(n: int) -> bool {
+    if n < 0 {
+        return false
+    }
+    return n == reverse_digits(n)
+}
+
+# Linear interpolation between a and b by factor t (0.0 to 1.0)
+fn lerp(a: float, b: float, t: float) -> float {
+    return a + (b - a) * t
+}
+
+# Map value from one range to another
+fn map_range(value: float, in_min: float, in_max: float, out_min: float, out_max: float) -> float {
+    return (value - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
+}
+
+# Calculate average of two integers
+fn avg(a: int, b: int) -> int {
+    return (a + b) / 2
+}
+
+# Calculate average of two floats
+fn avg_float(a: float, b: float) -> float {
+    return (a + b) / 2.0
+}
+

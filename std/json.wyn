@@ -3,22 +3,26 @@
 
 # Parse a JSON string into a value
 # Returns ok(value) on success, or err(message) on parse error
+# Requires: Runtime support for JSON parsing
 fn parse(json_str: str) -> Result[str, str] {
     return err("not implemented")
 }
 
 # Convert a value to a JSON string
 # Returns ok(json) on success, or err(message) on serialization error
+# Requires: Runtime support for JSON serialization
 fn stringify(value: str) -> Result[str, str] {
     return err("not implemented")
 }
 
 # Alias for parse - deserialize JSON string to value
+# Requires: Runtime support for JSON parsing
 fn from_str(json_str: str) -> Result[str, str] {
     return err("not implemented")
 }
 
 # Alias for stringify - serialize value to JSON string
+# Requires: Runtime support for JSON serialization
 fn to_str(value: str) -> Result[str, str] {
     return err("not implemented")
 }
@@ -288,10 +292,89 @@ fn validate_json(json: str) -> Result[(), str] {
 }
 
 # Extract a value from JSON by key path (simple dot notation)
-# Requires runtime support
+# Requires: Runtime support for JSON path traversal
 fn json_get(json: str, path: str) -> ?str {
-    # Requires runtime support
     return none
+}
+
+# Set a value in JSON by key path (simple dot notation)
+# Returns ok(modified_json) on success, err(message) on failure
+# Requires: Runtime support for JSON manipulation
+fn json_set(json: str, path: str, value: str) -> Result[str, str] {
+    return err("not implemented")
+}
+
+# Delete a key from JSON object by path
+# Returns ok(modified_json) on success, err(message) on failure
+# Requires: Runtime support for JSON manipulation
+fn json_delete(json: str, path: str) -> Result[str, str] {
+    return err("not implemented")
+}
+
+# Check if JSON contains a key at the given path
+# Returns true if key exists, false otherwise
+fn json_has_key(json: str, path: str) -> bool {
+    return false
+}
+
+# Get all keys from a JSON object
+# Returns an array of key names
+# Stage 1: Will support array building for key extraction
+fn json_keys(json: str) -> [str] {
+    return []
+}
+
+# Get all values from a JSON object
+# Returns an array of values as JSON strings
+# Stage 1: Will support array building for value extraction
+fn json_values(json: str) -> [str] {
+    return []
+}
+
+# Merge two JSON objects
+# Returns ok(merged_json) on success, err(message) on failure
+# Requires: Runtime support for JSON manipulation
+fn json_merge(json1: str, json2: str) -> Result[str, str] {
+    return err("not implemented")
+}
+
+# Check if a JSON string represents a specific type
+fn is_json_null(json: str) -> bool {
+    return trim(json) == "null"
+}
+
+# Check if a JSON string represents a boolean
+fn is_json_bool(json: str) -> bool {
+    let t: str = trim(json)
+    return t == "true" or t == "false"
+}
+
+# Check if a JSON string represents a number
+fn is_json_number(json: str) -> bool {
+    let t: str = trim(json)
+    if t.len() == 0 {
+        return false
+    }
+    let first: int = ord(t[0:1][0])
+    return is_json_number_start(first)
+}
+
+# Check if a JSON string represents a string
+fn is_json_string(json: str) -> bool {
+    let t: str = trim(json)
+    return t.len() >= 2 and t[0:1] == "\"" and t[t.len()-1:t.len()] == "\""
+}
+
+# Check if a JSON string represents an array
+fn is_json_array(json: str) -> bool {
+    let t: str = trim(json)
+    return t.len() >= 2 and t[0:1] == "[" and t[t.len()-1:t.len()] == "]"
+}
+
+# Check if a JSON string represents an object
+fn is_json_object(json: str) -> bool {
+    let t: str = trim(json)
+    return t.len() >= 2 and t[0:1] == "{" and t[t.len()-1:t.len()] == "}"
 }
 
 # Count elements in a JSON array
