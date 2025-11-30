@@ -884,3 +884,191 @@ fn remove_char(s: str, ch: str) -> str {
 fn min(a: int, b: int) -> int {
     return if a < b then a else b
 }
+
+# Count occurrences of substring in string
+fn count_substr(s: str, substr: str) -> int {
+    if substr.len() == 0 or substr.len() > s.len() {
+        return 0
+    }
+    let mut count: int = 0
+    let mut i: int = 0
+    while i <= s.len() - substr.len() {
+        if s[i:i + substr.len()] == substr {
+            count = count + 1
+            i = i + substr.len()
+        } else {
+            i = i + 1
+        }
+    }
+    return count
+}
+
+# Find index of first occurrence of substring, returns -1 if not found
+fn index_of(s: str, substr: str) -> int {
+    if substr.len() == 0 or substr.len() > s.len() {
+        return 0 - 1
+    }
+    let mut i: int = 0
+    while i <= s.len() - substr.len() {
+        if s[i:i + substr.len()] == substr {
+            return i
+        }
+        i = i + 1
+    }
+    return 0 - 1
+}
+
+# Find index of last occurrence of substring, returns -1 if not found
+fn last_index_of(s: str, substr: str) -> int {
+    if substr.len() == 0 or substr.len() > s.len() {
+        return 0 - 1
+    }
+    let mut i: int = s.len() - substr.len()
+    while i >= 0 {
+        if s[i:i + substr.len()] == substr {
+            return i
+        }
+        i = i - 1
+    }
+    return 0 - 1
+}
+
+# Truncate string to max length, add suffix if truncated
+fn truncate(s: str, max_len: int, suffix: str) -> str {
+    if s.len() <= max_len {
+        return s
+    }
+    let truncate_at: int = max_len - suffix.len()
+    if truncate_at <= 0 {
+        return suffix
+    }
+    return s[:truncate_at] + suffix
+}
+
+# Center string in field of given width with padding
+fn center(s: str, width: int, pad: str) -> str {
+    if s.len() >= width {
+        return s
+    }
+    let total_pad: int = width - s.len()
+    let left_pad: int = total_pad / 2
+    let right_pad: int = total_pad - left_pad
+    return repeat(pad, left_pad) + s + repeat(pad, right_pad)
+}
+
+# Check if string is numeric (all digits)
+fn is_numeric(s: str) -> bool {
+    if s.len() == 0 {
+        return false
+    }
+    let mut i: int = 0
+    while i < s.len() {
+        let c: str = s[i:i+1]
+        if c < "0" or c > "9" {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+# Check if string is alphabetic (all letters)
+fn is_alpha(s: str) -> bool {
+    if s.len() == 0 {
+        return false
+    }
+    let mut i: int = 0
+    while i < s.len() {
+        let c: str = s[i:i+1]
+        let is_upper: bool = c >= "A" and c <= "Z"
+        let is_lower: bool = c >= "a" and c <= "z"
+        if not is_upper and not is_lower {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+# Check if string is alphanumeric
+fn is_alphanumeric(s: str) -> bool {
+    if s.len() == 0 {
+        return false
+    }
+    let mut i: int = 0
+    while i < s.len() {
+        let c: str = s[i:i+1]
+        let is_digit: bool = c >= "0" and c <= "9"
+        let is_upper: bool = c >= "A" and c <= "Z"
+        let is_lower: bool = c >= "a" and c <= "z"
+        if not is_digit and not is_upper and not is_lower {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+# Reverse a string
+fn reverse(s: str) -> str {
+    let mut result: str = ""
+    let mut i: int = s.len() - 1
+    while i >= 0 {
+        result = result + s[i:i+1]
+        i = i - 1
+    }
+    return result
+}
+
+# Check if string is palindrome
+fn is_palindrome_str(s: str) -> bool {
+    let len: int = s.len()
+    let mut i: int = 0
+    while i < len / 2 {
+        if s[i:i+1] != s[len - 1 - i:len - i] {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+# Swap case of string (upper to lower, lower to upper)
+fn swap_case(s: str) -> str {
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < s.len() {
+        let c: str = s[i:i+1]
+        if c >= "A" and c <= "Z" {
+            result = result + to_lower_char(c)
+        } else if c >= "a" and c <= "z" {
+            result = result + to_upper_char(c)
+        } else {
+            result = result + c
+        }
+        i = i + 1
+    }
+    return result
+}
+
+# Title case: capitalize first letter of each word
+fn title_case(s: str) -> str {
+    let mut result: str = ""
+    let mut capitalize_next: bool = true
+    let mut i: int = 0
+    while i < s.len() {
+        let c: str = s[i:i+1]
+        if c == " " or c == "\t" or c == "\n" {
+            result = result + c
+            capitalize_next = true
+        } else if capitalize_next and c >= "a" and c <= "z" {
+            result = result + to_upper_char(c)
+            capitalize_next = false
+        } else {
+            result = result + c
+            capitalize_next = false
+        }
+        i = i + 1
+    }
+    return result
+}
