@@ -2151,6 +2151,7 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                 if (tc_lookup_fn(tc, e->ident)) return new_type(TYPE_FUNCTION);
                 // Built-in functions
                 if (strcmp(e->ident, "print") == 0 || strcmp(e->ident, "print_str") == 0 ||
+                    strcmp(e->ident, "print_float") == 0 ||
                     strcmp(e->ident, "assert") == 0 || strcmp(e->ident, "sqrt") == 0 || 
                     strcmp(e->ident, "len") == 0 || strcmp(e->ident, "exit") == 0 ||
                     strcmp(e->ident, "abs") == 0 || strcmp(e->ident, "min") == 0 ||
@@ -4635,6 +4636,18 @@ static void codegen_module(CodeGen* cg) {
         cg_emit(cg, "    popq %%rbp");
         cg_emit(cg, "    retq");
         
+        cg_emit(cg, "    .globl %sprint_float", pfx);
+        cg_emit(cg, "    .p2align 4");
+        cg_emit(cg, "%sprint_float:", pfx);
+        cg_emit(cg, "    pushq %%rbp");
+        cg_emit(cg, "    movq %%rsp, %%rbp");
+        cg_emit(cg, "    movq %%rdi, %%xmm0");  // rdi contains float bits
+        cg_emit(cg, "    leaq L_.ffmt(%%rip), %%rdi");
+        cg_emit(cg, "    movl $1, %%eax");  // 1 float arg in xmm
+        cg_emit(cg, "    callq %sprintf", pfx);
+        cg_emit(cg, "    popq %%rbp");
+        cg_emit(cg, "    retq");
+        
         // __wyn_read_file: reads file to malloc'd string, returns ptr (or 0 on error)
         cg_emit(cg, "    .globl %s_wyn_read_file", pfx);
         cg_emit(cg, "    .p2align 4");
@@ -4693,6 +4706,8 @@ static void codegen_module(CodeGen* cg) {
         cg_emit(cg, "    .asciz \"%%lld\\n\"");
         cg_emit(cg, "L_.sfmt:");
         cg_emit(cg, "    .asciz \"%%s\\n\"");
+        cg_emit(cg, "L_.ffmt:");
+        cg_emit(cg, "    .asciz \"%%g\\n\"");
         cg_emit(cg, "L_.itsfmt:");
         cg_emit(cg, "    .asciz \"%%lld\"");
         cg_emit(cg, "L_.itsbuf:");
@@ -4769,6 +4784,23 @@ static void codegen_module(CodeGen* cg) {
     cg_emit(cg, "    add sp, sp, #32");
     cg_emit(cg, "    ret");
     
+    // print_float runtime for floats
+    cg_emit(cg, "    .globl %sprint_float", pfx);
+    cg_emit(cg, "    .p2align 2");
+    cg_emit(cg, "%sprint_float:", pfx);
+    cg_emit(cg, "    sub sp, sp, #32");
+    cg_emit(cg, "    stp x29, x30, [sp, #16]");
+    cg_emit(cg, "    add x29, sp, #16");
+    cg_emit(cg, "    fmov d0, x0");  // x0 contains float bits, move to d0
+    cg_emit(cg, "    mov x8, sp");
+    cg_emit(cg, "    str d0, [x8]");  // Store float on stack for variadic
+    cg_emit_adrp(cg, "x0", "L_.ffmt");
+    cg_emit_add_pageoff(cg, "x0", "x0", "L_.ffmt");
+    cg_emit(cg, "    bl %sprintf", pfx);
+    cg_emit(cg, "    ldp x29, x30, [sp, #16]");
+    cg_emit(cg, "    add sp, sp, #32");
+    cg_emit(cg, "    ret");
+    
     // __wyn_read_file: reads file to malloc'd string, returns ptr (or 0 on error)
     cg_emit(cg, "    .globl %s_wyn_read_file", pfx);
     cg_emit(cg, "    .p2align 2");
@@ -4824,6 +4856,8 @@ static void codegen_module(CodeGen* cg) {
     cg_emit(cg, "    .asciz \"%%lld\\n\"");
     cg_emit(cg, "L_.sfmt:");
     cg_emit(cg, "    .asciz \"%%s\\n\"");
+    cg_emit(cg, "L_.ffmt:");
+    cg_emit(cg, "    .asciz \"%%g\\n\"");
     cg_emit(cg, "L_.itsfmt:");
     cg_emit(cg, "    .asciz \"%%lld\"");
     cg_emit(cg, "L_.itsbuf:");
