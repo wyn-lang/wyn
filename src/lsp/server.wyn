@@ -1,0 +1,388 @@
+// Wyn Language Server Protocol (LSP) Implementation
+// Provides IDE features: completion, diagnostics, hover, go-to-definition
+
+import compiler.lexer.lexer.{Lexer}
+import compiler.parser.parser.{Parser}
+import compiler.typechecker.checker.{TypeChecker}
+
+pub struct LspServer {
+    documents: [(str, str)]  // (uri, content)
+    diagnostics: [(str, [Diagnostic])]
+}
+
+struct Diagnostic {
+    line: int
+    col: int
+    message: str
+    severity: int  // 1=error, 2=warning, 3=info, 4=hint
+}
+
+struct Position {
+    line: int
+    character: int
+}
+
+struct Range {
+    start: Position
+    end: Position
+}
+
+struct Location {
+    uri: str
+    range: Range
+}
+
+struct CompletionItem {
+    label: str
+    kind: int  // 1=text, 2=method, 3=function, 6=variable, 7=class, 22=struct
+    detail: str
+    documentation: str
+}
+
+struct Hover {
+    contents: str
+    range: Range
+}
+
+impl LspServer {
+    pub fn new() -> LspServer {
+        LspServer{documents: [], diagnostics: []}
+    }
+    
+    // Handle incoming JSON-RPC request
+    pub fn handle_request(mut self, method: str, params: str) -> str {
+        match method {
+            "initialize" => self.handle_initialize(params)
+            "textDocument/didOpen" => self.handle_did_open(params)
+            "textDocument/didChange" => self.handle_did_change(params)
+            "textDocument/didClose" => self.handle_did_close(params)
+            "textDocument/completion" => self.handle_completion(params)
+            "textDocument/hover" => self.handle_hover(params)
+            "textDocument/definition" => self.handle_definition(params)
+            "textDocument/references" => self.handle_references(params)
+            "textDocument/formatting" => self.handle_formatting(params)
+            "shutdown" => self.handle_shutdown()
+            _ => json_error(-32601, "Method not found: " + method)
+        }
+    }
+    
+    fn handle_initialize(self, params: str) -> str {
+        return json_result("{" +
+            "\"capabilities\": {" +
+                "\"textDocumentSync\": 1," +
+                "\"completionProvider\": {\"triggerCharacters\": [\".\", \":\"]}," +
+                "\"hoverProvider\": true," +
+                "\"definitionProvider\": true," +
+                "\"referencesProvider\": true," +
+                "\"documentFormattingProvider\": true" +
+            "}," +
+            "\"serverInfo\": {\"name\": \"wyn-lsp\", \"version\": \"0.1.0\"}" +
+        "}")
+    }
+    
+    fn handle_did_open(mut self, params: str) -> str {
+        let uri: str = json_get(params, "textDocument.uri")
+        let content: str = json_get(params, "textDocument.text")
+        
+        self.documents = append(self.documents, (uri, content))
+        self.validate_document(uri, content)
+        
+        return json_null()
+    }
+    
+    fn handle_did_change(mut self, params: str) -> str {
+        let uri: str = json_get(params, "textDocument.uri")
+        let content: str = json_get(params, "contentChanges[0].text")
+        
+        // Update document
+        let mut i: int = 0
+        while i < self.documents.len() {
+            if self.documents[i].0 == uri {
+                self.documents[i] = (uri, content)
+                break
+            }
+            i = i + 1
+        }
+        
+        self.validate_document(uri, content)
+        return json_null()
+    }
+    
+    fn handle_did_close(mut self, params: str) -> str {
+        let uri: str = json_get(params, "textDocument.uri")
+        
+        // Remove document
+        let mut new_docs: [(str, str)] = []
+        for doc in self.documents {
+            if doc.0 != uri {
+                new_docs = append(new_docs, doc)
+            }
+        }
+        self.documents = new_docs
+        
+        return json_null()
+    }
+    
+    fn handle_completion(self, params: str) -> str {
+        let uri: str = json_get(params, "textDocument.uri")
+        let line: int = str_to_int(json_get(params, "position.line")) ?? 0
+        let col: int = str_to_int(json_get(params, "position.character")) ?? 0
+        
+        let content: str = self.get_document(uri)
+        let items: [CompletionItem] = self.get_completions(content, line, col)
+        
+        return json_result(completion_items_to_json(items))
+    }
+    
+    fn handle_hover(self, params: str) -> str {
+        let uri: str = json_get(params, "textDocument.uri")
+        let line: int = str_to_int(json_get(params, "position.line")) ?? 0
+        let col: int = str_to_int(json_get(params, "position.character")) ?? 0
+        
+        let content: str = self.get_document(uri)
+        let hover: ?Hover = self.get_hover(content, line, col)
+        
+        match hover {
+            some(h) => return json_result(hover_to_json(h))
+            none => return json_null()
+        }
+    }
+    
+    fn handle_definition(self, params: str) -> str {
+        let uri: str = json_get(params, "textDocument.uri")
+        let line: int = str_to_int(json_get(params, "position.line")) ?? 0
+        let col: int = str_to_int(json_get(params, "position.character")) ?? 0
+        
+        let content: str = self.get_document(uri)
+        let loc: ?Location = self.find_definition(content, line, col, uri)
+        
+        match loc {
+            some(l) => return json_result(location_to_json(l))
+            none => return json_null()
+        }
+    }
+    
+    fn handle_references(self, params: str) -> str {
+        let uri: str = json_get(params, "textDocument.uri")
+        let line: int = str_to_int(json_get(params, "position.line")) ?? 0
+        let col: int = str_to_int(json_get(params, "position.character")) ?? 0
+        
+        let content: str = self.get_document(uri)
+        let refs: [Location] = self.find_references(content, line, col, uri)
+        
+        return json_result(locations_to_json(refs))
+    }
+    
+    fn handle_formatting(self, params: str) -> str {
+        let uri: str = json_get(params, "textDocument.uri")
+        let content: str = self.get_document(uri)
+        let formatted: str = format_code(content)
+        
+        // Return text edit for entire document
+        let lines: int = count_lines(content)
+        return json_result("[{" +
+            "\"range\": {\"start\": {\"line\": 0, \"character\": 0}, \"end\": {\"line\": " + lines.to_str() + ", \"character\": 0}}," +
+            "\"newText\": " + json_escape(formatted) +
+        "}]")
+    }
+    
+    fn handle_shutdown(self) -> str {
+        return json_null()
+    }
+    
+    fn get_document(self, uri: str) -> str {
+        for doc in self.documents {
+            if doc.0 == uri {
+                return doc.1
+            }
+        }
+        return ""
+    }
+    
+    fn validate_document(mut self, uri: str, content: str) {
+        let mut diagnostics: [Diagnostic] = []
+        
+        // Lex
+        let mut lexer: Lexer = Lexer.new(content, uri)
+        let tokens = lexer.tokenize()
+        
+        // Parse
+        let mut parser: Parser = Parser.new(tokens)
+        let ast = parser.parse()
+        
+        // Type check
+        let mut checker: TypeChecker = TypeChecker.new()
+        let errors = checker.check_module(ast)
+        
+        for error in errors {
+            diagnostics = append(diagnostics, Diagnostic{
+                line: 0,  // TODO: extract from error
+                col: 0,
+                message: error,
+                severity: 1
+            })
+        }
+        
+        // Update diagnostics
+        let mut found: bool = false
+        let mut i: int = 0
+        while i < self.diagnostics.len() {
+            if self.diagnostics[i].0 == uri {
+                self.diagnostics[i] = (uri, diagnostics)
+                found = true
+                break
+            }
+            i = i + 1
+        }
+        if not found {
+            self.diagnostics = append(self.diagnostics, (uri, diagnostics))
+        }
+        
+        // Publish diagnostics notification
+        self.publish_diagnostics(uri, diagnostics)
+    }
+    
+    fn publish_diagnostics(self, uri: str, diagnostics: [Diagnostic]) {
+        let json: str = "{\"uri\": " + json_escape(uri) + ", \"diagnostics\": " + diagnostics_to_json(diagnostics) + "}"
+        // Send notification
+        send_notification("textDocument/publishDiagnostics", json)
+    }
+    
+    fn get_completions(self, content: str, line: int, col: int) -> [CompletionItem] {
+        let mut items: [CompletionItem] = []
+        
+        // Keywords
+        let keywords: [str] = ["fn", "let", "mut", "if", "else", "while", "for", "in", "match", "return", "struct", "enum", "import", "pub"]
+        for kw in keywords {
+            items = append(items, CompletionItem{label: kw, kind: 14, detail: "keyword", documentation: ""})
+        }
+        
+        // Built-in types
+        let types: [str] = ["int", "float", "str", "bool", "byte"]
+        for ty in types {
+            items = append(items, CompletionItem{label: ty, kind: 7, detail: "type", documentation: ""})
+        }
+        
+        // Built-in functions
+        let builtins: [str] = ["print", "print_str", "len", "abs", "min", "max"]
+        for b in builtins {
+            items = append(items, CompletionItem{label: b, kind: 3, detail: "builtin", documentation: ""})
+        }
+        
+        // TODO: Add context-aware completions from AST
+        
+        return items
+    }
+    
+    fn get_hover(self, content: str, line: int, col: int) -> ?Hover {
+        // TODO: Find symbol at position and return type info
+        return none
+    }
+    
+    fn find_definition(self, content: str, line: int, col: int, uri: str) -> ?Location {
+        // TODO: Find definition of symbol at position
+        return none
+    }
+    
+    fn find_references(self, content: str, line: int, col: int, uri: str) -> [Location] {
+        // TODO: Find all references to symbol at position
+        return []
+    }
+}
+
+// JSON helpers
+fn json_result(result: str) -> str {
+    return "{\"jsonrpc\": \"2.0\", \"result\": " + result + "}"
+}
+
+fn json_error(code: int, message: str) -> str {
+    return "{\"jsonrpc\": \"2.0\", \"error\": {\"code\": " + code.to_str() + ", \"message\": " + json_escape(message) + "}}"
+}
+
+fn json_null() -> str {
+    return "{\"jsonrpc\": \"2.0\", \"result\": null}"
+}
+
+fn json_escape(s: str) -> str {
+    return "\"" + s + "\""  // TODO: proper escaping
+}
+
+fn json_get(json: str, path: str) -> str {
+    // TODO: proper JSON parsing
+    return ""
+}
+
+fn diagnostics_to_json(diagnostics: [Diagnostic]) -> str {
+    let mut result: str = "["
+    let mut i: int = 0
+    for d in diagnostics {
+        if i > 0 { result = result + "," }
+        result = result + "{\"range\": {\"start\": {\"line\": " + d.line.to_str() + ", \"character\": " + d.col.to_str() + "}, \"end\": {\"line\": " + d.line.to_str() + ", \"character\": " + (d.col + 1).to_str() + "}}, \"message\": " + json_escape(d.message) + ", \"severity\": " + d.severity.to_str() + "}"
+        i = i + 1
+    }
+    return result + "]"
+}
+
+fn completion_items_to_json(items: [CompletionItem]) -> str {
+    let mut result: str = "["
+    let mut i: int = 0
+    for item in items {
+        if i > 0 { result = result + "," }
+        result = result + "{\"label\": " + json_escape(item.label) + ", \"kind\": " + item.kind.to_str() + ", \"detail\": " + json_escape(item.detail) + "}"
+        i = i + 1
+    }
+    return result + "]"
+}
+
+fn hover_to_json(h: Hover) -> str {
+    return "{\"contents\": " + json_escape(h.contents) + "}"
+}
+
+fn location_to_json(l: Location) -> str {
+    return "{\"uri\": " + json_escape(l.uri) + ", \"range\": {\"start\": {\"line\": " + l.range.start.line.to_str() + ", \"character\": " + l.range.start.character.to_str() + "}, \"end\": {\"line\": " + l.range.end.line.to_str() + ", \"character\": " + l.range.end.character.to_str() + "}}}"
+}
+
+fn locations_to_json(locs: [Location]) -> str {
+    let mut result: str = "["
+    let mut i: int = 0
+    for l in locs {
+        if i > 0 { result = result + "," }
+        result = result + location_to_json(l)
+        i = i + 1
+    }
+    return result + "]"
+}
+
+fn format_code(code: str) -> str {
+    // TODO: implement code formatter
+    return code
+}
+
+fn count_lines(s: str) -> int {
+    let mut count: int = 1
+    let mut i: int = 0
+    while i < s.len() {
+        if s[i:i+1] == "\n" {
+            count = count + 1
+        }
+        i = i + 1
+    }
+    return count
+}
+
+fn send_notification(method: str, params: str) {
+    // TODO: send JSON-RPC notification
+}
+
+fn main() {
+    let mut server: LspServer = LspServer.new()
+    
+    // Main loop: read JSON-RPC messages from stdin
+    while true {
+        // TODO: read Content-Length header
+        // TODO: read JSON body
+        // TODO: parse method and params
+        // TODO: call handle_request
+        // TODO: write response to stdout
+    }
+}
