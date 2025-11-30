@@ -1,0 +1,382 @@
+# Wyn Standard Library - TUI Module
+# Terminal User Interface framework
+#
+# Requires: Terminal control (ANSI escape codes, termios)
+# Stage 1: Will use native terminal APIs
+
+# ============================================================================
+# Core Types
+# ============================================================================
+
+struct Style {
+    fg: Color
+    bg: Color
+    bold: bool
+    italic: bool
+    underline: bool
+}
+
+struct Color {
+    code: int  # ANSI color code or RGB
+    is_rgb: bool
+    r: int
+    g: int
+    b: int
+}
+
+struct Size {
+    width: int
+    height: int
+}
+
+struct Position {
+    row: int
+    col: int
+}
+
+# ============================================================================
+# Color Constants
+# ============================================================================
+
+fn default_color() -> Color { return Color{code: 0, is_rgb: false, r: 0, g: 0, b: 0} }
+fn black() -> Color { return Color{code: 30, is_rgb: false, r: 0, g: 0, b: 0} }
+fn red() -> Color { return Color{code: 31, is_rgb: false, r: 0, g: 0, b: 0} }
+fn green() -> Color { return Color{code: 32, is_rgb: false, r: 0, g: 0, b: 0} }
+fn yellow() -> Color { return Color{code: 33, is_rgb: false, r: 0, g: 0, b: 0} }
+fn blue() -> Color { return Color{code: 34, is_rgb: false, r: 0, g: 0, b: 0} }
+fn magenta() -> Color { return Color{code: 35, is_rgb: false, r: 0, g: 0, b: 0} }
+fn cyan() -> Color { return Color{code: 36, is_rgb: false, r: 0, g: 0, b: 0} }
+fn white() -> Color { return Color{code: 37, is_rgb: false, r: 0, g: 0, b: 0} }
+
+fn rgb(r: int, g: int, b: int) -> Color {
+    return Color{code: 0, is_rgb: true, r: r, g: g, b: b}
+}
+
+fn default_style() -> Style {
+    return Style{
+        fg: default_color(),
+        bg: default_color(),
+        bold: false,
+        italic: false,
+        underline: false
+    }
+}
+
+# ============================================================================
+# Application Lifecycle
+# ============================================================================
+
+# Initialize and run a TUI application
+# Requires: Terminal raw mode
+fn app(main_fn: fn()) {
+    enter_raw_mode()
+    clear()
+    hide_cursor()
+    main_fn()
+    show_cursor()
+    exit_raw_mode()
+}
+
+# Enter raw mode (disable line buffering)
+fn enter_raw_mode() {
+    # Requires: termios manipulation
+}
+
+# Exit raw mode
+fn exit_raw_mode() {
+    # Requires: termios restoration
+}
+
+# Run the event loop
+fn run(on_event: fn(Event) -> bool) {
+    # Stage 1: Will poll for input and call handler
+    # Return false from handler to quit
+}
+
+# ============================================================================
+# Screen Control
+# ============================================================================
+
+# Clear the entire screen
+fn clear() {
+    print_str("\x1b[2J\x1b[H")
+}
+
+# Clear from cursor to end of screen
+fn clear_below() {
+    print_str("\x1b[J")
+}
+
+# Clear from cursor to end of line
+fn clear_line() {
+    print_str("\x1b[K")
+}
+
+# Move cursor to position (1-indexed)
+fn move_to(row: int, col: int) {
+    print_str("\x1b[" + int_to_str(row) + ";" + int_to_str(col) + "H")
+}
+
+# Move cursor relative
+fn move_up(n: int) { print_str("\x1b[" + int_to_str(n) + "A") }
+fn move_down(n: int) { print_str("\x1b[" + int_to_str(n) + "B") }
+fn move_right(n: int) { print_str("\x1b[" + int_to_str(n) + "C") }
+fn move_left(n: int) { print_str("\x1b[" + int_to_str(n) + "D") }
+
+# Hide/show cursor
+fn hide_cursor() { print_str("\x1b[?25l") }
+fn show_cursor() { print_str("\x1b[?25h") }
+
+# Get terminal size
+# Requires: ioctl TIOCGWINSZ
+fn get_size() -> Size {
+    # Stage 1: Will query terminal size
+    return Size{width: 80, height: 24}
+}
+
+# ============================================================================
+# Styled Output
+# ============================================================================
+
+# Print text at current position
+fn text(s: str) {
+    print_str(s)
+}
+
+# Print styled text
+fn styled(s: str, style: Style) {
+    let codes: str = ""
+    
+    if style.bold { codes = codes + "1;" }
+    if style.italic { codes = codes + "3;" }
+    if style.underline { codes = codes + "4;" }
+    
+    if style.fg.is_rgb {
+        codes = codes + "38;2;" + int_to_str(style.fg.r) + ";" + int_to_str(style.fg.g) + ";" + int_to_str(style.fg.b) + ";"
+    } else if style.fg.code > 0 {
+        codes = codes + int_to_str(style.fg.code) + ";"
+    }
+    
+    if style.bg.is_rgb {
+        codes = codes + "48;2;" + int_to_str(style.bg.r) + ";" + int_to_str(style.bg.g) + ";" + int_to_str(style.bg.b) + ";"
+    } else if style.bg.code > 0 {
+        codes = codes + int_to_str(style.bg.code + 10) + ";"
+    }
+    
+    if codes.len() > 0 {
+        codes = codes[:codes.len()-1]  # Remove trailing semicolon
+        print_str("\x1b[" + codes + "m" + s + "\x1b[0m")
+    } else {
+        print_str(s)
+    }
+}
+
+# Print text at specific position
+fn text_at(row: int, col: int, s: str) {
+    move_to(row, col)
+    text(s)
+}
+
+# Print styled text at position
+fn styled_at(row: int, col: int, s: str, style: Style) {
+    move_to(row, col)
+    styled(s, style)
+}
+
+# Reset all styling
+fn reset_style() {
+    print_str("\x1b[0m")
+}
+
+# ============================================================================
+# Events
+# ============================================================================
+
+struct Event {
+    kind: str  # "key", "mouse", "resize"
+    key: str
+    ctrl: bool
+    alt: bool
+    mouse_x: int
+    mouse_y: int
+    mouse_button: int
+}
+
+fn key_event(key: str) -> Event {
+    return Event{kind: "key", key: key, ctrl: false, alt: false, mouse_x: 0, mouse_y: 0, mouse_button: 0}
+}
+
+fn ctrl_key_event(key: str) -> Event {
+    return Event{kind: "key", key: key, ctrl: true, alt: false, mouse_x: 0, mouse_y: 0, mouse_button: 0}
+}
+
+# Read a single key (blocking)
+# Requires: Raw mode input
+fn read_key() -> Event {
+    # Stage 1: Will read from stdin in raw mode
+    return key_event("")
+}
+
+# Check if input is available (non-blocking)
+fn has_input() -> bool {
+    # Requires: select/poll on stdin
+    return false
+}
+
+# ============================================================================
+# Widgets
+# ============================================================================
+
+# Draw a box/border
+fn box_border(row: int, col: int, width: int, height: int) {
+    # Top border
+    move_to(row, col)
+    text("┌")
+    for i in 0..width-2 { text("─") }
+    text("┐")
+    
+    # Sides
+    for i in 1..height-1 {
+        move_to(row + i, col)
+        text("│")
+        move_to(row + i, col + width - 1)
+        text("│")
+    }
+    
+    # Bottom border
+    move_to(row + height - 1, col)
+    text("└")
+    for i in 0..width-2 { text("─") }
+    text("┘")
+}
+
+# Draw a filled box
+fn box_filled(row: int, col: int, width: int, height: int, fill: str) {
+    for r in 0..height {
+        move_to(row + r, col)
+        for c in 0..width {
+            text(fill)
+        }
+    }
+}
+
+# Draw a horizontal line
+fn hline(row: int, col: int, width: int) {
+    move_to(row, col)
+    for i in 0..width { text("─") }
+}
+
+# Draw a vertical line
+fn vline(row: int, col: int, height: int) {
+    for i in 0..height {
+        move_to(row + i, col)
+        text("│")
+    }
+}
+
+# Progress bar
+fn progress_bar(row: int, col: int, width: int, progress: float) {
+    let filled: int = int(progress * float(width - 2))
+    move_to(row, col)
+    text("[")
+    for i in 0..width-2 {
+        if i < filled {
+            text("█")
+        } else {
+            text(" ")
+        }
+    }
+    text("]")
+}
+
+# Spinner (call repeatedly with incrementing frame)
+fn spinner(row: int, col: int, frame: int) {
+    let chars: [str] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+    move_to(row, col)
+    text(chars[frame % chars.len()])
+}
+
+# ============================================================================
+# Interactive Widgets
+# ============================================================================
+
+# Display a list and let user select
+fn list(row: int, col: int, items: [str], selected: int) {
+    for i in 0..items.len() {
+        move_to(row + i, col)
+        if i == selected {
+            styled("> " + items[i], Style{
+                fg: default_color(),
+                bg: default_color(),
+                bold: true,
+                italic: false,
+                underline: false
+            })
+        } else {
+            text("  " + items[i])
+        }
+    }
+}
+
+# Simple text input
+fn input_field(row: int, col: int, width: int, value: str, cursor: int) {
+    move_to(row, col)
+    text("[")
+    
+    let display: str = value
+    if display.len() > width - 2 {
+        display = display[display.len() - width + 2:]
+    }
+    
+    text(display)
+    
+    # Pad remaining space
+    for i in display.len()..width-2 {
+        text(" ")
+    }
+    
+    text("]")
+    
+    # Position cursor
+    let cursor_col: int = col + 1 + min(cursor, width - 2)
+    move_to(row, cursor_col)
+}
+
+# ============================================================================
+# Utility
+# ============================================================================
+
+# Center text in given width
+fn center_text(s: str, width: int) -> str {
+    let padding: int = (width - s.len()) / 2
+    let result: str = ""
+    for i in 0..padding { result = result + " " }
+    result = result + s
+    for i in result.len()..width { result = result + " " }
+    return result
+}
+
+# Truncate text with ellipsis
+fn truncate(s: str, max_len: int) -> str {
+    if s.len() <= max_len {
+        return s
+    }
+    return s[:max_len-3] + "..."
+}
+
+# Pad string to width
+fn pad_right(s: str, width: int) -> str {
+    let result: str = s
+    while result.len() < width {
+        result = result + " "
+    }
+    return result
+}
+
+fn pad_left(s: str, width: int) -> str {
+    let result: str = s
+    while result.len() < width {
+        result = " " + result
+    }
+    return result
+}

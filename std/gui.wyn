@@ -1,0 +1,491 @@
+# Wyn Standard Library - GUI Module
+# Cross-platform graphical user interface framework
+#
+# Requires: Native GUI backend (macOS: AppKit, Linux: GTK, Windows: Win32)
+# Stage 1: Will compile to native GUI calls
+
+# ============================================================================
+# Core Types
+# ============================================================================
+
+struct Color {
+    r: int  # 0-255
+    g: int
+    b: int
+    a: int  # Alpha, 0-255
+}
+
+struct Size {
+    width: int
+    height: int
+}
+
+struct Point {
+    x: int
+    y: int
+}
+
+struct Rect {
+    x: int
+    y: int
+    width: int
+    height: int
+}
+
+struct Padding {
+    top: int
+    right: int
+    bottom: int
+    left: int
+}
+
+# Widget handle (opaque)
+struct Widget {
+    id: int
+    kind: str
+}
+
+# Window handle
+struct Window {
+    id: int
+    title: str
+    width: int
+    height: int
+}
+
+# Application handle
+struct App {
+    name: str
+    running: bool
+}
+
+# ============================================================================
+# Color Constants
+# ============================================================================
+
+fn black() -> Color { return Color{r: 0, g: 0, b: 0, a: 255} }
+fn white() -> Color { return Color{r: 255, g: 255, b: 255, a: 255} }
+fn red() -> Color { return Color{r: 255, g: 0, b: 0, a: 255} }
+fn green() -> Color { return Color{r: 0, g: 255, b: 0, a: 255} }
+fn blue() -> Color { return Color{r: 0, g: 0, b: 255, a: 255} }
+fn gray() -> Color { return Color{r: 128, g: 128, b: 128, a: 255} }
+fn transparent() -> Color { return Color{r: 0, g: 0, b: 0, a: 0} }
+
+fn rgb(r: int, g: int, b: int) -> Color {
+    return Color{r: r, g: g, b: b, a: 255}
+}
+
+fn rgba(r: int, g: int, b: int, a: int) -> Color {
+    return Color{r: r, g: g, b: b, a: a}
+}
+
+fn hex(code: str) -> Color {
+    # Parse hex color like "#FF5500" or "FF5500"
+    # Requires: Runtime string parsing
+    return Color{r: 0, g: 0, b: 0, a: 255}
+}
+
+# ============================================================================
+# Application Lifecycle
+# ============================================================================
+
+# Initialize and run a GUI application
+# Requires: Native GUI initialization
+fn app(name: str, setup: fn()) {
+    # Stage 1: Will call native app initialization
+    # macOS: NSApplication
+    # Linux: gtk_init
+    # Windows: WinMain
+    setup()
+}
+
+# Run the application event loop
+# Requires: Native event loop
+fn run() {
+    # Stage 1: Will run native event loop
+}
+
+# Quit the application
+# Requires: Native quit
+fn quit() {
+    # Stage 1: Will call native quit
+}
+
+# ============================================================================
+# Window Management
+# ============================================================================
+
+# Create a new window
+# Requires: Native window creation
+fn window(title: str, width: int, height: int, content: fn()) -> Window {
+    let w: Window = Window{id: 0, title: title, width: width, height: height}
+    content()
+    return w
+}
+
+# Create a window with options
+fn window_opts(title: str, opts: WindowOptions, content: fn()) -> Window {
+    return window(title, opts.width, opts.height, content)
+}
+
+struct WindowOptions {
+    width: int
+    height: int
+    resizable: bool
+    fullscreen: bool
+    centered: bool
+}
+
+fn default_window_opts() -> WindowOptions {
+    return WindowOptions{
+        width: 800,
+        height: 600,
+        resizable: true,
+        fullscreen: false,
+        centered: true
+    }
+}
+
+# Close a window
+fn close(w: Window) {
+    # Requires: Native window close
+}
+
+# Set window title
+fn set_title(w: Window, title: str) {
+    # Requires: Native title update
+}
+
+# Resize window
+fn resize(w: Window, width: int, height: int) {
+    # Requires: Native resize
+}
+
+# ============================================================================
+# Layout Widgets
+# ============================================================================
+
+# Vertical layout container
+fn column(children: [Widget]) -> Widget {
+    return Widget{id: 0, kind: "column"}
+}
+
+# Horizontal layout container
+fn row(children: [Widget]) -> Widget {
+    return Widget{id: 0, kind: "row"}
+}
+
+# Stack layout (overlapping children)
+fn stack(children: [Widget]) -> Widget {
+    return Widget{id: 0, kind: "stack"}
+}
+
+# Grid layout
+fn grid(cols: int, children: [Widget]) -> Widget {
+    return Widget{id: 0, kind: "grid"}
+}
+
+# Scrollable container
+fn scroll(child: Widget) -> Widget {
+    return Widget{id: 0, kind: "scroll"}
+}
+
+# Padding wrapper
+fn pad(p: Padding, child: Widget) -> Widget {
+    return Widget{id: 0, kind: "padding"}
+}
+
+fn pad_all(amount: int, child: Widget) -> Widget {
+    return pad(Padding{top: amount, right: amount, bottom: amount, left: amount}, child)
+}
+
+# Center a widget
+fn center(child: Widget) -> Widget {
+    return Widget{id: 0, kind: "center"}
+}
+
+# Spacer (flexible space)
+fn spacer() -> Widget {
+    return Widget{id: 0, kind: "spacer"}
+}
+
+# ============================================================================
+# Basic Widgets
+# ============================================================================
+
+# Text label
+fn text(content: str) -> Widget {
+    return Widget{id: 0, kind: "text"}
+}
+
+# Styled text
+fn text_styled(content: str, style: TextStyle) -> Widget {
+    return Widget{id: 0, kind: "text"}
+}
+
+struct TextStyle {
+    size: int
+    color: Color
+    bold: bool
+    italic: bool
+}
+
+fn default_text_style() -> TextStyle {
+    return TextStyle{size: 14, color: black(), bold: false, italic: false}
+}
+
+# Button
+fn button(label: str, on_click: fn()) -> Widget {
+    return Widget{id: 0, kind: "button"}
+}
+
+# Icon button
+fn icon_button(icon: str, on_click: fn()) -> Widget {
+    return Widget{id: 0, kind: "icon_button"}
+}
+
+# Text input field
+fn input(placeholder: str, on_change: fn(str)) -> Widget {
+    return Widget{id: 0, kind: "input"}
+}
+
+# Password input
+fn password(placeholder: str, on_change: fn(str)) -> Widget {
+    return Widget{id: 0, kind: "password"}
+}
+
+# Multi-line text area
+fn textarea(placeholder: str, on_change: fn(str)) -> Widget {
+    return Widget{id: 0, kind: "textarea"}
+}
+
+# Checkbox
+fn checkbox(label: str, checked: bool, on_change: fn(bool)) -> Widget {
+    return Widget{id: 0, kind: "checkbox"}
+}
+
+# Radio button group
+fn radio(options: [str], selected: int, on_change: fn(int)) -> Widget {
+    return Widget{id: 0, kind: "radio"}
+}
+
+# Dropdown select
+fn select(options: [str], selected: int, on_change: fn(int)) -> Widget {
+    return Widget{id: 0, kind: "select"}
+}
+
+# Slider
+fn slider(min: int, max: int, value: int, on_change: fn(int)) -> Widget {
+    return Widget{id: 0, kind: "slider"}
+}
+
+# Progress bar
+fn progress(value: float) -> Widget {
+    return Widget{id: 0, kind: "progress"}
+}
+
+# Image
+fn image(path: str) -> Widget {
+    return Widget{id: 0, kind: "image"}
+}
+
+fn image_sized(path: str, width: int, height: int) -> Widget {
+    return Widget{id: 0, kind: "image"}
+}
+
+# ============================================================================
+# Dialogs
+# ============================================================================
+
+# Show alert dialog
+# Requires: Native dialog
+fn alert(title: str, message: str) {
+    # Stage 1: Will show native alert
+}
+
+# Show confirmation dialog
+# Requires: Native dialog
+fn confirm(title: str, message: str) -> bool {
+    # Stage 1: Will show native confirm dialog
+    return false
+}
+
+# Show file open dialog
+# Requires: Native file dialog
+fn open_file(title: str, filters: [str]) -> ?str {
+    # Stage 1: Will show native file picker
+    return none
+}
+
+# Show file save dialog
+# Requires: Native file dialog
+fn save_file(title: str, default_name: str) -> ?str {
+    # Stage 1: Will show native save dialog
+    return none
+}
+
+# Show folder picker
+# Requires: Native folder dialog
+fn pick_folder(title: str) -> ?str {
+    # Stage 1: Will show native folder picker
+    return none
+}
+
+# ============================================================================
+# Menu
+# ============================================================================
+
+struct MenuItem {
+    label: str
+    shortcut: str
+    action: fn()
+}
+
+struct Menu {
+    label: str
+    items: [MenuItem]
+}
+
+fn menu_item(label: str, action: fn()) -> MenuItem {
+    return MenuItem{label: label, shortcut: "", action: action}
+}
+
+fn menu_item_shortcut(label: str, shortcut: str, action: fn()) -> MenuItem {
+    return MenuItem{label: label, shortcut: shortcut, action: action}
+}
+
+fn menu(label: str, items: [MenuItem]) -> Menu {
+    return Menu{label: label, items: items}
+}
+
+fn set_menu(menus: [Menu]) {
+    # Requires: Native menu bar
+}
+
+# ============================================================================
+# Canvas / Drawing
+# ============================================================================
+
+struct Canvas {
+    id: int
+    width: int
+    height: int
+}
+
+fn canvas(width: int, height: int, on_draw: fn(Canvas)) -> Widget {
+    return Widget{id: 0, kind: "canvas"}
+}
+
+# Drawing functions (call within on_draw callback)
+fn draw_rect(c: Canvas, rect: Rect, color: Color) {
+    # Requires: Native drawing
+}
+
+fn draw_circle(c: Canvas, center: Point, radius: int, color: Color) {
+    # Requires: Native drawing
+}
+
+fn draw_line(c: Canvas, from: Point, to: Point, color: Color, width: int) {
+    # Requires: Native drawing
+}
+
+fn draw_text(c: Canvas, pos: Point, text: str, color: Color) {
+    # Requires: Native drawing
+}
+
+fn fill_rect(c: Canvas, rect: Rect, color: Color) {
+    # Requires: Native drawing
+}
+
+fn fill_circle(c: Canvas, center: Point, radius: int, color: Color) {
+    # Requires: Native drawing
+}
+
+# ============================================================================
+# Events
+# ============================================================================
+
+struct KeyEvent {
+    key: str
+    ctrl: bool
+    alt: bool
+    shift: bool
+    meta: bool
+}
+
+struct MouseEvent {
+    x: int
+    y: int
+    button: int  # 0=left, 1=middle, 2=right
+}
+
+# Register global key handler
+fn on_key(handler: fn(KeyEvent)) {
+    # Requires: Native event handling
+}
+
+# Register mouse handler for a widget
+fn on_mouse(w: Widget, handler: fn(MouseEvent)) {
+    # Requires: Native event handling
+}
+
+# ============================================================================
+# State Management
+# ============================================================================
+
+# Reactive state wrapper
+struct State[T] {
+    value: T
+}
+
+fn state[T](initial: T) -> State[T] {
+    return State[T]{value: initial}
+}
+
+fn get[T](s: State[T]) -> T {
+    return s.value
+}
+
+fn set[T](s: State[T], value: T) {
+    s.value = value
+    # Stage 1: Will trigger UI update
+}
+
+# ============================================================================
+# Theming
+# ============================================================================
+
+struct Theme {
+    primary: Color
+    secondary: Color
+    background: Color
+    surface: Color
+    text: Color
+    error: Color
+}
+
+fn light_theme() -> Theme {
+    return Theme{
+        primary: rgb(33, 150, 243),
+        secondary: rgb(156, 39, 176),
+        background: rgb(250, 250, 250),
+        surface: white(),
+        text: rgb(33, 33, 33),
+        error: rgb(244, 67, 54)
+    }
+}
+
+fn dark_theme() -> Theme {
+    return Theme{
+        primary: rgb(100, 181, 246),
+        secondary: rgb(206, 147, 216),
+        background: rgb(18, 18, 18),
+        surface: rgb(30, 30, 30),
+        text: rgb(255, 255, 255),
+        error: rgb(239, 83, 80)
+    }
+}
+
+fn set_theme(theme: Theme) {
+    # Requires: Native theme support
+}

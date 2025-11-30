@@ -16,8 +16,8 @@
 | regex | regex.wyn | ✅ Complete | Regular expressions (character class helpers, wildcard matching, fully documented) |
 | log | log.wyn | ✅ Complete | Logging (log levels, formatted output) |
 | test | test.wyn | ✅ Complete | Test framework (assertions, pass/fail) |
-| gui | - | ❌ Future | GUI framework |
-| tui | - | ❌ Future | Terminal UI framework |
+| gui | gui.wyn | ✅ Complete | GUI framework (widgets, layouts, dialogs, canvas) |
+| tui | tui.wyn | ✅ Complete | Terminal UI framework (styled output, widgets) |
 
 ## Extra Modules (not in spec but useful)
 
