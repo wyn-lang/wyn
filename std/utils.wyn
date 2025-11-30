@@ -1,0 +1,221 @@
+# std/utils.wyn
+# General utility functions
+
+# Clamp value between min and max
+fn clamp(value: int, min_val: int, max_val: int) -> int {
+    if value < min_val {
+        return min_val
+    }
+    if value > max_val {
+        return max_val
+    }
+    return value
+}
+
+# Clamp float value between min and max
+fn clamp_float(value: float, min_val: float, max_val: float) -> float {
+    if value < min_val {
+        return min_val
+    }
+    if value > max_val {
+        return max_val
+    }
+    return value
+}
+
+# Swap two integers (returns tuple-like array)
+fn swap(a: int, b: int) -> [int] {
+    return [b, a]
+}
+
+# Check if integer is even
+fn is_even(n: int) -> bool {
+    return n % 2 == 0
+}
+
+# Check if integer is odd
+fn is_odd(n: int) -> bool {
+    return n % 2 != 0
+}
+
+# Sign of integer: -1, 0, or 1
+fn sign(n: int) -> int {
+    if n < 0 {
+        return 0 - 1
+    }
+    if n > 0 {
+        return 1
+    }
+    return 0
+}
+
+# Sign of float: -1.0, 0.0, or 1.0
+fn sign_float(n: float) -> float {
+    if n < 0.0 {
+        return 0.0 - 1.0
+    }
+    if n > 0.0 {
+        return 1.0
+    }
+    return 0.0
+}
+
+# Linear interpolation between a and b by factor t (0.0 to 1.0)
+fn lerp(a: float, b: float, t: float) -> float {
+    return a + (b - a) * t
+}
+
+# Map value from one range to another
+fn map_range(value: float, from_min: float, from_max: float, to_min: float, to_max: float) -> float {
+    let normalized: float = (value - from_min) / (from_max - from_min)
+    return to_min + normalized * (to_max - to_min)
+}
+
+# Greatest common divisor using Euclidean algorithm
+fn gcd(a: int, b: int) -> int {
+    let mut x: int = abs(a)
+    let mut y: int = abs(b)
+    while y != 0 {
+        let temp: int = y
+        y = x % y
+        x = temp
+    }
+    return x
+}
+
+# Least common multiple
+fn lcm(a: int, b: int) -> int {
+    if a == 0 or b == 0 {
+        return 0
+    }
+    return abs(a * b) / gcd(a, b)
+}
+
+# Factorial of n
+fn factorial(n: int) -> int {
+    if n <= 1 {
+        return 1
+    }
+    let mut result: int = 1
+    let mut i: int = 2
+    while i <= n {
+        result = result * i
+        i = i + 1
+    }
+    return result
+}
+
+# Fibonacci number at position n
+fn fibonacci(n: int) -> int {
+    if n <= 1 {
+        return n
+    }
+    let mut a: int = 0
+    let mut b: int = 1
+    let mut i: int = 2
+    while i <= n {
+        let temp: int = a + b
+        a = b
+        b = temp
+        i = i + 1
+    }
+    return b
+}
+
+# Check if number is prime
+fn is_prime(n: int) -> bool {
+    if n < 2 {
+        return false
+    }
+    if n == 2 {
+        return true
+    }
+    if n % 2 == 0 {
+        return false
+    }
+    let mut i: int = 3
+    while i * i <= n {
+        if n % i == 0 {
+            return false
+        }
+        i = i + 2
+    }
+    return true
+}
+
+# Count digits in integer
+fn digit_count(n: int) -> int {
+    if n == 0 {
+        return 1
+    }
+    let mut count: int = 0
+    let mut num: int = abs(n)
+    while num > 0 {
+        count = count + 1
+        num = num / 10
+    }
+    return count
+}
+
+# Reverse digits of integer
+fn reverse_digits(n: int) -> int {
+    let mut result: int = 0
+    let mut num: int = abs(n)
+    while num > 0 {
+        result = result * 10 + num % 10
+        num = num / 10
+    }
+    if n < 0 {
+        return 0 - result
+    }
+    return result
+}
+
+# Sum of digits
+fn digit_sum(n: int) -> int {
+    let mut sum: int = 0
+    let mut num: int = abs(n)
+    while num > 0 {
+        sum = sum + num % 10
+        num = num / 10
+    }
+    return sum
+}
+
+# Check if number is palindrome
+fn is_palindrome(n: int) -> bool {
+    if n < 0 {
+        return false
+    }
+    return n == reverse_digits(n)
+}
+
+# Convert degrees to radians approximation
+fn deg_to_rad(degrees: float) -> float {
+    return degrees * 3.14159265359 / 180.0
+}
+
+# Convert radians to degrees approximation
+fn rad_to_deg(radians: float) -> float {
+    return radians * 180.0 / 3.14159265359
+}
+
+# Distance between two 2D points
+fn distance_2d(x1: float, y1: float, x2: float, y2: float) -> float {
+    let dx: float = x2 - x1
+    let dy: float = y2 - y1
+    return sqrt(dx * dx + dy * dy)
+}
+
+# Percentage calculation: what percent of total is value?
+fn percentage(value: float, total: float) -> float {
+    if total == 0.0 {
+        return 0.0
+    }
+    return (value / total) * 100.0
+}
+
+# Apply percentage to value
+fn apply_percentage(value: float, percent: float) -> float {
+    return value * (percent / 100.0)
+}
