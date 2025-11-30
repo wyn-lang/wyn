@@ -1,0 +1,19 @@
+import math
+
+fn main() {
+    print_str("Testing imports:")
+    
+    print_str("abs(-10):")
+    print(abs(-10))
+    
+    print_str("min(5, 3):")
+    print(min(5, 3))
+    
+    print_str("max(5, 3):")
+    print(max(5, 3))
+    
+    print_str("pow(2, 8):")
+    print(pow(2, 8))
+    
+    print_str("Import test passed!")
+}

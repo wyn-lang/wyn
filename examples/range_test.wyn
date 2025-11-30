@@ -1,0 +1,29 @@
+# Test range syntax
+
+fn main() {
+    # Exclusive range 0..5 (0,1,2,3,4)
+    print_str("0..5 (exclusive):")
+    for i in 0..5 {
+        print(i)
+    }
+    
+    # Inclusive range 0..=5 (0,1,2,3,4,5)
+    print_str("0..=5 (inclusive):")
+    for i in 0..=5 {
+        print(i)
+    }
+    
+    # Range with non-zero start
+    print_str("3..7:")
+    for i in 3..7 {
+        print(i)
+    }
+    
+    # Inclusive with non-zero start
+    print_str("3..=7:")
+    for i in 3..=7 {
+        print(i)
+    }
+    
+    print(999)  # Done marker
+}

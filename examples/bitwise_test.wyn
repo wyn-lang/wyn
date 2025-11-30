@@ -1,0 +1,34 @@
+# Test bitwise operators and power
+
+fn main() {
+    # Bitwise OR
+    let a: int = 5 | 3    # 0101 | 0011 = 0111 = 7
+    print(a)
+    
+    # Bitwise AND
+    let b: int = 5 & 3    # 0101 & 0011 = 0001 = 1
+    print(b)
+    
+    # Bitwise XOR
+    let c: int = 5 ^ 3    # 0101 ^ 0011 = 0110 = 6
+    print(c)
+    
+    # Left shift
+    let d: int = 1 << 4   # 1 << 4 = 16
+    print(d)
+    
+    # Right shift
+    let e: int = 16 >> 2  # 16 >> 2 = 4
+    print(e)
+    
+    # Bitwise NOT
+    let f: int = ~0       # Should be -1 (all bits set)
+    print(f)
+    
+    # Power operator
+    let g: int = 2 ** 10  # 2^10 = 1024
+    print(g)
+    
+    let h: int = 3 ** 4   # 3^4 = 81
+    print(h)
+}

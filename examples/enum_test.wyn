@@ -1,0 +1,44 @@
+# Test enum definitions and usage
+
+enum Color {
+    Red,
+    Green,
+    Blue
+}
+
+enum Status {
+    Ok = 0,
+    Error = 1,
+    Pending = 2
+}
+
+fn main() {
+    let red: int = Red
+    let green: int = Green
+    let blue: int = Blue
+    
+    print(red)
+    print(green)
+    print(blue)
+    
+    let ok_val: int = Ok
+    let err_val: int = Error
+    let pending: int = Pending
+    
+    print(ok_val)
+    print(err_val)
+    print(pending)
+    
+    # Test in expressions
+    let sum: int = Red + Green + Blue
+    print(sum)
+    
+    # Test in conditionals
+    if red == 0 {
+        print(100)
+    }
+    
+    if err_val == 1 {
+        print(200)
+    }
+}

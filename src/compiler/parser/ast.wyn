@@ -1,0 +1,307 @@
+// Abstract Syntax Tree definitions for Wyn
+
+import compiler.lexer.token.{Span}
+
+// Top-level module
+pub struct Module {
+    name: str
+    imports: list[Import]
+    items: list[Item]
+}
+
+pub struct Import {
+    path: list[str]
+    alias: ?str
+    items: ?list[str]  // specific items to import
+    span: Span
+}
+
+// Top-level items
+pub enum Item {
+    Function(FnDef)
+    Struct(StructDef)
+    Enum(EnumDef)
+    Trait(TraitDef)
+    Impl(ImplDef)
+    TypeAlias(TypeAlias)
+    Const(ConstDef)
+}
+
+// Function definition
+pub struct FnDef {
+    name: str
+    generics: list[GenericParam]
+    params: list[Param]
+    return_type: ?Type
+    body: ?Block  // None for extern functions
+    visibility: Visibility
+    attributes: list[Attribute]
+    span: Span
+}
+
+pub struct Param {
+    name: str
+    type_: Type
+    default: ?Expr
+    span: Span
+}
+
+pub struct GenericParam {
+    name: str
+    bounds: list[Type]
+    span: Span
+}
+
+// Struct definition
+pub struct StructDef {
+    name: str
+    generics: list[GenericParam]
+    fields: list[Field]
+    visibility: Visibility
+    span: Span
+}
+
+pub struct Field {
+    name: str
+    type_: Type
+    default: ?Expr
+    visibility: Visibility
+    span: Span
+}
+
+// Enum definition
+pub struct EnumDef {
+    name: str
+    generics: list[GenericParam]
+    variants: list[Variant]
+    visibility: Visibility
+    span: Span
+}
+
+pub struct Variant {
+    name: str
+    fields: ?list[Type]  // None = unit, Some([]) = empty tuple, Some([...]) = tuple
+    span: Span
+}
+
+// Trait definition
+pub struct TraitDef {
+    name: str
+    generics: list[GenericParam]
+    methods: list[FnDef]
+    visibility: Visibility
+    span: Span
+}
+
+// Implementation block
+pub struct ImplDef {
+    generics: list[GenericParam]
+    trait_: ?Type
+    type_: Type
+    methods: list[FnDef]
+    span: Span
+}
+
+// Type alias
+pub struct TypeAlias {
+    name: str
+    generics: list[GenericParam]
+    type_: Type
+    visibility: Visibility
+    span: Span
+}
+
+// Constant definition
+pub struct ConstDef {
+    name: str
+    type_: Type
+    value: Expr
+    visibility: Visibility
+    span: Span
+}
+
+// Visibility
+pub enum Visibility {
+    Private
+    Public
+}
+
+// Attributes
+pub struct Attribute {
+    name: str
+    args: list[Expr]
+    span: Span
+}
+
+// Types
+pub enum Type {
+    // Primitive types
+    Int
+    I8
+    I16
+    I32
+    I64
+    I128
+    Uint
+    U8
+    U16
+    U32
+    U64
+    U128
+    F32
+    F64
+    Bool
+    Str
+    Byte
+    Rune
+    
+    // Composite types
+    Array(Box[Type], Expr)      // [T; N]
+    Slice(Box[Type])            // []T
+    List(Box[Type])             // list[T]
+    Map(Box[Type], Box[Type])   // map[K, V]
+    Tuple(list[Type])           // (T1, T2, ...)
+    Optional(Box[Type])         // ?T
+    Pointer(Box[Type])          // *T
+    
+    // Named types
+    Named(str, list[Type])      // Name or Name[T1, T2]
+    
+    // Function types
+    Fn(list[Type], Box[Type])   // fn(T1, T2) -> R
+    
+    // Special
+    SelfType                    // Self
+    Infer                       // _ (type inference placeholder)
+}
+
+// Expressions
+pub enum Expr {
+    // Literals
+    IntLit(i64, Span)
+    FloatLit(f64, Span)
+    StringLit(str, Span)
+    CharLit(rune, Span)
+    BoolLit(bool, Span)
+    
+    // Identifiers and paths
+    Ident(str, Span)
+    Path(list[str], Span)
+    
+    // Compound literals
+    ArrayLit(list[Expr], Span)
+    MapLit(list[(Expr, Expr)], Span)
+    StructLit(Type, list[(str, Expr)], Span)
+    TupleLit(list[Expr], Span)
+    
+    // Operators
+    Binary(Box[Expr], BinOp, Box[Expr], Span)
+    Unary(UnaryOp, Box[Expr], Span)
+    
+    // Access
+    Field(Box[Expr], str, Span)
+    Index(Box[Expr], Box[Expr], Span)
+    
+    // Calls
+    Call(Box[Expr], list[Expr], Span)
+    MethodCall(Box[Expr], str, list[Expr], Span)
+    
+    // Control flow
+    If(Box[Expr], Block, ?Block, Span)
+    Match(Box[Expr], list[MatchArm], Span)
+    
+    // Closures
+    Closure(list[Param], ?Type, Block, Span)
+    
+    // Special
+    Some_(Box[Expr], Span)
+    None_(Span)
+    Try(Box[Expr], Span)  // expr?
+    
+    // Block expression
+    Block_(Block, Span)
+}
+
+pub enum BinOp {
+    Add
+    Sub
+    Mul
+    Div
+    Mod
+    Pow
+    Eq
+    NotEq
+    Lt
+    Gt
+    LtEq
+    GtEq
+    And
+    Or
+    BitAnd
+    BitOr
+    BitXor
+    Shl
+    Shr
+    Range
+    RangeInclusive
+}
+
+pub enum UnaryOp {
+    Neg
+    Not
+    BitNot
+    Ref
+    Deref
+}
+
+pub struct MatchArm {
+    pattern: Pattern
+    guard: ?Expr
+    body: Expr
+    span: Span
+}
+
+// Patterns
+pub enum Pattern {
+    Wildcard(Span)
+    Ident(str, bool, Span)  // name, is_mut
+    Literal(Expr)
+    Tuple(list[Pattern], Span)
+    Struct(str, list[(str, Pattern)], Span)
+    Enum(str, str, ?list[Pattern], Span)  // enum_name, variant, fields
+    Or(list[Pattern], Span)
+    Range(Expr, Expr, bool, Span)  // start, end, inclusive
+}
+
+// Statements
+pub enum Stmt {
+    Let(str, bool, ?Type, Expr, Span)  // name, is_mut, type, value
+    Expr(Expr, Span)
+    Return(?Expr, Span)
+    Break(?Expr, Span)
+    Continue(Span)
+    For(Pattern, Expr, Block, Span)
+    While(Expr, Block, Span)
+    Loop(Block, Span)
+    Defer(Expr, Span)
+    Assign(Expr, Expr, Span)
+    CompoundAssign(Expr, BinOp, Expr, Span)
+}
+
+// Block
+pub struct Block {
+    stmts: list[Stmt]
+    expr: ?Expr  // trailing expression (implicit return)
+    span: Span
+}
+
+// Helper: Box type for recursive structures
+pub struct Box<T> {
+    value: T
+}
+
+impl<T> Box<T> {
+    pub fn new(value: T) -> Box[T] {
+        Box{value}
+    }
+}

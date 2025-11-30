@@ -1,0 +1,26 @@
+# Test break and continue
+
+fn main() {
+    # Test break in while loop
+    let mut i: int = 0
+    while i < 10 {
+        if i == 5 {
+            break
+        }
+        print(i)
+        i += 1
+    }
+    print(100)  # Separator
+    
+    # Test continue in for loop
+    for j in 0..10 {
+        if j == 3 {
+            continue
+        }
+        if j == 7 {
+            break
+        }
+        print(j)
+    }
+    print(200)  # End marker
+}

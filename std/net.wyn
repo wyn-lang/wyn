@@ -1,0 +1,239 @@
+# std/net.wyn
+# TCP/UDP networking
+
+struct Socket {
+    fd: int
+}
+
+# Connect to a TCP server at the given host and port
+# Returns a Socket on success, or an error message on failure
+fn tcp_connect(host: str, port: int) -> Result[Socket, str] {
+    return err("not implemented")
+}
+
+# Start a TCP server listening on the given host and port
+# Returns a listening Socket on success, or an error message on failure
+fn tcp_listen(host: str, port: int) -> Result[Socket, str] {
+    return err("not implemented")
+}
+
+# Accept an incoming connection on a listening socket
+# Returns a new Socket for the connection, or an error message on failure
+fn accept(socket: Socket) -> Result[Socket, str] {
+    return err("not implemented")
+}
+
+# Send data through a TCP socket
+# Returns the number of bytes sent, or an error message on failure
+fn send(socket: Socket, data: str) -> Result[int, str] {
+    return err("not implemented")
+}
+
+# Receive up to size bytes from a TCP socket
+# Returns the received data, or an error message on failure
+fn recv(socket: Socket, size: int) -> Result[str, str] {
+    return err("not implemented")
+}
+
+# Close a socket and release its resources
+# Returns unit on success, or an error message on failure
+fn close(socket: Socket) -> Result[(), str] {
+    return err("not implemented")
+}
+
+# Bind a UDP socket to the given host and port
+# Returns a Socket on success, or an error message on failure
+fn udp_bind(host: str, port: int) -> Result[Socket, str] {
+    return err("not implemented")
+}
+
+# Send data to a specific host and port via UDP
+# Returns the number of bytes sent, or an error message on failure
+fn sendto(socket: Socket, data: str, host: str, port: int) -> Result[int, str] {
+    return err("not implemented")
+}
+
+# Receive up to size bytes from a UDP socket
+# Returns the received data, or an error message on failure
+fn recvfrom(socket: Socket, size: int) -> Result[str, str] {
+    return err("not implemented")
+}
+
+# URL parsing
+
+struct URL {
+    scheme: str
+    host: str
+    port: int
+    path: str
+}
+
+# Parse a URL string into its components
+# Returns some(URL) on success, or none if the URL is malformed
+# Example: parse_url("http://example.com:8080/path") -> URL{scheme:"http", host:"example.com", port:8080, path:"/path"}
+fn parse_url(url: str) -> ?URL {
+    let mut i: int = 0
+    let mut scheme: str = ""
+    let mut host: str = ""
+    let mut port: int = 0
+    let mut path: str = ""
+    
+    # Find scheme
+    while i < url.len() {
+        if url[i:i+1] == ":" {
+            scheme = url[0:i]
+            i = i + 1
+            break
+        }
+        i = i + 1
+    }
+    
+    # Skip //
+    if i + 1 < url.len() and url[i:i+2] == "//" {
+        i = i + 2
+    }
+    
+    # Find host and port
+    let start: int = i
+    while i < url.len() {
+        let c: str = url[i:i+1]
+        if c == "/" or c == ":" {
+            break
+        }
+        i = i + 1
+    }
+    host = url[start:i]
+    
+    # Parse port
+    if i < url.len() and url[i:i+1] == ":" {
+        i = i + 1
+        let port_start: int = i
+        while i < url.len() and url[i:i+1] != "/" {
+            i = i + 1
+        }
+        port = str_to_int(url[port_start:i]) ?? 0
+    }
+    
+    # Get path
+    if i < url.len() {
+        path = url[i:url.len()]
+    } else {
+        path = "/"
+    }
+    
+    return some(URL { scheme: scheme, host: host, port: port, path: path })
+}
+
+# IP address utilities
+
+# Check if a string is a valid IPv4 address (e.g., "192.168.1.1")
+# Returns true if valid, false otherwise
+fn is_valid_ipv4(ip: str) -> bool {
+    let mut dots: int = 0
+    let mut num: int = 0
+    let mut has_digit: bool = false
+    let mut i: int = 0
+    
+    while i < ip.len() {
+        let c: int = ord(ip[i:i+1][0])
+        if c == 46 {  # '.'
+            if not has_digit or num > 255 {
+                return false
+            }
+            dots = dots + 1
+            num = 0
+            has_digit = false
+        } else if c >= 48 and c <= 57 {  # '0'-'9'
+            num = num * 10 + (c - 48)
+            has_digit = true
+        } else {
+            return false
+        }
+        i = i + 1
+    }
+    
+    return dots == 3 and has_digit and num <= 255
+}
+
+# Convert an IPv4 address string to a 32-bit integer
+# Returns some(int) on success, or none if the IP is invalid
+# Example: ip_to_int("192.168.1.1") -> some(3232235777)
+fn ip_to_int(ip: str) -> ?int {
+    if not is_valid_ipv4(ip) {
+        return none
+    }
+    
+    let mut result: int = 0
+    let mut num: int = 0
+    let mut i: int = 0
+    
+    while i < ip.len() {
+        let c: int = ord(ip[i:i+1][0])
+        if c == 46 {  # '.'
+            result = result * 256 + num
+            num = 0
+        } else {
+            num = num * 10 + (c - 48)
+        }
+        i = i + 1
+    }
+    result = result * 256 + num
+    
+    return some(result)
+}
+
+# Convert a 32-bit integer to an IPv4 address string
+# Example: int_to_ip(3232235777) -> "192.168.1.1"
+fn int_to_ip(n: int) -> str {
+    let a: int = (n >> 24) & 255
+    let b: int = (n >> 16) & 255
+    let c: int = (n >> 8) & 255
+    let d: int = n & 255
+    return int_to_str(a) + "." + int_to_str(b) + "." + int_to_str(c) + "." + int_to_str(d)
+}
+
+# Check if an IP address is in a private range (RFC 1918)
+# Returns true for 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
+fn is_private_ip(ip: str) -> bool {
+    let ip_int: ?int = ip_to_int(ip)
+    match ip_int {
+        some(n) => {
+            let a: int = (n >> 24) & 255
+            let b: int = (n >> 16) & 255
+            return a == 10 or (a == 172 and b >= 16 and b <= 31) or (a == 192 and b == 168)
+        }
+        none => return false
+    }
+}
+
+# Check if an IP address is a loopback address (127.0.0.0/8)
+fn is_loopback_ip(ip: str) -> bool {
+    let ip_int: ?int = ip_to_int(ip)
+    match ip_int {
+        some(n) => {
+            let a: int = (n >> 24) & 255
+            return a == 127
+        }
+        none => return false
+    }
+}
+
+# Extract the hostname from a URL string
+# Example: url_hostname("http://example.com:8080/path") -> "example.com"
+fn url_hostname(url: str) -> str {
+    let parsed: ?URL = parse_url(url)
+    match parsed {
+        some(u) => return u.host
+        none => return ""
+    }
+}
+
+# Extract the port from a URL string, or return default_port if not specified
+# Example: url_port("http://example.com:8080/path", 80) -> 8080
+fn url_port(url: str, default_port: int) -> int {
+    let parsed: ?URL = parse_url(url)
+    match parsed {
+        some(u) => return if u.port == 0 then default_port else u.port
+        none => return default_port
+    }
+}

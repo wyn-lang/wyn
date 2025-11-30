@@ -1,0 +1,44 @@
+fn main() {
+    print_str("=== String Operations Test ===")
+    
+    # Test 1: String length
+    print_str("Test 1: String length")
+    assert(len("Hello") == 5)
+    assert(len("World") == 5)
+    assert(len("") == 0)
+    assert(len("Test123") == 7)
+    print_str("PASS")
+    
+    # Test 2: String concatenation (literals)
+    print_str("Test 2: String concatenation")
+    let s1: str = "Hello" + "World"
+    print_str(s1)
+    let s2: str = "Wyn" + "Lang"
+    print_str(s2)
+    print_str("PASS")
+    
+    # Test 3: String comparison (equality)
+    print_str("Test 3: String equality")
+    assert("test" == "test")
+    assert("hello" == "hello")
+    assert(not ("foo" == "bar"))
+    assert(not ("a" == "b"))
+    print_str("PASS")
+    
+    # Test 4: String comparison (inequality)
+    print_str("Test 4: String inequality")
+    assert("foo" != "bar")
+    assert("a" != "b")
+    assert(not ("test" != "test"))
+    assert(not ("hello" != "hello"))
+    print_str("PASS")
+    
+    # Test 5: Literal comparisons
+    print_str("Test 5: More comparisons")
+    assert("HelloWorld" == "HelloWorld")
+    assert("WynLang" == "WynLang")
+    assert("ab" != "cd")
+    print_str("PASS")
+    
+    print_str("=== All Tests Passed ===")
+}

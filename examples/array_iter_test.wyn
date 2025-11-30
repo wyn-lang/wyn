@@ -1,0 +1,31 @@
+# Test for loop over arrays
+
+fn main() {
+    # Test basic array iteration
+    let arr: [int] = [10, 20, 30, 40, 50]
+    
+    print_str("Array elements:")
+    for item in arr {
+        print(item)
+    }
+    
+    # Test with computed values
+    let mut sum: int = 0
+    for val in arr {
+        sum = sum + val
+    }
+    print_str("Sum:")
+    print(sum)
+    
+    # Test with smaller array
+    let small: [int] = [1, 2, 3]
+    for n in small {
+        print(n * 2)
+    }
+    
+    # Test range still works
+    print_str("Range 0..5:")
+    for i in 0..5 {
+        print(i)
+    }
+}

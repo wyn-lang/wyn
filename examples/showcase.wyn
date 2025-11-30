@@ -1,0 +1,116 @@
+# Wyn Language Showcase
+# Demonstrates key language features
+
+struct Point {
+    x: int
+    y: int
+    
+    fn magnitude_squared(self) -> int {
+        return self.x * self.x + self.y * self.y
+    }
+}
+
+struct Box[T] {
+    value: T
+}
+
+enum Color {
+    Red
+    Green
+    Blue
+}
+
+fn factorial(n: int) -> int {
+    if n <= 1 {
+        return 1
+    }
+    return n * factorial(n - 1)
+}
+
+fn fib(n: int) -> int {
+    if n <= 1 {
+        return n
+    }
+    return fib(n - 1) + fib(n - 2)
+}
+
+fn find_index(arr: [int], target: int) -> ?int {
+    for i in 0..len(arr) {
+        if arr[i] == target {
+            return some(i)
+        }
+    }
+    return none
+}
+
+fn main() {
+    print_str("=== Wyn Language Showcase ===")
+    print_str("")
+    
+    # Variables
+    let x: int = 42
+    let mut y: int = 0
+    y = 10
+    print_str("Variables: x=42, y=10")
+    
+    # Arithmetic
+    print_str("Arithmetic:")
+    print(2 + 3)      # 5
+    print(2 ** 10)    # 1024
+    
+    # Arrays
+    print_str("Arrays:")
+    let arr: [int] = [1, 2, 3, 4, 5]
+    print(len(arr))   # 5
+    print(arr[-1])    # 5 (last element)
+    
+    # Iteration
+    print_str("Sum of 1..5:")
+    let mut sum: int = 0
+    for item in arr {
+        sum += item
+    }
+    print(sum)        # 15
+    
+    # Structs
+    print_str("Structs:")
+    let p: Point = Point { x: 3, y: 4 }
+    print(p.magnitude_squared())  # 25
+    
+    # Generics
+    print_str("Generics:")
+    let box: Box[int] = Box[int] { value: 100 }
+    print(box.value)  # 100
+    
+    # Optionals
+    print_str("Optionals:")
+    let found: ?int = find_index(arr, 3)
+    print(found ?? -1)  # 2
+    let not_found: ?int = find_index(arr, 99)
+    print(not_found ?? -1)  # -1
+    
+    # Recursion
+    print_str("Factorial(5):")
+    print(factorial(5))  # 120
+    
+    print_str("Fibonacci(10):")
+    print(fib(10))  # 55
+    
+    # Match
+    print_str("Match:")
+    let color: int = Green
+    match color {
+        Red => print_str("Red")
+        Green => print_str("Green")
+        Blue => print_str("Blue")
+    }
+    
+    # String operations
+    print_str("String operations:")
+    let s: str = "hello"
+    print(len(s))     # 5
+    print(ord("A"))   # 65
+    
+    print_str("")
+    print_str("=== Done ===")
+}

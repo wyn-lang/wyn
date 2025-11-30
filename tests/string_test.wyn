@@ -1,0 +1,15 @@
+fn main() {
+    let s: str = "hello"
+    
+    # Length
+    assert(len(s) == 5)
+    
+    # ord
+    assert(ord("A") == 65)
+    assert(ord("a") == 97)
+    
+    # Conversions
+    assert(str_to_int("123") == 123)
+    
+    print_str("string_test: PASS")
+}

@@ -1,0 +1,18 @@
+# Test read_file builtin
+
+fn main() {
+    # Read this source file
+    let content: str = read_file("examples/file_test.wyn")
+    
+    # Check it's not empty
+    let length: int = len(content)
+    print(length)
+    assert(length > 0)
+    
+    # Check first character is '#' (comment) using ord
+    let first_char: int = ord(content)
+    print(first_char)  # Should be 35 (#)
+    assert(first_char == 35)
+    
+    print_str("read_file works!")
+}

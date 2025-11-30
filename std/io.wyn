@@ -1,0 +1,241 @@
+# std/io.wyn
+# Basic I/O operations for reading and writing files
+
+# Print a string followed by a newline
+fn print_line(s: str) -> () {
+    print_str(s)
+    print_str("\n")
+    return ()
+}
+
+# Read entire file contents as a string
+# Returns ok(content) on success, or err(message) on failure
+fn read_to_string(path: str) -> Result[str, str] {
+    return read_file(path)
+}
+
+# Write a string to a file, overwriting if it exists
+# Returns ok(true) on success, or err(message) on failure
+fn write_string(path: str, content: str) -> Result[bool, str] {
+    return write_file(path, content)
+}
+
+# Check if a file or directory exists at the given path
+fn path_exists(path: str) -> bool {
+    return file_exists(path)
+}
+
+# Get the size of a file in bytes
+# Returns ok(size) on success, or err(message) on failure
+fn get_file_size(path: str) -> Result[int, str] {
+    let content_result: Result[str, str] = read_file(path)
+    match content_result {
+        ok(content) => return ok(content.len())
+        err(e) => return err(e)
+    }
+}
+
+# Read a line from standard input
+# Requires runtime support
+fn read_line() -> str {
+    return ""
+}
+
+# Read entire file contents as a string (low-level)
+# Returns ok(content) on success, or err(message) on failure
+# Requires runtime support
+fn read_file(path: str) -> Result[str, str] {
+    return ok("")
+}
+
+# Write content to a file, overwriting if it exists (low-level)
+# Returns ok(true) on success, or err(message) on failure
+# Requires runtime support
+fn write_file(path: str, content: str) -> Result[bool, str] {
+    return ok(false)
+}
+
+# Append content to the end of a file
+# Returns ok(true) on success, or err(message) on failure
+# Requires runtime support
+fn append_file(path: str, content: str) -> Result[bool, str] {
+    return ok(false)
+}
+
+# Check if a file exists at the given path (low-level)
+# Requires runtime support
+fn file_exists(path: str) -> bool {
+    return false
+}
+
+# Delete a file at the given path
+# Returns ok(true) on success, or err(message) on failure
+# Requires runtime support
+fn delete_file(path: str) -> Result[bool, str] {
+    return ok(false)
+}
+
+# Read file contents as an array of bytes
+# Returns ok(bytes) on success, or err(message) on failure
+# Requires runtime support
+fn read_bytes(path: str) -> Result[[byte], str] {
+    return ok([])
+}
+
+# Write an array of bytes to a file
+# Returns ok(true) on success, or err(message) on failure
+# Requires runtime support
+fn write_bytes(path: str, data: [byte]) -> Result[bool, str] {
+    return ok(false)
+}
+
+# Read file contents as an array of lines
+# Returns ok(lines) on success, or err(message) on failure
+# Requires runtime support
+fn read_lines(path: str) -> Result[[str], str] {
+    return ok([])
+}
+
+# Create a directory at the given path
+# Returns ok(true) on success, or err(message) on failure
+# Requires runtime support
+fn create_dir(path: str) -> Result[bool, str] {
+    return ok(false)
+}
+
+# Remove a directory at the given path
+# Returns ok(true) on success, or err(message) on failure
+# Requires runtime support
+fn remove_dir(path: str) -> Result[bool, str] {
+    return ok(false)
+}
+
+# List all files and directories in the given path
+# Returns ok(entries) on success, or err(message) on failure
+# Requires runtime support
+fn list_dir(path: str) -> Result[[str], str] {
+    return ok([])
+}
+
+# Copy a file from src to dst
+# Returns ok(true) on success, or err(message) on failure
+# Requires runtime support
+fn copy_file(src: str, dst: str) -> Result[bool, str] {
+    return ok(false)
+}
+
+# Move a file from src to dst
+# Returns ok(true) on success, or err(message) on failure
+# Requires runtime support
+fn move_file(src: str, dst: str) -> Result[bool, str] {
+    return ok(false)
+}
+
+# Format an integer with zero-padding to the specified width
+# Example: format_int(42, 5) -> "00042"
+fn format_int(n: int, width: int) -> str {
+    let s: str = int_to_str(n)
+    let len: int = s.len()
+    if len >= width {
+        return s
+    }
+    let padding: int = width - len
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < padding {
+        result = result + "0"
+        i = i + 1
+    }
+    return result + s
+}
+
+# Convert a boolean to a string ("true" or "false")
+fn format_bool(b: bool) -> str {
+    if b {
+        return "true"
+    }
+    return "false"
+}
+
+# Format integer with left padding using spaces instead of zeros
+# Example: format_int_padded(42, 5) -> "   42"
+fn format_int_padded(n: int, width: int) -> str {
+    let s: str = int_to_str(n)
+    let len: int = s.len()
+    if len >= width {
+        return s
+    }
+    let padding: int = width - len
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < padding {
+        result = result + " "
+        i = i + 1
+    }
+    return result + s
+}
+
+# Format integer in hexadecimal (lowercase, no prefix)
+# Example: format_hex(255) -> "ff"
+fn format_hex(n: int) -> str {
+    if n == 0 {
+        return "0"
+    }
+    let mut result: str = ""
+    let mut val: int = n
+    let hex_chars: str = "0123456789abcdef"
+    while val > 0 {
+        let digit: int = val % 16
+        result = hex_chars[digit:digit+1] + result
+        val = val / 16
+    }
+    return result
+}
+
+# Format integer in binary (no prefix)
+# Example: format_bin(5) -> "101"
+fn format_bin(n: int) -> str {
+    if n == 0 {
+        return "0"
+    }
+    let mut result: str = ""
+    let mut val: int = n
+    while val > 0 {
+        let bit: int = val % 2
+        result = int_to_str(bit) + result
+        val = val / 2
+    }
+    return result
+}
+
+# Print multiple strings in sequence without newline
+fn print_all(parts: [str]) -> () {
+    let mut i: int = 0
+    while i < parts.len() {
+        print_str(parts[i])
+        i = i + 1
+    }
+    return ()
+}
+
+# Print an integer followed by a newline
+fn println_int(n: int) -> () {
+    print(n)
+    print_str("\n")
+    return ()
+}
+
+# Repeat a character n times
+# Example: repeat_char("*", 5) -> "*****"
+fn repeat_char(c: str, n: int) -> str {
+    if n <= 0 or c.len() == 0 {
+        return ""
+    }
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < n {
+        result = result + c
+        i = i + 1
+    }
+    return result
+}

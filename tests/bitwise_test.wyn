@@ -1,0 +1,24 @@
+fn main() {
+    # AND (12 & 10 = 8)
+    assert((12 & 10) == 8)
+    
+    # OR (12 | 10 = 14)
+    assert((12 | 10) == 14)
+    
+    # XOR (12 ^ 10 = 6)
+    assert((12 ^ 10) == 6)
+    
+    # Left shift
+    assert((1 << 4) == 16)
+    
+    # Right shift
+    assert((16 >> 2) == 4)
+    
+    # Combined
+    let flags: int = 5
+    let mask: int = 3
+    assert((flags & mask) == 1)
+    assert((flags | mask) == 7)
+    
+    print_str("bitwise_test: PASS")
+}

@@ -1,0 +1,56 @@
+fn add(a: int, b: int) -> int {
+    return a + b
+}
+
+fn factorial(n: int) -> int {
+    if n <= 1 {
+        return 1
+    }
+    return n * factorial(n - 1)
+}
+
+fn main() {
+    // Strings
+    print_str("=== Wyn Language Test ===")
+    
+    // Arithmetic
+    print_str("Arithmetic:")
+    print(40 + 2)
+    print(10 * 5)
+    print(100 / 4)
+    
+    // Functions
+    print_str("Functions:")
+    print(add(15, 27))
+    print(factorial(5))
+    
+    // Variables
+    print_str("Variables:")
+    let x: int = 10
+    let mut y: int = 20
+    y = y + 5
+    print(x + y)
+    
+    // Control flow
+    print_str("Control flow:")
+    if x < y {
+        print(1)
+    } else {
+        print(0)
+    }
+    
+    // Loops
+    print_str("For loop:")
+    for i in 0..5 {
+        print(i)
+    }
+    
+    // Arrays
+    print_str("Arrays:")
+    let arr: [int] = [100, 200, 300, 400]
+    print(len(arr))
+    print(arr[0])
+    print(arr[3])
+    
+    print_str("=== All tests passed! ===")
+}

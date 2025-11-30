@@ -1,0 +1,59 @@
+# std/log.wyn
+# Logging utilities
+
+enum LogLevel {
+    Debug
+    Info
+    Warn
+    Error
+}
+
+fn level_to_str(level: LogLevel) -> str {
+    match level {
+        LogLevel::Debug => return "DEBUG"
+        LogLevel::Info => return "INFO"
+        LogLevel::Warn => return "WARN"
+        LogLevel::Error => return "ERROR"
+    }
+}
+
+fn log(level: LogLevel, msg: str) -> () {
+    print_str("[" + level_to_str(level) + "] " + msg + "\n")
+    return ()
+}
+
+fn debug(msg: str) -> () {
+    log(LogLevel::Debug, msg)
+    return ()
+}
+
+fn info(msg: str) -> () {
+    log(LogLevel::Info, msg)
+    return ()
+}
+
+fn warn(msg: str) -> () {
+    log(LogLevel::Warn, msg)
+    return ()
+}
+
+fn error(msg: str) -> () {
+    log(LogLevel::Error, msg)
+    return ()
+}
+
+fn set_level(level: str) -> () {
+    return ()
+}
+
+fn debug_int(label: str, value: int) -> () {
+    print_str("[DEBUG] " + label + ": ")
+    print(value)
+    return ()
+}
+
+fn info_int(label: str, value: int) -> () {
+    print_str("[INFO] " + label + ": ")
+    print(value)
+    return ()
+}

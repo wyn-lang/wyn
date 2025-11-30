@@ -1,0 +1,28 @@
+# Build artifacts
+build/
+*.o
+*.s
+*.s.s
+a.out
+a.out.s
+
+# Test binaries (root level)
+demo
+*_test
+test_out
+test_conv
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+/tmp/
+*.tmp

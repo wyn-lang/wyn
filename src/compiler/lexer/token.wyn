@@ -1,0 +1,189 @@
+// Token types for the Wyn lexer
+
+pub enum TokenKind {
+    // Literals
+    Int(i64)
+    Float(f64)
+    String(str)
+    Char(rune)
+    Bool(bool)
+    
+    // Identifiers
+    Ident(str)
+    
+    // Keywords
+    Fn
+    Struct
+    Enum
+    Trait
+    Impl
+    Let
+    Mut
+    Const
+    Type
+    If
+    Else
+    Match
+    For
+    While
+    Loop
+    Break
+    Continue
+    Return
+    Spawn
+    Select
+    Chan
+    Import
+    Export
+    Pub
+    True
+    False
+    Nil
+    None
+    Some
+    Self_
+    SelfType
+    Try
+    Catch
+    Defer
+    When
+    Is
+    As
+    In
+    
+    // Operators
+    Plus          // +
+    Minus         // -
+    Star          // *
+    Slash         // /
+    Percent       // %
+    StarStar      // **
+    
+    EqEq          // ==
+    NotEq         // !=
+    Lt            // <
+    Gt            // >
+    LtEq          // <=
+    GtEq          // >=
+    
+    AndAnd        // &&
+    OrOr          // ||
+    Not           // !
+    
+    And           // &
+    Or            // |
+    Caret         // ^
+    Tilde         // ~
+    LtLt          // <<
+    GtGt          // >>
+    
+    Eq            // =
+    PlusEq        // +=
+    MinusEq       // -=
+    StarEq        // *=
+    SlashEq       // /=
+    PercentEq     // %=
+    
+    DotDot        // ..
+    DotDotDot     // ...
+    Arrow         // ->
+    FatArrow      // =>
+    Question      // ?
+    At            // @
+    
+    // Delimiters
+    LParen        // (
+    RParen        // )
+    LBrace        // {
+    RBrace        // }
+    LBracket      // [
+    RBracket      // ]
+    Comma         // ,
+    Colon         // :
+    Semicolon     // ;
+    Dot           // .
+    
+    // Special
+    Newline
+    EOF
+    Error(str)
+}
+
+pub struct Token {
+    kind: TokenKind
+    span: Span
+}
+
+pub struct Span {
+    file: str
+    start: Position
+    end: Position
+}
+
+pub struct Position {
+    line: int
+    column: int
+    offset: int
+}
+
+impl Token {
+    pub fn new(kind: TokenKind, span: Span) -> Token {
+        Token{kind, span}
+    }
+    
+    pub fn is_keyword(self) -> bool {
+        match self.kind {
+            Fn | Struct | Enum | Trait | Impl | Let | Mut | Const | Type |
+            If | Else | Match | For | While | Loop | Break | Continue | Return |
+            Spawn | Select | Chan | Import | Export | Pub | True | False |
+            Nil | None | Some | Self_ | SelfType | Try | Catch | Defer |
+            When | Is | As | In => true
+            _ => false
+        }
+    }
+}
+
+// Keyword lookup table
+pub fn keyword_from_str(s: str) -> ?TokenKind {
+    match s {
+        "fn" => some(Fn)
+        "struct" => some(Struct)
+        "enum" => some(Enum)
+        "trait" => some(Trait)
+        "impl" => some(Impl)
+        "let" => some(Let)
+        "mut" => some(Mut)
+        "const" => some(Const)
+        "type" => some(Type)
+        "if" => some(If)
+        "else" => some(Else)
+        "match" => some(Match)
+        "for" => some(For)
+        "while" => some(While)
+        "loop" => some(Loop)
+        "break" => some(Break)
+        "continue" => some(Continue)
+        "return" => some(Return)
+        "spawn" => some(Spawn)
+        "select" => some(Select)
+        "chan" => some(Chan)
+        "import" => some(Import)
+        "export" => some(Export)
+        "pub" => some(Pub)
+        "true" => some(True)
+        "false" => some(False)
+        "nil" => some(Nil)
+        "none" => some(None)
+        "some" => some(Some)
+        "self" => some(Self_)
+        "Self" => some(SelfType)
+        "try" => some(Try)
+        "catch" => some(Catch)
+        "defer" => some(Defer)
+        "when" => some(When)
+        "is" => some(Is)
+        "as" => some(As)
+        "in" => some(In)
+        _ => none
+    }
+}

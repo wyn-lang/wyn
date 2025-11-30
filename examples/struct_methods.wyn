@@ -1,0 +1,20 @@
+struct Counter {
+    value: int
+    
+    fn increment(mut self) {
+        self.value = self.value + 1
+    }
+    
+    fn get(self) -> int {
+        return self.value
+    }
+}
+
+fn main() {
+    let mut c: Counter = Counter { value: 0 }
+    c.increment()
+    c.increment()
+    c.increment()
+    let result: int = c.get()
+    print(result)
+}

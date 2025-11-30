@@ -1,0 +1,229 @@
+# std/math.wyn
+# Mathematical functions and utilities
+
+fn abs(n: int) -> int {
+    if n < 0 {
+        return 0 - n
+    }
+    return n
+}
+
+fn min(a: int, b: int) -> int {
+    if a < b {
+        return a
+    }
+    return b
+}
+
+fn max(a: int, b: int) -> int {
+    if a > b {
+        return a
+    }
+    return b
+}
+
+fn pow(base: int, exp: int) -> int {
+    if exp == 0 {
+        return 1
+    }
+    let mut result: int = 1
+    let mut i: int = 0
+    while i < exp {
+        result = result * base
+        i = i + 1
+    }
+    return result
+}
+
+fn sqrt(n: float) -> float {
+    if n < 0.0 {
+        return 0.0
+    }
+    if n == 0.0 {
+        return 0.0
+    }
+    
+    let mut x: float = n
+    let mut prev: float = 0.0
+    let mut i: int = 0
+    
+    while i < 20 {
+        prev = x
+        x = (x + n / x) / 2.0
+        i = i + 1
+    }
+    
+    return x
+}
+
+fn floor(n: float) -> int {
+    # Simple truncation toward negative infinity
+    let i: int = n.to_int()
+    # to_int truncates toward zero, so for negative non-integers we need to subtract 1
+    if n < 0.0 and n != 0.0 {
+        # Check if n is not an integer by seeing if truncation changed it
+        # This is a simple approximation
+        return i - 1
+    }
+    return i
+}
+
+fn ceil(n: float) -> int {
+    # Simple truncation toward positive infinity
+    let i: int = n.to_int()
+    # to_int truncates toward zero, so for positive non-integers we need to add 1
+    if n > 0.0 {
+        return i + 1
+    }
+    return i
+}
+
+fn round(n: float) -> int {
+    if n >= 0.0 {
+        return (n + 0.5).to_int()
+    }
+    return (n - 0.5).to_int()
+}
+
+fn sin(x: float) -> float {
+    # Requires runtime support (transcendental function)
+    return 0.0
+}
+
+fn cos(x: float) -> float {
+    # Requires runtime support (transcendental function)
+    return 0.0
+}
+
+fn tan(x: float) -> float {
+    # Requires runtime support (transcendental function)
+    return 0.0
+}
+
+fn asin(x: float) -> float {
+    # Requires runtime support (transcendental function)
+    return 0.0
+}
+
+fn acos(x: float) -> float {
+    # Requires runtime support (transcendental function)
+    return 0.0
+}
+
+fn atan(x: float) -> float {
+    # Requires runtime support (transcendental function)
+    return 0.0
+}
+
+fn atan2(y: float, x: float) -> float {
+    # Requires runtime support (transcendental function)
+    return 0.0
+}
+
+fn log(x: float) -> float {
+    # Requires runtime support (transcendental function)
+    return 0.0
+}
+
+fn log10(x: float) -> float {
+    # Requires runtime support (transcendental function)
+    return 0.0
+}
+
+fn exp(x: float) -> float {
+    # Requires runtime support (transcendental function)
+    return 0.0
+}
+
+fn abs_float(n: float) -> float {
+    if n < 0.0 {
+        return 0.0 - n
+    }
+    return n
+}
+
+fn min_float(a: float, b: float) -> float {
+    if a < b {
+        return a
+    }
+    return b
+}
+
+fn max_float(a: float, b: float) -> float {
+    if a > b {
+        return a
+    }
+    return b
+}
+
+fn clamp(value: int, min_val: int, max_val: int) -> int {
+    if value < min_val {
+        return min_val
+    }
+    if value > max_val {
+        return max_val
+    }
+    return value
+}
+
+fn clamp_float(value: float, min_val: float, max_val: float) -> float {
+    if value < min_val {
+        return min_val
+    }
+    if value > max_val {
+        return max_val
+    }
+    return value
+}
+
+fn sign(n: int) -> int {
+    if n > 0 {
+        return 1
+    }
+    if n < 0 {
+        return 0 - 1
+    }
+    return 0
+}
+
+fn is_even(n: int) -> bool {
+    return n % 2 == 0
+}
+
+fn is_odd(n: int) -> bool {
+    return n % 2 != 0
+}
+
+fn gcd(a: int, b: int) -> int {
+    let mut x: int = abs(a)
+    let mut y: int = abs(b)
+    while y != 0 {
+        let temp: int = y
+        y = x % y
+        x = temp
+    }
+    return x
+}
+
+fn lcm(a: int, b: int) -> int {
+    if a == 0 or b == 0 {
+        return 0
+    }
+    return abs(a * b) / gcd(a, b)
+}
+
+fn factorial(n: int) -> int {
+    if n < 0 {
+        return 0
+    }
+    if n == 0 or n == 1 {
+        return 1
+    }
+    let mut result: int = 1
+    let mut i: int = 2
+    while i <= n {
+        result = result * i
+        i = i + 1
+    }
+    return result
+}

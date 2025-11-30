@@ -1,0 +1,55 @@
+# Test generic structs and functions
+
+struct Box[T] {
+    value: T
+}
+
+struct Pair[A, B] {
+    first: A
+    second: B
+}
+
+# Generic function - returns first element or default
+fn first[T](arr: [T], default: T) -> T {
+    if len(arr) > 0 {
+        return arr[0]
+    }
+    return default
+}
+
+# Generic identity function
+fn identity[T](x: T) -> T {
+    return x
+}
+
+fn main() {
+    # Create a Box[int]
+    let int_box: Box[int] = Box[int] { value: 42 }
+    print(int_box.value)
+    assert(int_box.value == 42)
+    
+    # Create a Pair[int, int]
+    let pair: Pair[int, int] = Pair[int, int] { first: 10, second: 20 }
+    print(pair.first)
+    print(pair.second)
+    assert(pair.first == 10)
+    assert(pair.second == 20)
+    
+    # Test generic function calls
+    let nums: [int] = [1, 2, 3]
+    let f: int = first[int](nums, 0)
+    print(f)
+    assert(f == 1)
+    
+    let empty: [int] = []
+    let d: int = first[int](empty, 99)
+    print(d)
+    assert(d == 99)
+    
+    # Test identity
+    let x: int = identity[int](42)
+    print(x)
+    assert(x == 42)
+    
+    print_str("Generic structs and functions work!")
+}

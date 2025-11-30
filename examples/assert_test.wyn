@@ -1,0 +1,15 @@
+# Test assert
+
+fn main() {
+    assert(1 == 1)
+    print(1)
+    
+    assert(2 + 2 == 4)
+    print(2)
+    
+    assert(true)
+    print(3)
+    
+    # This would fail: assert(false)
+    print_str("All assertions passed!")
+}

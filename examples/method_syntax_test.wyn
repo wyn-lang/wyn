@@ -1,0 +1,23 @@
+fn main() {
+    # Test .len() on strings
+    let s: str = "hello"
+    assert(s.len() == 5)
+    assert("world!".len() == 6)
+    
+    # Test .abs() on integers
+    let n: int = -42
+    assert(n.abs() == 42)
+    assert((-100).abs() == 100)
+    
+    # Test .to_str() on integers
+    let num: int = 123
+    print_str(num.to_str())
+    print_str((-456).to_str())
+    
+    # Test .to_int() on strings
+    let str_num: str = "789"
+    assert(str_num.to_int() == 789)
+    assert("-999".to_int() == -999)
+    
+    print_str("method syntax tests passed")
+}

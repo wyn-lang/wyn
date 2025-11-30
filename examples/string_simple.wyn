@@ -1,0 +1,18 @@
+fn main() {
+    # Test basic string operations
+    print_str("Hello")
+    print_str("World")
+    
+    # Test string length
+    let len1: int = len("Hello")
+    print(len1)
+    
+    # Test string comparison
+    let eq: bool = "test" == "test"
+    assert(eq)
+    
+    let neq: bool = "test" != "other"
+    assert(neq)
+    
+    print_str("Tests passed!")
+}

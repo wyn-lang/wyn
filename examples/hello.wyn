@@ -1,0 +1,4 @@
+# Hello World in Wyn
+fn main() {
+    print_str("Hello, World!")
+}

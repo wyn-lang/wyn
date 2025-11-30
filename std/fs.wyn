@@ -1,0 +1,291 @@
+# std/fs.wyn
+# Filesystem operations and path manipulation utilities
+
+# Read entire file contents as string
+# Requires runtime support
+fn read(path: str) -> Result[str, str] {
+    return err("not implemented")
+}
+
+# Write string to file, overwriting if exists
+# Requires runtime support
+fn write(path: str, content: str) -> Result[(), str] {
+    return err("not implemented")
+}
+
+# Append string to end of file
+# Requires runtime support
+fn append(path: str, content: str) -> Result[(), str] {
+    return err("not implemented")
+}
+
+# Check if file or directory exists
+# Requires runtime support
+fn exists(path: str) -> bool {
+    return false
+}
+
+# Create directory
+# Requires runtime support
+fn mkdir(path: str) -> Result[(), str] {
+    return err("not implemented")
+}
+
+# Remove directory
+# Requires runtime support
+fn rmdir(path: str) -> Result[(), str] {
+    return err("not implemented")
+}
+
+# Remove file
+# Requires runtime support
+fn remove(path: str) -> Result[(), str] {
+    return err("not implemented")
+}
+
+# List directory contents
+# Requires runtime support
+fn list(path: str) -> Result[[str], str] {
+    return err("not implemented")
+}
+
+# Check if path is a file
+# Requires runtime support
+fn is_file(path: str) -> bool {
+    return false
+}
+
+# Check if path is a directory
+# Requires runtime support
+fn is_dir(path: str) -> bool {
+    return false
+}
+
+# File metadata information
+struct FileInfo {
+    path: str
+    size: int
+    is_dir: bool
+}
+
+# Get file metadata
+# Requires runtime support
+fn stat(path: str) -> Result[FileInfo, str] {
+    return err("not implemented")
+}
+
+# --- Path Utilities ---
+
+# Join two path components with separator
+# Handles trailing slashes automatically
+fn join_path(a: str, b: str) -> str {
+    if a.len() == 0 {
+        return b
+    }
+    if b.len() == 0 {
+        return a
+    }
+    let last: int = ord(a[a.len() - 1:a.len()][0])
+    if last == 47 {  # '/'
+        return a + b
+    }
+    return a + "/" + b
+}
+
+# Get directory portion of path
+# Returns "." if no directory component
+fn dirname(path: str) -> str {
+    let mut i: int = path.len() - 1
+    while i >= 0 {
+        if ord(path[i:i+1][0]) == 47 {  # '/'
+            if i == 0 {
+                return "/"
+            }
+            return path[0:i]
+        }
+        i = i - 1
+    }
+    return "."
+}
+
+# Get filename portion of path (last component)
+fn basename(path: str) -> str {
+    let mut i: int = path.len() - 1
+    while i >= 0 {
+        if ord(path[i:i+1][0]) == 47 {  # '/'
+            return path[i+1:path.len()]
+        }
+        i = i - 1
+    }
+    return path
+}
+
+# Get file extension including dot (e.g., ".txt")
+# Returns empty string if no extension
+fn extension(path: str) -> str {
+    let base: str = basename(path)
+    let mut i: int = base.len() - 1
+    while i >= 0 {
+        if ord(base[i:i+1][0]) == 46 {  # '.'
+            return base[i:base.len()]
+        }
+        i = i - 1
+    }
+    return ""
+}
+
+# Normalize path by removing duplicate slashes
+# Removes trailing slash except for root
+fn normalize_path(path: str) -> str {
+    if path.len() == 0 {
+        return "."
+    }
+    let mut result: str = ""
+    let mut i: int = 0
+    let mut last_slash: bool = false
+    while i < path.len() {
+        let c: int = ord(path[i:i+1][0])
+        if c == 47 {  # '/'
+            if not last_slash {
+                result = result + "/"
+                last_slash = true
+            }
+        } else {
+            result = result + path[i:i+1]
+            last_slash = false
+        }
+        i = i + 1
+    }
+    if result.len() > 1 and ord(result[result.len()-1:result.len()][0]) == 47 {
+        result = result[0:result.len()-1]
+    }
+    return result
+}
+
+# Remove file extension from path
+fn remove_extension(path: str) -> str {
+    let ext: str = extension(path)
+    if ext.len() == 0 {
+        return path
+    }
+    return path[0:path.len() - ext.len()]
+}
+
+# Check if path is absolute (starts with /)
+fn is_absolute(path: str) -> bool {
+    if path.len() == 0 {
+        return false
+    }
+    return ord(path[0:1][0]) == 47  # '/'
+}
+
+# Check if path has extension
+fn has_extension(path: str) -> bool {
+    return extension(path).len() > 0
+}
+
+# Join multiple path components
+fn join_paths(parts: [str]) -> str {
+    if parts.len() == 0 {
+        return ""
+    }
+    let mut result: str = parts[0]
+    let mut i: int = 1
+    while i < parts.len() {
+        result = join_path(result, parts[i])
+        i = i + 1
+    }
+    return result
+}
+
+# Get parent directory (same as dirname but clearer name)
+fn parent(path: str) -> str {
+    return dirname(path)
+}
+
+# Get filename without extension
+fn stem(path: str) -> str {
+    let base: str = basename(path)
+    let ext: str = extension(path)
+    if ext.len() == 0 {
+        return base
+    }
+    return base[0:base.len() - ext.len()]
+}
+
+# Split path into directory and filename
+fn split_path(path: str) -> (str, str) {
+    let dir: str = dirname(path)
+    let file: str = basename(path)
+    return (dir, file)
+}
+
+# Check if path ends with separator
+fn has_trailing_slash(path: str) -> bool {
+    if path.len() == 0 {
+        return false
+    }
+    return ord(path[path.len()-1:path.len()][0]) == 47  # '/'
+}
+
+# Add trailing slash if not present
+fn ensure_trailing_slash(path: str) -> str {
+    if has_trailing_slash(path) {
+        return path
+    }
+    return path + "/"
+}
+
+# Remove trailing slash if present (except for root)
+fn remove_trailing_slash(path: str) -> str {
+    if path.len() <= 1 {
+        return path
+    }
+    if has_trailing_slash(path) {
+        return path[0:path.len()-1]
+    }
+    return path
+}
+
+# Check if path matches extension (case-sensitive)
+fn has_ext(path: str, ext: str) -> bool {
+    let path_ext: str = extension(path)
+    if ext.len() > 0 and ord(ext[0:1][0]) != 46 {  # '.'
+        return path_ext == "." + ext
+    }
+    return path_ext == ext
+}
+
+# Replace extension with new one
+fn with_extension(path: str, new_ext: str) -> str {
+    let base: str = remove_extension(path)
+    if new_ext.len() == 0 {
+        return base
+    }
+    if ord(new_ext[0:1][0]) == 46 {  # '.'
+        return base + new_ext
+    }
+    return base + "." + new_ext
+}
+
+# Count path components (depth)
+fn path_depth(path: str) -> int {
+    if path.len() == 0 {
+        return 0
+    }
+    let normalized: str = normalize_path(path)
+    let mut count: int = 0
+    let mut i: int = 0
+    while i < normalized.len() {
+        if ord(normalized[i:i+1][0]) == 47 {  # '/'
+            count = count + 1
+        }
+        i = i + 1
+    }
+    return count
+}
+
+# Check if path is just a filename (no directory component)
+fn is_filename_only(path: str) -> bool {
+    return dirname(path) == "."
+}

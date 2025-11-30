@@ -1,0 +1,228 @@
+# Wyn Language Demo
+# Showcases all currently supported features
+
+# ============================================
+# Structs and Methods
+# ============================================
+
+struct Point {
+    x: int
+    y: int
+    
+    fn distance_squared(self) -> int {
+        return self.x * self.x + self.y * self.y
+    }
+}
+
+struct Rectangle {
+    origin: Point
+    width: int
+    height: int
+    
+    fn area(self) -> int {
+        return self.width * self.height
+    }
+}
+
+# ============================================
+# Generic Structs
+# ============================================
+
+struct Box[T] {
+    value: T
+}
+
+# ============================================
+# Enums
+# ============================================
+
+enum Direction {
+    North = 0
+    East = 1
+    South = 2
+    West = 3
+}
+
+# ============================================
+# Functions
+# ============================================
+
+fn factorial(n: int) -> int {
+    if n <= 1 {
+        return 1
+    }
+    return n * factorial(n - 1)
+}
+
+fn fibonacci(n: int) -> int {
+    if n <= 1 {
+        return n
+    }
+    return fibonacci(n - 1) + fibonacci(n - 2)
+}
+
+fn is_prime(n: int) -> bool {
+    if n < 2 {
+        return false
+    }
+    let mut i: int = 2
+    while i * i <= n {
+        if n % i == 0 {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+# ============================================
+# Main Program
+# ============================================
+
+fn main() {
+    print_str("=== Wyn Language Demo ===")
+    print_str("")
+    
+    # Variables and arithmetic
+    print_str("--- Variables & Arithmetic ---")
+    let x: int = 10
+    let y: int = 3
+    print(x + y)   # 13
+    print(x - y)   # 7
+    print(x * y)   # 30
+    print(x / y)   # 3
+    print(x % y)   # 1
+    print(x ** 2)  # 100 (power)
+    
+    # Bitwise operations
+    print_str("")
+    print_str("--- Bitwise Operations ---")
+    print(5 | 3)   # 7 (OR)
+    print(5 & 3)   # 1 (AND)
+    print(5 ^ 3)   # 6 (XOR)
+    print(1 << 4)  # 16 (left shift)
+    print(16 >> 2) # 4 (right shift)
+    
+    # Control flow
+    print_str("")
+    print_str("--- Control Flow ---")
+    let mut sum: int = 0
+    for i in 1..6 {
+        sum = sum + i
+    }
+    print(sum)  # 15 (1+2+3+4+5)
+    
+    # Arrays and slicing
+    print_str("")
+    print_str("--- Arrays & Slicing ---")
+    let arr: [int] = [10, 20, 30, 40, 50]
+    print(len(arr))     # 5
+    print(arr[0])       # 10
+    print(arr[4])       # 50
+    
+    let slice: [int] = arr[1:4]
+    print(len(slice))   # 3
+    print(slice[0])     # 20
+    
+    let last_two: [int] = arr[-2:]
+    print(last_two[0])  # 40
+    
+    # Array iteration
+    print_str("")
+    print_str("--- Array Iteration ---")
+    let nums: [int] = [1, 2, 3]
+    for n in nums {
+        print(n * 10)  # 10, 20, 30
+    }
+    
+    # Structs
+    print_str("")
+    print_str("--- Structs ---")
+    let p: Point = Point { x: 3, y: 4 }
+    print(p.x)                    # 3
+    print(p.y)                    # 4
+    print(p.distance_squared())   # 25
+    
+    let rect: Rectangle = Rectangle { 
+        origin: Point { x: 0, y: 0 }, 
+        width: 10, 
+        height: 5 
+    }
+    print(rect.area())            # 50
+    print(rect.origin.x)          # 0
+    
+    # Optionals
+    print_str("")
+    print_str("--- Optionals ---")
+    let maybe: ?int = some(42)
+    let value: int = maybe ?? 0
+    print(value)  # 42
+    
+    let nothing: ?int = none
+    let default: int = nothing ?? -1
+    print(default)  # -1
+    
+    # Match statements
+    print_str("")
+    print_str("--- Match ---")
+    let dir: int = 1
+    match dir {
+        0 => print_str("North")
+        1 => print_str("East")
+        2 => print_str("South")
+        _ => print_str("West")
+    }
+    
+    # Recursion
+    print_str("")
+    print_str("--- Recursion ---")
+    print(factorial(5))    # 120
+    print(fibonacci(10))   # 55
+    
+    # Prime check
+    print_str("")
+    print_str("--- Prime Numbers ---")
+    for n in 2..12 {
+        if is_prime(n) {
+            print(n)  # 2, 3, 5, 7, 11
+        }
+    }
+    
+    # Math builtins
+    print_str("")
+    print_str("--- Math Builtins ---")
+    print(abs(-42))       # 42
+    print(min(10, 3))     # 3
+    print(max(10, 3))     # 10
+    
+    # String operations
+    print_str("")
+    print_str("--- Strings ---")
+    let greeting: str = "Hello"
+    let name: str = "World"
+    let message: str = greeting + ", " + name + "!"
+    print_str(message)
+    print(len("Hello"))  # 5 (string literal)
+    
+    # Character operations
+    print_str("")
+    print_str("--- Character Codes ---")
+    print(ord("A"))       # 65
+    print(ord("a"))       # 97
+    print_str(chr(87))    # W
+    
+    # Generics
+    print_str("")
+    print_str("--- Generics ---")
+    let box: Box[int] = Box[int] { value: 42 }
+    print(box.value)      # 42
+    
+    # Method syntax on primitives
+    print_str("")
+    print_str("--- Method Syntax ---")
+    let num: int = -123
+    print(num.abs())      # 123
+    
+    print_str("")
+    print_str("=== Demo Complete ===")
+}

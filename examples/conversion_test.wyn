@@ -1,0 +1,22 @@
+fn main() {
+    let s: str = int_to_str(42)
+    print_str(s)
+    
+    let n: int = str_to_int("123")
+    assert(n == 123)
+    
+    # Test negative
+    let neg: str = int_to_str(-99)
+    print_str(neg)
+    
+    let neg_n: int = str_to_int("-456")
+    assert(neg_n == -456)
+    
+    # Test zero
+    let zero: str = int_to_str(0)
+    print_str(zero)
+    
+    assert(str_to_int("0") == 0)
+    
+    print_str("conversion tests passed")
+}

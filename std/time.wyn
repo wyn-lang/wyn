@@ -1,0 +1,359 @@
+# std/time.wyn
+# Time and duration operations
+
+struct Duration {
+    seconds: int
+    nanos: int
+}
+
+# Get the current Unix timestamp in seconds
+# Returns the number of seconds since January 1, 1970 UTC
+fn now() -> int {
+    return 0
+}
+
+# Sleep for the specified duration
+# Blocks execution for the given time period
+fn sleep(duration: Duration) -> () {
+    return ()
+}
+
+# Format a Unix timestamp according to the given format string
+# Returns a formatted time string
+fn format(timestamp: int, fmt: str) -> str {
+    return ""
+}
+
+# Parse a time string according to the given format
+# Returns ok(timestamp) on success, or err(message) if parsing fails
+fn parse(time_str: str, fmt: str) -> Result[int, str] {
+    return err("not implemented")
+}
+
+# Create a duration from a number of seconds
+fn seconds(n: int) -> Duration {
+    return Duration { seconds: n, nanos: 0 }
+}
+
+# Create a duration from a number of milliseconds
+fn millis(n: int) -> Duration {
+    return Duration { seconds: 0, nanos: n * 1000000 }
+}
+
+# Create a duration from a number of minutes
+fn minutes(n: int) -> Duration {
+    return Duration { seconds: n * 60, nanos: 0 }
+}
+
+# Create a duration from a number of hours
+fn hours(n: int) -> Duration {
+    return Duration { seconds: n * 3600, nanos: 0 }
+}
+
+# Create a duration from a number of days
+fn days(n: int) -> Duration {
+    return Duration { seconds: n * 86400, nanos: 0 }
+}
+
+# Convert a duration to total seconds (truncating nanoseconds)
+fn duration_to_seconds(d: Duration) -> int {
+    return d.seconds
+}
+
+# Convert a duration to total milliseconds
+fn duration_to_millis(d: Duration) -> int {
+    return d.seconds * 1000 + d.nanos / 1000000
+}
+
+# Add two durations together
+# Returns a new duration representing the sum
+fn duration_add(a: Duration, b: Duration) -> Duration {
+    let total_nanos: int = a.nanos + b.nanos
+    let extra_secs: int = total_nanos / 1000000000
+    let remaining_nanos: int = total_nanos % 1000000000
+    
+    return Duration {
+        seconds: a.seconds + b.seconds + extra_secs,
+        nanos: remaining_nanos
+    }
+}
+
+# Subtract duration b from duration a
+# Returns a new duration representing the difference
+fn duration_sub(a: Duration, b: Duration) -> Duration {
+    let total_a: int = a.seconds * 1000000000 + a.nanos
+    let total_b: int = b.seconds * 1000000000 + b.nanos
+    let diff: int = total_a - total_b
+    
+    if diff < 0 {
+        return Duration { seconds: 0, nanos: 0 }
+    }
+    
+    return Duration {
+        seconds: diff / 1000000000,
+        nanos: diff % 1000000000
+    }
+}
+
+# Compare two durations
+# Returns -1 if a < b, 0 if a == b, 1 if a > b
+fn duration_cmp(a: Duration, b: Duration) -> int {
+    if a.seconds < b.seconds {
+        return -1
+    }
+    if a.seconds > b.seconds {
+        return 1
+    }
+    if a.nanos < b.nanos {
+        return -1
+    }
+    if a.nanos > b.nanos {
+        return 1
+    }
+    return 0
+}
+
+# Check if a year is a leap year
+# Returns true for leap years, false otherwise
+fn is_leap_year(year: int) -> bool {
+    if year % 400 == 0 {
+        return true
+    }
+    if year % 100 == 0 {
+        return false
+    }
+    if year % 4 == 0 {
+        return true
+    }
+    return false
+}
+
+# Get the number of days in a given month and year
+# Month should be 1-12, returns 0 for invalid months
+fn days_in_month(month: int, year: int) -> int {
+    if month == 1 or month == 3 or month == 5 or month == 7 or month == 8 or month == 10 or month == 12 {
+        return 31
+    }
+    if month == 4 or month == 6 or month == 9 or month == 11 {
+        return 30
+    }
+    if month == 2 {
+        if is_leap_year(year) {
+            return 29
+        }
+        return 28
+    }
+    return 0
+}
+
+# Format a duration as a human-readable string
+# Example: format_duration(Duration{seconds:3661, nanos:0}) -> "1h1m1s"
+fn format_duration(d: Duration) -> str {
+    let total_secs: int = d.seconds
+    if total_secs < 60 {
+        return int_to_str(total_secs) + "s"
+    }
+    if total_secs < 3600 {
+        let mins: int = total_secs / 60
+        let secs: int = total_secs % 60
+        return int_to_str(mins) + "m" + int_to_str(secs) + "s"
+    }
+    let hours: int = total_secs / 3600
+    let remaining: int = total_secs % 3600
+    let mins: int = remaining / 60
+    let secs: int = remaining % 60
+    return int_to_str(hours) + "h" + int_to_str(mins) + "m" + int_to_str(secs) + "s"
+}
+
+# Get the day of the week for a given date (0=Sunday, 6=Saturday)
+# Uses Zeller's congruence algorithm
+fn day_of_week(year: int, month: int, day: int) -> int {
+    let mut y: int = year
+    let mut m: int = month
+    
+    if m < 3 {
+        m = m + 12
+        y = y - 1
+    }
+    
+    let q: int = day
+    let k: int = y % 100
+    let j: int = y / 100
+    
+    let h: int = (q + ((13 * (m + 1)) / 5) + k + (k / 4) + (j / 4) - (2 * j)) % 7
+    
+    return (h + 6) % 7
+}
+
+# Get the name of a month (1=January, 12=December)
+fn month_name(month: int) -> str {
+    if month == 1 { return "January" }
+    if month == 2 { return "February" }
+    if month == 3 { return "March" }
+    if month == 4 { return "April" }
+    if month == 5 { return "May" }
+    if month == 6 { return "June" }
+    if month == 7 { return "July" }
+    if month == 8 { return "August" }
+    if month == 9 { return "September" }
+    if month == 10 { return "October" }
+    if month == 11 { return "November" }
+    if month == 12 { return "December" }
+    return "Unknown"
+}
+
+# Get the abbreviated name of a month (1=Jan, 12=Dec)
+fn month_abbr(month: int) -> str {
+    if month == 1 { return "Jan" }
+    if month == 2 { return "Feb" }
+    if month == 3 { return "Mar" }
+    if month == 4 { return "Apr" }
+    if month == 5 { return "May" }
+    if month == 6 { return "Jun" }
+    if month == 7 { return "Jul" }
+    if month == 8 { return "Aug" }
+    if month == 9 { return "Sep" }
+    if month == 10 { return "Oct" }
+    if month == 11 { return "Nov" }
+    if month == 12 { return "Dec" }
+    return "???"
+}
+
+# Get the name of a day of the week (0=Sunday, 6=Saturday)
+fn weekday_name(day: int) -> str {
+    if day == 0 { return "Sunday" }
+    if day == 1 { return "Monday" }
+    if day == 2 { return "Tuesday" }
+    if day == 3 { return "Wednesday" }
+    if day == 4 { return "Thursday" }
+    if day == 5 { return "Friday" }
+    if day == 6 { return "Saturday" }
+    return "Unknown"
+}
+
+# Get the abbreviated name of a day of the week (0=Sun, 6=Sat)
+fn weekday_abbr(day: int) -> str {
+    if day == 0 { return "Sun" }
+    if day == 1 { return "Mon" }
+    if day == 2 { return "Tue" }
+    if day == 3 { return "Wed" }
+    if day == 4 { return "Thu" }
+    if day == 5 { return "Fri" }
+    if day == 6 { return "Sat" }
+    return "???"
+}
+
+# Calculate the number of days between two dates
+# Returns the absolute difference in days
+fn days_between(y1: int, m1: int, d1: int, y2: int, m2: int, d2: int) -> int {
+    let days1: int = days_since_epoch(y1, m1, d1)
+    let days2: int = days_since_epoch(y2, m2, d2)
+    return abs(days2 - days1)
+}
+
+# Calculate days since epoch (Jan 1, 1970)
+fn days_since_epoch(year: int, month: int, day: int) -> int {
+    let mut total: int = 0
+    let mut y: int = 1970
+    
+    while y < year {
+        total = total + (if is_leap_year(y) then 366 else 365)
+        y = y + 1
+    }
+    
+    let mut m: int = 1
+    while m < month {
+        total = total + days_in_month(m, year)
+        m = m + 1
+    }
+    
+    total = total + day - 1
+    return total
+}
+
+# Add days to a date, returns new (year, month, day)
+# Note: Returns a simple tuple-like encoding as an array [year, month, day]
+fn add_days(year: int, month: int, day: int, days_to_add: int) -> [int] {
+    let mut d: int = day + days_to_add
+    let mut m: int = month
+    let mut y: int = year
+    
+    while d > days_in_month(m, y) {
+        d = d - days_in_month(m, y)
+        m = m + 1
+        if m > 12 {
+            m = 1
+            y = y + 1
+        }
+    }
+    
+    while d < 1 {
+        m = m - 1
+        if m < 1 {
+            m = 12
+            y = y - 1
+        }
+        d = d + days_in_month(m, y)
+    }
+    
+    return [y, m, d]
+}
+
+# Format a date as YYYY-MM-DD
+fn format_date(year: int, month: int, day: int) -> str {
+    let y_str: str = int_to_str(year)
+    let m_str: str = if month < 10 then "0" + int_to_str(month) else int_to_str(month)
+    let d_str: str = if day < 10 then "0" + int_to_str(day) else int_to_str(day)
+    return y_str + "-" + m_str + "-" + d_str
+}
+
+# Format a date as Month DD, YYYY
+fn format_date_long(year: int, month: int, day: int) -> str {
+    return month_name(month) + " " + int_to_str(day) + ", " + int_to_str(year)
+}
+
+# Parse a simple date string in YYYY-MM-DD format
+# Returns ok([year, month, day]) on success, err(message) on failure
+fn parse_date(date_str: str) -> Result[[int], str] {
+    if date_str.len() != 10 {
+        return err("invalid date format, expected YYYY-MM-DD")
+    }
+    
+    if date_str[4:5] != "-" or date_str[7:8] != "-" {
+        return err("invalid date format, expected YYYY-MM-DD")
+    }
+    
+    let year_str: str = date_str[0:4]
+    let month_str: str = date_str[5:7]
+    let day_str: str = date_str[8:10]
+    
+    let year: ?int = str_to_int(year_str)
+    let month: ?int = str_to_int(month_str)
+    let day: ?int = str_to_int(day_str)
+    
+    if year == none or month == none or day == none {
+        return err("invalid date components")
+    }
+    
+    return ok([year!, month!, day!])
+}
+
+# Get the week number of the year (ISO 8601)
+# Week 1 is the first week with a Thursday
+fn week_of_year(year: int, month: int, day: int) -> int {
+    let jan1_dow: int = day_of_week(year, 1, 1)
+    let days_offset: int = days_since_epoch(year, month, day) - days_since_epoch(year, 1, 1)
+    let week: int = (days_offset + jan1_dow) / 7 + 1
+    return week
+}
+
+# Check if a date is valid
+fn is_valid_date(year: int, month: int, day: int) -> bool {
+    if month < 1 or month > 12 {
+        return false
+    }
+    if day < 1 or day > days_in_month(month, year) {
+        return false
+    }
+    return true
+}

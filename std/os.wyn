@@ -1,0 +1,176 @@
+# std/os.wyn
+# Operating system interaction and command-line argument parsing
+
+# Get command-line argument at index (0 = program name)
+# Returns none if index is out of bounds
+fn get_arg(index: int) -> ?str {
+    let all_args: [str] = args()
+    if index < 0 or index >= all_args.len() {
+        return none
+    }
+    return some(all_args[index])
+}
+
+# Get total number of command-line arguments
+fn arg_count() -> int {
+    return args().len()
+}
+
+# Check if environment variable exists
+fn has_env(key: str) -> bool {
+    let val: ?str = getenv(key)
+    match val {
+        some(_) => return true
+        none => return false
+    }
+}
+
+# Get environment variable or return default
+fn getenv_or(key: str, default: str) -> str {
+    let val: ?str = getenv(key)
+    return val ?? default
+}
+
+# Check if argument exists at index
+fn has_arg(index: int) -> bool {
+    return index >= 0 and index < arg_count()
+}
+
+# Get program name (first argument)
+fn program_name() -> str {
+    let name: ?str = get_arg(0)
+    return name ?? "program"
+}
+
+# Parse integer from command-line argument
+fn get_arg_int(index: int) -> ?int {
+    let arg: ?str = get_arg(index)
+    match arg {
+        some(s) => {
+            let val: ?int = s.to_int()
+            return val
+        }
+        none => return none
+    }
+}
+
+# Check if argument matches a flag (e.g., "--help", "-v")
+fn has_flag(flag: str) -> bool {
+    let mut i: int = 1
+    while i < arg_count() {
+        let arg: ?str = get_arg(i)
+        match arg {
+            some(s) => {
+                if s == flag {
+                    return true
+                }
+            }
+            none => {}
+        }
+        i = i + 1
+    }
+    return false
+}
+
+# Get value after a flag (e.g., "--output file.txt" returns "file.txt")
+# Returns none if flag not found or no value follows
+fn get_flag_value(flag: str) -> ?str {
+    let mut i: int = 1
+    while i < arg_count() - 1 {
+        let arg: ?str = get_arg(i)
+        match arg {
+            some(s) => {
+                if s == flag {
+                    return get_arg(i + 1)
+                }
+            }
+            none => {}
+        }
+        i = i + 1
+    }
+    return none
+}
+
+# Get all arguments after index (useful for collecting remaining args)
+fn get_args_from(start: int) -> [str] {
+    let mut result: [str] = []
+    let mut i: int = start
+    while i < arg_count() {
+        let arg: ?str = get_arg(i)
+        match arg {
+            some(s) => {
+                # Would append s to result
+            }
+            none => {}
+        }
+        i = i + 1
+    }
+    return result
+}
+
+# Get all arguments except program name
+fn get_args() -> [str] {
+    return get_args_from(1)
+}
+
+# Check if any flag from list is present
+fn has_any_flag(flags: [str]) -> bool {
+    let mut i: int = 0
+    while i < flags.len() {
+        if has_flag(flags[i]) {
+            return true
+        }
+        i = i + 1
+    }
+    return false
+}
+
+# Get environment variable as integer
+fn getenv_int(key: str) -> ?int {
+    let val: ?str = getenv(key)
+    match val {
+        some(s) => return s.to_int()
+        none => return none
+    }
+}
+
+# Check if running in debug mode (DEBUG env var set)
+fn is_debug() -> bool {
+    return has_env("DEBUG")
+}
+
+# Get all command-line arguments
+# Requires runtime support
+fn args() -> [str] {
+    return []
+}
+
+# Get all environment variables
+# Requires runtime support
+fn env() -> [str] {
+    return []
+}
+
+# Get environment variable value
+# Requires runtime support
+fn getenv(key: str) -> ?str {
+    return none
+}
+
+# Set environment variable
+# Requires runtime support
+fn setenv(key: str, value: str) -> Result[(), str] {
+    return err("not implemented")
+}
+
+# Exit program with status code
+# Requires runtime support
+fn exit(code: int) -> () {
+    return ()
+}
+
+# Execute external command
+# Requires runtime support
+fn exec(command: str, args: [str]) -> Result[int, str] {
+    return err("not implemented")
+}

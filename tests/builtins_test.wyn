@@ -1,0 +1,19 @@
+fn main() {
+    # abs
+    assert(abs(-5) == 5)
+    assert(abs(5) == 5)
+    assert(abs(0) == 0)
+    
+    # min/max
+    assert(min(3, 7) == 3)
+    assert(max(3, 7) == 7)
+    assert(min(-5, -2) == -5)
+    assert(max(-5, -2) == -2)
+    
+    # Method syntax
+    assert((-10).abs() == 10)
+    assert("hello".len() == 5)
+    assert("123".to_int() == 123)
+    
+    print_str("builtins_test: PASS")
+}

@@ -1,0 +1,423 @@
+# std/string.wyn
+# String manipulation and utility functions
+
+fn str_len(s: str) -> int {
+    return s.len()
+}
+
+fn str_concat(a: str, b: str) -> str {
+    return a + b
+}
+
+fn str_eq(a: str, b: str) -> bool {
+    return a == b
+}
+
+fn split(s: str, delimiter: str) -> [str] {
+    # Stage 0 limitation: cannot dynamically build arrays
+    return []
+}
+
+fn join(parts: [str], separator: str) -> str {
+    let len: int = parts.len()
+    if len == 0 {
+        return ""
+    }
+    if len == 1 {
+        return parts[0]
+    }
+    let mut result: str = parts[0]
+    let mut i: int = 1
+    while i < len {
+        result = result + separator + parts[i]
+        i = i + 1
+    }
+    return result
+}
+
+fn trim(s: str) -> str {
+    let mut start: int = 0
+    let mut end: int = s.len()
+    
+    while start < end and (s[start:start+1] == " " or s[start:start+1] == "\t" or s[start:start+1] == "\n") {
+        start = start + 1
+    }
+    
+    while end > start and (s[end-1:end] == " " or s[end-1:end] == "\t" or s[end-1:end] == "\n") {
+        end = end - 1
+    }
+    
+    if start >= end {
+        return ""
+    }
+    return s[start:end]
+}
+
+fn trim_start(s: str) -> str {
+    let mut start: int = 0
+    let len: int = s.len()
+    
+    while start < len and (s[start:start+1] == " " or s[start:start+1] == "\t" or s[start:start+1] == "\n") {
+        start = start + 1
+    }
+    
+    if start >= len {
+        return ""
+    }
+    return s[start:]
+}
+
+fn trim_end(s: str) -> str {
+    let mut end: int = s.len()
+    
+    while end > 0 and (s[end-1:end] == " " or s[end-1:end] == "\t" or s[end-1:end] == "\n") {
+        end = end - 1
+    }
+    
+    if end <= 0 {
+        return ""
+    }
+    return s[:end]
+}
+
+fn replace(s: str, old: str, new: str) -> str {
+    # Stage 0 limitation: requires dynamic string building
+    return ""
+}
+
+fn contains(s: str, substr: str) -> bool {
+    let slen: int = s.len()
+    let sublen: int = substr.len()
+    
+    if sublen == 0 {
+        return true
+    }
+    if sublen > slen {
+        return false
+    }
+    
+    let mut i: int = 0
+    while i <= slen - sublen {
+        if s[i:i+sublen] == substr {
+            return true
+        }
+        i = i + 1
+    }
+    return false
+}
+
+fn starts_with(s: str, prefix: str) -> bool {
+    let slen: int = s.len()
+    let plen: int = prefix.len()
+    
+    if plen > slen {
+        return false
+    }
+    if plen == 0 {
+        return true
+    }
+    
+    return s[:plen] == prefix
+}
+
+fn ends_with(s: str, suffix: str) -> bool {
+    let slen: int = s.len()
+    let suflen: int = suffix.len()
+    
+    if suflen > slen {
+        return false
+    }
+    if suflen == 0 {
+        return true
+    }
+    
+    return s[slen-suflen:] == suffix
+}
+
+fn to_upper(s: str) -> str {
+    return to_upper_str(s)
+}
+
+fn to_lower(s: str) -> str {
+    return to_lower_str(s)
+}
+
+fn substring(s: str, start: int, end: int) -> str {
+    let len: int = s.len()
+    if start < 0 or start >= len or end <= start or end > len {
+        return ""
+    }
+    return s[start:end]
+}
+
+fn index_of(s: str, substr: str) -> ?int {
+    let slen: int = s.len()
+    let sublen: int = substr.len()
+    
+    if sublen == 0 {
+        return some(0)
+    }
+    if sublen > slen {
+        return none
+    }
+    
+    let mut i: int = 0
+    while i <= slen - sublen {
+        if s[i:i+sublen] == substr {
+            return some(i)
+        }
+        i = i + 1
+    }
+    return none
+}
+
+fn last_index_of(s: str, substr: str) -> ?int {
+    let slen: int = s.len()
+    let sublen: int = substr.len()
+    
+    if sublen == 0 {
+        return some(slen)
+    }
+    if sublen > slen {
+        return none
+    }
+    
+    let mut i: int = slen - sublen
+    while i >= 0 {
+        if s[i:i+sublen] == substr {
+            return some(i)
+        }
+        i = i - 1
+    }
+    return none
+}
+
+fn repeat(s: str, count: int) -> str {
+    if count <= 0 {
+        return ""
+    }
+    
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < count {
+        result = result + s
+        i = i + 1
+    }
+    return result
+}
+
+fn reverse(s: str) -> str {
+    let len: int = s.len()
+    if len <= 1 {
+        return s
+    }
+    
+    let mut result: str = ""
+    let mut i: int = len - 1
+    while i >= 0 {
+        result = result + s[i:i+1]
+        i = i - 1
+    }
+    return result
+}
+
+fn is_empty(s: str) -> bool {
+    return s.len() == 0
+}
+
+fn char_at(s: str, index: int) -> ?str {
+    if index < 0 or index >= s.len() {
+        return none
+    }
+    return some(s[index:index+1])
+}
+
+fn to_upper_str(s: str) -> str {
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < s.len() {
+        let c: str = s[i:i+1]
+        let code: int = ord(c)
+        if code >= 97 and code <= 122 {
+            result = result + chr(code - 32)
+        } else {
+            result = result + c
+        }
+        i = i + 1
+    }
+    return result
+}
+
+fn to_lower_str(s: str) -> str {
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < s.len() {
+        let c: str = s[i:i+1]
+        let code: int = ord(c)
+        if code >= 65 and code <= 90 {
+            result = result + chr(code + 32)
+        } else {
+            result = result + c
+        }
+        i = i + 1
+    }
+    return result
+}
+
+fn pad_left(s: str, width: int, fill: str) -> str {
+    let len: int = s.len()
+    if len >= width {
+        return s
+    }
+    let padding: int = width - len
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < padding {
+        result = result + fill
+        i = i + 1
+    }
+    return result + s
+}
+
+fn pad_right(s: str, width: int, fill: str) -> str {
+    let len: int = s.len()
+    if len >= width {
+        return s
+    }
+    let padding: int = width - len
+    let mut result: str = s
+    let mut i: int = 0
+    while i < padding {
+        result = result + fill
+        i = i + 1
+    }
+    return result
+}
+
+# Center string with padding
+fn pad_center(s: str, width: int, fill: str) -> str {
+    let len: int = s.len()
+    if len >= width {
+        return s
+    }
+    let total_padding: int = width - len
+    let left_padding: int = total_padding / 2
+    let right_padding: int = total_padding - left_padding
+    
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < left_padding {
+        result = result + fill
+        i = i + 1
+    }
+    result = result + s
+    i = 0
+    while i < right_padding {
+        result = result + fill
+        i = i + 1
+    }
+    return result
+}
+
+# Count occurrences of substring
+fn count_substr(s: str, substr: str) -> int {
+    let slen: int = s.len()
+    let sublen: int = substr.len()
+    if sublen == 0 or sublen > slen {
+        return 0
+    }
+    let mut count: int = 0
+    let mut i: int = 0
+    while i <= slen - sublen {
+        if s[i:i+sublen] == substr {
+            count = count + 1
+            i = i + sublen
+        } else {
+            i = i + 1
+        }
+    }
+    return count
+}
+
+# Check if string contains only digits
+fn is_numeric(s: str) -> bool {
+    if s.len() == 0 {
+        return false
+    }
+    let mut i: int = 0
+    while i < s.len() {
+        let code: int = ord(s[i:i+1])
+        if code < 48 or code > 57 {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+# Check if string contains only alphabetic characters
+fn is_alpha(s: str) -> bool {
+    if s.len() == 0 {
+        return false
+    }
+    let mut i: int = 0
+    while i < s.len() {
+        let code: int = ord(s[i:i+1])
+        if not ((code >= 65 and code <= 90) or (code >= 97 and code <= 122)) {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+# Check if string contains only alphanumeric characters
+fn is_alphanumeric(s: str) -> bool {
+    if s.len() == 0 {
+        return false
+    }
+    let mut i: int = 0
+    while i < s.len() {
+        let code: int = ord(s[i:i+1])
+        let is_digit: bool = code >= 48 and code <= 57
+        let is_upper: bool = code >= 65 and code <= 90
+        let is_lower: bool = code >= 97 and code <= 122
+        if not (is_digit or is_upper or is_lower) {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+# Check if string is all whitespace
+fn is_whitespace(s: str) -> bool {
+    if s.len() == 0 {
+        return false
+    }
+    let mut i: int = 0
+    while i < s.len() {
+        let c: str = s[i:i+1]
+        if c != " " and c != "\t" and c != "\n" and c != "\r" {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+# Truncate string to max length with ellipsis
+fn truncate(s: str, max_len: int) -> str {
+    if s.len() <= max_len {
+        return s
+    }
+    if max_len <= 3 {
+        return s[:max_len]
+    }
+    return s[:max_len - 3] + "..."
+}
+
+# Compare strings ignoring case
+fn equals_ignore_case(a: str, b: str) -> bool {
+    return to_lower_str(a) == to_lower_str(b)
+}
