@@ -2892,7 +2892,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_emit(cg, "    leaq L_.itsbuf(%%rip), %%rdi");
                     cg_emit(cg, "    leaq L_.itsfmt(%%rip), %%rsi");
                     cg_emit(cg, "    xorl %%eax, %%eax");
-                    cg_emit(cg, "    callq _sprintf");
+                    cg_emit(cg, "    callq %ssprintf", cg_sym_prefix(cg));
                     cg_emit(cg, "    leaq L_.itsbuf(%%rip), %%rax");
                     break;
                 }
@@ -2902,7 +2902,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_emit(cg, "    movq %%rax, %%rdi");
                     cg_emit(cg, "    xorl %%esi, %%esi");
                     cg_emit(cg, "    movl $10, %%edx");
-                    cg_emit(cg, "    callq _strtol");
+                    cg_emit(cg, "    callq %sstrtol", cg_sym_prefix(cg));
                     break;
                 }
                 // Handle built-in ord() - get ASCII code of first char
@@ -2924,7 +2924,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "read_file") == 0) {
                     cg_expr(cg, e->call.args[0]);
                     cg_emit(cg, "    movq %%rax, %%rdi");
-                    cg_emit(cg, "    callq __wyn_read_file");
+                    cg_emit(cg, "    callq %s_wyn_read_file", cg_sym_prefix(cg));
                     break;
                 }
                 if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "assert") == 0) {
@@ -2933,7 +2933,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_emit(cg, "    testq %%rax, %%rax");
                     cg_emit(cg, "    jnz L%d", ok_lbl);
                     cg_emit(cg, "    movq $1, %%rdi");
-                    cg_emit(cg, "    callq _exit");
+                    cg_emit(cg, "    callq %sexit", cg_sym_prefix(cg));
                     cg_emit(cg, "L%d:", ok_lbl);
                     break;
                 }
@@ -2945,7 +2945,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     } else {
                         cg_emit(cg, "    xorq %%rdi, %%rdi");
                     }
-                    cg_emit(cg, "    callq _exit");
+                    cg_emit(cg, "    callq %sexit", cg_sym_prefix(cg));
                     break;
                 }
                 // Built-in methods on primitive types (desugar to free functions)
@@ -2983,7 +2983,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                         cg_emit(cg, "    leaq L_.itsbuf(%%rip), %%rdi");
                         cg_emit(cg, "    leaq L_.itsfmt(%%rip), %%rsi");
                         cg_emit(cg, "    xorl %%eax, %%eax");
-                        cg_emit(cg, "    callq _sprintf");
+                        cg_emit(cg, "    callq %ssprintf", cg_sym_prefix(cg));
                         cg_emit(cg, "    leaq L_.itsbuf(%%rip), %%rax");
                         break;
                     }
@@ -2993,7 +2993,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                         cg_emit(cg, "    movq %%rax, %%rdi");
                         cg_emit(cg, "    xorl %%esi, %%esi");
                         cg_emit(cg, "    movl $10, %%edx");
-                        cg_emit(cg, "    callq _strtol");
+                        cg_emit(cg, "    callq %sstrtol", cg_sym_prefix(cg));
                         break;
                     }
                 }
@@ -3606,7 +3606,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_emit(cg, "    add x0, x0, L_.itsbuf@PAGEOFF");
                 cg_emit(cg, "    adrp x1, L_.itsfmt@PAGE");
                 cg_emit(cg, "    add x1, x1, L_.itsfmt@PAGEOFF");
-                cg_emit(cg, "    bl _sprintf");
+                cg_emit(cg, "    bl %ssprintf", cg_sym_prefix(cg));
                 cg_emit(cg, "    adrp x0, L_.itsbuf@PAGE");
                 cg_emit(cg, "    add x0, x0, L_.itsbuf@PAGEOFF");
                 break;
@@ -3616,7 +3616,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_expr(cg, e->call.args[0]);
                 cg_emit(cg, "    mov x1, #0");
                 cg_emit(cg, "    mov x2, #10");
-                cg_emit(cg, "    bl _strtol");
+                cg_emit(cg, "    bl %sstrtol", cg_sym_prefix(cg));
                 break;
             }
             // Handle built-in ord() - get ASCII code of first char
@@ -3638,7 +3638,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             // Handle built-in read_file() - reads entire file to string
             if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "read_file") == 0) {
                 cg_expr(cg, e->call.args[0]);
-                cg_emit(cg, "    bl __wyn_read_file");
+                cg_emit(cg, "    bl %s_wyn_read_file", cg_sym_prefix(cg));
                 break;
             }
             // Handle built-in assert()
@@ -3647,7 +3647,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_expr(cg, e->call.args[0]);
                 cg_emit(cg, "    cbnz x0, L%d", ok_lbl);
                 cg_emit(cg, "    mov x0, #1");
-                cg_emit(cg, "    bl _exit");
+                cg_emit(cg, "    bl %sexit", cg_sym_prefix(cg));
                 cg_emit(cg, "L%d:", ok_lbl);
                 break;
             }
@@ -3658,7 +3658,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 } else {
                     cg_emit(cg, "    mov x0, #0");
                 }
-                cg_emit(cg, "    bl _exit");
+                cg_emit(cg, "    bl %sexit", cg_sym_prefix(cg));
                 break;
             }
             // Built-in methods on primitive types (desugar to free functions)
@@ -3696,7 +3696,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_emit(cg, "    add x0, x0, L_.itsbuf@PAGEOFF");
                     cg_emit(cg, "    adrp x1, L_.itsfmt@PAGE");
                     cg_emit(cg, "    add x1, x1, L_.itsfmt@PAGEOFF");
-                    cg_emit(cg, "    bl _sprintf");
+                    cg_emit(cg, "    bl %ssprintf", cg_sym_prefix(cg));
                     cg_emit(cg, "    adrp x0, L_.itsbuf@PAGE");
                     cg_emit(cg, "    add x0, x0, L_.itsbuf@PAGEOFF");
                     break;
@@ -3706,7 +3706,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_expr(cg, obj);
                     cg_emit(cg, "    mov x1, #0");
                     cg_emit(cg, "    mov x2, #10");
-                    cg_emit(cg, "    bl _strtol");
+                    cg_emit(cg, "    bl %sstrtol", cg_sym_prefix(cg));
                     break;
                 }
             }
@@ -4642,10 +4642,12 @@ static void codegen_module(CodeGen* cg) {
         }
     }
     
+    const char* pfx = cg_sym_prefix(cg);
+    
     // print runtime - ARM64 variadic calling convention
-    cg_emit(cg, "    .globl _print");
+    cg_emit(cg, "    .globl %sprint", pfx);
     cg_emit(cg, "    .p2align 2");
-    cg_emit(cg, "_print:");
+    cg_emit(cg, "%sprint:", pfx);
     cg_emit(cg, "    sub sp, sp, #32");
     cg_emit(cg, "    stp x29, x30, [sp, #16]");
     cg_emit(cg, "    add x29, sp, #16");
@@ -4655,15 +4657,15 @@ static void codegen_module(CodeGen* cg) {
     cg_emit(cg, "    str x8, [x9]");  // Store at sp for variadic
     cg_emit(cg, "    adrp x0, L_.fmt@PAGE");
     cg_emit(cg, "    add x0, x0, L_.fmt@PAGEOFF");
-    cg_emit(cg, "    bl _printf");
+    cg_emit(cg, "    bl %sprintf", pfx);
     cg_emit(cg, "    ldp x29, x30, [sp, #16]");
     cg_emit(cg, "    add sp, sp, #32");
     cg_emit(cg, "    ret");
     
     // print_str runtime for strings
-    cg_emit(cg, "    .globl _print_str");
+    cg_emit(cg, "    .globl %sprint_str", pfx);
     cg_emit(cg, "    .p2align 2");
-    cg_emit(cg, "_print_str:");
+    cg_emit(cg, "%sprint_str:", pfx);
     cg_emit(cg, "    sub sp, sp, #32");
     cg_emit(cg, "    stp x29, x30, [sp, #16]");
     cg_emit(cg, "    add x29, sp, #16");
@@ -4673,51 +4675,51 @@ static void codegen_module(CodeGen* cg) {
     cg_emit(cg, "    str x8, [x9]");
     cg_emit(cg, "    adrp x0, L_.sfmt@PAGE");
     cg_emit(cg, "    add x0, x0, L_.sfmt@PAGEOFF");
-    cg_emit(cg, "    bl _printf");
+    cg_emit(cg, "    bl %sprintf", pfx);
     cg_emit(cg, "    ldp x29, x30, [sp, #16]");
     cg_emit(cg, "    add sp, sp, #32");
     cg_emit(cg, "    ret");
     
     // __wyn_read_file: reads file to malloc'd string, returns ptr (or 0 on error)
-    cg_emit(cg, "    .globl __wyn_read_file");
+    cg_emit(cg, "    .globl %s_wyn_read_file", pfx);
     cg_emit(cg, "    .p2align 2");
-    cg_emit(cg, "__wyn_read_file:");
+    cg_emit(cg, "%s_wyn_read_file:", pfx);
     cg_emit(cg, "    sub sp, sp, #64");
     cg_emit(cg, "    stp x29, x30, [sp, #48]");
     cg_emit(cg, "    stp x19, x20, [sp, #32]");
     cg_emit(cg, "    add x29, sp, #48");
     cg_emit(cg, "    adrp x1, L_.rb@PAGE");
     cg_emit(cg, "    add x1, x1, L_.rb@PAGEOFF");
-    cg_emit(cg, "    bl _fopen");
+    cg_emit(cg, "    bl %sfopen", pfx);
     cg_emit(cg, "    cbz x0, 1f");
     cg_emit(cg, "    mov x19, x0");                   // x19 = file handle
     cg_emit(cg, "    mov x1, #0");
     cg_emit(cg, "    mov x2, #2");                    // SEEK_END
-    cg_emit(cg, "    bl _fseek");
+    cg_emit(cg, "    bl %sfseek", pfx);
     cg_emit(cg, "    mov x0, x19");
-    cg_emit(cg, "    bl _ftell");
+    cg_emit(cg, "    bl %sftell", pfx);
     cg_emit(cg, "    mov x20, x0");                   // x20 = file size
     cg_emit(cg, "    mov x0, x19");
     cg_emit(cg, "    mov x1, #0");
     cg_emit(cg, "    mov x2, #0");                    // SEEK_SET
-    cg_emit(cg, "    bl _fseek");
+    cg_emit(cg, "    bl %sfseek", pfx);
     cg_emit(cg, "    add x0, x20, #1");               // size + 1 for null
-    cg_emit(cg, "    bl _malloc");
+    cg_emit(cg, "    bl %smalloc", pfx);
     cg_emit(cg, "    cbz x0, 2f");
     cg_emit(cg, "    str x0, [sp, #16]");             // save buffer ptr
     cg_emit(cg, "    mov x1, #1");
     cg_emit(cg, "    mov x2, x20");
     cg_emit(cg, "    mov x3, x19");
-    cg_emit(cg, "    bl _fread");
+    cg_emit(cg, "    bl %sfread", pfx);
     cg_emit(cg, "    ldr x0, [sp, #16]");             // restore buffer ptr
     cg_emit(cg, "    strb wzr, [x0, x20]");           // null terminate
     cg_emit(cg, "    str x0, [sp, #16]");
     cg_emit(cg, "    mov x0, x19");
-    cg_emit(cg, "    bl _fclose");
+    cg_emit(cg, "    bl %sfclose", pfx);
     cg_emit(cg, "    ldr x0, [sp, #16]");
     cg_emit(cg, "    b 3f");
     cg_emit(cg, "2:  mov x0, x19");                   // malloc failed, close file
-    cg_emit(cg, "    bl _fclose");
+    cg_emit(cg, "    bl %sfclose", pfx);
     cg_emit(cg, "1:  mov x0, #0");                    // return 0 on error
     cg_emit(cg, "3:  ldp x19, x20, [sp, #32]");
     cg_emit(cg, "    ldp x29, x30, [sp, #48]");
