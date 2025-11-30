@@ -70,7 +70,7 @@ wyn-lang/
 - [x] ARM64 code generation (macOS)
 - [x] x86_64 code generation (macOS)
 - [x] Test suite (31 tests)
-- [x] Standard library (400+ functions)
+- [x] Standard library (500+ functions)
 - [x] Self-hosting compiler (Stage 1 - 2,176 lines)
 - [x] Package manager (basic)
 - [x] GUI framework (basic)
