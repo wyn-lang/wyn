@@ -1,0 +1,66 @@
+# std/random.wyn
+# Pseudo-random number generation utilities
+
+# Linear Congruential Generator state
+let mut rng_state: int = 1
+
+# Seed the random number generator
+fn seed(s: int) {
+    rng_state = s
+}
+
+# Generate next random integer (LCG algorithm)
+fn rand() -> int {
+    rng_state = (rng_state * 1103515245 + 12345) & 0x7fffffff
+    return rng_state
+}
+
+# Generate random integer in range [min, max)
+fn rand_range(min_val: int, max_val: int) -> int {
+    if min_val >= max_val {
+        return min_val
+    }
+    let range: int = max_val - min_val
+    return min_val + (rand() % range)
+}
+
+# Generate random float between 0.0 and 1.0
+fn rand_float() -> float {
+    return rand().to_float() / 2147483647.0
+}
+
+# Generate random float in range [min, max)
+fn rand_float_range(min_val: float, max_val: float) -> float {
+    return min_val + rand_float() * (max_val - min_val)
+}
+
+# Generate random boolean
+fn rand_bool() -> bool {
+    return rand() % 2 == 0
+}
+
+# Shuffle array (Fisher-Yates algorithm)
+fn shuffle(arr: [int]) -> [int] {
+    let len: int = arr.len()
+    if len <= 1 {
+        return arr
+    }
+    let mut result: [int] = arr
+    let mut i: int = len - 1
+    while i > 0 {
+        let j: int = rand_range(0, i + 1)
+        let temp: int = result[i]
+        result[i] = result[j]
+        result[j] = temp
+        i = i - 1
+    }
+    return result
+}
+
+# Pick random element from array
+fn choice(arr: [int]) -> ?int {
+    if arr.len() == 0 {
+        return none
+    }
+    return some(arr[rand_range(0, arr.len())])
+}

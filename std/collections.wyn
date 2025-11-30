@@ -1188,3 +1188,171 @@ fn array_interleave(a: [int], b: [int]) -> [int] {
 fn min(a: int, b: int) -> int {
     return if a < b then a else b
 }
+
+# Binary search in sorted array, returns index or -1
+fn binary_search(arr: [int], target: int) -> int {
+    let mut left: int = 0
+    let mut right: int = arr.len() - 1
+    while left <= right {
+        let mid: int = left + (right - left) / 2
+        if arr[mid] == target {
+            return mid
+        }
+        if arr[mid] < target {
+            left = mid + 1
+        } else {
+            right = mid - 1
+        }
+    }
+    return 0 - 1
+}
+
+# Bubble sort (ascending)
+fn bubble_sort(arr: [int]) -> [int] {
+    let len: int = arr.len()
+    if len <= 1 {
+        return arr
+    }
+    let mut result: [int] = arr
+    let mut i: int = 0
+    while i < len - 1 {
+        let mut j: int = 0
+        while j < len - i - 1 {
+            if result[j] > result[j + 1] {
+                let temp: int = result[j]
+                result[j] = result[j + 1]
+                result[j + 1] = temp
+            }
+            j = j + 1
+        }
+        i = i + 1
+    }
+    return result
+}
+
+# Check if array is sorted (ascending)
+fn is_sorted(arr: [int]) -> bool {
+    let mut i: int = 1
+    while i < arr.len() {
+        if arr[i - 1] > arr[i] {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+# Find minimum value in array
+fn array_min(arr: [int]) -> ?int {
+    if arr.len() == 0 {
+        return none
+    }
+    let mut min_val: int = arr[0]
+    let mut i: int = 1
+    while i < arr.len() {
+        if arr[i] < min_val {
+            min_val = arr[i]
+        }
+        i = i + 1
+    }
+    return some(min_val)
+}
+
+# Find maximum value in array
+fn array_max(arr: [int]) -> ?int {
+    if arr.len() == 0 {
+        return none
+    }
+    let mut max_val: int = arr[0]
+    let mut i: int = 1
+    while i < arr.len() {
+        if arr[i] > max_val {
+            max_val = arr[i]
+        }
+        i = i + 1
+    }
+    return some(max_val)
+}
+
+# Sum all elements in array
+fn array_sum(arr: [int]) -> int {
+    let mut sum: int = 0
+    let mut i: int = 0
+    while i < arr.len() {
+        sum = sum + arr[i]
+        i = i + 1
+    }
+    return sum
+}
+
+# Product of all elements in array
+fn array_product(arr: [int]) -> int {
+    if arr.len() == 0 {
+        return 0
+    }
+    let mut prod: int = 1
+    let mut i: int = 0
+    while i < arr.len() {
+        prod = prod * arr[i]
+        i = i + 1
+    }
+    return prod
+}
+
+# Partition array into two based on predicate
+fn partition(arr: [int], threshold: int) -> ([int], [int]) {
+    let mut left: [int] = []
+    let mut right: [int] = []
+    let mut i: int = 0
+    while i < arr.len() {
+        if arr[i] < threshold {
+            left = left + [arr[i]]
+        } else {
+            right = right + [arr[i]]
+        }
+        i = i + 1
+    }
+    return (left, right)
+}
+
+# Remove duplicates from sorted array
+fn unique_sorted(arr: [int]) -> [int] {
+    if arr.len() <= 1 {
+        return arr
+    }
+    let mut result: [int] = [arr[0]]
+    let mut i: int = 1
+    while i < arr.len() {
+        if arr[i] != arr[i - 1] {
+            result = result + [arr[i]]
+        }
+        i = i + 1
+    }
+    return result
+}
+
+# Merge two sorted arrays
+fn merge_sorted(a: [int], b: [int]) -> [int] {
+    let mut result: [int] = []
+    let mut i: int = 0
+    let mut j: int = 0
+    while i < a.len() and j < b.len() {
+        if a[i] <= b[j] {
+            result = result + [a[i]]
+            i = i + 1
+        } else {
+            result = result + [b[j]]
+            j = j + 1
+        }
+    }
+    while i < a.len() {
+        result = result + [a[i]]
+        i = i + 1
+    }
+    while j < b.len() {
+        result = result + [b[j]]
+        j = j + 1
+    }
+    return result
+}
+
