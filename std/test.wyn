@@ -190,3 +190,97 @@ fn assert_none(opt: ?int, msg: str) -> () {
     }
 }
 
+# Assert Result is ok
+fn assert_ok[T, E](result: Result[T, E], msg: str) -> () {
+    match result {
+        ok(_) => return ()
+        err(_) => {
+            print_str("ASSERTION FAILED: " + msg + " (expected ok, got err)\n")
+            exit(1)
+        }
+    }
+}
+
+# Assert Result is err
+fn assert_err[T, E](result: Result[T, E], msg: str) -> () {
+    match result {
+        ok(_) => {
+            print_str("ASSERTION FAILED: " + msg + " (expected err, got ok)\n")
+            exit(1)
+        }
+        err(_) => return ()
+    }
+}
+
+# Assert string contains substring
+fn assert_contains(s: str, substr: str, msg: str) -> () {
+    let mut found: bool = false
+    let slen: int = s.len()
+    let sublen: int = substr.len()
+    let mut i: int = 0
+    while i <= slen - sublen {
+        if s[i:i+sublen] == substr {
+            found = true
+        }
+        i = i + 1
+    }
+    if not found {
+        print_str("ASSERTION FAILED: " + msg + " (\"" + s + "\" does not contain \"" + substr + "\")\n")
+        exit(1)
+    }
+    return ()
+}
+
+# Assert string does not contain substring
+fn assert_not_contains(s: str, substr: str, msg: str) -> () {
+    let mut found: bool = false
+    let slen: int = s.len()
+    let sublen: int = substr.len()
+    let mut i: int = 0
+    while i <= slen - sublen {
+        if s[i:i+sublen] == substr {
+            found = true
+        }
+        i = i + 1
+    }
+    if found {
+        print_str("ASSERTION FAILED: " + msg + " (\"" + s + "\" contains \"" + substr + "\")\n")
+        exit(1)
+    }
+    return ()
+}
+
+# Assert array contains value
+fn assert_array_contains(arr: [int], value: int, msg: str) -> () {
+    let mut found: bool = false
+    let mut i: int = 0
+    while i < arr.len() {
+        if arr[i] == value {
+            found = true
+        }
+        i = i + 1
+    }
+    if not found {
+        print_str("ASSERTION FAILED: " + msg + " (array does not contain ")
+        print(value)
+        print_str(")\n")
+        exit(1)
+    }
+    return ()
+}
+
+# Assert value is in range [min, max]
+fn assert_in_range(value: int, min_val: int, max_val: int, msg: str) -> () {
+    if value < min_val or value > max_val {
+        print_str("ASSERTION FAILED: " + msg + " (")
+        print(value)
+        print_str(" not in range [")
+        print(min_val)
+        print_str(", ")
+        print(max_val)
+        print_str("])\n")
+        exit(1)
+    }
+    return ()
+}
+

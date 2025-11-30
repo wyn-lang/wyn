@@ -300,3 +300,45 @@ fn print_box(text: str) -> () {
     return ()
 }
 
+# Print error message to stderr (simulated with prefix)
+fn print_error(msg: str) -> () {
+    print_str("ERROR: " + msg + "\n")
+    return ()
+}
+
+# Print warning message
+fn print_warning(msg: str) -> () {
+    print_str("WARNING: " + msg + "\n")
+    return ()
+}
+
+# Print info message
+fn print_info(msg: str) -> () {
+    print_str("INFO: " + msg + "\n")
+    return ()
+}
+
+# Print success message
+fn print_success(msg: str) -> () {
+    print_str("SUCCESS: " + msg + "\n")
+    return ()
+}
+
+# Format Result error for display
+fn format_result_error[T](result: Result[T, str], context: str) -> str {
+    match result {
+        ok(_) => return ""
+        err(e) => return context + ": " + e
+    }
+}
+
+# Print Result error if present
+fn print_result_error[T](result: Result[T, str], context: str) -> () {
+    match result {
+        ok(_) => return ()
+        err(e) => {
+            print_error(context + ": " + e)
+            return ()
+        }
+    }
+}

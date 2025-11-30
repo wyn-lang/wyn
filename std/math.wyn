@@ -230,6 +230,17 @@ fn sign(n: int) -> int {
     return 0
 }
 
+# Return sign of float: 1.0 for positive, -1.0 for negative, 0.0 for zero
+fn sign_float(n: float) -> float {
+    if n > 0.0 {
+        return 1.0
+    }
+    if n < 0.0 {
+        return 0.0 - 1.0
+    }
+    return 0.0
+}
+
 # Check if number is even
 fn is_even(n: int) -> bool {
     return n % 2 == 0

@@ -611,6 +611,70 @@ fn array_equals[T](a: [T], b: [T]) -> bool {
     return true
 }
 
+# Calculate sum of all floats in array
+fn array_sum_float(arr: [float]) -> float {
+    let mut sum: float = 0.0
+    let mut i: int = 0
+    while i < arr.len() {
+        sum = sum + arr[i]
+        i = i + 1
+    }
+    return sum
+}
+
+# Calculate average of float array, returns none if empty
+fn array_avg_float(arr: [float]) -> ?float {
+    if arr.len() == 0 {
+        return none
+    }
+    let sum: float = array_sum_float(arr)
+    return some(sum / arr.len().to_float())
+}
+
+# Find maximum float value in array, returns none if empty
+fn array_max_float(arr: [float]) -> ?float {
+    if arr.len() == 0 {
+        return none
+    }
+    let mut max_val: float = arr[0]
+    let mut i: int = 1
+    while i < arr.len() {
+        if arr[i] > max_val {
+            max_val = arr[i]
+        }
+        i = i + 1
+    }
+    return some(max_val)
+}
+
+# Find minimum float value in array, returns none if empty
+fn array_min_float(arr: [float]) -> ?float {
+    if arr.len() == 0 {
+        return none
+    }
+    let mut min_val: float = arr[0]
+    let mut i: int = 1
+    while i < arr.len() {
+        if arr[i] < min_val {
+            min_val = arr[i]
+        }
+        i = i + 1
+    }
+    return some(min_val)
+}
+
+# Calculate product of all floats in array
+fn array_product_float(arr: [float]) -> float {
+    let mut prod: float = 1.0
+    let mut i: int = 0
+    while i < arr.len() {
+        prod = prod * arr[i]
+        i = i + 1
+    }
+    return prod
+}
+
+
 # Find second largest element in array, returns none if not found
 fn array_second_max(arr: [int]) -> ?int {
     if arr.len() < 2 {

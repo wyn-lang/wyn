@@ -604,3 +604,69 @@ fn is_upper(s: str) -> bool {
     }
     return true
 }
+
+# Split string into lines by newline character
+# Stage 1: Will support dynamic array building
+fn split_lines(s: str) -> [str] {
+    # Stage 0 limitation: cannot dynamically build arrays
+    # Stage 1 will support: split by \n and build array
+    return []
+}
+
+# Escape double quotes in string
+fn escape_quotes(s: str) -> str {
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < s.len() {
+        let c: str = s[i:i+1]
+        if c == "\"" {
+            result = result + "\\\""
+        } else {
+            result = result + c
+        }
+        i = i + 1
+    }
+    return result
+}
+
+# Unescape double quotes in string
+fn unescape_quotes(s: str) -> str {
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < s.len() {
+        let c: str = s[i:i+1]
+        if c == "\\" and i + 1 < s.len() {
+            let next: str = s[i+1:i+2]
+            if next == "\"" {
+                result = result + "\""
+                i = i + 2
+            } else {
+                result = result + c
+                i = i + 1
+            }
+        } else {
+            result = result + c
+            i = i + 1
+        }
+    }
+    return result
+}
+
+# Replace first occurrence of old with new
+fn replace_first(s: str, old: str, new: str) -> str {
+    let idx: ?int = index_of(s, old)
+    match idx {
+        some(i) => {
+            let before: str = s[:i]
+            let after: str = s[i + old.len():]
+            return before + new + after
+        }
+        none => return s
+    }
+}
+
+# Check if string is palindrome (ignoring case)
+fn is_palindrome_ignore_case(s: str) -> bool {
+    let lower: str = to_lower_str(s)
+    return lower == reverse(lower)
+}

@@ -25,6 +25,7 @@
 |--------|------|--------|-------------|
 | string | string.wyn | ✅ Complete | String utilities (to_upper_str, to_lower_str, pad_left, pad_right added) |
 | collections | collections.wyn | ✅ Complete | Data structure helpers (fully documented, comprehensive array utilities) |
+| error | error.wyn | ✅ Complete | Error handling utilities (unwrap, expect, is_ok, is_err helpers) |
 
 ## Status Legend
 
@@ -35,7 +36,19 @@
 
 ## Recent Additions
 
-### Latest Update (2025-11-30 - Documentation & Utilities)
+### Latest Update (2025-11-30 - Error Handling & Utilities)
+- **error.wyn**: New module with comprehensive error handling utilities
+  - unwrap, unwrap_or, expect, unwrap_or_default for Result and Optional types
+  - is_ok, is_err, is_some, is_none type checking helpers
+  - map_result, map_option for functional transformations
+  - format_error, make_error, make_ok for error construction
+- **math.wyn**: Added sign_float for float sign detection
+- **string.wyn**: Added split_lines, escape_quotes, unescape_quotes, replace_first, is_palindrome_ignore_case
+- **collections.wyn**: Added float array utilities (array_sum_float, array_avg_float, array_max_float, array_min_float, array_product_float)
+- **io.wyn**: Added print_error, print_warning, print_info, print_success, format_result_error, print_result_error
+- **test.wyn**: Added assert_ok, assert_err, assert_contains, assert_not_contains, assert_array_contains, assert_in_range
+
+### Previous Update (2025-11-30 - Documentation & Utilities)
 - **All modules**: All remaining modules now fully documented
 - **os.wyn**: Added get_args_from, get_args, has_any_flag, getenv_int, is_debug for enhanced CLI parsing
 - **fs.wyn**: Added split_path, has_trailing_slash, ensure_trailing_slash, remove_trailing_slash, has_ext, with_extension, path_depth, is_filename_only
