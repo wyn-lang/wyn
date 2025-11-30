@@ -3038,6 +3038,16 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_emit(cg, "    callq %s_wyn_read_file", cg_sym_prefix(cg));
                     break;
                 }
+                // Handle built-in write_file(path, content) - writes string to file
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "write_file") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    pushq %%rax");
+                    cg_expr(cg, e->call.args[1]);
+                    cg_emit(cg, "    movq %%rax, %%rsi");
+                    cg_emit(cg, "    popq %%rdi");
+                    cg_emit(cg, "    callq %s_wyn_write_file", cg_sym_prefix(cg));
+                    break;
+                }
                 // Handle built-in read_line() - reads a line from stdin
                 if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "read_line") == 0) {
                     cg_emit(cg, "    callq %s_wyn_read_line", cg_sym_prefix(cg));
@@ -3864,6 +3874,16 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "read_file") == 0) {
                 cg_expr(cg, e->call.args[0]);
                 cg_emit(cg, "    bl %s_wyn_read_file", cg_sym_prefix(cg));
+                break;
+            }
+            // Handle built-in write_file(path, content) - writes string to file
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "write_file") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    str x0, [sp, #-16]!");
+                cg_expr(cg, e->call.args[1]);
+                cg_emit(cg, "    mov x1, x0");
+                cg_emit(cg, "    ldr x0, [sp], #16");
+                cg_emit(cg, "    bl %s_wyn_write_file", cg_sym_prefix(cg));
                 break;
             }
             // Handle built-in read_line() - reads a line from stdin
@@ -4945,6 +4965,33 @@ static void codegen_module(CodeGen* cg) {
         cg_emit(cg, "5:  popq %%rbp");
         cg_emit(cg, "    retq");
         
+        // __wyn_write_file: writes string to file, returns 0 on success, -1 on error
+        cg_emit(cg, "    .globl %s_wyn_write_file", pfx);
+        cg_emit(cg, "    .p2align 4");
+        cg_emit(cg, "%s_wyn_write_file:", pfx);
+        cg_emit(cg, "    pushq %%rbp");
+        cg_emit(cg, "    movq %%rsp, %%rbp");
+        cg_emit(cg, "    pushq %%rbx");
+        cg_emit(cg, "    pushq %%r12");
+        cg_emit(cg, "    movq %%rsi, %%r12");         // r12 = content
+        cg_emit(cg, "    leaq L_.wb(%%rip), %%rsi");  // "w" mode
+        cg_emit(cg, "    callq %sfopen", pfx);
+        cg_emit(cg, "    testq %%rax, %%rax");
+        cg_emit(cg, "    jz 1f");
+        cg_emit(cg, "    movq %%rax, %%rbx");         // rbx = file handle
+        cg_emit(cg, "    movq %%r12, %%rdi");         // content
+        cg_emit(cg, "    movq %%rbx, %%rsi");         // file
+        cg_emit(cg, "    callq %sfputs", pfx);
+        cg_emit(cg, "    movq %%rbx, %%rdi");
+        cg_emit(cg, "    callq %sfclose", pfx);
+        cg_emit(cg, "    xorl %%eax, %%eax");         // return 0 on success
+        cg_emit(cg, "    jmp 2f");
+        cg_emit(cg, "1:  movq $-1, %%rax");           // return -1 on error
+        cg_emit(cg, "2:  popq %%r12");
+        cg_emit(cg, "    popq %%rbx");
+        cg_emit(cg, "    popq %%rbp");
+        cg_emit(cg, "    retq");
+        
         if (cg->os == OS_MACOS) {
             cg_emit(cg, "    .section __DATA,__data");
         } else {
@@ -4964,6 +5011,8 @@ static void codegen_module(CodeGen* cg) {
         cg_emit(cg, "    .space 2");
         cg_emit(cg, "L_.rb:");
         cg_emit(cg, "    .asciz \"rb\"");
+        cg_emit(cg, "L_.wb:");
+        cg_emit(cg, "    .asciz \"w\"");
         cg_emit(cg, "L_.linebuf:");
         cg_emit(cg, "    .space 1024");
         
@@ -5138,6 +5187,33 @@ static void codegen_module(CodeGen* cg) {
     cg_emit(cg, "    add sp, sp, #32");
     cg_emit(cg, "    ret");
     
+    // __wyn_write_file: writes string to file, returns 0 on success, -1 on error
+    cg_emit(cg, "    .globl %s_wyn_write_file", pfx);
+    cg_emit(cg, "    .p2align 2");
+    cg_emit(cg, "%s_wyn_write_file:", pfx);
+    cg_emit(cg, "    sub sp, sp, #48");
+    cg_emit(cg, "    stp x29, x30, [sp, #32]");
+    cg_emit(cg, "    stp x19, x20, [sp, #16]");
+    cg_emit(cg, "    add x29, sp, #32");
+    cg_emit(cg, "    mov x19, x1");                   // x19 = content
+    cg_emit_adrp(cg, "x1", "L_.wb");
+    cg_emit_add_pageoff(cg, "x1", "x1", "L_.wb");
+    cg_emit(cg, "    bl %sfopen", pfx);
+    cg_emit(cg, "    cbz x0, 1f");
+    cg_emit(cg, "    mov x20, x0");                   // x20 = file handle
+    cg_emit(cg, "    mov x0, x19");                   // content
+    cg_emit(cg, "    mov x1, x20");                   // file
+    cg_emit(cg, "    bl %sfputs", pfx);
+    cg_emit(cg, "    mov x0, x20");
+    cg_emit(cg, "    bl %sfclose", pfx);
+    cg_emit(cg, "    mov x0, #0");                    // return 0 on success
+    cg_emit(cg, "    b 2f");
+    cg_emit(cg, "1:  mov x0, #-1");                   // return -1 on error
+    cg_emit(cg, "2:  ldp x19, x20, [sp, #16]");
+    cg_emit(cg, "    ldp x29, x30, [sp, #32]");
+    cg_emit(cg, "    add sp, sp, #48");
+    cg_emit(cg, "    ret");
+    
     if (cg->os == OS_MACOS) {
         cg_emit(cg, "    .section __DATA,__data");
     } else {
@@ -5157,6 +5233,8 @@ static void codegen_module(CodeGen* cg) {
     cg_emit(cg, "    .space 2");
     cg_emit(cg, "L_.rb:");
     cg_emit(cg, "    .asciz \"rb\"");
+    cg_emit(cg, "L_.wb:");
+    cg_emit(cg, "    .asciz \"w\"");
     cg_emit(cg, "L_.linebuf:");
     cg_emit(cg, "    .space 1024");
     

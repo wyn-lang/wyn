@@ -243,9 +243,14 @@ fn sqrt(n: float) -> float {
     return x
 }
 
-# Integer division with remainder
-fn divmod(a: int, b: int) -> (int, int) {
-    return (a / b, a % b)
+# Integer division (quotient only)
+fn div(a: int, b: int) -> int {
+    return a / b
+}
+
+# Integer modulo (remainder only)
+fn mod(a: int, b: int) -> int {
+    return a % b
 }
 
 # Signum function: -1, 0, or 1
@@ -315,7 +320,9 @@ fn denormalize(value: float, min_val: float, max_val: float) -> float {
 # Snap value to nearest multiple of step
 fn snap(value: float, step: float) -> float {
     if step == 0.0 { return value }
-    return round(value / step).to_float() * step
+    let ratio: float = value / step
+    let rounded: int = if ratio >= 0.0 then (ratio + 0.5).to_int() else (ratio - 0.5).to_int()
+    return rounded.to_float() * step
 }
 
 # Move value towards target by max_delta
@@ -332,13 +339,19 @@ fn exp_decay(current: float, target: float, decay: float, dt: float) -> float {
     return target + (current - target) * exp(0.0 - decay * dt)
 }
 
-# Spring interpolation (damped harmonic oscillator)
-fn spring(current: float, target: float, velocity: float, stiffness: float, damping: float, dt: float) -> (float, float) {
+# Spring position (damped harmonic oscillator) - returns new position
+fn spring_position(current: float, target: float, velocity: float, stiffness: float, damping: float, dt: float) -> float {
     let force: float = (target - current) * stiffness
     let damping_force: float = velocity * damping
     let new_velocity: float = velocity + (force - damping_force) * dt
-    let new_position: float = current + new_velocity * dt
-    return (new_position, new_velocity)
+    return current + new_velocity * dt
+}
+
+# Spring velocity (damped harmonic oscillator) - returns new velocity
+fn spring_velocity(current: float, target: float, velocity: float, stiffness: float, damping: float, dt: float) -> float {
+    let force: float = (target - current) * stiffness
+    let damping_force: float = velocity * damping
+    return velocity + (force - damping_force) * dt
 }
 
 # Ease in (quadratic)

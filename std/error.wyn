@@ -1,134 +1,53 @@
 # std/error.wyn
 # Error handling utilities and helpers
-#
-# This module provides convenient functions for working with Result and Optional types,
-# including unwrapping, default values, type checking, and functional transformations.
-
-# Unwrap Result or exit with error message
-# Extracts the ok value from a Result, or exits the program with an error message if err
-# Example: let value: int = unwrap(read_file("config.txt"), "Failed to read config")
-fn unwrap[T, E](result: Result[T, E], msg: str) -> T {
-    match result {
-        ok(value) => return value
-        err(_) => {
-            print_str("ERROR: " + msg + "\n")
-            exit(1)
-        }
-    }
-}
-
-# Unwrap Result or return default value
-# Extracts the ok value from a Result, or returns a default value if err
-# Example: let content: str = unwrap_or(read_file("config.txt"), "")
-fn unwrap_or[T, E](result: Result[T, E], default: T) -> T {
-    match result {
-        ok(value) => return value
-        err(_) => return default
-    }
-}
-
-# Unwrap Optional or exit with error message
-# Extracts the some value from an Optional, or exits the program with an error message if none
-# Example: let value: int = expect(find_value(), "Value not found")
-fn expect[T](opt: ?T, msg: str) -> T {
-    match opt {
-        some(value) => return value
-        none => {
-            print_str("ERROR: " + msg + "\n")
-            exit(1)
-        }
-    }
-}
-
-# Unwrap Optional or return default value
-# Extracts the some value from an Optional, or returns a default value if none
-# Example: let value: int = unwrap_or_default(maybe_value, 0)
-fn unwrap_or_default[T](opt: ?T, default: T) -> T {
-    match opt {
-        some(value) => return value
-        none => return default
-    }
-}
-
-# Check if Result is ok
-# Returns true if the Result contains an ok value, false if err
-# Example: if is_ok(result) { ... }
-fn is_ok[T, E](result: Result[T, E]) -> bool {
-    match result {
-        ok(_) => return true
-        err(_) => return false
-    }
-}
-
-# Check if Result is err
-# Returns true if the Result contains an err value, false if ok
-# Example: if is_err(result) { ... }
-fn is_err[T, E](result: Result[T, E]) -> bool {
-    match result {
-        ok(_) => return false
-        err(_) => return true
-    }
-}
-
-# Check if Optional has value
-# Returns true if the Optional contains a some value, false if none
-# Example: if is_some(maybe_value) { ... }
-fn is_some[T](opt: ?T) -> bool {
-    match opt {
-        some(_) => return true
-        none => return false
-    }
-}
-
-# Check if Optional is none
-# Returns true if the Optional is none, false if some
-# Example: if is_none(maybe_value) { ... }
-fn is_none[T](opt: ?T) -> bool {
-    match opt {
-        some(_) => return false
-        none => return true
-    }
-}
-
-# Map Result value if ok
-# Applies a transformation function to the ok value, preserving err if present
-# Requires: Function type support (Stage 1+)
-# Example: let doubled: Result[int, str] = map_result(result, fn(x) -> x * 2)
-fn map_result[T, U, E](result: Result[T, E], transform: fn(T) -> U) -> Result[U, E] {
-    match result {
-        ok(value) => return ok(transform(value))
-        err(e) => return err(e)
-    }
-}
-
-# Map Optional value if some
-# Applies a transformation function to the some value, preserving none if present
-# Requires: Function type support (Stage 1+)
-# Example: let doubled: ?int = map_option(maybe_value, fn(x) -> x * 2)
-fn map_option[T, U](opt: ?T, transform: fn(T) -> U) -> ?U {
-    match opt {
-        some(value) => return some(transform(value))
-        none => return none
-    }
-}
 
 # Format error message with context
-# Combines a context string with an error message for better error reporting
-# Example: let msg: str = format_error("File operation", "Permission denied")
 fn format_error(context: str, error: str) -> str {
     return context + ": " + error
 }
 
-# Create error Result with formatted message
-# Constructs an err Result with the given error message
-# Example: return make_error[int]("Invalid input")
-fn make_error[T](msg: str) -> Result[T, str] {
+# Create error Result
+fn make_error[E](msg: E) -> Result[int, E] {
     return err(msg)
 }
 
 # Create ok Result
-# Constructs an ok Result with the given value
-# Example: return make_ok[int, str](42)
-fn make_ok[T, E](value: T) -> Result[T, E] {
+fn make_ok[T](value: T) -> Result[T, str] {
     return ok(value)
+}
+
+# Check if value is zero (common error check)
+fn is_zero(n: int) -> bool {
+    return n == 0
+}
+
+# Check if string is empty (common error check)
+fn is_empty_str(s: str) -> bool {
+    return s.len() == 0
+}
+
+# Safe division that returns Result
+fn safe_div(a: int, b: int) -> Result[int, str] {
+    if b == 0 {
+        return err("division by zero")
+    }
+    return ok(a / b)
+}
+
+# Safe modulo that returns Result
+fn safe_mod(a: int, b: int) -> Result[int, str] {
+    if b == 0 {
+        return err("modulo by zero")
+    }
+    return ok(a % b)
+}
+
+# Convert error to string
+fn error_to_str(msg: str) -> str {
+    return "Error: " + msg
+}
+
+# Create success message
+fn success_msg(msg: str) -> str {
+    return "Success: " + msg
 }

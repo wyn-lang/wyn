@@ -1,0 +1,13 @@
+# Test write_file() builtin
+
+fn main() {
+    let result: int = write_file("/tmp/wyn_test.txt", "Hello from Wyn!")
+    if result == 0 {
+        print_str("Write successful")
+        let content: str = read_file("/tmp/wyn_test.txt")
+        print_str("Read back: ")
+        print_str(content)
+    } else {
+        print_str("Write failed")
+    }
+}
