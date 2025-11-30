@@ -806,6 +806,81 @@ fn matches_wildcard(s: str, pattern: str) -> bool {
     return false
 }
 
+# Convert string to URL-friendly slug (lowercase, spaces to hyphens)
+fn slugify(s: str) -> str {
+    let lower: str = to_lower_str(s)
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < lower.len() {
+        let c: str = lower[i:i+1]
+        let code: int = ord(c)
+        if (code >= 97 and code <= 122) or (code >= 48 and code <= 57) {
+            result = result + c
+        } else if c == " " or c == "_" {
+            result = result + "-"
+        }
+        i = i + 1
+    }
+    return result
+}
+
+# Check if string contains only ASCII characters (0-127)
+fn is_ascii(s: str) -> bool {
+    let mut i: int = 0
+    while i < s.len() {
+        if ord(s[i:i+1]) > 127 {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+# Hamming distance between two strings (must be same length)
+fn hamming_distance(a: str, b: str) -> ?int {
+    if a.len() != b.len() {
+        return none
+    }
+    let mut dist: int = 0
+    let mut i: int = 0
+    while i < a.len() {
+        if a[i:i+1] != b[i:i+1] {
+            dist = dist + 1
+        }
+        i = i + 1
+    }
+    return some(dist)
+}
+
+# Indent each line with given prefix
+fn indent(s: str, prefix: str) -> str {
+    if s.len() == 0 { return s }
+    let mut result: str = prefix
+    let mut i: int = 0
+    while i < s.len() {
+        let c: str = s[i:i+1]
+        result = result + c
+        if c == "\n" and i < s.len() - 1 {
+            result = result + prefix
+        }
+        i = i + 1
+    }
+    return result
+}
+
+# Remove all occurrences of character from string
+fn remove_char(s: str, ch: str) -> str {
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < s.len() {
+        if s[i:i+1] != ch {
+            result = result + s[i:i+1]
+        }
+        i = i + 1
+    }
+    return result
+}
+
 fn min(a: int, b: int) -> int {
     return if a < b then a else b
 }
