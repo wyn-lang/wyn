@@ -4162,6 +4162,13 @@ static void cg_expr(CodeGen* cg, Expr* e) {
     }
 }
 
+// Emit all deferred expressions in LIFO order
+static void cg_emit_defers(CodeGen* cg) {
+    for (int i = cg->defer_count - 1; i >= 0; i--) {
+        cg_expr(cg, cg->defers[i]);
+    }
+}
+
 static void cg_stmt(CodeGen* cg, Stmt* s);
 
 static void cg_stmt(CodeGen* cg, Stmt* s) {
@@ -4216,9 +4223,19 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
             case STMT_EXPR: cg_expr(cg, s->expr.expr); break;
             case STMT_RETURN:
                 if (s->ret.value) cg_expr(cg, s->ret.value);
+                if (cg->defer_count > 0) {
+                    cg_emit(cg, "    pushq %%rax");  // Save return value
+                    cg_emit_defers(cg);
+                    cg_emit(cg, "    popq %%rax");   // Restore return value
+                }
                 cg_emit(cg, "    movq %%rbp, %%rsp");
                 cg_emit(cg, "    popq %%rbp");
                 cg_emit(cg, "    retq");
+                break;
+            case STMT_DEFER:
+                if (cg->defer_count < 64) {
+                    cg->defers[cg->defer_count++] = s->defer.expr;
+                }
                 break;
             case STMT_IF: {
                 int else_lbl = cg_new_label(cg), end_lbl = cg_new_label(cg);
@@ -4421,8 +4438,19 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
             
         case STMT_RETURN:
             if (s->ret.value) cg_expr(cg, s->ret.value);
+            if (cg->defer_count > 0) {
+                cg_emit(cg, "    str x0, [sp, #-16]!");  // Save return value
+                cg_emit_defers(cg);
+                cg_emit(cg, "    ldr x0, [sp], #16");    // Restore return value
+            }
             cg_emit(cg, "    ldp x29, x30, [sp], #256");
             cg_emit(cg, "    ret");
+            break;
+        
+        case STMT_DEFER:
+            if (cg->defer_count < 64) {
+                cg->defers[cg->defer_count++] = s->defer.expr;
+            }
             break;
             
         case STMT_IF: {
@@ -4655,6 +4683,7 @@ static void cg_method(CodeGen* cg, const char* struct_name, FnDef* fn) {
 static void cg_function(CodeGen* cg, FnDef* fn) {
     cg->stack_offset = 0;
     cg->local_count = 0;
+    cg->defer_count = 0;  // Reset defers for each function
     const char* pfx = cg_sym_prefix(cg);
     
     if (cg->arch == ARCH_X86_64) {
@@ -4673,6 +4702,7 @@ static void cg_function(CodeGen* cg, FnDef* fn) {
         
         for (int i = 0; i < fn->body_count; i++) cg_stmt(cg, fn->body[i]);
         
+        cg_emit_defers(cg);  // Execute defers at implicit return
         cg_emit(cg, "    xorl %%eax, %%eax");
         cg_emit(cg, "    movq %%rbp, %%rsp");
         cg_emit(cg, "    popq %%rbp");
@@ -4696,6 +4726,7 @@ static void cg_function(CodeGen* cg, FnDef* fn) {
         cg_stmt(cg, fn->body[i]);
     }
     
+    cg_emit_defers(cg);  // Execute defers at implicit return
     cg_emit(cg, "    mov x0, #0");
     cg_emit(cg, "    ldp x29, x30, [sp], #256");
     cg_emit(cg, "    ret");

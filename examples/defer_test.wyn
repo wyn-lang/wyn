@@ -1,0 +1,17 @@
+# Test defer statement
+
+fn test_defer() -> int {
+    let mut x: int = 0
+    defer print(1)
+    defer print(2)
+    x = 42
+    return x
+}
+
+fn main() {
+    print_str("Defer test:")
+    let result: int = test_defer()
+    print_str(" result=")
+    print(result)
+    print_str(" done")
+}
