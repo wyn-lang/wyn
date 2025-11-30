@@ -1,0 +1,262 @@
+// C code generator for Wyn compiler (Stage 1)
+// Generates portable C code that can be compiled with any C compiler
+
+import compiler.ir.ir.{IRModule, IRFunction, IRBlock, IRInstr, IRType, IRValue}
+
+pub struct CGen {
+    output: str
+    indent: int
+}
+
+impl CGen {
+    pub fn new() -> CGen {
+        CGen{output: "", indent: 0}
+    }
+    
+    pub fn generate(mut self, module: IRModule) -> str {
+        // Header
+        self.emit("#include <stdio.h>")
+        self.emit("#include <stdlib.h>")
+        self.emit("#include <string.h>")
+        self.emit("#include <stdint.h>")
+        self.emit("")
+        
+        // Type definitions
+        self.emit("typedef int64_t wyn_int;")
+        self.emit("typedef double wyn_float;")
+        self.emit("typedef char* wyn_str;")
+        self.emit("typedef int wyn_bool;")
+        self.emit("#define true 1")
+        self.emit("#define false 0")
+        self.emit("")
+        
+        // String literals
+        let mut i: int = 0
+        while i < module.strings.len() {
+            self.emit("static const char* str_" + i.to_str() + " = \"" + escape_c_string(module.strings[i]) + "\";")
+            i = i + 1
+        }
+        self.emit("")
+        
+        // Forward declarations
+        for func in module.functions {
+            self.emit_forward_decl(func)
+        }
+        self.emit("")
+        
+        // Runtime helpers
+        self.emit_runtime()
+        
+        // Function definitions
+        for func in module.functions {
+            self.gen_function(func)
+        }
+        
+        return self.output
+    }
+    
+    fn emit_forward_decl(mut self, func: IRFunction) {
+        let ret_type: str = ir_type_to_c(func.return_type)
+        let mut params: str = ""
+        let mut i: int = 0
+        while i < func.params.len() {
+            if i > 0 { params = params + ", " }
+            params = params + ir_type_to_c(func.params[i].ty) + " " + func.params[i].name
+            i = i + 1
+        }
+        if params == "" { params = "void" }
+        self.emit(ret_type + " " + func.name + "(" + params + ");")
+    }
+    
+    fn emit_runtime(mut self) {
+        self.emit("// Runtime helpers")
+        self.emit("void wyn_print(wyn_int n) { printf(\"%lld\\n\", (long long)n); }")
+        self.emit("void wyn_print_str(wyn_str s) { printf(\"%s\", s); }")
+        self.emit("wyn_int wyn_len(wyn_str s) { return strlen(s); }")
+        self.emit("wyn_int wyn_abs(wyn_int n) { return n < 0 ? -n : n; }")
+        self.emit("wyn_int wyn_min(wyn_int a, wyn_int b) { return a < b ? a : b; }")
+        self.emit("wyn_int wyn_max(wyn_int a, wyn_int b) { return a > b ? a : b; }")
+        self.emit("")
+    }
+    
+    fn gen_function(mut self, func: IRFunction) {
+        let ret_type: str = ir_type_to_c(func.return_type)
+        let mut params: str = ""
+        let mut i: int = 0
+        while i < func.params.len() {
+            if i > 0 { params = params + ", " }
+            params = params + ir_type_to_c(func.params[i].ty) + " " + func.params[i].name
+            i = i + 1
+        }
+        if params == "" { params = "void" }
+        
+        self.emit(ret_type + " " + func.name + "(" + params + ") {")
+        self.indent = self.indent + 1
+        
+        // Local variables
+        for local in func.locals {
+            self.emit_indent(ir_type_to_c(local.ty) + " " + local.name + ";")
+        }
+        
+        // Generate blocks
+        for block in func.blocks {
+            self.gen_block(block)
+        }
+        
+        self.indent = self.indent - 1
+        self.emit("}")
+        self.emit("")
+    }
+    
+    fn gen_block(mut self, block: IRBlock) {
+        if block.label != "entry" {
+            self.emit(block.label + ":;")
+        }
+        
+        for instr in block.instrs {
+            self.gen_instr(instr)
+        }
+    }
+    
+    fn gen_instr(mut self, instr: IRInstr) {
+        match instr.op {
+            "const" => {
+                self.emit_indent(instr.dest + " = " + instr.args[0] + ";")
+            }
+            "add" => {
+                self.emit_indent(instr.dest + " = " + instr.args[0] + " + " + instr.args[1] + ";")
+            }
+            "sub" => {
+                self.emit_indent(instr.dest + " = " + instr.args[0] + " - " + instr.args[1] + ";")
+            }
+            "mul" => {
+                self.emit_indent(instr.dest + " = " + instr.args[0] + " * " + instr.args[1] + ";")
+            }
+            "div" => {
+                self.emit_indent(instr.dest + " = " + instr.args[0] + " / " + instr.args[1] + ";")
+            }
+            "mod" => {
+                self.emit_indent(instr.dest + " = " + instr.args[0] + " % " + instr.args[1] + ";")
+            }
+            "neg" => {
+                self.emit_indent(instr.dest + " = -" + instr.args[0] + ";")
+            }
+            "eq" => {
+                self.emit_indent(instr.dest + " = " + instr.args[0] + " == " + instr.args[1] + ";")
+            }
+            "ne" => {
+                self.emit_indent(instr.dest + " = " + instr.args[0] + " != " + instr.args[1] + ";")
+            }
+            "lt" => {
+                self.emit_indent(instr.dest + " = " + instr.args[0] + " < " + instr.args[1] + ";")
+            }
+            "le" => {
+                self.emit_indent(instr.dest + " = " + instr.args[0] + " <= " + instr.args[1] + ";")
+            }
+            "gt" => {
+                self.emit_indent(instr.dest + " = " + instr.args[0] + " > " + instr.args[1] + ";")
+            }
+            "ge" => {
+                self.emit_indent(instr.dest + " = " + instr.args[0] + " >= " + instr.args[1] + ";")
+            }
+            "and" => {
+                self.emit_indent(instr.dest + " = " + instr.args[0] + " && " + instr.args[1] + ";")
+            }
+            "or" => {
+                self.emit_indent(instr.dest + " = " + instr.args[0] + " || " + instr.args[1] + ";")
+            }
+            "not" => {
+                self.emit_indent(instr.dest + " = !" + instr.args[0] + ";")
+            }
+            "call" => {
+                let func_name: str = instr.args[0]
+                let mut args: str = ""
+                let mut i: int = 1
+                while i < instr.args.len() {
+                    if i > 1 { args = args + ", " }
+                    args = args + instr.args[i]
+                    i = i + 1
+                }
+                if instr.dest != "" {
+                    self.emit_indent(instr.dest + " = " + func_name + "(" + args + ");")
+                } else {
+                    self.emit_indent(func_name + "(" + args + ");")
+                }
+            }
+            "ret" => {
+                if instr.args.len() > 0 {
+                    self.emit_indent("return " + instr.args[0] + ";")
+                } else {
+                    self.emit_indent("return;")
+                }
+            }
+            "br" => {
+                self.emit_indent("goto " + instr.args[0] + ";")
+            }
+            "br_if" => {
+                self.emit_indent("if (" + instr.args[0] + ") goto " + instr.args[1] + "; else goto " + instr.args[2] + ";")
+            }
+            "load" => {
+                self.emit_indent(instr.dest + " = " + instr.args[0] + ";")
+            }
+            "store" => {
+                self.emit_indent(instr.args[0] + " = " + instr.args[1] + ";")
+            }
+            "alloc" => {
+                self.emit_indent(instr.dest + " = malloc(" + instr.args[0] + ");")
+            }
+            "free" => {
+                self.emit_indent("free(" + instr.args[0] + ");")
+            }
+            _ => {
+                self.emit_indent("// Unknown op: " + instr.op)
+            }
+        }
+    }
+    
+    fn emit(mut self, line: str) {
+        self.output = self.output + line + "\n"
+    }
+    
+    fn emit_indent(mut self, line: str) {
+        let mut i: int = 0
+        while i < self.indent {
+            self.output = self.output + "    "
+            i = i + 1
+        }
+        self.output = self.output + line + "\n"
+    }
+}
+
+// Convert IR type to C type
+fn ir_type_to_c(ty: IRType) -> str {
+    match ty {
+        IRType.Int => "wyn_int"
+        IRType.Float => "wyn_float"
+        IRType.Bool => "wyn_bool"
+        IRType.Str => "wyn_str"
+        IRType.Void => "void"
+        IRType.Ptr(inner) => ir_type_to_c(inner!) + "*"
+        IRType.Array(inner) => ir_type_to_c(inner!) + "*"
+        _ => "void*"
+    }
+}
+
+// Escape string for C
+fn escape_c_string(s: str) -> str {
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < s.len() {
+        let c: str = s[i:i+1]
+        match c {
+            "\n" => result = result + "\\n"
+            "\t" => result = result + "\\t"
+            "\r" => result = result + "\\r"
+            "\"" => result = result + "\\\""
+            "\\" => result = result + "\\\\"
+            _ => result = result + c
+        }
+        i = i + 1
+    }
+    return result
+}

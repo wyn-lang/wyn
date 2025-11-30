@@ -1,0 +1,214 @@
+// Wyn Compiler - Stage 1 (Self-hosting)
+// Main driver that orchestrates compilation
+
+import compiler.lexer.lexer.{Lexer}
+import compiler.parser.parser.{Parser}
+import compiler.typechecker.checker.{TypeChecker}
+import compiler.ir.lower.{lower_module}
+import compiler.codegen.aarch64.codegen.{AArch64Gen}
+import compiler.codegen.x86_64.codegen.{X86_64Gen}
+import compiler.codegen.c.codegen.{CGen}
+import compiler.codegen.wasm.codegen.{WasmGen}
+
+pub struct CompilerOptions {
+    input: str
+    output: str
+    target: str      // "aarch64", "x86_64", "c", "wasm"
+    emit_ir: bool
+    emit_asm: bool
+    verbose: bool
+}
+
+pub struct Compiler {
+    options: CompilerOptions
+}
+
+impl Compiler {
+    pub fn new(options: CompilerOptions) -> Compiler {
+        Compiler{options}
+    }
+    
+    pub fn compile(mut self) -> Result[str, str] {
+        // Read source file
+        let source: Result[str, str] = read_file(self.options.input)
+        match source {
+            err(e) => return err("Cannot read file: " + e)
+            ok(content) => {
+                return self.compile_source(content)
+            }
+        }
+    }
+    
+    fn compile_source(mut self, source: str) -> Result[str, str] {
+        if self.options.verbose {
+            print_str("Compiling: " + self.options.input + "\n")
+        }
+        
+        // Lexing
+        let mut lexer: Lexer = Lexer.new(source, self.options.input)
+        let tokens = lexer.tokenize()
+        
+        if self.options.verbose {
+            print_str("  Tokens: " + tokens.len().to_str() + "\n")
+        }
+        
+        // Parsing
+        let mut parser: Parser = Parser.new(tokens)
+        let ast = parser.parse()
+        
+        if self.options.verbose {
+            print_str("  AST: " + ast.functions.len().to_str() + " functions\n")
+        }
+        
+        // Type checking
+        let mut checker: TypeChecker = TypeChecker.new()
+        let errors = checker.check_module(ast)
+        if errors.len() > 0 {
+            return err("Type error: " + errors[0])
+        }
+        
+        if self.options.verbose {
+            print_str("  Type check: passed\n")
+        }
+        
+        // Lower to IR
+        let ir = lower_module(ast)
+        
+        if self.options.emit_ir {
+            // TODO: Print IR
+            print_str("IR output not yet implemented\n")
+        }
+        
+        // Code generation
+        let code: str = match self.options.target {
+            "aarch64" => {
+                let mut gen: AArch64Gen = AArch64Gen.new()
+                gen.generate(ir)
+            }
+            "x86_64" => {
+                let mut gen: X86_64Gen = X86_64Gen.new()
+                gen.generate(ir)
+            }
+            "c" => {
+                let mut gen: CGen = CGen.new()
+                gen.generate(ir)
+            }
+            "wasm" => {
+                let mut gen: WasmGen = WasmGen.new()
+                gen.generate(ir)
+            }
+            _ => return err("Unknown target: " + self.options.target)
+        }
+        
+        // Write output
+        if self.options.output != "" {
+            write_file(self.options.output, code)
+            if self.options.verbose {
+                print_str("  Output: " + self.options.output + "\n")
+            }
+        } else {
+            print_str(code)
+        }
+        
+        return ok("Compilation successful")
+    }
+}
+
+fn print_usage() {
+    print_str("Wyn Compiler Stage 1\n")
+    print_str("Usage: wyn [options] <input.wyn>\n")
+    print_str("\n")
+    print_str("Options:\n")
+    print_str("  -o <file>     Output file\n")
+    print_str("  -t <target>   Target: aarch64, x86_64, c, wasm (default: native)\n")
+    print_str("  -S            Emit assembly/IR only\n")
+    print_str("  --emit-ir     Print IR\n")
+    print_str("  -v, --verbose Verbose output\n")
+    print_str("  -h, --help    Show this help\n")
+    print_str("  --version     Show version\n")
+}
+
+fn print_version() {
+    print_str("Wyn Compiler Stage 1\n")
+    print_str("Version: 0.1.0\n")
+}
+
+fn detect_target() -> str {
+    // Detect native target based on platform
+    // Stage 1: Will use os.arch()
+    // For now, default to aarch64 (Apple Silicon)
+    return "aarch64"
+}
+
+fn main() {
+    let argc: int = arg_count()
+    
+    if argc < 2 {
+        print_usage()
+        exit(1)
+    }
+    
+    let mut options: CompilerOptions = CompilerOptions{
+        input: "",
+        output: "",
+        target: detect_target(),
+        emit_ir: false,
+        emit_asm: false,
+        verbose: false
+    }
+    
+    // Parse arguments
+    let mut i: int = 1
+    while i < argc {
+        let arg: str = get_arg(i) ?? ""
+        
+        match arg {
+            "-h" => { print_usage(); exit(0) }
+            "--help" => { print_usage(); exit(0) }
+            "--version" => { print_version(); exit(0) }
+            "-v" => { options.verbose = true }
+            "--verbose" => { options.verbose = true }
+            "-S" => { options.emit_asm = true }
+            "--emit-ir" => { options.emit_ir = true }
+            "-o" => {
+                i = i + 1
+                options.output = get_arg(i) ?? ""
+            }
+            "-t" => {
+                i = i + 1
+                options.target = get_arg(i) ?? "aarch64"
+            }
+            _ => {
+                if starts_with(arg, "-") {
+                    print_str("Unknown option: " + arg + "\n")
+                    exit(1)
+                }
+                options.input = arg
+            }
+        }
+        
+        i = i + 1
+    }
+    
+    if options.input == "" {
+        print_str("Error: No input file specified\n")
+        print_usage()
+        exit(1)
+    }
+    
+    // Compile
+    let mut compiler: Compiler = Compiler.new(options)
+    let result: Result[str, str] = compiler.compile()
+    
+    match result {
+        ok(msg) => {
+            if options.verbose {
+                print_str(msg + "\n")
+            }
+        }
+        err(e) => {
+            print_str("Error: " + e + "\n")
+            exit(1)
+        }
+    }
+}

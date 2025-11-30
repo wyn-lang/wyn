@@ -1,0 +1,166 @@
+// x86_64 code generator for Wyn compiler (Stage 1)
+
+import compiler.ir.ir.{IRModule, IRFunction, IRBlock, IRInstr, IRType, IRValue}
+
+pub struct X86_64Gen {
+    output: str
+    label_count: int
+}
+
+impl X86_64Gen {
+    pub fn new() -> X86_64Gen {
+        X86_64Gen{output: "", label_count: 0}
+    }
+    
+    pub fn generate(mut self, module: IRModule) -> str {
+        self.emit(".global _main")
+        self.emit("")
+        
+        // Generate string literals
+        self.emit(".data")
+        let mut i: int = 0
+        while i < module.strings.len() {
+            self.emit("str_" + i.to_str() + ": .asciz \"" + module.strings[i] + "\"")
+            i = i + 1
+        }
+        self.emit("")
+        
+        // Generate functions
+        self.emit(".text")
+        for func in module.functions {
+            self.gen_function(func)
+        }
+        
+        return self.output
+    }
+    
+    fn gen_function(mut self, func: IRFunction) {
+        self.emit("")
+        self.emit("_" + func.name + ":")
+        
+        // Prologue
+        self.emit("    pushq %rbp")
+        self.emit("    movq %rsp, %rbp")
+        
+        // Allocate stack space
+        let stack_size: int = func.locals.len() * 8
+        if stack_size > 0 {
+            self.emit("    subq $" + stack_size.to_str() + ", %rsp")
+        }
+        
+        // Generate blocks
+        for block in func.blocks {
+            self.gen_block(block)
+        }
+        
+        // Epilogue
+        self.emit("_" + func.name + "_exit:")
+        self.emit("    movq %rbp, %rsp")
+        self.emit("    popq %rbp")
+        self.emit("    retq")
+    }
+    
+    fn gen_block(mut self, block: IRBlock) {
+        self.emit(block.label + ":")
+        for instr in block.instrs {
+            self.gen_instr(instr)
+        }
+    }
+    
+    fn gen_instr(mut self, instr: IRInstr) {
+        match instr {
+            Add(dst, src1, src2) => {
+                self.emit("    movq " + self.reg(src1) + ", " + self.reg(dst))
+                self.emit("    addq " + self.reg(src2) + ", " + self.reg(dst))
+            }
+            Sub(dst, src1, src2) => {
+                self.emit("    movq " + self.reg(src1) + ", " + self.reg(dst))
+                self.emit("    subq " + self.reg(src2) + ", " + self.reg(dst))
+            }
+            Mul(dst, src1, src2) => {
+                self.emit("    movq " + self.reg(src1) + ", %rax")
+                self.emit("    imulq " + self.reg(src2))
+                self.emit("    movq %rax, " + self.reg(dst))
+            }
+            Div(dst, src1, src2) => {
+                self.emit("    movq " + self.reg(src1) + ", %rax")
+                self.emit("    cqo")
+                self.emit("    idivq " + self.reg(src2))
+                self.emit("    movq %rax, " + self.reg(dst))
+            }
+            Mod(dst, src1, src2) => {
+                self.emit("    movq " + self.reg(src1) + ", %rax")
+                self.emit("    cqo")
+                self.emit("    idivq " + self.reg(src2))
+                self.emit("    movq %rdx, " + self.reg(dst))
+            }
+            Neg(dst, src) => {
+                self.emit("    movq " + self.reg(src) + ", " + self.reg(dst))
+                self.emit("    negq " + self.reg(dst))
+            }
+            Eq(dst, src1, src2) => {
+                self.emit("    cmpq " + self.reg(src2) + ", " + self.reg(src1))
+                self.emit("    sete %al")
+                self.emit("    movzbq %al, " + self.reg(dst))
+            }
+            Ne(dst, src1, src2) => {
+                self.emit("    cmpq " + self.reg(src2) + ", " + self.reg(src1))
+                self.emit("    setne %al")
+                self.emit("    movzbq %al, " + self.reg(dst))
+            }
+            Lt(dst, src1, src2) => {
+                self.emit("    cmpq " + self.reg(src2) + ", " + self.reg(src1))
+                self.emit("    setl %al")
+                self.emit("    movzbq %al, " + self.reg(dst))
+            }
+            Const(dst, value) => {
+                match value {
+                    Int(n) => self.emit("    movq $" + n.to_str() + ", " + self.reg(dst))
+                    Bool(b) => self.emit("    movq $" + (if b then "1" else "0") + ", " + self.reg(dst))
+                    String(idx) => self.emit("    leaq str_" + idx.to_str() + "(%rip), " + self.reg(dst))
+                    _ => {}
+                }
+            }
+            Jump(label) => {
+                self.emit("    jmp " + label)
+            }
+            Branch(cond, true_label, false_label) => {
+                self.emit("    testq " + self.reg(cond) + ", " + self.reg(cond))
+                self.emit("    jnz " + true_label)
+                self.emit("    jmp " + false_label)
+            }
+            Return(val) => {
+                match val {
+                    some(reg) => self.emit("    movq " + self.reg(reg) + ", %rax")
+                    none => {}
+                }
+                self.emit("    jmp _exit")
+            }
+            Call(dst, name, args) => {
+                // x86_64 calling convention: rdi, rsi, rdx, rcx, r8, r9
+                let arg_regs: [str] = ["%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"]
+                let mut i: int = 0
+                while i < args.len() and i < 6 {
+                    self.emit("    movq " + self.reg(args[i]) + ", " + arg_regs[i])
+                    i = i + 1
+                }
+                self.emit("    callq _" + name)
+                self.emit("    movq %rax, " + self.reg(dst))
+            }
+            _ => {}
+        }
+    }
+    
+    fn reg(self, n: int) -> str {
+        // Map virtual registers to physical registers
+        let regs: [str] = ["%rbx", "%r12", "%r13", "%r14", "%r15", "%r10", "%r11"]
+        if n < regs.len() {
+            return regs[n]
+        }
+        return "%rbx"
+    }
+    
+    fn emit(mut self, line: str) {
+        self.output = self.output + line + "\n"
+    }
+}
