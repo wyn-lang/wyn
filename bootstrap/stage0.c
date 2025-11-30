@@ -2674,6 +2674,13 @@ static Type* cg_local_type(CodeGen* cg, const char* name) {
     return NULL;
 }
 
+static FnDef* cg_lookup_fn(CodeGen* cg, const char* name) {
+    for (int i = 0; i < cg->module->function_count; i++) {
+        if (strcmp(cg->module->functions[i].name, name) == 0) return &cg->module->functions[i];
+    }
+    return NULL;
+}
+
 // Infer expression type for codegen (simplified)
 static bool cg_is_float_expr(CodeGen* cg, Expr* e) {
     if (!e) return false;
@@ -3195,13 +3202,33 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_emit(cg, "    callq %s", mangled);
                     break;
                 }
+                // Look up function for default parameters
+                FnDef* fn = NULL;
+                int total_args = e->call.arg_count;
+                if (e->call.func->kind == EXPR_IDENT) {
+                    fn = cg_lookup_fn(cg, e->call.func->ident);
+                    if (fn) total_args = fn->param_count;
+                }
                 // x86_64 SysV ABI: rdi, rsi, rdx, rcx, r8, r9
                 const char* regs[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+                // Push default values for missing args (in reverse order)
+                if (fn && e->call.arg_count < fn->param_count) {
+                    for (int i = fn->param_count - 1; i >= e->call.arg_count; i--) {
+                        if (fn->params[i].default_val) {
+                            cg_expr(cg, fn->params[i].default_val);
+                            cg_emit(cg, "    pushq %%rax");
+                        } else {
+                            cg_emit(cg, "    pushq $0");  // Zero for missing
+                        }
+                    }
+                }
+                // Push all provided args
                 for (int i = e->call.arg_count - 1; i >= 0; i--) {
                     cg_expr(cg, e->call.args[i]);
                     cg_emit(cg, "    pushq %%rax");
                 }
-                for (int i = 0; i < e->call.arg_count && i < 6; i++) {
+                // Pop into registers
+                for (int i = 0; i < total_args && i < 6; i++) {
                     cg_emit(cg, "    popq %%%s", regs[i]);
                 }
                 if (e->call.func->kind == EXPR_IDENT) {
@@ -4027,13 +4054,31 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_emit(cg, "    bl %s", mangled);
                 break;
             }
-            // Push all args to stack first
+            // Look up function for default parameters
+            FnDef* fn = NULL;
+            int total_args = e->call.arg_count;
+            if (e->call.func->kind == EXPR_IDENT) {
+                fn = cg_lookup_fn(cg, e->call.func->ident);
+                if (fn) total_args = fn->param_count;
+            }
+            // Push default values for missing args (in reverse order)
+            if (fn && e->call.arg_count < fn->param_count) {
+                for (int i = fn->param_count - 1; i >= e->call.arg_count; i--) {
+                    if (fn->params[i].default_val) {
+                        cg_expr(cg, fn->params[i].default_val);
+                        cg_emit(cg, "    str x0, [sp, #-16]!");
+                    } else {
+                        cg_emit(cg, "    str xzr, [sp, #-16]!");  // Zero for missing
+                    }
+                }
+            }
+            // Push all provided args to stack
             for (int i = e->call.arg_count - 1; i >= 0; i--) {
                 cg_expr(cg, e->call.args[i]);
                 cg_emit(cg, "    str x0, [sp, #-16]!");
             }
             // Pop into argument registers
-            for (int i = 0; i < e->call.arg_count && i < 8; i++) {
+            for (int i = 0; i < total_args && i < 8; i++) {
                 cg_emit(cg, "    ldr x%d, [sp], #16", i);
             }
             if (e->call.func->kind == EXPR_IDENT) {
