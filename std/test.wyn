@@ -2,34 +2,31 @@
 # Testing framework for unit tests
 
 # Assert a condition is true, exit with error if false
-fn assert(condition: bool, msg: str) -> () {
+fn check(condition: bool, msg: str) {
     if not condition {
         print_str("ASSERTION FAILED: " + msg + "\n")
         exit(1)
     }
-    return ()
 }
 
 # Assert a condition is true
-fn assert_true(condition: bool, msg: str) -> () {
+fn assert_true(condition: bool, msg: str) {
     if not condition {
         print_str("ASSERTION FAILED (expected true): " + msg + "\n")
         exit(1)
     }
-    return ()
 }
 
 # Assert a condition is false
-fn assert_false(condition: bool, msg: str) -> () {
+fn assert_false(condition: bool, msg: str) {
     if condition {
         print_str("ASSERTION FAILED (expected false): " + msg + "\n")
         exit(1)
     }
-    return ()
 }
 
 # Assert two integers are equal
-fn assert_eq(a: int, b: int, msg: str) -> () {
+fn assert_eq(a: int, b: int, msg: str) {
     if a != b {
         print_str("ASSERTION FAILED: " + msg + " (expected ")
         print(b)
@@ -38,40 +35,36 @@ fn assert_eq(a: int, b: int, msg: str) -> () {
         print_str(")\n")
         exit(1)
     }
-    return ()
 }
 
 # Assert two integers are not equal
-fn assert_ne(a: int, b: int, msg: str) -> () {
+fn assert_ne(a: int, b: int, msg: str) {
     if a == b {
         print_str("ASSERTION FAILED: " + msg + " (values should not be equal: ")
         print(a)
         print_str(")\n")
         exit(1)
     }
-    return ()
 }
 
 # Assert two strings are equal
-fn assert_eq_str(a: str, b: str, msg: str) -> () {
+fn assert_eq_str(a: str, b: str, msg: str) {
     if a != b {
         print_str("ASSERTION FAILED: " + msg + " (expected \"" + b + "\", got \"" + a + "\")\n")
         exit(1)
     }
-    return ()
 }
 
 # Assert two strings are not equal
-fn assert_ne_str(a: str, b: str, msg: str) -> () {
+fn assert_ne_str(a: str, b: str, msg: str) {
     if a == b {
         print_str("ASSERTION FAILED: " + msg + " (strings should not be equal: \"" + a + "\")\n")
         exit(1)
     }
-    return ()
 }
 
 # Assert an integer is greater than another
-fn assert_gt(a: int, b: int, msg: str) -> () {
+fn assert_gt(a: int, b: int, msg: str) {
     if a <= b {
         print_str("ASSERTION FAILED: " + msg + " (expected ")
         print(a)
@@ -80,11 +73,10 @@ fn assert_gt(a: int, b: int, msg: str) -> () {
         print_str(")\n")
         exit(1)
     }
-    return ()
 }
 
 # Assert an integer is less than another
-fn assert_lt(a: int, b: int, msg: str) -> () {
+fn assert_lt(a: int, b: int, msg: str) {
     if a >= b {
         print_str("ASSERTION FAILED: " + msg + " (expected ")
         print(a)
@@ -93,11 +85,10 @@ fn assert_lt(a: int, b: int, msg: str) -> () {
         print_str(")\n")
         exit(1)
     }
-    return ()
 }
 
 # Assert an integer is greater than or equal to another
-fn assert_ge(a: int, b: int, msg: str) -> () {
+fn assert_ge(a: int, b: int, msg: str) {
     if a < b {
         print_str("ASSERTION FAILED: " + msg + " (expected ")
         print(a)
@@ -106,11 +97,10 @@ fn assert_ge(a: int, b: int, msg: str) -> () {
         print_str(")\n")
         exit(1)
     }
-    return ()
 }
 
 # Assert an integer is less than or equal to another
-fn assert_le(a: int, b: int, msg: str) -> () {
+fn assert_le(a: int, b: int, msg: str) {
     if a > b {
         print_str("ASSERTION FAILED: " + msg + " (expected ")
         print(a)
@@ -119,24 +109,21 @@ fn assert_le(a: int, b: int, msg: str) -> () {
         print_str(")\n")
         exit(1)
     }
-    return ()
 }
 
 # Mark a test as passed
-fn pass(msg: str) -> () {
+fn pass(msg: str) {
     print_str("PASS: " + msg + "\n")
-    return ()
 }
 
 # Mark a test as failed and exit
-fn fail(msg: str) -> () {
+fn fail(msg: str) {
     print_str("FAIL: " + msg + "\n")
     exit(1)
-    return ()
 }
 
 # Assert two floats are approximately equal (within epsilon)
-fn assert_eq_float(a: float, b: float, epsilon: float, msg: str) -> () {
+fn assert_eq_float(a: float, b: float, epsilon: float, msg: str) {
     let diff: float = a - b
     let abs_diff: float = if diff < 0.0 then 0.0 - diff else diff
     if abs_diff > epsilon {
@@ -149,11 +136,10 @@ fn assert_eq_float(a: float, b: float, epsilon: float, msg: str) -> () {
         print_str(")\n")
         exit(1)
     }
-    return ()
 }
 
 # Assert array lengths are equal
-fn assert_len_eq(arr: [int], expected: int, msg: str) -> () {
+fn assert_len_eq(arr: [int], expected: int, msg: str) {
     let actual: int = arr.len()
     if actual != expected {
         print_str("ASSERTION FAILED: " + msg + " (expected length ")
@@ -163,13 +149,12 @@ fn assert_len_eq(arr: [int], expected: int, msg: str) -> () {
         print_str(")\n")
         exit(1)
     }
-    return ()
 }
 
 # Assert optional has a value
-fn assert_some(opt: ?int, msg: str) -> () {
+fn assert_some(opt: ?int, msg: str) {
     match opt {
-        some(_) => return ()
+        some(_) => {}
         none => {
             print_str("ASSERTION FAILED: " + msg + " (expected some, got none)\n")
             exit(1)
@@ -178,7 +163,7 @@ fn assert_some(opt: ?int, msg: str) -> () {
 }
 
 # Assert optional is none
-fn assert_none(opt: ?int, msg: str) -> () {
+fn assert_none(opt: ?int, msg: str) {
     match opt {
         some(v) => {
             print_str("ASSERTION FAILED: " + msg + " (expected none, got some(")
@@ -186,14 +171,14 @@ fn assert_none(opt: ?int, msg: str) -> () {
             print_str("))\n")
             exit(1)
         }
-        none => return ()
+        none => {}
     }
 }
 
 # Assert Result is ok
-fn assert_ok[T, E](result: Result[T, E], msg: str) -> () {
+fn assert_ok[T, E](result: Result[T, E], msg: str) {
     match result {
-        ok(_) => return ()
+        ok(_) => {}
         err(_) => {
             print_str("ASSERTION FAILED: " + msg + " (expected ok, got err)\n")
             exit(1)
@@ -201,38 +186,37 @@ fn assert_ok[T, E](result: Result[T, E], msg: str) -> () {
     }
 }
 
-# Assert Result is err
-fn assert_err[T, E](result: Result[T, E], msg: str) -> () {
-    match result {
-        ok(_) => {
-            print_str("ASSERTION FAILED: " + msg + " (expected err, got ok)\n")
-            exit(1)
-        }
-        err(_) => return ()
-    }
-}
-
-# Assert string contains substring
-fn assert_contains(s: str, substr: str, msg: str) -> () {
+# Assert Result is err (Stage 0: disabled - requires pattern matching)
+# fn assert_err[T, E](result: Result[T, E], msg: str) {
+#     match result {
+#         ok(_) => {
+# #             print_str("ASSERTION FAILED: " + msg + " (expected err, got ok)\n")
+# #             exit(1)
+# #         }
+# #         err(_) => {}
+# #     }
+# # }
+# 
+# # Assert string contains substring
+# fn assert_contains(s: str, substr: str, msg: str) {
     let mut found: bool = false
     let slen: int = s.len()
-    let sublen: int = substr.len()
-    let mut i: int = 0
-    while i <= slen - sublen {
-        if s[i:i+sublen] == substr {
-            found = true
-        }
-        i = i + 1
-    }
-    if not found {
+#     let sublen: int = substr.len()
+#     let mut i: int = 0
+#     while i <= slen - sublen {
+#         if s[i:i+sublen] == substr {
+#             found = true
+#         }
+#         i = i + 1
+#     }
+#     if not found {
         print_str("ASSERTION FAILED: " + msg + " (\"" + s + "\" does not contain \"" + substr + "\")\n")
         exit(1)
     }
-    return ()
 }
 
 # Assert string does not contain substring
-fn assert_not_contains(s: str, substr: str, msg: str) -> () {
+fn assert_not_contains(s: str, substr: str, msg: str) {
     let mut found: bool = false
     let slen: int = s.len()
     let sublen: int = substr.len()
@@ -247,11 +231,10 @@ fn assert_not_contains(s: str, substr: str, msg: str) -> () {
         print_str("ASSERTION FAILED: " + msg + " (\"" + s + "\" contains \"" + substr + "\")\n")
         exit(1)
     }
-    return ()
 }
 
 # Assert array contains value
-fn assert_array_contains(arr: [int], value: int, msg: str) -> () {
+fn assert_array_contains(arr: [int], value: int, msg: str) {
     let mut found: bool = false
     let mut i: int = 0
     while i < arr.len() {
@@ -266,11 +249,10 @@ fn assert_array_contains(arr: [int], value: int, msg: str) -> () {
         print_str(")\n")
         exit(1)
     }
-    return ()
 }
 
 # Assert value is in range [min, max]
-fn assert_in_range(value: int, min_val: int, max_val: int, msg: str) -> () {
+fn assert_in_range(value: int, min_val: int, max_val: int, msg: str) {
     if value < min_val or value > max_val {
         print_str("ASSERTION FAILED: " + msg + " (")
         print(value)
@@ -281,11 +263,10 @@ fn assert_in_range(value: int, min_val: int, max_val: int, msg: str) -> () {
         print_str("])\n")
         exit(1)
     }
-    return ()
 }
 
 # Assert value is greater than threshold
-fn assert_greater(value: int, threshold: int, msg: str) -> () {
+fn assert_greater(value: int, threshold: int, msg: str) {
     if value <= threshold {
         print_str("ASSERTION FAILED: " + msg + " (")
         print(value)
@@ -294,11 +275,10 @@ fn assert_greater(value: int, threshold: int, msg: str) -> () {
         print_str(")\n")
         exit(1)
     }
-    return ()
 }
 
 # Assert value is less than threshold
-fn assert_less(value: int, threshold: int, msg: str) -> () {
+fn assert_less(value: int, threshold: int, msg: str) {
     if value >= threshold {
         print_str("ASSERTION FAILED: " + msg + " (")
         print(value)
@@ -307,11 +287,10 @@ fn assert_less(value: int, threshold: int, msg: str) -> () {
         print_str(")\n")
         exit(1)
     }
-    return ()
 }
 
 # Assert value is between min and max (exclusive)
-fn assert_between(value: int, min_val: int, max_val: int, msg: str) -> () {
+fn assert_between(value: int, min_val: int, max_val: int, msg: str) {
     if value <= min_val or value >= max_val {
         print_str("ASSERTION FAILED: " + msg + " (")
         print(value)
@@ -322,24 +301,21 @@ fn assert_between(value: int, min_val: int, max_val: int, msg: str) -> () {
         print_str(")\n")
         exit(1)
     }
-    return ()
 }
 
 # Assert string is not empty
-fn assert_not_empty(s: str, msg: str) -> () {
+fn assert_not_empty(s: str, msg: str) {
     if s.len() == 0 {
         print_str("ASSERTION FAILED: " + msg + " (string is empty)\n")
         exit(1)
     }
-    return ()
 }
 
 # Assert array is not empty
-fn assert_array_not_empty[T](arr: [T], msg: str) -> () {
+fn assert_array_not_empty[T](arr: [T], msg: str) {
     if arr.len() == 0 {
         print_str("ASSERTION FAILED: " + msg + " (array is empty)\n")
         exit(1)
     }
-    return ()
 }
 

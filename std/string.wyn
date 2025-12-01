@@ -883,13 +883,12 @@ fn unescape_quotes(s: str) -> str {
 
 # Replace first occurrence of old with new
 fn replace_first(s: str, old: str, new: str) -> str {
-    let idx: ?int = index_of(s, old)
-    if idx == none {
+    let idx: int = index_of(s, old)
+    if idx < 0 {
         return s
     }
-    let i: int = idx!
-    let before: str = s[:i]
-    let after: str = s[i + old.len():]
+    let before: str = s[:idx]
+    let after: str = s[idx + old.len():]
     return before + new + after
 }
 
@@ -924,20 +923,18 @@ fn strip_suffix(s: str, suffix: str) -> str {
 
 # Check if string is a valid email (basic check)
 fn is_valid_email(s: str) -> bool {
-    let at_idx: ?int = index_of(s, "@")
-    if at_idx == none {
+    let at_idx: int = index_of(s, "@")
+    if at_idx < 0 {
         return false
     }
-    let idx: int = at_idx!
-    if idx == 0 or idx == s.len() - 1 {
+    if at_idx == 0 or at_idx == s.len() - 1 {
         return false
     }
-    let dot_idx: ?int = last_index_of(s, ".")
-    if dot_idx == none {
+    let dot_idx: int = last_index_of(s, ".")
+    if dot_idx < 0 {
         return false
     }
-    let d: int = dot_idx!
-    return d > idx and d < s.len() - 1
+    return dot_idx > at_idx and dot_idx < s.len() - 1
 }
 
 # Check if string is a valid URL (basic check)
@@ -947,19 +944,17 @@ fn is_valid_url(s: str) -> bool {
 
 # Extract substring between two delimiters
 fn substring_between(s: str, start_delim: str, end_delim: str) -> ?str {
-    let start_idx: ?int = index_of(s, start_delim)
-    if start_idx == none {
+    let start_idx: int = index_of(s, start_delim)
+    if start_idx < 0 {
         return none
     }
-    let si: int = start_idx!
-    let search_start: int = si + start_delim.len()
+    let search_start: int = start_idx + start_delim.len()
     let remaining: str = s[search_start:]
-    let end_idx: ?int = index_of(remaining, end_delim)
-    if end_idx == none {
+    let end_idx: int = index_of(remaining, end_delim)
+    if end_idx < 0 {
         return none
     }
-    let ei: int = end_idx!
-    return some(remaining[:ei])
+    return some(remaining[:end_idx])
 }
 
 # Levenshtein distance between two strings
