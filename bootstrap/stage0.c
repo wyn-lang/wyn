@@ -2323,7 +2323,8 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     strcmp(e->ident, "logf") == 0 || strcmp(e->ident, "expf") == 0 ||
                     strcmp(e->ident, "powf") == 0 || strcmp(e->ident, "floorf") == 0 ||
                     strcmp(e->ident, "ceilf") == 0 || strcmp(e->ident, "getpid") == 0 ||
-                    strcmp(e->ident, "rename_file") == 0 || strcmp(e->ident, "to_string") == 0) {
+                    strcmp(e->ident, "rename_file") == 0 || strcmp(e->ident, "to_string") == 0 ||
+                    strcmp(e->ident, "substring") == 0) {
                     return new_type(TYPE_FUNCTION);
                 }
                 tc_error(tc, e->line, e->column, "undefined variable '%s'", e->ident);
@@ -3609,6 +3610,31 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_emit(cg, "    popq %%rax");  // return buffer ptr
                     break;
                 }
+                // Handle built-in substring(str, start, len) -> str
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "substring") == 0) {
+                    // Evaluate len
+                    cg_expr(cg, e->call.args[2]);
+                    cg_emit(cg, "    pushq %%rax");  // save len
+                    // Evaluate start
+                    cg_expr(cg, e->call.args[1]);
+                    cg_emit(cg, "    pushq %%rax");  // save start
+                    // Evaluate str
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    pushq %%rax");  // save str
+                    // Allocate buffer: malloc(len + 1)
+                    cg_emit(cg, "    movq 16(%%rsp), %%rdi");  // len
+                    cg_emit(cg, "    addq $1, %%rdi");
+                    cg_emit(cg, "    callq %smalloc", cg_sym_prefix(cg));
+                    cg_emit(cg, "    movq %%rax, %%rdi");  // dest
+                    cg_emit(cg, "    popq %%rsi");  // str
+                    cg_emit(cg, "    popq %%rcx");  // start
+                    cg_emit(cg, "    addq %%rcx, %%rsi");  // str + start
+                    cg_emit(cg, "    popq %%rdx");  // len
+                    cg_emit(cg, "    pushq %%rdi");  // save dest
+                    cg_emit(cg, "    callq %smemcpy", cg_sym_prefix(cg));
+                    cg_emit(cg, "    popq %%rax");  // return dest
+                    break;
+                }
                 if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "assert") == 0) {
                     int ok_lbl = cg_new_label(cg);
                     cg_expr(cg, e->call.args[0]);
@@ -4799,6 +4825,31 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_emit(cg, "    bl %ssprintf", cg_sym_prefix(cg));
                 cg_emit(cg, "    ldr x0, [sp], #16");  // return buffer ptr
                 cg_emit(cg, "    add sp, sp, #16");  // clean up value
+                break;
+            }
+            // Handle built-in substring(str, start, len) -> str
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "substring") == 0) {
+                // Evaluate len
+                cg_expr(cg, e->call.args[2]);
+                cg_emit(cg, "    str x0, [sp, #-16]!");  // save len
+                // Evaluate start
+                cg_expr(cg, e->call.args[1]);
+                cg_emit(cg, "    str x0, [sp, #-16]!");  // save start
+                // Evaluate str
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    str x0, [sp, #-16]!");  // save str
+                // Allocate buffer: malloc(len + 1)
+                cg_emit(cg, "    ldr x0, [sp, #32]");  // len
+                cg_emit(cg, "    add x0, x0, #1");
+                cg_emit(cg, "    bl %smalloc", cg_sym_prefix(cg));
+                cg_emit(cg, "    str x0, [sp, #-16]!");  // save dest
+                cg_emit(cg, "    ldr x1, [sp, #16]");  // str
+                cg_emit(cg, "    ldr x8, [sp, #32]");  // start
+                cg_emit(cg, "    add x1, x1, x8");  // str + start
+                cg_emit(cg, "    ldr x2, [sp, #48]");  // len
+                cg_emit(cg, "    bl %smemcpy", cg_sym_prefix(cg));
+                cg_emit(cg, "    ldr x0, [sp], #16");  // return dest
+                cg_emit(cg, "    add sp, sp, #48");  // clean up
                 break;
             }
             // Handle built-in assert()
