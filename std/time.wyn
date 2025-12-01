@@ -30,8 +30,8 @@ fn now_nanos() -> int {
 # Sleep for the specified duration
 # Blocks execution for the given time period
 # Requires: Runtime support for sleep (syscall)
-fn sleep(duration: Duration) -> () {
-    return ()
+fn sleep(duration: Duration) {
+    # No-op placeholder
 }
 
 # Format a Unix timestamp according to the given format string

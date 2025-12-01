@@ -1,0 +1,102 @@
+# Stage 1 Token Definitions
+# Uses only Stage 0 compatible features
+
+# Token types as integer constants
+let TK_EOF: int = 0
+let TK_IDENT: int = 1
+let TK_INT: int = 2
+let TK_FLOAT: int = 3
+let TK_STRING: int = 4
+let TK_LPAREN: int = 5
+let TK_RPAREN: int = 6
+let TK_LBRACE: int = 7
+let TK_RBRACE: int = 8
+let TK_LBRACKET: int = 9
+let TK_RBRACKET: int = 10
+let TK_COMMA: int = 11
+let TK_COLON: int = 12
+let TK_SEMICOLON: int = 13
+let TK_DOT: int = 14
+let TK_ARROW: int = 15
+let TK_EQ: int = 16
+let TK_EQEQ: int = 17
+let TK_NE: int = 18
+let TK_LT: int = 19
+let TK_GT: int = 20
+let TK_LE: int = 21
+let TK_GE: int = 22
+let TK_PLUS: int = 23
+let TK_MINUS: int = 24
+let TK_STAR: int = 25
+let TK_SLASH: int = 26
+let TK_PERCENT: int = 27
+let TK_AND: int = 28
+let TK_OR: int = 29
+let TK_NOT: int = 30
+let TK_FN: int = 31
+let TK_LET: int = 32
+let TK_MUT: int = 33
+let TK_IF: int = 34
+let TK_ELSE: int = 35
+let TK_WHILE: int = 36
+let TK_FOR: int = 37
+let TK_IN: int = 38
+let TK_RETURN: int = 39
+let TK_STRUCT: int = 40
+let TK_ENUM: int = 41
+let TK_MATCH: int = 42
+let TK_TRUE: int = 43
+let TK_FALSE: int = 44
+let TK_IMPORT: int = 45
+let TK_PUB: int = 46
+let TK_BREAK: int = 47
+let TK_CONTINUE: int = 48
+let TK_DEFER: int = 49
+let TK_DOTDOT: int = 50
+let TK_DOTDOTEQ: int = 51
+let TK_QUESTION: int = 52
+let TK_BANG: int = 53
+let TK_QUESTIONQUESTION: int = 54
+let TK_PLUSEQ: int = 55
+let TK_MINUSEQ: int = 56
+let TK_STAREQ: int = 57
+let TK_SLASHEQ: int = 58
+let TK_FATARROW: int = 59
+let TK_PIPE: int = 60
+let TK_AMP: int = 61
+let TK_CARET: int = 62
+let TK_TILDE: int = 63
+let TK_LTLT: int = 64
+let TK_GTGT: int = 65
+let TK_STARSTAR: int = 66
+
+struct Token {
+    kind: int
+    value: str
+    line: int
+    col: int
+}
+
+fn token_new(kind: int, value: str, line: int, col: int) -> Token {
+    return Token{kind: kind, value: value, line: line, col: col}
+}
+
+fn token_kind_name(kind: int) -> str {
+    if kind == TK_EOF { return "EOF" }
+    if kind == TK_IDENT { return "IDENT" }
+    if kind == TK_INT { return "INT" }
+    if kind == TK_FLOAT { return "FLOAT" }
+    if kind == TK_STRING { return "STRING" }
+    if kind == TK_FN { return "fn" }
+    if kind == TK_LET { return "let" }
+    if kind == TK_MUT { return "mut" }
+    if kind == TK_IF { return "if" }
+    if kind == TK_ELSE { return "else" }
+    if kind == TK_WHILE { return "while" }
+    if kind == TK_FOR { return "for" }
+    if kind == TK_IN { return "in" }
+    if kind == TK_RETURN { return "return" }
+    if kind == TK_STRUCT { return "struct" }
+    if kind == TK_MATCH { return "match" }
+    return "?"
+}

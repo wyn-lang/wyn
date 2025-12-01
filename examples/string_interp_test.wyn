@@ -1,0 +1,16 @@
+# Test string interpolation
+
+fn main() {
+    let x: int = 42
+    let msg: str = "The answer is {x}"
+    print_str(msg)
+    print_str("\n")
+    
+    # Direct interpolation
+    print_str("Value: {x}\n")
+    
+    # Multiple interpolations
+    let a: int = 10
+    let b: int = 20
+    print_str("a={a}, b={b}\n")
+}

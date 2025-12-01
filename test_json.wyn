@@ -1,0 +1,32 @@
+import std/json
+
+fn main() {
+    # Test escape_string
+    let escaped: str = escape_string("hello")
+    print(escaped)
+    
+    # Test json_array
+    let arr: str = json_array(["1", "2", "3"])
+    print(arr)
+    
+    # Test json_null
+    print(json_null())
+    
+    # Test bool_to_json
+    print(bool_to_json(true))
+    print(bool_to_json(false))
+    
+    # Test int_to_json
+    print(int_to_json(42))
+    
+    # Test is_json_array
+    print(is_json_array("[1,2,3]"))
+    print(is_json_array("{a:1}"))
+    
+    # Test validate_json
+    let result: Result[int, str] = validate_json("[1,2,3]")
+    match result {
+        ok(v) => print("Valid JSON")
+        err(e) => print("Invalid: " + e)
+    }
+}

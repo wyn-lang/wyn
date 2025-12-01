@@ -1,0 +1,18 @@
+fn main() {
+    # Test time functions
+    let now: int = time_now()
+    println(now)
+    
+    print_str("Sleeping 100ms...\n")
+    sleep_ms(100)
+    print_str("Done!\n")
+    
+    # Test networking (will fail without server, but tests compilation)
+    let sock: int = tcp_connect("localhost", 8080)
+    if sock == -1 {
+        print_str("Connection failed (expected)\n")
+    } else {
+        print_str("Connected!\n")
+        tcp_close(sock)
+    }
+}

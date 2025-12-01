@@ -1,11 +1,121 @@
 # Wyn SPEC Implementation Status
 
 **Date:** 2025-12-01  
-**Stage 0 Compiler Version:** v0.1.0
+**Stage 0 Compiler Version:** v0.1.0  
+**SPEC Version:** 0.2.0-draft
 
 ## Summary
 
-This document tracks which SPEC features are implemented in the Stage 0 bootstrap compiler.
+This document tracks which features from SPEC.md sections 1-5 are implemented in the Stage 0 bootstrap compiler (written in C). The compiler successfully compiles 40 test programs and a 500+ function standard library.
+
+## SPEC Coverage by Section
+
+### Section 1: Executive Summary
+✅ **Complete** - Design philosophy implemented in compiler
+
+### Section 2: Core Language Design
+
+#### 2.1 Syntax Overview
+✅ **Complete** - All basic syntax working
+
+#### 2.2 Type System
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Primitive types (int, float, str, bool) | ✅ | byte, any not yet |
+| Arrays | ✅ | Literals, indexing, slicing, iteration |
+| Tuples | ✅ | Fixed-size, heterogeneous, unpacking |
+| Maps | ⚠️ | Parsed, codegen incomplete |
+| Optional types (?T) | ✅ | some(), none, ??, ! |
+| Enums | ✅ | Integer values only |
+| Enums with data | ❌ | Color.Custom(r,g,b) not supported |
+| Generics | ✅ | Functions and structs |
+| Interfaces | ⚠️ | Parsed, codegen incomplete |
+
+#### 2.3 Type Conversion
+✅ **Complete** - Explicit conversions via builtins
+
+#### 2.4 Visibility
+⚠️ **Parsed** - pub keyword parsed but not enforced
+
+#### 2.5 Error Handling
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Result[T, E] | ✅ | ok(), err(), ??, ! |
+| Error propagation (?) | ✅ | Works in functions |
+| try/catch | ❌ | Not implemented |
+
+#### 2.6 Control Flow
+✅ **Complete** - if/else, while, for, match, break, continue
+
+#### 2.7 Functions
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Basic functions | ✅ | Parameters, return values, recursion |
+| Default parameters | ✅ | fn(x: int = 10) |
+| Variadic functions | ⚠️ | Parsed, called with arrays |
+| Lambda functions | ✅ | fn(x) -> x * 2 |
+| Function pointers | ✅ | Indirect calls |
+
+#### 2.8 Memory Management
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Automatic GC | ✅ | Stack-based for Stage 0 |
+| defer | ✅ | Cleanup on function exit |
+| @manual blocks | ❌ | Not implemented |
+| Pointers (*Type) | ❌ | Not implemented |
+
+#### 2.9 Optional vs Result
+✅ **Complete** - Both types fully working
+
+### Section 3: Concurrency Model
+
+#### 3.1 Spawn
+⚠️ **Parsed** - Runs synchronously, no threading yet
+
+#### 3.2 Parallel Loops
+⚠️ **Parsed** - Runs sequentially, no parallelism yet
+
+#### 3.3 Shared State
+❌ **Not Implemented** - Shared[T], Queue[T] not available
+
+#### 3.4 Async Iteration
+❌ **Not Implemented** - async/await, yield not available
+
+#### 3.5 Non-Blocking I/O
+❌ **Not Implemented** - All I/O is blocking in Stage 0
+
+### Section 4: Module System
+
+#### 4.1 Import Syntax
+✅ **Complete** - Standard lib, relative paths, aliasing
+
+#### 4.2 Module Structure
+✅ **Complete** - Folder-based modules
+
+#### 4.3 Package Resolution
+⚠️ **Partial** - Standard lib and relative paths only
+
+### Section 5: Standard Library
+✅ **500+ functions** - Most modules compile cleanly
+
+| Module | Status | Notes |
+|--------|--------|-------|
+| io | ⚠️ | Needs match binding fixes |
+| fs | ✅ | 50 functions |
+| net | ✅ | 34 functions |
+| http | ✅ | 75 functions |
+| json | ✅ | 50+ functions |
+| os | ⚠️ | Needs match binding fixes |
+| time | ✅ | 60+ functions |
+| math | ✅ | 80+ functions |
+| crypto | ✅ | 40+ functions |
+| regex | ✅ | 40+ functions |
+| collections | ✅ | 100+ functions |
+| string | ⚠️ | Needs match binding fixes |
+| log | ✅ | Basic logging |
+| test | ⚠️ | Needs match binding fixes |
+| gui | ❌ | Not implemented |
+| tui | ❌ | Not implemented |
 
 ## Implementation Status
 
@@ -161,3 +271,159 @@ See `std/FINAL_STATUS.md` for detailed stdlib compilation status.
 3. Implement string interpolation codegen
 4. Add optional chaining (`?.`)
 5. Add byte type support
+
+---
+
+## Roadmap
+
+### Stage 0 → Stage 1 (Current Focus)
+**Goal:** Self-hosting compiler written in Wyn
+
+- [x] Complete Stage 0 bootstrap compiler (C)
+- [x] 40 passing tests
+- [x] 500+ stdlib functions
+- [ ] Fix match binding in stdlib
+- [ ] String interpolation codegen
+- [ ] Write Stage 1 compiler in Wyn
+- [ ] Stage 1 compiles itself
+
+**Timeline:** Q1 2026
+
+### Stage 1 → v0.2.0
+**Goal:** Production-ready core language
+
+**Core Language:**
+- [ ] Match with enum data binding (`Color.Custom(r,g,b) =>`)
+- [ ] Optional chaining (`user?.address?.city`)
+- [ ] byte type for binary data
+- [ ] any type for dynamic typing
+- [ ] try/catch error handling
+- [ ] test blocks (`test "name" { }`)
+- [ ] bench blocks for benchmarking
+- [ ] Interface implementation (impl blocks)
+- [ ] Map type codegen
+- [ ] String interpolation in all contexts
+
+**Standard Library:**
+- [ ] Complete io module
+- [ ] Complete os module  
+- [ ] Complete string module
+- [ ] Complete test framework
+- [ ] GUI framework (basic)
+- [ ] TUI framework (basic)
+
+**Timeline:** Q2 2026
+
+### v0.2.0 → v0.3.0
+**Goal:** Concurrency and performance
+
+**Concurrency:**
+- [ ] Real threading for spawn
+- [ ] Parallel for loops
+- [ ] Shared[T] atomic primitives
+- [ ] Queue[T] concurrent queue
+- [ ] async/await (basic)
+- [ ] yield for generators
+
+**Performance:**
+- [ ] Optimization passes
+- [ ] Inline functions
+- [ ] Dead code elimination
+- [ ] Register allocation improvements
+
+**Platforms:**
+- [ ] Linux x86_64 support
+- [ ] Linux ARM64 support
+- [ ] Windows x86_64 support
+
+**Timeline:** Q3-Q4 2026
+
+### v0.3.0 → v1.0.0
+**Goal:** Universal platform support
+
+**Platforms:**
+- [ ] WebAssembly backend
+- [ ] iOS support
+- [ ] Android support
+- [ ] Windows ARM64 support
+
+**Advanced Features:**
+- [ ] @manual memory management blocks
+- [ ] Pointer types (*Type)
+- [ ] List comprehensions
+- [ ] Spread operator (...)
+- [ ] Type constraints (T: Comparable)
+- [ ] Multiple constraints (T: A + B)
+
+**Tooling:**
+- [ ] Package manager (full)
+- [ ] Language server (LSP)
+- [ ] Debugger integration
+- [ ] Profiler
+
+**Timeline:** 2027
+
+### Post v1.0.0
+**Goal:** Ecosystem growth
+
+- [ ] Package registry
+- [ ] IDE plugins (VS Code, IntelliJ, etc.)
+- [ ] Mobile app templates
+- [ ] Web framework
+- [ ] Game engine bindings
+- [ ] Machine learning libraries
+- [ ] Cloud deployment tools
+
+## Contributing
+
+See [SPEC.md](SPEC.md) for language design details. Priority areas:
+1. Match binding codegen
+2. String interpolation
+3. Test framework
+4. GUI/TUI modules
+
+
+## GPU Computing (SPEC Section 13)
+
+### ❌ Not Yet Implemented
+
+| Feature | SPEC Section | Priority | Notes |
+|---------|--------------|----------|-------|
+| `gpu {}` blocks | 13.1 | High | GPU code blocks |
+| `@gpu` function annotation | 13.2 | High | Compile functions for GPU |
+| Tensor type | 13.3 | High | N-dimensional GPU arrays |
+| Tensor operations | 13.3 | High | matmul, add, reshape, etc. |
+| Neural network primitives | 13.4 | Medium | relu, softmax, conv2d, etc. |
+| `@autodiff` annotation | 13.5 | Medium | Automatic differentiation |
+| Device management | 13.6 | High | list_devices, set_device, sync |
+| Mixed precision (float16, bfloat16) | 13.7 | Low | Half-precision support |
+| Metal backend | 13.8 | High | macOS/iOS GPU |
+| Vulkan backend | 13.8 | Medium | Linux/Windows/Android GPU |
+| CUDA backend | 13.8 | Low | NVIDIA GPUs |
+| WebGPU backend | 13.8 | Low | Browser WASM |
+
+### Standard Library Status
+
+| Module | Status | Notes |
+|--------|--------|-------|
+| std/gpu.wyn | Stub | Device management, tensor creation/ops |
+| std/nn.wyn | Stub | Neural network primitives |
+
+### Implementation Priority
+
+1. **Phase 1: Foundation**
+   - Metal compute shader generation
+   - Basic Tensor type with GPU memory allocation
+   - matmul, add, mul operations
+   - Device management (list, select, sync)
+
+2. **Phase 2: Neural Networks**
+   - Activation functions (relu, sigmoid, softmax)
+   - Convolution and pooling
+   - Loss functions
+   - Basic autodiff
+
+3. **Phase 3: Cross-Platform**
+   - Vulkan backend
+   - WebGPU backend
+   - CUDA backend (optional)

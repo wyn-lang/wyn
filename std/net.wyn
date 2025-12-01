@@ -408,3 +408,435 @@ fn default_port_for_scheme(scheme: str) -> int {
     if scheme == "dns" { return 53 }
     return 0
 }
+
+# Parse query string into key-value pairs (simplified)
+# Returns empty array for Stage 0 (dynamic array building not supported)
+fn parse_query_string(query: str) -> [[str]] {
+    return []
+}
+
+# Build query string from key-value pairs
+fn build_query_string(keys: [str], values: [str]) -> str {
+    if keys.len() == 0 { return "" }
+    let mut result: str = ""
+    let mut i: int = 0
+    let count: int = if keys.len() < values.len() then keys.len() else values.len()
+    while i < count {
+        if i > 0 { result = result + "&" }
+        result = result + url_encode(keys[i]) + "=" + url_encode(values[i])
+        i = i + 1
+    }
+    return result
+}
+
+# URL encode a string (percent encoding)
+fn url_encode(s: str) -> str {
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < s.len() {
+        let c: str = s[i:i+1]
+        let code: int = ord(c)
+        if (code >= 48 and code <= 57) or (code >= 65 and code <= 90) or (code >= 97 and code <= 122) or c == "-" or c == "_" or c == "." or c == "~" {
+            result = result + c
+        } else if c == " " {
+            result = result + "+"
+        } else {
+            result = result + "%" + hex_byte(code)
+        }
+        i = i + 1
+    }
+    return result
+}
+
+# URL decode a string
+fn url_decode(s: str) -> str {
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < s.len() {
+        let c: str = s[i:i+1]
+        if c == "+" {
+            result = result + " "
+            i = i + 1
+        } else if c == "%" and i + 2 < s.len() {
+            let h1: int = hex_digit_value(s[i+1:i+2])
+            let h2: int = hex_digit_value(s[i+2:i+3])
+            result = result + chr((h1 << 4) + h2)
+            i = i + 3
+        } else {
+            result = result + c
+            i = i + 1
+        }
+    }
+    return result
+}
+
+# Convert byte to hex string
+fn hex_byte(n: int) -> str {
+    let h1: int = (n >> 4) & 15
+    let h2: int = n & 15
+    return hex_digit(h1) + hex_digit(h2)
+}
+
+# Convert hex digit to character
+fn hex_digit(n: int) -> str {
+    if n < 10 { return chr(48 + n) }
+    return chr(65 + n - 10)
+}
+
+# Convert hex character to value
+fn hex_digit_value(c: str) -> int {
+    let code: int = ord(c)
+    if code >= 48 and code <= 57 { return code - 48 }
+    if code >= 65 and code <= 70 { return code - 65 + 10 }
+    if code >= 97 and code <= 102 { return code - 97 + 10 }
+    return 0
+}
+
+# Check if port number is valid (1-65535)
+fn is_valid_port(port: int) -> bool {
+    return port >= 1 and port <= 65535
+}
+
+# Check if port is a well-known port (1-1023)
+fn is_well_known_port(port: int) -> bool {
+    return port >= 1 and port <= 1023
+}
+
+# Check if port is a registered port (1024-49151)
+fn is_registered_port(port: int) -> bool {
+    return port >= 1024 and port <= 49151
+}
+
+# Check if port is a dynamic/private port (49152-65535)
+fn is_dynamic_port(port: int) -> bool {
+    return port >= 49152 and port <= 65535
+}
+
+# Get service name for common ports
+fn port_to_service(port: int) -> str {
+    if port == 20 { return "ftp-data" }
+    if port == 21 { return "ftp" }
+    if port == 22 { return "ssh" }
+    if port == 23 { return "telnet" }
+    if port == 25 { return "smtp" }
+    if port == 53 { return "dns" }
+    if port == 80 { return "http" }
+    if port == 110 { return "pop3" }
+    if port == 143 { return "imap" }
+    if port == 443 { return "https" }
+    if port == 465 { return "smtps" }
+    if port == 587 { return "submission" }
+    if port == 993 { return "imaps" }
+    if port == 995 { return "pop3s" }
+    if port == 3306 { return "mysql" }
+    if port == 5432 { return "postgresql" }
+    if port == 6379 { return "redis" }
+    if port == 8080 { return "http-alt" }
+    return "unknown"
+}
+
+# Parse host:port string
+fn parse_host_port(s: str) -> ?[str] {
+    let mut i: int = s.len() - 1
+    while i >= 0 {
+        if s[i:i+1] == ":" {
+            return some([s[0:i], s[i+1:s.len()]])
+        }
+        i = i - 1
+    }
+    return none
+}
+
+# Format host and port as "host:port"
+fn format_host_port(host: str, port: int) -> str {
+    return host + ":" + int_to_str(port)
+}
+
+# Check if hostname is valid (basic check)
+fn is_valid_hostname(host: str) -> bool {
+    if host.len() == 0 or host.len() > 253 { return false }
+    let mut i: int = 0
+    while i < host.len() {
+        let c: int = ord(host[i:i+1])
+        let is_alnum: bool = (c >= 48 and c <= 57) or (c >= 65 and c <= 90) or (c >= 97 and c <= 122)
+        let is_valid: bool = is_alnum or c == 45 or c == 46
+        if not is_valid { return false }
+        i = i + 1
+    }
+    return true
+}
+
+# Extract domain from hostname (remove subdomain)
+fn extract_domain(host: str) -> str {
+    let mut dots: int = 0
+    let mut last_dot: int = 0 - 1
+    let mut i: int = host.len() - 1
+    while i >= 0 {
+        if host[i:i+1] == "." {
+            dots = dots + 1
+            if dots == 2 {
+                return host[i+1:host.len()]
+            }
+            last_dot = i
+        }
+        i = i - 1
+    }
+    return host
+}
+
+# Check if URL has query parameters
+fn has_query_params(url: str) -> bool {
+    let mut i: int = 0
+    while i < url.len() {
+        if url[i:i+1] == "?" { return true }
+        i = i + 1
+    }
+    return false
+}
+
+# Check if URL has fragment (hash)
+fn has_fragment(url: str) -> bool {
+    let mut i: int = 0
+    while i < url.len() {
+        if url[i:i+1] == "#" { return true }
+        i = i + 1
+    }
+    return false
+}
+
+# Extract fragment from URL
+fn extract_fragment(url: str) -> str {
+    let mut i: int = 0
+    while i < url.len() {
+        if url[i:i+1] == "#" {
+            return url[i+1:url.len()]
+        }
+        i = i + 1
+    }
+    return ""
+}
+
+# Remove fragment from URL
+fn strip_fragment(url: str) -> str {
+    let mut i: int = 0
+    while i < url.len() {
+        if url[i:i+1] == "#" {
+            return url[0:i]
+        }
+        i = i + 1
+    }
+    return url
+}
+
+# Join URL path components
+fn join_path(base: str, path: str) -> str {
+    if base.len() == 0 { return path }
+    if path.len() == 0 { return base }
+    let base_ends_slash: bool = base[base.len()-1:base.len()] == "/"
+    let path_starts_slash: bool = path[0:1] == "/"
+    if base_ends_slash and path_starts_slash {
+        return base + path[1:path.len()]
+    }
+    if not base_ends_slash and not path_starts_slash {
+        return base + "/" + path
+    }
+    return base + path
+}
+
+# Normalize URL path (remove ./ and ../)
+fn normalize_path(path: str) -> str {
+    if path.len() == 0 { return "/" }
+    return path
+}
+
+# Check if URL is absolute (has scheme)
+fn is_absolute_url(url: str) -> bool {
+    let mut i: int = 0
+    while i < url.len() {
+        let c: str = url[i:i+1]
+        if c == ":" { return i > 0 }
+        if c == "/" { return false }
+        i = i + 1
+    }
+    return false
+}
+
+# Check if URL is relative
+fn is_relative_url(url: str) -> bool {
+    return not is_absolute_url(url)
+}
+
+# Get file extension from URL path
+fn url_extension(url: str) -> str {
+    let path: str = url_path(url)
+    let mut i: int = path.len() - 1
+    while i >= 0 {
+        let c: str = path[i:i+1]
+        if c == "." { return path[i+1:path.len()] }
+        if c == "/" { return "" }
+        i = i - 1
+    }
+    return ""
+}
+
+# Get filename from URL path
+fn url_filename(url: str) -> str {
+    let path: str = url_path(url)
+    let mut i: int = path.len() - 1
+    while i >= 0 {
+        if path[i:i+1] == "/" {
+            return path[i+1:path.len()]
+        }
+        i = i - 1
+    }
+    return path
+}
+
+# Check if IP is in CIDR range
+fn ip_in_range(ip: str, network: str, prefix_len: int) -> bool {
+    let ip_int: ?int = ip_to_int(ip)
+    let net_int: ?int = ip_to_int(network)
+    if ip_int == none or net_int == none { return false }
+    let mask: int = if prefix_len == 0 then 0 else (0 - (1 << (32 - prefix_len)))
+    return (ip_int! & mask) == (net_int! & mask)
+}
+
+# Calculate number of hosts in CIDR range
+fn cidr_host_count(prefix_len: int) -> int {
+    if prefix_len >= 32 { return 1 }
+    if prefix_len <= 0 { return 0 }
+    return 1 << (32 - prefix_len)
+}
+
+# Format CIDR notation
+fn format_cidr(network: str, prefix_len: int) -> str {
+    return network + "/" + int_to_str(prefix_len)
+}
+
+# Parse CIDR notation
+fn parse_cidr(cidr: str) -> ?[str] {
+    let mut i: int = 0
+    while i < cidr.len() {
+        if cidr[i:i+1] == "/" {
+            return some([cidr[0:i], cidr[i+1:cidr.len()]])
+        }
+        i = i + 1
+    }
+    return none
+}
+
+# Get subnet mask from prefix length
+fn prefix_to_mask(prefix_len: int) -> str {
+    if prefix_len <= 0 { return "0.0.0.0" }
+    if prefix_len >= 32 { return "255.255.255.255" }
+    let mask: int = 0 - (1 << (32 - prefix_len))
+    return int_to_ip(mask)
+}
+
+# Convert subnet mask to prefix length
+fn mask_to_prefix(mask: str) -> int {
+    let mask_int: ?int = ip_to_int(mask)
+    if mask_int == none { return 0 }
+    let m: int = mask_int!
+    let mut count: int = 0
+    let mut i: int = 31
+    while i >= 0 {
+        if (m & (1 << i)) != 0 {
+            count = count + 1
+        } else {
+            break
+        }
+        i = i - 1
+    }
+    return count
+}
+
+# Check if two IPs are in same subnet
+fn same_subnet(ip1: str, ip2: str, prefix_len: int) -> bool {
+    let n1: ?int = ip_to_int(ip1)
+    let n2: ?int = ip_to_int(ip2)
+    if n1 == none or n2 == none { return false }
+    let mask: int = if prefix_len == 0 then 0 else (0 - (1 << (32 - prefix_len)))
+    return (n1! & mask) == (n2! & mask)
+}
+
+# Format MAC address (6 bytes as hex)
+fn format_mac(bytes: [int]) -> str {
+    if bytes.len() != 6 { return "" }
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < 6 {
+        if i > 0 { result = result + ":" }
+        result = result + hex_byte(bytes[i])
+        i = i + 1
+    }
+    return result
+}
+
+# Validate MAC address format
+fn is_valid_mac(mac: str) -> bool {
+    if mac.len() != 17 { return false }
+    let mut i: int = 0
+    while i < 17 {
+        if i % 3 == 2 {
+            if mac[i:i+1] != ":" { return false }
+        } else {
+            let c: int = ord(mac[i:i+1])
+            let is_hex: bool = (c >= 48 and c <= 57) or (c >= 65 and c <= 70) or (c >= 97 and c <= 102)
+            if not is_hex { return false }
+        }
+        i = i + 1
+    }
+    return true
+}
+
+# Get protocol name from number
+fn protocol_number_to_name(proto: int) -> str {
+    if proto == 1 { return "ICMP" }
+    if proto == 6 { return "TCP" }
+    if proto == 17 { return "UDP" }
+    if proto == 41 { return "IPv6" }
+    if proto == 47 { return "GRE" }
+    if proto == 50 { return "ESP" }
+    if proto == 51 { return "AH" }
+    if proto == 58 { return "ICMPv6" }
+    return "unknown"
+}
+
+# Simple HTTP status code to message
+fn http_status_message(code: int) -> str {
+    if code == 200 { return "OK" }
+    if code == 201 { return "Created" }
+    if code == 204 { return "No Content" }
+    if code == 301 { return "Moved Permanently" }
+    if code == 302 { return "Found" }
+    if code == 304 { return "Not Modified" }
+    if code == 400 { return "Bad Request" }
+    if code == 401 { return "Unauthorized" }
+    if code == 403 { return "Forbidden" }
+    if code == 404 { return "Not Found" }
+    if code == 500 { return "Internal Server Error" }
+    if code == 502 { return "Bad Gateway" }
+    if code == 503 { return "Service Unavailable" }
+    return "Unknown"
+}
+
+# Check if HTTP status is success (2xx)
+fn is_http_success(code: int) -> bool {
+    return code >= 200 and code < 300
+}
+
+# Check if HTTP status is redirect (3xx)
+fn is_http_redirect(code: int) -> bool {
+    return code >= 300 and code < 400
+}
+
+# Check if HTTP status is client error (4xx)
+fn is_http_client_error(code: int) -> bool {
+    return code >= 400 and code < 500
+}
+
+# Check if HTTP status is server error (5xx)
+fn is_http_server_error(code: int) -> bool {
+    return code >= 500 and code < 600
+}

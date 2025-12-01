@@ -4,21 +4,34 @@
 # --- File I/O Operations ---
 
 # Read entire file contents as string
-# Requires: Runtime support for file I/O syscalls
 fn read(path: str) -> Result[str, str] {
-    return err("not implemented")
+    let content: str = read_file(path)
+    if content == "" {
+        # Could be empty file or error - check existence
+        if file_exists(path) {
+            return ok(content)
+        }
+        return err("file not found")
+    }
+    return ok(content)
 }
 
 # Write string to file, overwriting if exists
-# Requires: Runtime support for file I/O syscalls
 fn write(path: str, content: str) -> Result[(), str] {
-    return err("not implemented")
+    let result: int = write_file(path, content)
+    if result == 0 {
+        return err("write failed")
+    }
+    return ok(())
 }
 
 # Append string to end of file
-# Requires: Runtime support for file I/O syscalls
 fn append(path: str, content: str) -> Result[(), str] {
-    return err("not implemented")
+    let result: int = append_file(path, content)
+    if result == 0 {
+        return err("append failed")
+    }
+    return ok(())
 }
 
 # Read file as lines
@@ -37,33 +50,41 @@ fn write_lines(path: str, lines: [str]) -> Result[(), str] {
 # --- Directory Operations ---
 
 # Check if file or directory exists
-# Requires: Runtime support for filesystem syscalls
 fn exists(path: str) -> bool {
-    return false
+    return file_exists(path)
 }
 
 # Create directory
-# Requires: Runtime support for filesystem syscalls
-fn mkdir(path: str) -> Result[(), str] {
-    return err("not implemented")
+fn create_dir(path: str) -> Result[(), str] {
+    let result: int = mkdir(path)
+    if result == 0 {
+        return err("mkdir failed")
+    }
+    return ok(())
 }
 
 # Create directory and all parent directories
-# Requires: Runtime support for filesystem syscalls
+# Stage 1: Needs string split for path components
 fn mkdir_all(path: str) -> Result[(), str] {
-    return err("not implemented")
+    return err("not implemented - needs string split")
 }
 
 # Remove directory
-# Requires: Runtime support for filesystem syscalls
-fn rmdir(path: str) -> Result[(), str] {
-    return err("not implemented")
+fn remove_dir(path: str) -> Result[(), str] {
+    let result: int = rmdir(path)
+    if result == 0 {
+        return err("rmdir failed")
+    }
+    return ok(())
 }
 
 # Remove file
-# Requires: Runtime support for filesystem syscalls
 fn remove(path: str) -> Result[(), str] {
-    return err("not implemented")
+    let result: int = delete_file(path)
+    if result == 0 {
+        return err("delete failed")
+    }
+    return ok(())
 }
 
 # Remove file or directory recursively
@@ -196,7 +217,7 @@ fn normalize_path(path: str) -> str {
     while i < path.len() {
         let c: int = ord(path[i:i+1][0])
         if c == 47 {  # '/'
-            if not last_slash {
+            if last_slash == false {
                 result = result + "/"
                 last_slash = true
             }
@@ -345,8 +366,20 @@ fn has_parent_refs(path: str) -> bool {
     let mut i: int = 0
     while i < path.len() - 1 {
         if path[i:i+2] == ".." {
-            if i == 0 or ord(path[i-1:i][0]) == 47 {  # '/'
-                if i + 2 >= path.len() or ord(path[i+2:i+3][0]) == 47 {
+            let mut before_ok: bool = false
+            if i == 0 {
+                before_ok = true
+            }
+            if i > 0 {
+                if ord(path[i-1:i][0]) == 47 {  # '/'
+                    before_ok = true
+                }
+            }
+            if before_ok {
+                if i + 2 >= path.len() {
+                    return true
+                }
+                if ord(path[i+2:i+3][0]) == 47 {
                     return true
                 }
             }
@@ -378,9 +411,31 @@ fn ext_wyn() -> str { return ".wyn" }
 # Check if path is a text file by extension
 fn is_text_file(path: str) -> bool {
     let ext: str = extension(path)
-    return ext == ".txt" or ext == ".md" or ext == ".json" or 
-           ext == ".xml" or ext == ".html" or ext == ".css" or 
-           ext == ".js" or ext == ".wyn"
+    if ext == ".txt" {
+        return true
+    }
+    if ext == ".md" {
+        return true
+    }
+    if ext == ".json" {
+        return true
+    }
+    if ext == ".xml" {
+        return true
+    }
+    if ext == ".html" {
+        return true
+    }
+    if ext == ".css" {
+        return true
+    }
+    if ext == ".js" {
+        return true
+    }
+    if ext == ".wyn" {
+        return true
+    }
+    return false
 }
 
 # Sanitize filename by removing invalid characters
@@ -389,7 +444,17 @@ fn sanitize_filename(name: str) -> str {
     let mut i: int = 0
     while i < name.len() {
         let c: int = ord(name[i:i+1][0])
-        if c == 47 or c == 0 or c == 92 {  # '/', null, '\'
+        let mut invalid: bool = false
+        if c == 47 {  # '/'
+            invalid = true
+        }
+        if c == 0 {  # null
+            invalid = true
+        }
+        if c == 92 {  # '\'
+            invalid = true
+        }
+        if invalid {
             result = result + "_"
         } else {
             result = result + name[i:i+1]

@@ -1,0 +1,336 @@
+# Wyn Neural Network Primitives
+# GPU-accelerated operations for deep learning
+
+import gpu
+
+# ============================================================================
+# Activation Functions
+# ============================================================================
+
+# Rectified Linear Unit: max(0, x)
+fn relu(x: gpu.Tensor) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return x
+}
+
+# Leaky ReLU: x if x > 0 else alpha * x
+fn leaky_relu(x: gpu.Tensor, alpha: float) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return x
+}
+
+# Sigmoid: 1 / (1 + exp(-x))
+fn sigmoid(x: gpu.Tensor) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return x
+}
+
+# Hyperbolic tangent
+fn tanh(x: gpu.Tensor) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return x
+}
+
+# Softmax along last axis
+fn softmax(x: gpu.Tensor) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return x
+}
+
+# Softmax along specified axis
+fn softmax_axis(x: gpu.Tensor, axis: int) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return x
+}
+
+# Log softmax (numerically stable)
+fn log_softmax(x: gpu.Tensor) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return x
+}
+
+# GELU: Gaussian Error Linear Unit
+fn gelu(x: gpu.Tensor) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return x
+}
+
+# SiLU / Swish: x * sigmoid(x)
+fn silu(x: gpu.Tensor) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return x
+}
+
+# ELU: x if x > 0 else alpha * (exp(x) - 1)
+fn elu(x: gpu.Tensor, alpha: float) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return x
+}
+
+# ============================================================================
+# Normalization
+# ============================================================================
+
+# Batch normalization
+fn batch_norm(x: gpu.Tensor, gamma: gpu.Tensor, beta: gpu.Tensor, eps: float) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return x
+}
+
+# Batch norm with running stats (for inference)
+fn batch_norm_inference(x: gpu.Tensor, gamma: gpu.Tensor, beta: gpu.Tensor, 
+                        running_mean: gpu.Tensor, running_var: gpu.Tensor, eps: float) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return x
+}
+
+# Layer normalization
+fn layer_norm(x: gpu.Tensor, gamma: gpu.Tensor, beta: gpu.Tensor, eps: float) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return x
+}
+
+# Group normalization
+fn group_norm(x: gpu.Tensor, num_groups: int, gamma: gpu.Tensor, beta: gpu.Tensor, eps: float) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return x
+}
+
+# Instance normalization
+fn instance_norm(x: gpu.Tensor, gamma: gpu.Tensor, beta: gpu.Tensor, eps: float) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return x
+}
+
+# RMS normalization (used in LLMs)
+fn rms_norm(x: gpu.Tensor, gamma: gpu.Tensor, eps: float) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return x
+}
+
+# ============================================================================
+# Convolution
+# ============================================================================
+
+# 2D convolution
+fn conv2d(input: gpu.Tensor, weight: gpu.Tensor, bias: gpu.Tensor,
+          stride: int, padding: int) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    # input: [batch, in_channels, height, width]
+    # weight: [out_channels, in_channels, kernel_h, kernel_w]
+    # output: [batch, out_channels, out_h, out_w]
+    return input
+}
+
+# 2D convolution without bias
+fn conv2d_no_bias(input: gpu.Tensor, weight: gpu.Tensor,
+                  stride: int, padding: int) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return input
+}
+
+# 1D convolution
+fn conv1d(input: gpu.Tensor, weight: gpu.Tensor, bias: gpu.Tensor,
+          stride: int, padding: int) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return input
+}
+
+# Transposed convolution (deconvolution)
+fn conv_transpose2d(input: gpu.Tensor, weight: gpu.Tensor, bias: gpu.Tensor,
+                    stride: int, padding: int, output_padding: int) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return input
+}
+
+# Depthwise separable convolution
+fn depthwise_conv2d(input: gpu.Tensor, weight: gpu.Tensor,
+                    stride: int, padding: int) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return input
+}
+
+# ============================================================================
+# Pooling
+# ============================================================================
+
+# 2D max pooling
+fn max_pool2d(input: gpu.Tensor, kernel_size: int, stride: int) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return input
+}
+
+# 2D average pooling
+fn avg_pool2d(input: gpu.Tensor, kernel_size: int, stride: int) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return input
+}
+
+# Global average pooling
+fn global_avg_pool2d(input: gpu.Tensor) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return input
+}
+
+# Global max pooling
+fn global_max_pool2d(input: gpu.Tensor) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return input
+}
+
+# Adaptive average pooling (output size specified)
+fn adaptive_avg_pool2d(input: gpu.Tensor, output_size: (int, int)) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return input
+}
+
+# ============================================================================
+# Dropout
+# ============================================================================
+
+# Dropout (training mode)
+fn dropout(x: gpu.Tensor, rate: float) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    # Randomly zeros elements with probability `rate`
+    # Scales remaining by 1/(1-rate)
+    return x
+}
+
+# Dropout 2D (drops entire channels)
+fn dropout2d(x: gpu.Tensor, rate: float) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return x
+}
+
+# ============================================================================
+# Loss Functions
+# ============================================================================
+
+# Mean squared error
+fn mse_loss(pred: gpu.Tensor, target: gpu.Tensor) -> float {
+    # TODO: Runtime implementation
+    return 0.0
+}
+
+# Cross entropy loss
+fn cross_entropy_loss(pred: gpu.Tensor, target: gpu.Tensor) -> float {
+    # TODO: Runtime implementation
+    # pred: [batch, num_classes] (logits, not softmax)
+    # target: [batch] (class indices)
+    return 0.0
+}
+
+# Binary cross entropy
+fn bce_loss(pred: gpu.Tensor, target: gpu.Tensor) -> float {
+    # TODO: Runtime implementation
+    return 0.0
+}
+
+# Binary cross entropy with logits
+fn bce_with_logits_loss(pred: gpu.Tensor, target: gpu.Tensor) -> float {
+    # TODO: Runtime implementation
+    return 0.0
+}
+
+# L1 loss (mean absolute error)
+fn l1_loss(pred: gpu.Tensor, target: gpu.Tensor) -> float {
+    # TODO: Runtime implementation
+    return 0.0
+}
+
+# Smooth L1 loss (Huber loss)
+fn smooth_l1_loss(pred: gpu.Tensor, target: gpu.Tensor, beta: float) -> float {
+    # TODO: Runtime implementation
+    return 0.0
+}
+
+# ============================================================================
+# Attention
+# ============================================================================
+
+# Scaled dot-product attention
+fn attention(query: gpu.Tensor, key: gpu.Tensor, value: gpu.Tensor, 
+             mask: gpu.Tensor) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    # query, key, value: [batch, seq_len, d_model]
+    # mask: [batch, seq_len, seq_len] or none
+    # output: [batch, seq_len, d_model]
+    return query
+}
+
+# Multi-head attention
+fn multi_head_attention(query: gpu.Tensor, key: gpu.Tensor, value: gpu.Tensor,
+                        num_heads: int, mask: gpu.Tensor) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return query
+}
+
+# Flash attention (memory efficient)
+fn flash_attention(query: gpu.Tensor, key: gpu.Tensor, value: gpu.Tensor,
+                   mask: gpu.Tensor) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return query
+}
+
+# ============================================================================
+# Embedding
+# ============================================================================
+
+# Embedding lookup
+fn embedding(indices: gpu.Tensor, weight: gpu.Tensor) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    # indices: [batch, seq_len] (integer indices)
+    # weight: [vocab_size, embedding_dim]
+    # output: [batch, seq_len, embedding_dim]
+    return weight
+}
+
+# Positional encoding (sinusoidal)
+fn positional_encoding(seq_len: int, d_model: int) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return gpu.zeros()
+}
+
+# Rotary positional embedding (RoPE)
+fn rotary_embedding(x: gpu.Tensor, seq_len: int) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return x
+}
+
+# ============================================================================
+# Linear / Dense
+# ============================================================================
+
+# Linear layer: y = x @ W^T + b
+fn linear(x: gpu.Tensor, weight: gpu.Tensor, bias: gpu.Tensor) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return x
+}
+
+# Linear without bias
+fn linear_no_bias(x: gpu.Tensor, weight: gpu.Tensor) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return x
+}
+
+# ============================================================================
+# Utility
+# ============================================================================
+
+# One-hot encoding
+fn one_hot(indices: gpu.Tensor, num_classes: int) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return gpu.zeros()
+}
+
+# Pad tensor
+fn pad(x: gpu.Tensor, padding: [int], value: float) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return x
+}
+
+# Unfold (extract sliding windows)
+fn unfold(x: gpu.Tensor, kernel_size: int, stride: int) -> gpu.Tensor {
+    # TODO: Runtime implementation
+    return x
+}

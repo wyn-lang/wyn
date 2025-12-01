@@ -18,11 +18,14 @@ fn arg_count() -> int {
 # Check if environment variable exists and has a value
 fn has_env(key: str) -> bool {
     let val: ?str = getenv(key)
-    return val != none
+    match val {
+        some(_) => return true
+        none => return false
+    }
 }
 
 # Get environment variable value or return default if not set
-fn getenv_or(key: str, default: str) -> str {
+fn env_or(key: str, default: str) -> str {
     let val: ?str = getenv(key)
     return val ?? default
 }
@@ -108,17 +111,37 @@ fn has_any_flag(flags: [str]) -> bool {
 }
 
 # Get environment variable as integer, returns none if not set or invalid
-fn getenv_int(key: str) -> ?int {
+fn env_int(key: str) -> ?int {
     let val: ?str = getenv(key)
-    if val == none {
-        return none
+    match val {
+        some(v) => return v.to_int()
+        none => return none
     }
-    return val!.to_int()
 }
 
 # Check if running in debug mode (DEBUG environment variable is set)
 fn is_debug() -> bool {
     return has_env("DEBUG")
+}
+
+# Get current Unix timestamp in seconds
+fn timestamp() -> int {
+    return time_now()
+}
+
+# Sleep for specified milliseconds
+fn sleep(ms: int) {
+    sleep_ms(ms)
+}
+
+# Execute shell command and return exit code
+fn run(cmd: str) -> int {
+    return system(cmd)
+}
+
+# Execute shell command and check if successful (exit code 0)
+fn run_ok(cmd: str) -> bool {
+    return system(cmd) == 0
 }
 
 # Get all command-line arguments
@@ -135,13 +158,6 @@ fn env() -> [str] {
     return []
 }
 
-# Get environment variable value
-# Requires: Runtime support (environment access)
-fn getenv(key: str) -> ?str {
-    # Will be implemented via runtime or FFI
-    return none
-}
-
 # Set environment variable
 # Requires: Runtime support (environment modification)
 fn setenv(key: str, value: str) -> Result[(), str] {
@@ -149,15 +165,20 @@ fn setenv(key: str, value: str) -> Result[(), str] {
     return err("not implemented")
 }
 
-# Exit program with status code
-# Requires: Runtime support (process exit syscall)
-fn exit(code: int) {
-    # Will be implemented via syscall or FFI
+# Get current working directory
+# Requires: getcwd builtin (not yet available)
+fn cwd() -> Result[str, str] {
+    return err("getcwd builtin not implemented")
 }
 
-# Execute external command
-# Requires: Runtime support (process spawning)
-fn exec(command: str, args: [str]) -> Result[int, str] {
-    # Will be implemented via syscall or FFI
-    return err("not implemented")
+# Change current working directory
+# Requires: chdir builtin (not yet available)
+fn chdir(path: str) -> Result[(), str] {
+    return err("chdir builtin not implemented")
+}
+
+# Get current process ID
+# Requires: getpid builtin (not yet available)
+fn pid() -> int {
+    return -1  # Invalid PID indicates not implemented
 }

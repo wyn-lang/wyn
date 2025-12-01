@@ -1,0 +1,78 @@
+import ./std/http
+
+fn main() {
+    println_str("=== HTTP Library Demo ===")
+    println_str("")
+    
+    # Status codes
+    println_str("Status Codes:")
+    println(http.status_ok())
+    println(http.status_not_found())
+    println(http.status_internal_error())
+    println_str("")
+    
+    # Status checks
+    println_str("Status Checks:")
+    println(http.is_success(200))
+    println(http.is_error(404))
+    println(http.is_redirect(301))
+    println_str("")
+    
+    # Headers
+    println_str("Headers:")
+    let header: str = http.make_header("Content-Type", "application/json")
+    println_str(header)
+    
+    let parsed: ?[str] = http.parse_header(header)
+    let parts: [str] = parsed ?? []
+    if len(parts) > 0 {
+        println_str(parts[0])
+        println_str(parts[1])
+    }
+    println_str("")
+    
+    # URL parsing
+    println_str("URL Parsing:")
+    let url: str = "https://api.example.com/users?id=123"
+    println_str(http.url_protocol(url))
+    println_str(http.url_host(url))
+    println_str(http.url_path(url))
+    println_str(http.url_query(url))
+    println_str("")
+    
+    # Query parameters
+    println_str("Query Parameters:")
+    let query: str = "id=123&name=alice&age=30"
+    let id: ?str = http.parse_query_param(query, "id")
+    let name: ?str = http.parse_query_param(query, "name")
+    println_str(id ?? "not found")
+    println_str(name ?? "not found")
+    println_str("")
+    
+    # Response builders
+    println_str("Response Builders:")
+    let resp: http.Response = http.json_response(200, "{\"status\":\"ok\"}")
+    println(resp.status)
+    println_str(resp.body)
+    println(len(resp.headers))
+    
+    let err_resp: http.Response = http.error_response(404, "Not Found")
+    println(err_resp.status)
+    println_str(err_resp.body)
+    println_str("")
+    
+    # Request builders
+    println_str("Request Builders:")
+    let req: http.Request = http.post_request("/api/users", "{\"name\":\"alice\"}")
+    println_str(req.method)
+    println_str(req.path)
+    println_str(req.body)
+    println_str("")
+    
+    # Method checks
+    println_str("Method Checks:")
+    println(http.is_safe_method("GET"))
+    println(http.is_safe_method("POST"))
+    println(http.has_request_body("POST"))
+    println(http.has_request_body("GET"))
+}

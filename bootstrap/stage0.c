@@ -658,7 +658,7 @@ struct Stmt {
         struct { Expr* cond; Stmt** then_block; int then_count; Stmt** else_block; int else_count; } if_stmt;
         struct { Expr* cond; Stmt** body; int body_count; } while_stmt;
         struct { char var[MAX_IDENT_LEN]; Expr* iter; Stmt** body; int body_count; bool is_parallel; } for_stmt;
-        struct { Expr* value; Expr** patterns; Stmt*** arms; int* arm_counts; int arm_count; char bindings[64][MAX_IDENT_LEN]; } match_stmt;
+        struct { Expr* value; Expr** patterns; Stmt*** arms; int* arm_counts; int arm_count; char bindings[64][MAX_IDENT_LEN]; Type** binding_types; } match_stmt;
         struct { Stmt** stmts; int count; } block;
         struct { Expr* expr; } defer;
         struct { Stmt** body; int body_count; } spawn;
@@ -1557,6 +1557,7 @@ static Stmt* parse_stmt(Parser* p) {
         s->match_stmt.patterns = malloc(sizeof(Expr*) * 64);
         s->match_stmt.arms = malloc(sizeof(Stmt**) * 64);
         s->match_stmt.arm_counts = malloc(sizeof(int) * 64);
+        s->match_stmt.binding_types = malloc(sizeof(Type*) * 64);
         s->match_stmt.arm_count = 0;
         parser_expect(p, TOK_LBRACE, "{");
         while (!parser_check(p, TOK_RBRACE) && !parser_check(p, TOK_EOF)) {
@@ -1565,6 +1566,7 @@ static Stmt* parse_stmt(Parser* p) {
             s->match_stmt.patterns[s->match_stmt.arm_count] = pattern;
             // Extract binding variable from patterns like some(x), ok(v), err(e)
             s->match_stmt.bindings[s->match_stmt.arm_count][0] = '\0';
+            s->match_stmt.binding_types[s->match_stmt.arm_count] = NULL;
             if ((pattern->kind == EXPR_SOME || pattern->kind == EXPR_OK || pattern->kind == EXPR_ERR) &&
                 pattern->some.value && pattern->some.value->kind == EXPR_IDENT) {
                 strcpy(s->match_stmt.bindings[s->match_stmt.arm_count], pattern->some.value->ident);
@@ -2199,7 +2201,14 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     strcmp(e->ident, "read_line") == 0 || strcmp(e->ident, "clock") == 0 ||
                     strcmp(e->ident, "random") == 0 || strcmp(e->ident, "sleep") == 0 ||
                     strcmp(e->ident, "getenv") == 0 || strcmp(e->ident, "system") == 0 ||
-                    strcmp(e->ident, "ord") == 0 || strcmp(e->ident, "chr") == 0) {
+                    strcmp(e->ident, "ord") == 0 || strcmp(e->ident, "chr") == 0 ||
+                    strcmp(e->ident, "file_exists") == 0 || strcmp(e->ident, "delete_file") == 0 ||
+                    strcmp(e->ident, "mkdir") == 0 || strcmp(e->ident, "rmdir") == 0 ||
+                    strcmp(e->ident, "append_file") == 0 || strcmp(e->ident, "time_now") == 0 ||
+                    strcmp(e->ident, "sleep_ms") == 0 || strcmp(e->ident, "tcp_connect") == 0 ||
+                    strcmp(e->ident, "tcp_close") == 0 || strcmp(e->ident, "char_at") == 0 ||
+                    strcmp(e->ident, "str_find") == 0 || strcmp(e->ident, "str_cmp") == 0 ||
+                    strcmp(e->ident, "tcp_send") == 0 || strcmp(e->ident, "tcp_recv") == 0) {
                     return new_type(TYPE_FUNCTION);
                 }
                 tc_error(tc, e->line, e->column, "undefined variable '%s'", e->ident);
@@ -2534,6 +2543,7 @@ static void tc_check_stmt(TypeChecker* tc, Stmt* s) {
                             bind_type = match_type->inner;
                         }
                     }
+                    s->match_stmt.binding_types[i] = bind_type;
                     tc_define(tc, s->match_stmt.bindings[i], bind_type, false);
                 }
                 for (int j = 0; j < s->match_stmt.arm_counts[i]; j++) {
@@ -3154,6 +3164,84 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_emit(cg, "    callq %s_wyn_read_line", cg_sym_prefix(cg));
                     break;
                 }
+                // Handle built-in file_exists(path) - check if file exists
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "file_exists") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movq %%rax, %%rdi");
+                    cg_emit(cg, "    callq %s_wyn_file_exists", cg_sym_prefix(cg));
+                    break;
+                }
+                // Handle built-in delete_file(path) - delete a file
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "delete_file") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movq %%rax, %%rdi");
+                    cg_emit(cg, "    callq %s_wyn_delete_file", cg_sym_prefix(cg));
+                    break;
+                }
+                // Handle built-in mkdir(path) - create directory
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "mkdir") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movq %%rax, %%rdi");
+                    cg_emit(cg, "    callq %s_wyn_mkdir", cg_sym_prefix(cg));
+                    break;
+                }
+                // Handle built-in rmdir(path) - remove directory
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "rmdir") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movq %%rax, %%rdi");
+                    cg_emit(cg, "    callq %s_wyn_rmdir", cg_sym_prefix(cg));
+                    break;
+                }
+                // Handle built-in append_file(path, content) - append to file
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "append_file") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    pushq %%rax");
+                    cg_expr(cg, e->call.args[1]);
+                    cg_emit(cg, "    movq %%rax, %%rsi");
+                    cg_emit(cg, "    popq %%rdi");
+                    cg_emit(cg, "    callq %s_wyn_append_file", cg_sym_prefix(cg));
+                    break;
+                }
+                // Handle built-in time_now() - returns Unix timestamp
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "time_now") == 0) {
+                    cg_emit(cg, "    xorl %%edi, %%edi");
+                    cg_emit(cg, "    callq %stime", cg_sym_prefix(cg));
+                    break;
+                }
+                // Handle built-in sleep_ms(ms) - sleep for milliseconds
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "sleep_ms") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    imulq $1000, %%rax, %%rdi");
+                    cg_emit(cg, "    callq %susleep", cg_sym_prefix(cg));
+                    break;
+                }
+                // Handle built-in tcp_connect(host, port) - connect to TCP socket
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "tcp_connect") == 0) {
+                    cg_expr(cg, e->call.args[1]);
+                    cg_emit(cg, "    pushq %%rax");
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movq %%rax, %%rdi");
+                    cg_emit(cg, "    popq %%rsi");
+                    cg_emit(cg, "    callq %s_wyn_tcp_connect", cg_sym_prefix(cg));
+                    break;
+                }
+                // Handle built-in tcp_close(sock) - close TCP socket
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "tcp_close") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movl %%eax, %%edi");
+                    cg_emit(cg, "    callq %sclose", cg_sym_prefix(cg));
+                    break;
+                }
+                // Handle built-in char_at(s, i) - get character at index
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "char_at") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    pushq %%rax");
+                    cg_expr(cg, e->call.args[1]);
+                    cg_emit(cg, "    movq %%rax, %%rsi");
+                    cg_emit(cg, "    popq %%rdi");
+                    cg_emit(cg, "    callq %s_wyn_char_at", cg_sym_prefix(cg));
+                    break;
+                }
                 // Handle built-in clock() - returns CPU time in microseconds
                 if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "clock") == 0) {
                     cg_emit(cg, "    callq %sclock", cg_sym_prefix(cg));
@@ -3183,6 +3271,77 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_expr(cg, e->call.args[0]);
                     cg_emit(cg, "    movq %%rax, %%rdi");
                     cg_emit(cg, "    callq %ssystem", cg_sym_prefix(cg));
+                    break;
+                }
+                // Handle built-in str_find(haystack, needle) - returns index or -1
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "str_find") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    pushq %%rax");
+                    cg_expr(cg, e->call.args[1]);
+                    cg_emit(cg, "    movq %%rax, %%rsi");
+                    cg_emit(cg, "    popq %%rdi");
+                    cg_emit(cg, "    pushq %%rdi");  // save haystack for offset calc
+                    cg_emit(cg, "    callq %sstrstr", cg_sym_prefix(cg));
+                    cg_emit(cg, "    popq %%rdi");
+                    cg_emit(cg, "    testq %%rax, %%rax");
+                    int found_lbl = cg_new_label(cg);
+                    cg_emit(cg, "    jnz L%d", found_lbl);
+                    cg_emit(cg, "    movq $-1, %%rax");
+                    int end_lbl = cg_new_label(cg);
+                    cg_emit(cg, "    jmp L%d", end_lbl);
+                    cg_emit(cg, "L%d:", found_lbl);
+                    cg_emit(cg, "    subq %%rdi, %%rax");  // offset = result - haystack
+                    cg_emit(cg, "L%d:", end_lbl);
+                    break;
+                }
+                // Handle built-in str_cmp(a, b) - returns 0 if equal, <0 or >0 otherwise
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "str_cmp") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    pushq %%rax");
+                    cg_expr(cg, e->call.args[1]);
+                    cg_emit(cg, "    movq %%rax, %%rsi");
+                    cg_emit(cg, "    popq %%rdi");
+                    cg_emit(cg, "    callq %sstrcmp", cg_sym_prefix(cg));
+                    break;
+                }
+                // Handle built-in tcp_send(fd, data) - returns bytes sent
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "tcp_send") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    pushq %%rax");
+                    cg_expr(cg, e->call.args[1]);
+                    cg_emit(cg, "    movq %%rax, %%rsi");  // buf
+                    cg_emit(cg, "    movq %%rax, %%rdi");
+                    cg_emit(cg, "    pushq %%rsi");
+                    // Get string length
+                    cg_emit(cg, "    xorl %%eax, %%eax");
+                    cg_emit(cg, "    movq $-1, %%rcx");
+                    cg_emit(cg, "    repnz scasb");
+                    cg_emit(cg, "    notq %%rcx");
+                    cg_emit(cg, "    decq %%rcx");
+                    cg_emit(cg, "    movq %%rcx, %%rdx");  // len
+                    cg_emit(cg, "    popq %%rsi");
+                    cg_emit(cg, "    popq %%rdi");  // fd
+                    cg_emit(cg, "    xorl %%ecx, %%ecx");  // flags = 0
+                    cg_emit(cg, "    callq %ssend", cg_sym_prefix(cg));
+                    break;
+                }
+                // Handle built-in tcp_recv(fd, maxlen) - returns string
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "tcp_recv") == 0) {
+                    cg_expr(cg, e->call.args[1]);
+                    cg_emit(cg, "    pushq %%rax");  // maxlen
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    pushq %%rax");  // fd
+                    cg_emit(cg, "    movq 8(%%rsp), %%rdi");  // maxlen for malloc
+                    cg_emit(cg, "    addq $1, %%rdi");  // +1 for null
+                    cg_emit(cg, "    callq %smalloc", cg_sym_prefix(cg));
+                    cg_emit(cg, "    movq %%rax, %%r12");  // save buf ptr
+                    cg_emit(cg, "    popq %%rdi");  // fd
+                    cg_emit(cg, "    movq %%r12, %%rsi");  // buf
+                    cg_emit(cg, "    popq %%rdx");  // maxlen
+                    cg_emit(cg, "    xorl %%ecx, %%ecx");  // flags = 0
+                    cg_emit(cg, "    callq %srecv", cg_sym_prefix(cg));
+                    cg_emit(cg, "    movb $0, (%%r12, %%rax)");  // null terminate
+                    cg_emit(cg, "    movq %%r12, %%rax");  // return buf
                     break;
                 }
                 if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "assert") == 0) {
@@ -4057,6 +4216,80 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_emit(cg, "    bl %s_wyn_read_line", cg_sym_prefix(cg));
                 break;
             }
+            // Handle built-in file_exists(path) - check if file exists
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "file_exists") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    bl %s_wyn_file_exists", cg_sym_prefix(cg));
+                break;
+            }
+            // Handle built-in delete_file(path) - delete a file
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "delete_file") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    bl %s_wyn_delete_file", cg_sym_prefix(cg));
+                break;
+            }
+            // Handle built-in mkdir(path) - create directory
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "mkdir") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    bl %s_wyn_mkdir", cg_sym_prefix(cg));
+                break;
+            }
+            // Handle built-in rmdir(path) - remove directory
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "rmdir") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    bl %s_wyn_rmdir", cg_sym_prefix(cg));
+                break;
+            }
+            // Handle built-in append_file(path, content) - append to file
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "append_file") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    str x0, [sp, #-16]!");
+                cg_expr(cg, e->call.args[1]);
+                cg_emit(cg, "    mov x1, x0");
+                cg_emit(cg, "    ldr x0, [sp], #16");
+                cg_emit(cg, "    bl %s_wyn_append_file", cg_sym_prefix(cg));
+                break;
+            }
+            // Handle built-in time_now() - returns Unix timestamp
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "time_now") == 0) {
+                cg_emit(cg, "    mov x0, #0");
+                cg_emit(cg, "    bl %stime", cg_sym_prefix(cg));
+                break;
+            }
+            // Handle built-in sleep_ms(ms) - sleep for milliseconds
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "sleep_ms") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    mov x1, #1000");
+                cg_emit(cg, "    mul x0, x0, x1");
+                cg_emit(cg, "    bl %susleep", cg_sym_prefix(cg));
+                break;
+            }
+            // Handle built-in tcp_connect(host, port) - connect to TCP socket
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "tcp_connect") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    str x0, [sp, #-16]!");
+                cg_expr(cg, e->call.args[1]);
+                cg_emit(cg, "    mov x1, x0");
+                cg_emit(cg, "    ldr x0, [sp], #16");
+                cg_emit(cg, "    bl %s_wyn_tcp_connect", cg_sym_prefix(cg));
+                break;
+            }
+            // Handle built-in tcp_close(sock) - close TCP socket
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "tcp_close") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    bl %sclose", cg_sym_prefix(cg));
+                break;
+            }
+            // Handle built-in char_at(s, i) - get character at index
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "char_at") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    str x0, [sp, #-16]!");
+                cg_expr(cg, e->call.args[1]);
+                cg_emit(cg, "    mov x1, x0");
+                cg_emit(cg, "    ldr x0, [sp], #16");
+                cg_emit(cg, "    bl %s_wyn_char_at", cg_sym_prefix(cg));
+                break;
+            }
             // Handle built-in clock() - returns CPU time in microseconds
             if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "clock") == 0) {
                 cg_emit(cg, "    bl %sclock", cg_sym_prefix(cg));
@@ -4083,6 +4316,75 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "system") == 0) {
                 cg_expr(cg, e->call.args[0]);
                 cg_emit(cg, "    bl %ssystem", cg_sym_prefix(cg));
+                break;
+            }
+            // Handle built-in str_find(haystack, needle) - returns index or -1
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "str_find") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    str x0, [sp, #-16]!");
+                cg_expr(cg, e->call.args[1]);
+                cg_emit(cg, "    mov x1, x0");
+                cg_emit(cg, "    ldr x0, [sp], #16");
+                cg_emit(cg, "    str x0, [sp, #-16]!");  // save haystack
+                cg_emit(cg, "    bl %sstrstr", cg_sym_prefix(cg));
+                cg_emit(cg, "    ldr x1, [sp], #16");  // restore haystack
+                int found_lbl = cg_new_label(cg), end_lbl = cg_new_label(cg);
+                cg_emit(cg, "    cbnz x0, L%d", found_lbl);
+                cg_emit(cg, "    mov x0, #-1");
+                cg_emit(cg, "    b L%d", end_lbl);
+                cg_emit(cg, "L%d:", found_lbl);
+                cg_emit(cg, "    sub x0, x0, x1");  // offset = result - haystack
+                cg_emit(cg, "L%d:", end_lbl);
+                break;
+            }
+            // Handle built-in str_cmp(a, b) - returns 0 if equal
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "str_cmp") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    str x0, [sp, #-16]!");
+                cg_expr(cg, e->call.args[1]);
+                cg_emit(cg, "    mov x1, x0");
+                cg_emit(cg, "    ldr x0, [sp], #16");
+                cg_emit(cg, "    bl %sstrcmp", cg_sym_prefix(cg));
+                break;
+            }
+            // Handle built-in tcp_send(fd, data) - returns bytes sent
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "tcp_send") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    str x0, [sp, #-16]!");  // save fd
+                cg_expr(cg, e->call.args[1]);
+                cg_emit(cg, "    mov x1, x0");  // buf
+                // Get string length
+                cg_emit(cg, "    mov x2, #0");
+                int loop_lbl = cg_new_label(cg), end_lbl = cg_new_label(cg);
+                cg_emit(cg, "L%d:", loop_lbl);
+                cg_emit(cg, "    ldrb w3, [x1, x2]");
+                cg_emit(cg, "    cbz w3, L%d", end_lbl);
+                cg_emit(cg, "    add x2, x2, #1");
+                cg_emit(cg, "    b L%d", loop_lbl);
+                cg_emit(cg, "L%d:", end_lbl);
+                cg_emit(cg, "    mov x1, x0");  // buf
+                cg_emit(cg, "    ldr x0, [sp], #16");  // fd
+                cg_emit(cg, "    mov x3, #0");  // flags
+                cg_emit(cg, "    bl %ssend", cg_sym_prefix(cg));
+                break;
+            }
+            // Handle built-in tcp_recv(fd, maxlen) - returns string
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "tcp_recv") == 0) {
+                cg_expr(cg, e->call.args[1]);
+                cg_emit(cg, "    str x0, [sp, #-16]!");  // save maxlen
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    str x0, [sp, #-16]!");  // save fd
+                cg_emit(cg, "    ldr x0, [sp, #16]");  // maxlen
+                cg_emit(cg, "    add x0, x0, #1");  // +1 for null
+                cg_emit(cg, "    bl %smalloc", cg_sym_prefix(cg));
+                cg_emit(cg, "    mov x19, x0");  // save buf ptr
+                cg_emit(cg, "    ldr x0, [sp], #16");  // fd
+                cg_emit(cg, "    mov x1, x19");  // buf
+                cg_emit(cg, "    ldr x2, [sp], #16");  // maxlen
+                cg_emit(cg, "    mov x3, #0");  // flags
+                cg_emit(cg, "    bl %srecv", cg_sym_prefix(cg));
+                cg_emit(cg, "    strb wzr, [x19, x0]");  // null terminate
+                cg_emit(cg, "    mov x0, x19");  // return buf
                 break;
             }
             // Handle built-in assert()
@@ -4667,7 +4969,8 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                         if (s->match_stmt.bindings[i][0] != '\0') {
                             cg_emit(cg, "    movq (%%rsp), %%rax");
                             cg_emit(cg, "    movq 8(%%rax), %%rax");  // Load inner value
-                            cg_add_local(cg, s->match_stmt.bindings[i], new_type(TYPE_INT));
+                            Type* bind_type = s->match_stmt.binding_types[i] ? s->match_stmt.binding_types[i] : new_type(TYPE_INT);
+                            cg_add_local(cg, s->match_stmt.bindings[i], bind_type);
                             cg_emit(cg, "    movq %%rax, -%d(%%rbp)", cg->stack_offset);
                         }
                     } else if (pat->kind == EXPR_NONE) {
@@ -4686,7 +4989,8 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                         if (s->match_stmt.bindings[i][0] != '\0') {
                             cg_emit(cg, "    movq (%%rsp), %%rax");
                             cg_emit(cg, "    movq 8(%%rax), %%rax");  // Load error value
-                            cg_add_local(cg, s->match_stmt.bindings[i], new_type(TYPE_STR));
+                            Type* bind_type = s->match_stmt.binding_types[i] ? s->match_stmt.binding_types[i] : new_type(TYPE_STR);
+                            cg_add_local(cg, s->match_stmt.bindings[i], bind_type);
                             cg_emit(cg, "    movq %%rax, -%d(%%rbp)", cg->stack_offset);
                         }
                     } else if (!is_wildcard) {
@@ -4949,7 +5253,8 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                     if (s->match_stmt.bindings[i][0] != '\0') {
                         cg_emit(cg, "    ldr x0, [sp]");
                         cg_emit(cg, "    ldr x0, [x0, #8]");  // Load inner value
-                        cg_add_local(cg, s->match_stmt.bindings[i], new_type(TYPE_INT));
+                        Type* bind_type = s->match_stmt.binding_types[i] ? s->match_stmt.binding_types[i] : new_type(TYPE_INT);
+                        cg_add_local(cg, s->match_stmt.bindings[i], bind_type);
                         cg_emit(cg, "    str x0, [x29, #%d]", 16 + cg->stack_offset);
                     }
                 } else if (pat->kind == EXPR_NONE) {
@@ -4968,7 +5273,8 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                     if (s->match_stmt.bindings[i][0] != '\0') {
                         cg_emit(cg, "    ldr x0, [sp]");
                         cg_emit(cg, "    ldr x0, [x0, #8]");  // Load error value
-                        cg_add_local(cg, s->match_stmt.bindings[i], new_type(TYPE_STR));
+                        Type* bind_type = s->match_stmt.binding_types[i] ? s->match_stmt.binding_types[i] : new_type(TYPE_STR);
+                        cg_add_local(cg, s->match_stmt.bindings[i], bind_type);
                         cg_emit(cg, "    str x0, [x29, #%d]", 16 + cg->stack_offset);
                     }
                 } else if (!is_wildcard) {
@@ -5405,6 +5711,164 @@ static void codegen_module(CodeGen* cg) {
         cg_emit(cg, "    popq %%rbp");
         cg_emit(cg, "    retq");
         
+        // __wyn_file_exists: check if file exists, returns 1 if exists, 0 otherwise
+        cg_emit(cg, "    .globl %s_wyn_file_exists", pfx);
+        cg_emit(cg, "    .p2align 4");
+        cg_emit(cg, "%s_wyn_file_exists:", pfx);
+        cg_emit(cg, "    pushq %%rbp");
+        cg_emit(cg, "    movq %%rsp, %%rbp");
+        cg_emit(cg, "    xorl %%esi, %%esi");         // F_OK = 0
+        cg_emit(cg, "    callq %saccess", pfx);
+        cg_emit(cg, "    testl %%eax, %%eax");
+        cg_emit(cg, "    setz %%al");
+        cg_emit(cg, "    movzbl %%al, %%eax");
+        cg_emit(cg, "    popq %%rbp");
+        cg_emit(cg, "    retq");
+        
+        // __wyn_tcp_connect: connect to TCP socket, returns fd or -1
+        cg_emit(cg, "    .globl %s_wyn_tcp_connect", pfx);
+        cg_emit(cg, "    .p2align 4");
+        cg_emit(cg, "%s_wyn_tcp_connect:", pfx);
+        cg_emit(cg, "    pushq %%rbp");
+        cg_emit(cg, "    movq %%rsp, %%rbp");
+        cg_emit(cg, "    subq $48, %%rsp");
+        cg_emit(cg, "    movq %%rdi, -8(%%rbp)");      // save host
+        cg_emit(cg, "    movq %%rsi, -16(%%rbp)");     // save port
+        // socket(AF_INET=2, SOCK_STREAM=1, 0)
+        cg_emit(cg, "    movl $2, %%edi");
+        cg_emit(cg, "    movl $1, %%esi");
+        cg_emit(cg, "    xorl %%edx, %%edx");
+        cg_emit(cg, "    callq %ssocket", pfx);
+        cg_emit(cg, "    testl %%eax, %%eax");
+        cg_emit(cg, "    js 1f");
+        cg_emit(cg, "    movl %%eax, -20(%%rbp)");     // save sockfd
+        // gethostbyname(host)
+        cg_emit(cg, "    movq -8(%%rbp), %%rdi");
+        cg_emit(cg, "    callq %sgethostbyname", pfx);
+        cg_emit(cg, "    testq %%rax, %%rax");
+        cg_emit(cg, "    jz 2f");
+        cg_emit(cg, "    movq %%rax, %%rbx");          // save hostent*
+        // Build sockaddr_in: sin_family=AF_INET, sin_port=htons(port), sin_addr
+        cg_emit(cg, "    movw $2, -32(%%rbp)");        // sin_family = AF_INET
+        cg_emit(cg, "    movq -16(%%rbp), %%rdi");     // port
+        cg_emit(cg, "    callq %shtons", pfx);
+        cg_emit(cg, "    movw %%ax, -30(%%rbp)");      // sin_port
+        cg_emit(cg, "    movq 16(%%rbx), %%rax");      // h_addr_list[0]
+        cg_emit(cg, "    movl (%%rax), %%eax");
+        cg_emit(cg, "    movl %%eax, -28(%%rbp)");     // sin_addr
+        cg_emit(cg, "    xorq %%rax, %%rax");
+        cg_emit(cg, "    movq %%rax, -24(%%rbp)");     // sin_zero
+        // connect(sockfd, &addr, 16)
+        cg_emit(cg, "    movl -20(%%rbp), %%edi");
+        cg_emit(cg, "    leaq -32(%%rbp), %%rsi");
+        cg_emit(cg, "    movl $16, %%edx");
+        cg_emit(cg, "    callq %sconnect", pfx);
+        cg_emit(cg, "    testl %%eax, %%eax");
+        cg_emit(cg, "    jnz 2f");
+        cg_emit(cg, "    movl -20(%%rbp), %%eax");     // return sockfd
+        cg_emit(cg, "    jmp 3f");
+        cg_emit(cg, "2:  movl -20(%%rbp), %%edi");     // close on error
+        cg_emit(cg, "    callq %sclose", pfx);
+        cg_emit(cg, "1:  movl $-1, %%eax");            // return -1
+        cg_emit(cg, "3:  leave");
+        cg_emit(cg, "    retq");
+        
+        // __wyn_char_at: get character at index, returns single-char string or ""
+        cg_emit(cg, "    .globl %s_wyn_char_at", pfx);
+        cg_emit(cg, "    .p2align 4");
+        cg_emit(cg, "%s_wyn_char_at:", pfx);
+        cg_emit(cg, "    pushq %%rbp");
+        cg_emit(cg, "    movq %%rsp, %%rbp");
+        cg_emit(cg, "    pushq %%rdi");                // save string
+        cg_emit(cg, "    pushq %%rsi");                // save index
+        cg_emit(cg, "    callq %sstrlen", pfx);        // get string length
+        cg_emit(cg, "    popq %%rsi");                 // restore index
+        cg_emit(cg, "    popq %%rdi");                 // restore string
+        cg_emit(cg, "    testq %%rsi, %%rsi");         // check i >= 0
+        cg_emit(cg, "    js 1f");
+        cg_emit(cg, "    cmpq %%rax, %%rsi");          // check i < len
+        cg_emit(cg, "    jge 1f");
+        cg_emit(cg, "    pushq %%rdi");                // save string
+        cg_emit(cg, "    pushq %%rsi");                // save index
+        cg_emit(cg, "    movq $2, %%rdi");             // malloc 2 bytes
+        cg_emit(cg, "    callq %smalloc", pfx);
+        cg_emit(cg, "    popq %%rsi");                 // restore index
+        cg_emit(cg, "    popq %%rdi");                 // restore string
+        cg_emit(cg, "    movb (%%rdi,%%rsi), %%cl");   // get s[i]
+        cg_emit(cg, "    movb %%cl, (%%rax)");         // store char
+        cg_emit(cg, "    movb $0, 1(%%rax)");          // null terminator
+        cg_emit(cg, "    jmp 2f");
+        cg_emit(cg, "1:  leaq L_.empty_str(%%rip), %%rax");  // return ""
+        cg_emit(cg, "2:  popq %%rbp");
+        cg_emit(cg, "    retq");
+        
+        // __wyn_delete_file: delete file, returns 1 on success, 0 on failure
+        cg_emit(cg, "    .globl %s_wyn_delete_file", pfx);
+        cg_emit(cg, "    .p2align 4");
+        cg_emit(cg, "%s_wyn_delete_file:", pfx);
+        cg_emit(cg, "    pushq %%rbp");
+        cg_emit(cg, "    movq %%rsp, %%rbp");
+        cg_emit(cg, "    callq %sunlink", pfx);
+        cg_emit(cg, "    testl %%eax, %%eax");
+        cg_emit(cg, "    setz %%al");
+        cg_emit(cg, "    movzbl %%al, %%eax");
+        cg_emit(cg, "    popq %%rbp");
+        cg_emit(cg, "    retq");
+        
+        // __wyn_mkdir: create directory, returns 1 on success, 0 on failure
+        cg_emit(cg, "    .globl %s_wyn_mkdir", pfx);
+        cg_emit(cg, "    .p2align 4");
+        cg_emit(cg, "%s_wyn_mkdir:", pfx);
+        cg_emit(cg, "    pushq %%rbp");
+        cg_emit(cg, "    movq %%rsp, %%rbp");
+        cg_emit(cg, "    movl $0755, %%esi");         // mode 0755
+        cg_emit(cg, "    callq %smkdir", pfx);
+        cg_emit(cg, "    testl %%eax, %%eax");
+        cg_emit(cg, "    setz %%al");
+        cg_emit(cg, "    movzbl %%al, %%eax");
+        cg_emit(cg, "    popq %%rbp");
+        cg_emit(cg, "    retq");
+        
+        // __wyn_rmdir: remove directory, returns 1 on success, 0 on failure
+        cg_emit(cg, "    .globl %s_wyn_rmdir", pfx);
+        cg_emit(cg, "    .p2align 4");
+        cg_emit(cg, "%s_wyn_rmdir:", pfx);
+        cg_emit(cg, "    pushq %%rbp");
+        cg_emit(cg, "    movq %%rsp, %%rbp");
+        cg_emit(cg, "    callq %srmdir", pfx);
+        cg_emit(cg, "    testl %%eax, %%eax");
+        cg_emit(cg, "    setz %%al");
+        cg_emit(cg, "    movzbl %%al, %%eax");
+        cg_emit(cg, "    popq %%rbp");
+        cg_emit(cg, "    retq");
+        
+        // __wyn_append_file: append string to file, returns 1 on success, 0 on failure
+        cg_emit(cg, "    .globl %s_wyn_append_file", pfx);
+        cg_emit(cg, "    .p2align 4");
+        cg_emit(cg, "%s_wyn_append_file:", pfx);
+        cg_emit(cg, "    pushq %%rbp");
+        cg_emit(cg, "    movq %%rsp, %%rbp");
+        cg_emit(cg, "    pushq %%rbx");
+        cg_emit(cg, "    pushq %%r12");
+        cg_emit(cg, "    movq %%rsi, %%r12");         // r12 = content
+        cg_emit(cg, "    leaq L_.ab(%%rip), %%rsi");  // "a" mode
+        cg_emit(cg, "    callq %sfopen", pfx);
+        cg_emit(cg, "    testq %%rax, %%rax");
+        cg_emit(cg, "    jz 1f");
+        cg_emit(cg, "    movq %%rax, %%rbx");         // rbx = file handle
+        cg_emit(cg, "    movq %%r12, %%rdi");         // content
+        cg_emit(cg, "    movq %%rbx, %%rsi");         // file
+        cg_emit(cg, "    callq %sfputs", pfx);
+        cg_emit(cg, "    movq %%rbx, %%rdi");
+        cg_emit(cg, "    callq %sfclose", pfx);
+        cg_emit(cg, "    movl $1, %%eax");            // return 1 on success
+        cg_emit(cg, "    jmp 2f");
+        cg_emit(cg, "1:  xorl %%eax, %%eax");         // return 0 on error
+        cg_emit(cg, "2:  popq %%r12");
+        cg_emit(cg, "    popq %%rbx");
+        cg_emit(cg, "    popq %%rbp");
+        cg_emit(cg, "    retq");
+        
         if (cg->os == OS_MACOS) {
             cg_emit(cg, "    .section __DATA,__data");
         } else {
@@ -5428,8 +5892,12 @@ static void codegen_module(CodeGen* cg) {
         cg_emit(cg, "    .asciz \"rb\"");
         cg_emit(cg, "L_.wb:");
         cg_emit(cg, "    .asciz \"w\"");
+        cg_emit(cg, "L_.ab:");
+        cg_emit(cg, "    .asciz \"a\"");
         cg_emit(cg, "L_.linebuf:");
         cg_emit(cg, "    .space 1024");
+        cg_emit(cg, "L_.empty_str:");
+        cg_emit(cg, "    .asciz \"\"");
         
         for (int i = 0; i < cg->string_count; i++) {
             cg_emit(cg, "L_.str%d:", cg->strings[i].label);
@@ -5706,6 +6174,167 @@ static void codegen_module(CodeGen* cg) {
     cg_emit(cg, "    add sp, sp, #48");
     cg_emit(cg, "    ret");
     
+    // __wyn_file_exists: check if file exists, returns 1 if exists, 0 otherwise
+    cg_emit(cg, "    .globl %s_wyn_file_exists", pfx);
+    cg_emit(cg, "    .p2align 2");
+    cg_emit(cg, "%s_wyn_file_exists:", pfx);
+    cg_emit(cg, "    sub sp, sp, #32");
+    cg_emit(cg, "    stp x29, x30, [sp, #16]");
+    cg_emit(cg, "    add x29, sp, #16");
+    cg_emit(cg, "    mov w1, #0");                    // F_OK = 0
+    cg_emit(cg, "    bl %saccess", pfx);
+    cg_emit(cg, "    cmp w0, #0");
+    cg_emit(cg, "    cset w0, eq");
+    cg_emit(cg, "    ldp x29, x30, [sp, #16]");
+    cg_emit(cg, "    add sp, sp, #32");
+    cg_emit(cg, "    ret");
+    
+    // __wyn_delete_file: delete file, returns 1 on success, 0 on failure
+    cg_emit(cg, "    .globl %s_wyn_delete_file", pfx);
+    cg_emit(cg, "    .p2align 2");
+    cg_emit(cg, "%s_wyn_delete_file:", pfx);
+    cg_emit(cg, "    sub sp, sp, #32");
+    cg_emit(cg, "    stp x29, x30, [sp, #16]");
+    cg_emit(cg, "    add x29, sp, #16");
+    cg_emit(cg, "    bl %sunlink", pfx);
+    cg_emit(cg, "    cmp w0, #0");
+    cg_emit(cg, "    cset w0, eq");
+    cg_emit(cg, "    ldp x29, x30, [sp, #16]");
+    cg_emit(cg, "    add sp, sp, #32");
+    cg_emit(cg, "    ret");
+    
+    // __wyn_mkdir: create directory, returns 1 on success, 0 on failure
+    cg_emit(cg, "    .globl %s_wyn_mkdir", pfx);
+    cg_emit(cg, "    .p2align 2");
+    cg_emit(cg, "%s_wyn_mkdir:", pfx);
+    cg_emit(cg, "    sub sp, sp, #32");
+    cg_emit(cg, "    stp x29, x30, [sp, #16]");
+    cg_emit(cg, "    add x29, sp, #16");
+    cg_emit(cg, "    mov w1, #0755");                 // mode 0755
+    cg_emit(cg, "    bl %smkdir", pfx);
+    cg_emit(cg, "    cmp w0, #0");
+    cg_emit(cg, "    cset w0, eq");
+    cg_emit(cg, "    ldp x29, x30, [sp, #16]");
+    cg_emit(cg, "    add sp, sp, #32");
+    cg_emit(cg, "    ret");
+    
+    // __wyn_rmdir: remove directory, returns 1 on success, 0 on failure
+    cg_emit(cg, "    .globl %s_wyn_rmdir", pfx);
+    cg_emit(cg, "    .p2align 2");
+    cg_emit(cg, "%s_wyn_rmdir:", pfx);
+    cg_emit(cg, "    sub sp, sp, #32");
+    cg_emit(cg, "    stp x29, x30, [sp, #16]");
+    cg_emit(cg, "    add x29, sp, #16");
+    cg_emit(cg, "    bl %srmdir", pfx);
+    cg_emit(cg, "    cmp w0, #0");
+    cg_emit(cg, "    cset w0, eq");
+    cg_emit(cg, "    ldp x29, x30, [sp, #16]");
+    cg_emit(cg, "    add sp, sp, #32");
+    cg_emit(cg, "    ret");
+    
+    // __wyn_append_file: append string to file, returns 1 on success, 0 on failure
+    cg_emit(cg, "    .globl %s_wyn_append_file", pfx);
+    cg_emit(cg, "    .p2align 2");
+    cg_emit(cg, "%s_wyn_append_file:", pfx);
+    cg_emit(cg, "    sub sp, sp, #48");
+    cg_emit(cg, "    stp x29, x30, [sp, #32]");
+    cg_emit(cg, "    stp x19, x20, [sp, #16]");
+    cg_emit(cg, "    add x29, sp, #32");
+    cg_emit(cg, "    mov x19, x1");                   // x19 = content
+    cg_emit_adrp(cg, "x1", "L_.ab");
+    cg_emit_add_pageoff(cg, "x1", "x1", "L_.ab");
+    cg_emit(cg, "    bl %sfopen", pfx);
+    cg_emit(cg, "    cbz x0, 1f");
+    cg_emit(cg, "    mov x20, x0");                   // x20 = file handle
+    cg_emit(cg, "    mov x0, x19");                   // content
+    cg_emit(cg, "    mov x1, x20");                   // file
+    cg_emit(cg, "    bl %sfputs", pfx);
+    cg_emit(cg, "    mov x0, x20");
+    cg_emit(cg, "    bl %sfclose", pfx);
+    cg_emit(cg, "    mov x0, #1");                    // return 1 on success
+    cg_emit(cg, "    b 2f");
+    cg_emit(cg, "1:  mov x0, #0");                    // return 0 on error
+    cg_emit(cg, "2:  ldp x19, x20, [sp, #16]");
+    cg_emit(cg, "    ldp x29, x30, [sp, #32]");
+    cg_emit(cg, "    add sp, sp, #48");
+    cg_emit(cg, "    ret");
+    
+    // __wyn_tcp_connect: connect to TCP socket, returns fd or -1
+    cg_emit(cg, "    .globl %s_wyn_tcp_connect", pfx);
+    cg_emit(cg, "    .p2align 2");
+    cg_emit(cg, "%s_wyn_tcp_connect:", pfx);
+    cg_emit(cg, "    sub sp, sp, #80");
+    cg_emit(cg, "    stp x29, x30, [sp, #64]");
+    cg_emit(cg, "    stp x19, x20, [sp, #48]");
+    cg_emit(cg, "    add x29, sp, #64");
+    cg_emit(cg, "    str x0, [sp, #32]");             // save host
+    cg_emit(cg, "    str x1, [sp, #24]");             // save port
+    // socket(AF_INET=2, SOCK_STREAM=1, 0)
+    cg_emit(cg, "    mov w0, #2");
+    cg_emit(cg, "    mov w1, #1");
+    cg_emit(cg, "    mov w2, #0");
+    cg_emit(cg, "    bl %ssocket", pfx);
+    cg_emit(cg, "    cmp w0, #0");
+    cg_emit(cg, "    blt 1f");
+    cg_emit(cg, "    str w0, [sp, #20]");             // save sockfd
+    // gethostbyname(host)
+    cg_emit(cg, "    ldr x0, [sp, #32]");
+    cg_emit(cg, "    bl %sgethostbyname", pfx);
+    cg_emit(cg, "    cbz x0, 2f");
+    cg_emit(cg, "    mov x19, x0");                   // save hostent*
+    // Build sockaddr_in: sin_family=AF_INET, sin_port=htons(port), sin_addr
+    cg_emit(cg, "    mov w1, #2");
+    cg_emit(cg, "    strh w1, [sp, #0]");             // sin_family = AF_INET
+    cg_emit(cg, "    ldr x0, [sp, #24]");             // port
+    cg_emit(cg, "    bl %shtons", pfx);
+    cg_emit(cg, "    strh w0, [sp, #2]");             // sin_port
+    cg_emit(cg, "    ldr x1, [x19, #16]");            // h_addr_list[0]
+    cg_emit(cg, "    ldr w0, [x1]");
+    cg_emit(cg, "    str w0, [sp, #4]");              // sin_addr
+    cg_emit(cg, "    str xzr, [sp, #8]");             // sin_zero
+    // connect(sockfd, &addr, 16)
+    cg_emit(cg, "    ldr w0, [sp, #20]");
+    cg_emit(cg, "    mov x1, sp");
+    cg_emit(cg, "    mov w2, #16");
+    cg_emit(cg, "    bl %sconnect", pfx);
+    cg_emit(cg, "    cbnz w0, 2f");
+    cg_emit(cg, "    ldr w0, [sp, #20]");             // return sockfd
+    cg_emit(cg, "    b 3f");
+    cg_emit(cg, "2:  ldr w0, [sp, #20]");             // close on error
+    cg_emit(cg, "    bl %sclose", pfx);
+    cg_emit(cg, "1:  mov w0, #-1");                   // return -1
+    cg_emit(cg, "    sxtw x0, w0");                   // sign extend to 64-bit
+    cg_emit(cg, "3:  ldp x19, x20, [sp, #48]");
+    cg_emit(cg, "    ldp x29, x30, [sp, #64]");
+    cg_emit(cg, "    add sp, sp, #80");
+    cg_emit(cg, "    ret");
+    
+    // __wyn_char_at: get character at index, returns single-char string or ""
+    cg_emit(cg, "    .globl %s_wyn_char_at", pfx);
+    cg_emit(cg, "    .p2align 2");
+    cg_emit(cg, "%s_wyn_char_at:", pfx);
+    cg_emit(cg, "    stp x29, x30, [sp, #-32]!");
+    cg_emit(cg, "    mov x29, sp");
+    cg_emit(cg, "    stp x19, x20, [sp, #16]");
+    cg_emit(cg, "    mov x19, x0");                   // save string
+    cg_emit(cg, "    mov x20, x1");                   // save index
+    cg_emit(cg, "    bl %sstrlen", pfx);              // get string length
+    cg_emit(cg, "    cmp x20, #0");                   // check i >= 0
+    cg_emit(cg, "    blt 1f");
+    cg_emit(cg, "    cmp x20, x0");                   // check i < len
+    cg_emit(cg, "    bge 1f");
+    cg_emit(cg, "    mov x0, #2");                    // malloc 2 bytes
+    cg_emit(cg, "    bl %smalloc", pfx);
+    cg_emit(cg, "    ldrb w1, [x19, x20]");           // get s[i]
+    cg_emit(cg, "    strb w1, [x0]");                 // store char
+    cg_emit(cg, "    strb wzr, [x0, #1]");            // null terminator
+    cg_emit(cg, "    b 2f");
+    cg_emit(cg, "1:  adrp x0, L_.empty_str@PAGE");    // return ""
+    cg_emit(cg, "    add x0, x0, L_.empty_str@PAGEOFF");
+    cg_emit(cg, "2:  ldp x19, x20, [sp, #16]");
+    cg_emit(cg, "    ldp x29, x30, [sp], #32");
+    cg_emit(cg, "    ret");
+    
     if (cg->os == OS_MACOS) {
         cg_emit(cg, "    .section __DATA,__data");
     } else {
@@ -5729,8 +6358,13 @@ static void codegen_module(CodeGen* cg) {
     cg_emit(cg, "    .asciz \"rb\"");
     cg_emit(cg, "L_.wb:");
     cg_emit(cg, "    .asciz \"w\"");
+    cg_emit(cg, "L_.ab:");
+    cg_emit(cg, "    .asciz \"a\"");
+    cg_emit(cg, "    .asciz \"w\"");
     cg_emit(cg, "L_.linebuf:");
     cg_emit(cg, "    .space 1024");
+    cg_emit(cg, "L_.empty_str:");
+    cg_emit(cg, "    .asciz \"\"");
     
     // Emit string literals
     for (int i = 0; i < cg->string_count; i++) {

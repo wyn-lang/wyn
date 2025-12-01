@@ -1,0 +1,34 @@
+fn fib_recursive(n: int) -> int {
+    if n <= 1 {
+        return n
+    }
+    return fib_recursive(n - 1) + fib_recursive(n - 2)
+}
+
+fn fib_iterative(n: int) -> int {
+    if n <= 1 {
+        return n
+    }
+    mut a: int = 0
+    mut b: int = 1
+    mut i: int = 2
+    while i <= n {
+        let temp: int = a + b
+        a = b
+        b = temp
+        i += 1
+    }
+    return b
+}
+
+fn main() {
+    println_str("Recursive:")
+    for i in 0..=10 {
+        println(fib_recursive(i))
+    }
+    
+    println_str("Iterative:")
+    for i in 0..=20 {
+        println(fib_iterative(i))
+    }
+}

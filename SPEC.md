@@ -1321,20 +1321,313 @@ fn main() {
 
 ---
 
-## 13. Comparison
+## 13. GPU Computing
 
-| Feature | Wyn | Python | Go | Rust |
-|---------|-----|--------|-----|------|
-| Syntax | Simple | Simple | Simple | Complex |
-| Types | Static | Dynamic | Static | Static |
-| Inference | Yes | N/A | Limited | Yes |
-| Speed | Fast | Slow | Fast | Fast |
-| Concurrency | Easy | GIL | Manual | Manual |
-| Memory | Auto GC | Auto GC | Auto GC | Manual |
-| Null Safety | Yes | No | No | Yes |
-| GUI | Built-in | External | External | External |
-| Mobile | Yes | No | Limited | Limited |
-| Generics | Yes | Yes | Yes | Yes |
+Wyn provides first-class GPU support for parallel computation, making it ideal for AI/ML workloads, graphics, and high-performance computing. Write GPU code in the same language as CPU code — no CUDA, no shaders, no separate toolchain.
+
+### 13.1 GPU Blocks
+
+Use `gpu {}` blocks to run code on the GPU:
+
+```wyn
+import gpu
+
+fn main() {
+    let data: [float] = [1.0, 2.0, 3.0, 4.0, 5.0]
+    
+    // Run on GPU - parallel for is automatically parallelized across GPU cores
+    let result: [float] = gpu {
+        parallel for i in 0..data.len() {
+            data[i] = data[i] * 2.0
+        }
+        return data
+    }
+    
+    print(result)  // [2.0, 4.0, 6.0, 8.0, 10.0]
+}
+```
+
+### 13.2 GPU Functions
+
+Mark functions with `@gpu` to compile them for GPU execution:
+
+```wyn
+@gpu
+fn vector_add(a: [float], b: [float]) -> [float] {
+    let result: [float] = [0.0; a.len()]
+    parallel for i in 0..a.len() {
+        result[i] = a[i] + b[i]
+    }
+    return result
+}
+
+@gpu
+fn matrix_multiply(a: [[float]], b: [[float]]) -> [[float]] {
+    let rows: int = a.len()
+    let cols: int = b[0].len()
+    let inner: int = b.len()
+    let result: [[float]] = [[0.0; cols]; rows]
+    
+    parallel for i in 0..rows {
+        parallel for j in 0..cols {
+            mut sum: float = 0.0
+            for k in 0..inner {
+                sum = sum + a[i][k] * b[k][j]
+            }
+            result[i][j] = sum
+        }
+    }
+    return result
+}
+```
+
+### 13.3 Tensor Type
+
+The `Tensor` type provides N-dimensional arrays optimized for GPU operations:
+
+```wyn
+import gpu
+
+fn main() {
+    // Create tensors (allocated on GPU by default)
+    let a: Tensor[float] = gpu.zeros(1024, 1024)
+    let b: Tensor[float] = gpu.rand(1024, 1024)
+    let c: Tensor[float] = gpu.ones(1024, 1024)
+    
+    // Matrix operations (executed on GPU)
+    let d: Tensor[float] = a @ b           // Matrix multiply
+    let e: Tensor[float] = b + c           // Element-wise add
+    let f: Tensor[float] = b * 2.0         // Scalar multiply
+    let g: Tensor[float] = b.transpose()   // Transpose
+    
+    // Reductions
+    let sum: float = b.sum()
+    let mean: float = b.mean()
+    let max_val: float = b.max()
+    
+    // Reshaping
+    let flat: Tensor[float] = b.flatten()
+    let reshaped: Tensor[float] = flat.reshape(512, 2048)
+    
+    // Move to CPU when needed
+    let cpu_data: [[float]] = d.to_cpu()
+}
+```
+
+### 13.4 Neural Network Primitives
+
+Built-in operations for deep learning:
+
+```wyn
+import gpu
+import gpu.nn
+
+fn main() {
+    let input: Tensor[float] = gpu.rand(32, 784)    // batch of 32, 784 features
+    let weights: Tensor[float] = gpu.rand(784, 256)
+    let bias: Tensor[float] = gpu.zeros(256)
+    
+    // Forward pass
+    let z: Tensor[float] = input @ weights + bias
+    let activated: Tensor[float] = nn.relu(z)
+    let output: Tensor[float] = nn.softmax(activated)
+    
+    // Common layers
+    let conv_out: Tensor[float] = nn.conv2d(input, kernel, stride: 1, padding: 1)
+    let pooled: Tensor[float] = nn.max_pool2d(conv_out, kernel_size: 2)
+    let normed: Tensor[float] = nn.batch_norm(pooled)
+    let dropped: Tensor[float] = nn.dropout(normed, rate: 0.5)
+}
+```
+
+### 13.5 Automatic Differentiation
+
+Use `@autodiff` for automatic gradient computation:
+
+```wyn
+import gpu
+
+@autodiff
+fn loss(weights: Tensor[float], x: Tensor[float], y: Tensor[float]) -> float {
+    let pred: Tensor[float] = x @ weights
+    let diff: Tensor[float] = pred - y
+    return (diff * diff).mean()
+}
+
+fn main() {
+    let weights: Tensor[float] = gpu.rand(784, 10)
+    let x: Tensor[float] = gpu.rand(32, 784)
+    let y: Tensor[float] = gpu.rand(32, 10)
+    
+    // Compute loss and gradients in one call
+    let (loss_val, grads) = loss.grad(weights, x, y)
+    
+    // Update weights
+    let lr: float = 0.01
+    weights = weights - grads * lr
+}
+```
+
+### 13.6 Device Management
+
+Control GPU device selection and memory:
+
+```wyn
+import gpu
+
+fn main() {
+    // List available devices
+    let devices: [gpu.Device] = gpu.list_devices()
+    for d in devices {
+        print("{d.name}: {d.memory_gb} GB")
+    }
+    
+    // Select device
+    gpu.set_device(0)
+    
+    // Check memory
+    let free: int = gpu.memory_free()
+    let total: int = gpu.memory_total()
+    
+    // Explicit device placement
+    let a: Tensor[float] = gpu.zeros(1000, 1000, device: 0)
+    let b: Tensor[float] = gpu.zeros(1000, 1000, device: 1)
+    
+    // Move between devices
+    let b_on_0: Tensor[float] = b.to_device(0)
+    let c: Tensor[float] = a @ b_on_0
+    
+    // Synchronize (wait for GPU operations to complete)
+    gpu.sync()
+}
+```
+
+### 13.7 Mixed Precision
+
+Support for half-precision and mixed-precision training:
+
+```wyn
+import gpu
+
+fn main() {
+    // Half precision (float16)
+    let a: Tensor[float16] = gpu.rand_f16(1024, 1024)
+    let b: Tensor[float16] = gpu.rand_f16(1024, 1024)
+    let c: Tensor[float16] = a @ b
+    
+    // BFloat16 for training
+    let weights: Tensor[bfloat16] = gpu.rand_bf16(784, 256)
+    
+    // Mixed precision - accumulate in float32
+    let result: Tensor[float] = gpu.matmul_mixed(a, b)  // inputs f16, output f32
+    
+    // Automatic mixed precision
+    @amp  // automatic mixed precision
+    fn train_step(model: Model, x: Tensor[float], y: Tensor[float]) -> float {
+        // Compiler automatically uses f16 where safe, f32 where needed
+        let pred: Tensor[float] = model.forward(x)
+        return loss(pred, y)
+    }
+}
+```
+
+### 13.8 GPU Compilation Targets
+
+| Backend | Platform | Status |
+|---------|----------|--------|
+| Metal | macOS, iOS | Primary |
+| Vulkan | Linux, Windows, Android | Primary |
+| CUDA | NVIDIA GPUs | Secondary |
+| WebGPU | Browser (WASM) | Secondary |
+
+The compiler automatically selects the best backend for the target platform. Code is portable across all backends.
+
+```bash
+wyn build --target macos      # Uses Metal
+wyn build --target linux      # Uses Vulkan
+wyn build --target wasm       # Uses WebGPU
+wyn build --gpu-backend cuda  # Force CUDA (if available)
+```
+
+### 13.9 Example: Image Processing
+
+```wyn
+import gpu
+import gpu.image
+
+fn main() {
+    let img: Tensor[float] = image.load("photo.jpg")  // HxWx3 tensor
+    
+    // Apply filters on GPU
+    let blurred: Tensor[float] = gpu {
+        let kernel: Tensor[float] = image.gaussian_kernel(5, sigma: 1.0)
+        return image.convolve(img, kernel)
+    }
+    
+    // Batch process multiple images
+    let images: [Tensor[float]] = load_images("./photos/")
+    let processed: [Tensor[float]] = gpu {
+        parallel for i in 0..images.len() {
+            images[i] = image.resize(images[i], 224, 224)
+            images[i] = image.normalize(images[i])
+        }
+        return images
+    }
+    
+    image.save(blurred, "blurred.jpg")
+}
+```
+
+### 13.10 Example: Simple Neural Network
+
+```wyn
+import gpu
+import gpu.nn
+
+struct MLP {
+    w1: Tensor[float]
+    b1: Tensor[float]
+    w2: Tensor[float]
+    b2: Tensor[float]
+    
+    fn new(input_size: int, hidden_size: int, output_size: int) -> MLP {
+        return MLP{
+            w1: gpu.rand(input_size, hidden_size) * 0.01,
+            b1: gpu.zeros(hidden_size),
+            w2: gpu.rand(hidden_size, output_size) * 0.01,
+            b2: gpu.zeros(output_size)
+        }
+    }
+    
+    @gpu
+    fn forward(self, x: Tensor[float]) -> Tensor[float] {
+        let h: Tensor[float] = nn.relu(x @ self.w1 + self.b1)
+        return nn.softmax(h @ self.w2 + self.b2)
+    }
+}
+
+fn main() {
+    let model: MLP = MLP.new(784, 256, 10)
+    let x: Tensor[float] = gpu.rand(32, 784)  // batch of 32 images
+    
+    let predictions: Tensor[float] = model.forward(x)
+    print("Output shape: {predictions.shape()}")  // [32, 10]
+}
+```
+
+---
+
+## 14. Comparison
+
+| Feature | Wyn | Python | Go | Rust | CUDA |
+|---------|-----|--------|-----|------|------|
+| Syntax | Simple | Simple | Simple | Complex | Complex |
+| Types | Static | Dynamic | Static | Static | Static |
+| Speed | Fast | Slow | Fast | Fast | Fast |
+| GPU Support | Native | PyTorch/TF | None | External | Native |
+| GPU Syntax | Same as CPU | Different | N/A | Different | Different |
+| Autodiff | Built-in | Library | None | Library | Manual |
+| Portability | All GPUs | Framework | N/A | Backend | NVIDIA only |
 
 ---
 

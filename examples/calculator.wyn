@@ -1,0 +1,51 @@
+fn add(a: int, b: int) -> int {
+    return a + b
+}
+
+fn subtract(a: int, b: int) -> int {
+    return a - b
+}
+
+fn multiply(a: int, b: int) -> int {
+    return a * b
+}
+
+fn divide(a: int, b: int) -> int {
+    if b == 0 {
+        println_str("Error: division by zero")
+        return 0
+    }
+    return a / b
+}
+
+fn power(base: int, exp: int) -> int {
+    mut result: int = 1
+    mut i: int = 0
+    while i < exp {
+        result = result * base
+        i += 1
+    }
+    return result
+}
+
+fn main() {
+    println_str("Calculator Examples:")
+    
+    println_str("2 + 3 =")
+    println(add(2, 3))
+    
+    println_str("10 - 4 =")
+    println(subtract(10, 4))
+    
+    println_str("3 * 4 =")
+    println(multiply(3, 4))
+    
+    println_str("20 / 5 =")
+    println(divide(20, 5))
+    
+    println_str("2 ^ 8 =")
+    println(power(2, 8))
+    
+    println_str("Order of operations: 2 + 3 * 4 =")
+    println(add(2, multiply(3, 4)))
+}

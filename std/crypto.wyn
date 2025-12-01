@@ -1,446 +1,204 @@
 # std/crypto.wyn
-# Cryptographic primitives
+# Basic cryptographic utilities
 
-# Compute a generic hash of the input data
-# Returns a hash string (implementation-dependent)
-# Requires: Runtime support for cryptographic hashing (syscall or FFI)
-fn hash(data: str) -> str {
-    return ""
-}
-
-# Compute SHA-256 hash of the input data
-# Returns a 64-character hexadecimal string
-# Requires: Runtime support for SHA-256 (syscall or FFI)
-fn sha256(data: str) -> str {
-    return ""
-}
-
-# Compute MD5 hash of the input data
-# Returns a 32-character hexadecimal string
-# Requires: Runtime support for MD5 (syscall or FFI)
-fn md5(data: str) -> str {
-    return ""
-}
-
-# Compute SHA-1 hash of the input data
-# Returns a 40-character hexadecimal string
-# Requires: Runtime support for SHA-1 (syscall or FFI)
-fn sha1(data: str) -> str {
-    return ""
-}
-
-# Compute SHA-512 hash of the input data
-# Returns a 128-character hexadecimal string
-# Requires: Runtime support for SHA-512 (syscall or FFI)
-fn sha512(data: str) -> str {
-    return ""
-}
-
-# Generate n random bytes
-# Returns an array of random integers in range 0-255
-# Stage 1: Will support array building for random byte generation
-# Requires: Runtime support for secure random number generation
-fn random_bytes(n: int) -> [int] {
-    return []
-}
-
-# Generate a random integer in range [min, max]
-# Requires: Runtime support for random number generation
-fn random_int(min: int, max: int) -> int {
-    return min
-}
-
-# Encrypt data using the given key
-# Returns ok(encrypted) on success, or err(message) on failure
-# Requires: Runtime support for encryption (syscall or FFI)
-fn encrypt(data: str, key: str) -> Result[str, str] {
-    return err("not implemented")
-}
-
-# Decrypt data using the given key
-# Returns ok(decrypted) on success, or err(message) on failure
-# Requires: Runtime support for decryption (syscall or FFI)
-fn decrypt(data: str, key: str) -> Result[str, str] {
-    return err("not implemented")
-}
-
-# Simple hash functions (pure Wyn implementations)
-
-# DJB2 hash algorithm - fast, simple, good distribution
-# Returns a 32-bit hash value as an integer
-# Example: djb2("hello") -> 210676686821
-fn djb2(data: str) -> int {
+# Simple hash function (djb2)
+fn hash_djb2(s: str) -> int {
     let mut hash: int = 5381
     let mut i: int = 0
-    while i < data.len() {
-        let c: int = ord(data[i:i+1][0])
-        hash = ((hash << 5) + hash) + c  # hash * 33 + c
+    while i < s.len() {
+        hash = ((hash << 5) + hash) + ord(s[i:i+1])
         i = i + 1
     }
     return hash
 }
 
-# FNV-1a hash algorithm - good distribution, fast
-# Returns a 32-bit hash value as an integer
-# Example: fnv1a("hello") -> 1335831723
-fn fnv1a(data: str) -> int {
-    let mut hash: int = 2166136261  # FNV offset basis (32-bit)
-    let mut i: int = 0
-    while i < data.len() {
-        let c: int = ord(data[i:i+1][0])
-        hash = hash ^ c
-        hash = hash * 16777619  # FNV prime
-        i = i + 1
-    }
-    return hash
-}
-
-# Simple polynomial rolling hash
-# Returns a hash value modulo a large prime
-# Example: simple_hash("hello") -> 99162322
-fn simple_hash(data: str) -> int {
-    let mut hash: int = 0
-    let mut i: int = 0
-    while i < data.len() {
-        hash = (hash * 31 + ord(data[i:i+1][0])) % 2147483647
-        i = i + 1
-    }
-    return hash
-}
-
-# SDBM hash algorithm - used in many hash table implementations
-# Returns a 32-bit hash value as an integer
-fn sdbm(data: str) -> int {
-    let mut hash: int = 0
-    let mut i: int = 0
-    while i < data.len() {
-        let c: int = ord(data[i:i+1][0])
-        hash = c + (hash << 6) + (hash << 16) - hash
-        i = i + 1
-    }
-    return hash
-}
-
-# Lose-lose hash - simple but poor distribution (for educational purposes)
-# Returns sum of all character codes
-fn lose_lose(data: str) -> int {
-    let mut hash: int = 0
-    let mut i: int = 0
-    while i < data.len() {
-        hash = hash + ord(data[i:i+1][0])
-        i = i + 1
-    }
-    return hash
-}
-
-# Compute a checksum by XORing all bytes
-# Returns a value in range 0-255
-fn xor_checksum(data: str) -> int {
-    let mut checksum: int = 0
-    let mut i: int = 0
-    while i < data.len() {
-        checksum = checksum ^ ord(data[i:i+1][0])
-        i = i + 1
-    }
-    return checksum & 255
-}
-
-# Compute a simple additive checksum modulo 256
-# Returns a value in range 0-255
-fn sum_checksum(data: str) -> int {
-    let mut checksum: int = 0
-    let mut i: int = 0
-    while i < data.len() {
-        checksum = checksum + ord(data[i:i+1][0])
-        i = i + 1
-    }
-    return checksum % 256
-}
-
-# Convert a hash integer to a hexadecimal string
-# Example: hash_to_hex(255) -> "000000ff"
-fn hash_to_hex(hash: int) -> str {
-    let hex_chars: str = "0123456789abcdef"
-    let mut result: str = ""
-    let mut n: int = hash
-    let mut i: int = 0
-    
-    while i < 8 {
-        let digit: int = n & 15
-        result = hex_chars[digit:digit+1] + result
-        n = n >> 4
-        i = i + 1
-    }
-    
-    return result
-}
-
-# Simple XOR cipher for basic obfuscation (NOT secure encryption)
-# Applies XOR with a repeating key
-# Example: xor_cipher("hello", "key") -> obfuscated string
-fn xor_cipher(data: str, key: str) -> str {
-    if key.len() == 0 {
-        return data
-    }
-    
-    let mut result: str = ""
-    let mut i: int = 0
-    while i < data.len() {
-        let data_byte: int = ord(data[i:i+1][0])
-        let key_byte: int = ord(key[i % key.len():i % key.len()+1][0])
-        let xor_byte: int = data_byte ^ key_byte
-        result = result + chr(xor_byte)
-        i = i + 1
-    }
-    return result
-}
-
-# Caesar cipher - shift each character by n positions
-# Only affects ASCII letters, preserves case
-# Example: caesar_cipher("Hello", 3) -> "Khoor"
-fn caesar_cipher(data: str, shift: int) -> str {
-    let mut result: str = ""
-    let mut i: int = 0
-    while i < data.len() {
-        let c: int = ord(data[i:i+1][0])
-        if c >= 65 and c <= 90 {  # 'A'-'Z'
-            let shifted: int = ((c - 65 + shift) % 26 + 26) % 26 + 65
-            result = result + chr(shifted)
-        } else if c >= 97 and c <= 122 {  # 'a'-'z'
-            let shifted: int = ((c - 97 + shift) % 26 + 26) % 26 + 97
-            result = result + chr(shifted)
-        } else {
-            result = result + data[i:i+1]
-        }
-        i = i + 1
-    }
-    return result
-}
-
-# ROT13 cipher - special case of Caesar cipher with shift 13
-# Self-inverse: rot13(rot13(x)) == x
-fn rot13(data: str) -> str {
-    return caesar_cipher(data, 13)
-}
-
-# Base64 encoding/decoding
-
-# Encode data to base64 string
-# Example: base64_encode("hello") -> "aGVsbG8="
-fn base64_encode(data: str) -> str {
-    let chars: str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-    let mut result: str = ""
-    let mut i: int = 0
-    
-    while i < data.len() {
-        let b1: int = ord(data[i:i+1][0])
-        let b2: int = if i + 1 < data.len() then ord(data[i+1:i+2][0]) else 0
-        let b3: int = if i + 2 < data.len() then ord(data[i+2:i+3][0]) else 0
-        
-        let n: int = (b1 << 16) | (b2 << 8) | b3
-        
-        result = result + chars[(n >> 18) & 63:(n >> 18) & 63 + 1]
-        result = result + chars[(n >> 12) & 63:(n >> 12) & 63 + 1]
-        result = result + (if i + 1 < data.len() then chars[(n >> 6) & 63:(n >> 6) & 63 + 1] else "=")
-        result = result + (if i + 2 < data.len() then chars[n & 63:n & 63 + 1] else "=")
-        
-        i = i + 3
-    }
-    
-    return result
-}
-
-# Decode base64 string to data
-# Returns ok(decoded) on success, err(message) on invalid input
-fn base64_decode(encoded: str) -> Result[str, str] {
-    let chars: str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-    let mut result: str = ""
-    let mut i: int = 0
-    
-    while i < encoded.len() {
-        if encoded[i:i+1] == "=" {
-            break
-        }
-        
-        let c1: int = index_of(chars, encoded[i:i+1])
-        let c2: int = if i + 1 < encoded.len() then index_of(chars, encoded[i+1:i+2]) else -1
-        let c3: int = if i + 2 < encoded.len() and encoded[i+2:i+3] != "=" then index_of(chars, encoded[i+2:i+3]) else -1
-        let c4: int = if i + 3 < encoded.len() and encoded[i+3:i+4] != "=" then index_of(chars, encoded[i+3:i+4]) else -1
-        
-        if c1 == -1 or c2 == -1 {
-            return err("invalid base64 character")
-        }
-        
-        let n: int = (c1 << 18) | (c2 << 12) | ((if c3 != -1 then c3 else 0) << 6) | (if c4 != -1 then c4 else 0)
-        
-        result = result + chr((n >> 16) & 255)
-        if c3 != -1 {
-            result = result + chr((n >> 8) & 255)
-        }
-        if c4 != -1 {
-            result = result + chr(n & 255)
-        }
-        
-        i = i + 4
-    }
-    
-    return ok(result)
-}
-
-# Find index of character in string, returns -1 if not found
-fn index_of(s: str, c: str) -> int {
+# FNV-1a hash
+fn hash_fnv1a(s: str) -> int {
+    let mut hash: int = 2166136261
     let mut i: int = 0
     while i < s.len() {
-        if s[i:i+1] == c {
-            return i
-        }
+        hash = hash ^ ord(s[i:i+1])
+        hash = hash * 16777619
         i = i + 1
     }
-    return -1
+    return hash
 }
 
-# Hex encoding/decoding
-
-# Encode data to hexadecimal string
-# Example: hex_encode("hello") -> "68656c6c6f"
-fn hex_encode(data: str) -> str {
-    let hex_chars: str = "0123456789abcdef"
-    let mut result: str = ""
+# Simple checksum (sum of all bytes mod 256)
+fn checksum(s: str) -> int {
+    let mut sum: int = 0
     let mut i: int = 0
-    
-    while i < data.len() {
-        let byte: int = ord(data[i:i+1][0])
-        result = result + hex_chars[(byte >> 4) & 15:(byte >> 4) & 15 + 1]
-        result = result + hex_chars[byte & 15:byte & 15 + 1]
+    while i < s.len() {
+        sum = sum + ord(s[i:i+1])
         i = i + 1
     }
-    
+    return sum & 255
+}
+
+# XOR cipher (symmetric encryption/decryption)
+fn xor_cipher(s: str, key: str) -> str {
+    if key.len() == 0 { return s }
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < s.len() {
+        let key_idx: int = i % key.len()
+        let s_byte: int = ord(s[i:i+1])
+        let k_byte: int = ord(key[key_idx:key_idx+1])
+        result = result + chr(s_byte ^ k_byte)
+        i = i + 1
+    }
     return result
 }
 
-# Decode hexadecimal string to data
-# Returns ok(decoded) on success, err(message) on invalid input
-fn hex_decode(encoded: str) -> Result[str, str] {
-    if encoded.len() % 2 != 0 {
-        return err("hex string must have even length")
-    }
-    
+# Caesar cipher encryption
+fn caesar_encrypt(s: str, shift: int) -> str {
     let mut result: str = ""
     let mut i: int = 0
-    
-    while i < encoded.len() {
-        let h1: int = hex_char_to_int(encoded[i:i+1])
-        let h2: int = hex_char_to_int(encoded[i+1:i+2])
-        
-        if h1 == -1 or h2 == -1 {
-            return err("invalid hex character")
+    while i < s.len() {
+        let c: str = s[i:i+1]
+        let code: int = ord(c)
+        if code >= 65 and code <= 90 {
+            result = result + chr(((code - 65 + shift) % 26) + 65)
+        } else if code >= 97 and code <= 122 {
+            result = result + chr(((code - 97 + shift) % 26) + 97)
+        } else {
+            result = result + c
         }
-        
-        result = result + chr((h1 << 4) | h2)
-        i = i + 2
-    }
-    
-    return ok(result)
-}
-
-# Convert hex character to integer (0-15), returns -1 for invalid
-fn hex_char_to_int(c: str) -> int {
-    let code: int = ord(c[0])
-    if code >= 48 and code <= 57 {  # '0'-'9'
-        return code - 48
-    }
-    if code >= 97 and code <= 102 {  # 'a'-'f'
-        return code - 97 + 10
-    }
-    if code >= 65 and code <= 70 {  # 'A'-'F'
-        return code - 65 + 10
-    }
-    return -1
-}
-
-# Constant-time string comparison (prevents timing attacks)
-# Returns true if strings are equal, false otherwise
-fn constant_time_compare(a: str, b: str) -> bool {
-    if a.len() != b.len() {
-        return false
-    }
-    
-    let mut result: int = 0
-    let mut i: int = 0
-    while i < a.len() {
-        result = result | (ord(a[i:i+1][0]) ^ ord(b[i:i+1][0]))
         i = i + 1
     }
-    
-    return result == 0
+    return result
 }
 
-# Compute HMAC (Hash-based Message Authentication Code)
-# Returns HMAC as hexadecimal string
-# Requires: Runtime support for HMAC computation
-fn hmac_sha256(data: str, key: str) -> str {
-    return ""
+# Caesar cipher decryption
+fn caesar_decrypt(s: str, shift: int) -> str {
+    return caesar_encrypt(s, 26 - (shift % 26))
 }
 
-# Hash a password with a salt (for secure password storage)
-# Returns hashed password as hexadecimal string
-# Requires: Runtime support for password hashing (e.g., bcrypt, argon2)
-fn hash_password(password: str, salt: str) -> str {
-    return ""
+# ROT13 (special case of Caesar cipher)
+fn rot13(s: str) -> str {
+    return caesar_encrypt(s, 13)
 }
 
-# Verify a password against a hash
-# Returns true if password matches, false otherwise
-# Requires: Runtime support for password verification
-fn verify_password(password: str, hash: str) -> bool {
-    return false
-}
-
-# Generate a cryptographically secure random string of given length
-# Uses alphanumeric characters (A-Z, a-z, 0-9)
-# Requires: Runtime support for secure random generation
-fn random_string(length: int) -> str {
-    return ""
-}
-
-# Compute CRC32 checksum (commonly used for data integrity)
-# Returns a 32-bit checksum value
-fn crc32(data: str) -> int {
-    let mut crc: int = 4294967295
+# Simple substitution cipher
+fn substitute(s: str, alphabet: str, cipher: str) -> str {
+    if alphabet.len() != cipher.len() { return s }
+    let mut result: str = ""
     let mut i: int = 0
-    
-    while i < data.len() {
-        let byte: int = ord(data[i:i+1][0])
-        crc = crc ^ byte
-        
+    while i < s.len() {
+        let c: str = s[i:i+1]
+        let mut j: int = 0
+        let mut found: bool = false
+        while j < alphabet.len() {
+            if c == alphabet[j:j+1] {
+                result = result + cipher[j:j+1]
+                found = true
+                break
+            }
+            j = j + 1
+        }
+        if not found {
+            result = result + c
+        }
+        i = i + 1
+    }
+    return result
+}
+
+# Reverse cipher (reverse string)
+fn reverse_cipher(s: str) -> str {
+    let mut result: str = ""
+    let mut i: int = s.len() - 1
+    while i >= 0 {
+        result = result + s[i:i+1]
+        i = i - 1
+    }
+    return result
+}
+
+# Atbash cipher (reverse alphabet)
+fn atbash(s: str) -> str {
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < s.len() {
+        let c: str = s[i:i+1]
+        let code: int = ord(c)
+        if code >= 65 and code <= 90 {
+            result = result + chr(90 - (code - 65))
+        } else if code >= 97 and code <= 122 {
+            result = result + chr(122 - (code - 97))
+        } else {
+            result = result + c
+        }
+        i = i + 1
+    }
+    return result
+}
+
+# Generate pseudo-random byte (linear congruential generator)
+fn prng_byte(seed: int, index: int) -> int {
+    let a: int = 1103515245
+    let c: int = 12345
+    let m: int = 2147483647
+    let mut x: int = seed
+    let mut i: int = 0
+    while i <= index {
+        x = (a * x + c) % m
+        i = i + 1
+    }
+    return x & 255
+}
+
+# Simple stream cipher using PRNG
+fn stream_cipher(s: str, seed: int) -> str {
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < s.len() {
+        let key_byte: int = prng_byte(seed, i)
+        let s_byte: int = ord(s[i:i+1])
+        result = result + chr(s_byte ^ key_byte)
+        i = i + 1
+    }
+    return result
+}
+
+# Compute CRC8 checksum
+fn crc8(s: str) -> int {
+    let mut crc: int = 0
+    let mut i: int = 0
+    while i < s.len() {
+        crc = crc ^ ord(s[i:i+1])
         let mut j: int = 0
         while j < 8 {
-            if (crc & 1) != 0 {
-                crc = (crc >> 1) ^ 3988292384
+            if (crc & 128) != 0 {
+                crc = (crc << 1) ^ 7
             } else {
-                crc = crc >> 1
+                crc = crc << 1
             }
             j = j + 1
         }
         i = i + 1
     }
-    
-    return crc ^ 4294967295
+    return crc & 255
 }
 
-# Compute Adler-32 checksum (faster than CRC32, used in zlib)
-# Returns a 32-bit checksum value
-fn adler32(data: str) -> int {
-    let mod_adler: int = 65521
-    let mut a: int = 1
-    let mut b: int = 0
+# Verify CRC8 checksum
+fn verify_crc8(s: str, expected: int) -> bool {
+    return crc8(s) == expected
+}
+
+# One-time pad encryption (key must be same length as message)
+fn otp_encrypt(s: str, key: str) -> str {
+    if s.len() != key.len() { return "" }
+    let mut result: str = ""
     let mut i: int = 0
-    
-    while i < data.len() {
-        a = (a + ord(data[i:i+1][0])) % mod_adler
-        b = (b + a) % mod_adler
+    while i < s.len() {
+        result = result + chr(ord(s[i:i+1]) ^ ord(key[i:i+1]))
         i = i + 1
     }
-    
-    return (b << 16) | a
+    return result
+}
+
+# One-time pad decryption (same as encryption)
+fn otp_decrypt(s: str, key: str) -> str {
+    return otp_encrypt(s, key)
 }

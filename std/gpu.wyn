@@ -1,0 +1,402 @@
+# Wyn GPU Computing Module
+# Provides GPU acceleration for parallel computation, tensors, and neural networks
+
+# ============================================================================
+# Device Management
+# ============================================================================
+
+struct Device {
+    id: int
+    name: str
+    memory_gb: float
+    compute_units: int
+    backend: str  # "metal", "vulkan", "cuda", "webgpu"
+}
+
+# List all available GPU devices
+fn list_devices() -> [Device] {
+    # TODO: Runtime implementation
+    return []
+}
+
+# Get current device
+fn current_device() -> int {
+    # TODO: Runtime implementation
+    return 0
+}
+
+# Set active device
+fn set_device(device_id: int) {
+    # TODO: Runtime implementation
+}
+
+# Get free memory in bytes
+fn memory_free() -> int {
+    # TODO: Runtime implementation
+    return 0
+}
+
+# Get total memory in bytes
+fn memory_total() -> int {
+    # TODO: Runtime implementation
+    return 0
+}
+
+# Synchronize - wait for all GPU operations to complete
+fn sync() {
+    # TODO: Runtime implementation
+}
+
+# ============================================================================
+# Tensor Creation
+# ============================================================================
+
+struct Tensor {
+    data_ptr: int      # Pointer to GPU memory
+    shape: [int]       # Dimensions
+    strides: [int]     # Memory strides
+    dtype: str         # "float", "float16", "bfloat16", "int"
+    device: int        # Device ID
+    
+    # Get shape
+    fn shape(self) -> [int] {
+        return self.shape
+    }
+    
+    # Get number of dimensions
+    fn ndim(self) -> int {
+        return self.shape.len()
+    }
+    
+    # Get total number of elements
+    fn numel(self) -> int {
+        mut total: int = 1
+        for dim in self.shape {
+            total = total * dim
+        }
+        return total
+    }
+    
+    # Get data type
+    fn dtype(self) -> str {
+        return self.dtype
+    }
+    
+    # Move to different device
+    fn to_device(self, device_id: int) -> Tensor {
+        # TODO: Runtime implementation
+        return self
+    }
+    
+    # Move to CPU as nested array
+    fn to_cpu(self) -> [[float]] {
+        # TODO: Runtime implementation
+        return []
+    }
+    
+    # Reshape tensor
+    fn reshape(self, dims: ...int) -> Tensor {
+        # TODO: Runtime implementation
+        return self
+    }
+    
+    # Flatten to 1D
+    fn flatten(self) -> Tensor {
+        # TODO: Runtime implementation
+        return self
+    }
+    
+    # Transpose
+    fn transpose(self) -> Tensor {
+        # TODO: Runtime implementation
+        return self
+    }
+    
+    # Transpose with specific axes
+    fn permute(self, axes: [int]) -> Tensor {
+        # TODO: Runtime implementation
+        return self
+    }
+    
+    # Sum all elements
+    fn sum(self) -> float {
+        # TODO: Runtime implementation
+        return 0.0
+    }
+    
+    # Mean of all elements
+    fn mean(self) -> float {
+        # TODO: Runtime implementation
+        return 0.0
+    }
+    
+    # Max element
+    fn max(self) -> float {
+        # TODO: Runtime implementation
+        return 0.0
+    }
+    
+    # Min element
+    fn min(self) -> float {
+        # TODO: Runtime implementation
+        return 0.0
+    }
+    
+    # Sum along axis
+    fn sum_axis(self, axis: int) -> Tensor {
+        # TODO: Runtime implementation
+        return self
+    }
+    
+    # Mean along axis
+    fn mean_axis(self, axis: int) -> Tensor {
+        # TODO: Runtime implementation
+        return self
+    }
+    
+    # Argmax along axis
+    fn argmax(self, axis: int) -> Tensor {
+        # TODO: Runtime implementation
+        return self
+    }
+    
+    # Clone tensor
+    fn clone(self) -> Tensor {
+        # TODO: Runtime implementation
+        return self
+    }
+    
+    # Contiguous memory layout
+    fn contiguous(self) -> Tensor {
+        # TODO: Runtime implementation
+        return self
+    }
+}
+
+# Create tensor filled with zeros
+fn zeros(dims: ...int) -> Tensor {
+    let shape: [int] = []
+    # TODO: Convert variadic to array
+    return Tensor{
+        data_ptr: 0,
+        shape: shape,
+        strides: [],
+        dtype: "float",
+        device: current_device()
+    }
+}
+
+# Create tensor filled with ones
+fn ones(dims: ...int) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+# Create tensor filled with value
+fn full(value: float, dims: ...int) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+# Create tensor with random values [0, 1)
+fn rand(dims: ...int) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+# Create tensor with random normal values
+fn randn(dims: ...int) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+# Create tensor from CPU array
+fn from_array(data: [[float]]) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+# Create identity matrix
+fn eye(n: int) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+# Create range tensor
+fn arange(start: float, end: float, step: float) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+# Create linearly spaced tensor
+fn linspace(start: float, end: float, num: int) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+# Half precision variants
+fn zeros_f16(dims: ...int) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+fn rand_f16(dims: ...int) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+fn rand_bf16(dims: ...int) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+# ============================================================================
+# Tensor Operations
+# ============================================================================
+
+# Matrix multiplication
+fn matmul(a: Tensor, b: Tensor) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+# Mixed precision matmul (inputs f16, output f32)
+fn matmul_mixed(a: Tensor, b: Tensor) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+# Element-wise addition
+fn add(a: Tensor, b: Tensor) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+# Element-wise subtraction
+fn sub(a: Tensor, b: Tensor) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+# Element-wise multiplication
+fn mul(a: Tensor, b: Tensor) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+# Element-wise division
+fn div(a: Tensor, b: Tensor) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+# Scalar operations
+fn add_scalar(a: Tensor, s: float) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+fn mul_scalar(a: Tensor, s: float) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+# Element-wise power
+fn pow(a: Tensor, p: float) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+# Element-wise square root
+fn sqrt(a: Tensor) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+# Element-wise exponential
+fn exp(a: Tensor) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+# Element-wise natural log
+fn log(a: Tensor) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+# Element-wise absolute value
+fn abs(a: Tensor) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+# Concatenate tensors along axis
+fn concat(tensors: [Tensor], axis: int) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+# Stack tensors along new axis
+fn stack(tensors: [Tensor], axis: int) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+# Split tensor along axis
+fn split(t: Tensor, num_splits: int, axis: int) -> [Tensor] {
+    # TODO: Runtime implementation
+    return []
+}
+
+# Broadcast tensor to shape
+fn broadcast_to(t: Tensor, shape: [int]) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+# ============================================================================
+# Comparison Operations
+# ============================================================================
+
+fn eq(a: Tensor, b: Tensor) -> Tensor {
+    # TODO: Runtime implementation - returns boolean tensor
+    return zeros()
+}
+
+fn ne(a: Tensor, b: Tensor) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+fn lt(a: Tensor, b: Tensor) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+fn gt(a: Tensor, b: Tensor) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+fn le(a: Tensor, b: Tensor) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+fn ge(a: Tensor, b: Tensor) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+# Where - conditional selection
+fn where(condition: Tensor, x: Tensor, y: Tensor) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}
+
+# Clamp values to range
+fn clamp(t: Tensor, min_val: float, max_val: float) -> Tensor {
+    # TODO: Runtime implementation
+    return zeros()
+}

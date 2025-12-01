@@ -100,18 +100,7 @@ fn replace(s: str, old: str, new: str) -> str {
 
 # Check if string contains substring
 fn contains(s: str, substr: str) -> bool {
-    let slen: int = s.len()
-    let sublen: int = substr.len()
-    if sublen > slen { return false }
-    if sublen == 0 { return true }
-    let mut i: int = 0
-    while i <= slen - sublen {
-        if s[i:i+sublen] == substr {
-            return true
-        }
-        i = i + 1
-    }
-    return false
+    return str_find(s, substr) >= 0
 }
 
 # Check if string starts with prefix
@@ -169,18 +158,7 @@ fn count_char(s: str, c: str) -> int {
 
 # Find first index of substring, returns -1 if not found
 fn index_of(s: str, substr: str) -> int {
-    let slen: int = s.len()
-    let sublen: int = substr.len()
-    if sublen > slen { return 0 - 1 }
-    if sublen == 0 { return 0 }
-    let mut i: int = 0
-    while i <= slen - sublen {
-        if s[i:i+sublen] == substr {
-            return i
-        }
-        i = i + 1
-    }
-    return 0 - 1
+    return str_find(s, substr)
 }
 
 # Find last index of substring, returns -1 if not found
@@ -884,7 +862,7 @@ fn unescape_quotes(s: str) -> str {
 # Replace first occurrence of old with new
 fn replace_first(s: str, old: str, new: str) -> str {
     let idx: int = index_of(s, old)
-    if idx < 0 {
+    if idx == 0 - 1 {
         return s
     }
     let before: str = s[:idx]
@@ -924,14 +902,14 @@ fn strip_suffix(s: str, suffix: str) -> str {
 # Check if string is a valid email (basic check)
 fn is_valid_email(s: str) -> bool {
     let at_idx: int = index_of(s, "@")
-    if at_idx < 0 {
+    if at_idx == 0 - 1 {
         return false
     }
     if at_idx == 0 or at_idx == s.len() - 1 {
         return false
     }
     let dot_idx: int = last_index_of(s, ".")
-    if dot_idx < 0 {
+    if dot_idx == 0 - 1 {
         return false
     }
     return dot_idx > at_idx and dot_idx < s.len() - 1
@@ -945,13 +923,13 @@ fn is_valid_url(s: str) -> bool {
 # Extract substring between two delimiters
 fn substring_between(s: str, start_delim: str, end_delim: str) -> ?str {
     let start_idx: int = index_of(s, start_delim)
-    if start_idx < 0 {
+    if start_idx == 0 - 1 {
         return none
     }
     let search_start: int = start_idx + start_delim.len()
     let remaining: str = s[search_start:]
     let end_idx: int = index_of(remaining, end_delim)
-    if end_idx < 0 {
+    if end_idx == 0 - 1 {
         return none
     }
     return some(remaining[:end_idx])

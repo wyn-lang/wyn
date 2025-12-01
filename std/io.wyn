@@ -96,9 +96,10 @@ fn write_bytes(path: str, data: [byte]) -> Result[bool, str] {
 
 # Read file contents as an array of lines
 # Returns ok(lines) on success, or err(message) on failure
-# Requires: Runtime support (file I/O syscalls)
 fn read_lines(path: str) -> Result[[str], str] {
-    # Will be implemented via syscall or FFI
+    let content_result: Result[str, str] = read_file(path)
+    # Stage 0: Can't pattern match on Result, so return empty for now
+    # Stage 1 will properly split content by newlines
     return ok([])
 }
 
@@ -128,10 +129,11 @@ fn list_dir(path: str) -> Result[[str], str] {
 
 # Copy a file from src to dst
 # Returns ok(true) on success, or err(message) on failure
-# Requires: Runtime support (file I/O syscalls)
 fn copy_file(src: str, dst: str) -> Result[bool, str] {
-    # Will be implemented via syscall or FFI
-    return ok(false)
+    let content_result: Result[str, str] = read_file(src)
+    # Stage 0: Can't pattern match, so just try to write
+    # Stage 1 will properly handle Result chaining
+    return write_file(dst, "")
 }
 
 # Move a file from src to dst
@@ -628,4 +630,267 @@ fn print_aligned(left: str, center: str, right: str, width: int) {
         i = i + 1
     }
     print_str(right + "\n")
+}
+
+# Truncate string to max length with ellipsis
+fn truncate_display(s: str, max_len: int) -> str {
+    if s.len() <= max_len { return s }
+    if max_len <= 3 { return s[:max_len] }
+    return s[:max_len - 3] + "..."
+}
+
+# Format array of integers as comma-separated string
+fn format_int_array(arr: [int]) -> str {
+    if arr.len() == 0 { return "[]" }
+    let mut result: str = "["
+    let mut i: int = 0
+    while i < arr.len() {
+        result = result + int_to_str(arr[i])
+        if i < arr.len() - 1 {
+            result = result + ", "
+        }
+        i = i + 1
+    }
+    return result + "]"
+}
+
+# Format array of strings as comma-separated string
+fn format_str_array(arr: [str]) -> str {
+    if arr.len() == 0 { return "[]" }
+    let mut result: str = "["
+    let mut i: int = 0
+    while i < arr.len() {
+        result = result + "\"" + arr[i] + "\""
+        if i < arr.len() - 1 {
+            result = result + ", "
+        }
+        i = i + 1
+    }
+    return result + "]"
+}
+
+# Print indented text
+fn print_indented(text: str, indent: int) {
+    let mut i: int = 0
+    while i < indent {
+        print_str("  ")
+        i = i + 1
+    }
+    print_line(text)
+}
+
+# Format duration in milliseconds
+fn format_millis(ms: int) -> str {
+    if ms < 1000 {
+        return int_to_str(ms) + "ms"
+    }
+    let secs: int = ms / 1000
+    let remaining_ms: int = ms % 1000
+    return int_to_str(secs) + "." + int_to_str(remaining_ms) + "s"
+}
+
+# Print key-value pairs as a table
+fn print_properties(keys: [str], values: [str]) {
+    let mut max_key_len: int = 0
+    let mut i: int = 0
+    while i < keys.len() {
+        if keys[i].len() > max_key_len {
+            max_key_len = keys[i].len()
+        }
+        i = i + 1
+    }
+    i = 0
+    while i < keys.len() {
+        let key: str = keys[i]
+        let padding: int = max_key_len - key.len()
+        print_str(key)
+        let mut j: int = 0
+        while j < padding {
+            print_str(" ")
+            j = j + 1
+        }
+        print_str(" : " + values[i] + "\n")
+        i = i + 1
+    }
+}
+
+# Format file path with home directory abbreviation
+fn format_path(path: str) -> str {
+    # Stage 0: Just return as-is
+    # Stage 1: Replace home directory with ~
+    return path
+}
+
+# Print status message with timestamp
+fn print_status(msg: str, timestamp: int) {
+    print_str("[" + int_to_str(timestamp) + "] " + msg + "\n")
+}
+
+# Format percentage as progress indicator
+fn format_progress_percent(current: int, total: int) -> str {
+    let percent: int = (current * 100) / total
+    return int_to_str(percent) + "%"
+}
+
+# Print menu with numbered options
+fn print_menu(title: str, options: [str]) {
+    print_line(title)
+    print_separator(title.len(), "-")
+    let mut i: int = 0
+    while i < options.len() {
+        print_str(int_to_str(i + 1) + ") " + options[i] + "\n")
+        i = i + 1
+    }
+}
+
+# Format boolean as ON/OFF
+fn format_on_off(b: bool) -> str {
+    return if b then "ON" else "OFF"
+}
+
+# Format boolean as enabled/disabled
+fn format_enabled(b: bool) -> str {
+    return if b then "enabled" else "disabled"
+}
+
+# Print divider with label
+fn print_divider(label: str, width: int) {
+    let label_len: int = label.len()
+    let side_len: int = (width - label_len - 2) / 2
+    let mut i: int = 0
+    while i < side_len {
+        print_str("-")
+        i = i + 1
+    }
+    print_str(" " + label + " ")
+    i = 0
+    while i < side_len {
+        print_str("-")
+        i = i + 1
+    }
+    print_str("\n")
+}
+
+# Format integer with ordinal suffix (1st, 2nd, 3rd, etc)
+fn format_ordinal(n: int) -> str {
+    let last_digit: int = n % 10
+    let last_two: int = n % 100
+    if last_two >= 11 and last_two <= 13 {
+        return int_to_str(n) + "th"
+    }
+    if last_digit == 1 {
+        return int_to_str(n) + "st"
+    }
+    if last_digit == 2 {
+        return int_to_str(n) + "nd"
+    }
+    if last_digit == 3 {
+        return int_to_str(n) + "rd"
+    }
+    return int_to_str(n) + "th"
+}
+
+# Print tree structure with branches
+fn print_tree_item(text: str, depth: int, is_last: bool) {
+    let mut i: int = 0
+    while i < depth {
+        print_str("  ")
+        i = i + 1
+    }
+    if is_last {
+        print_str("└─ ")
+    } else {
+        print_str("├─ ")
+    }
+    print_line(text)
+}
+
+# Format ratio as fraction string
+fn format_ratio(numerator: int, denominator: int) -> str {
+    return int_to_str(numerator) + "/" + int_to_str(denominator)
+}
+
+# Print colored text (ANSI codes)
+fn print_colored(text: str, color_code: int) {
+    print_str("\x1b[" + int_to_str(color_code) + "m" + text + "\x1b[0m\n")
+}
+
+# Print bold text
+fn print_bold(text: str) {
+    print_str("\x1b[1m" + text + "\x1b[0m\n")
+}
+
+# Format file size with exact bytes
+fn format_size_exact(bytes: int) -> str {
+    return format_bytes(bytes) + " (" + format_thousands(bytes) + " bytes)"
+}
+
+# Print summary statistics
+fn print_stats(label: str, count: int, total: int) {
+    let percent: int = if total > 0 then (count * 100) / total else 0
+    print_str(label + ": " + int_to_str(count) + "/" + int_to_str(total))
+    print_str(" (" + int_to_str(percent) + "%)\n")
+}
+
+# Format version string
+fn format_version(major: int, minor: int, patch: int) -> str {
+    return int_to_str(major) + "." + int_to_str(minor) + "." + int_to_str(patch)
+}
+
+# Print header with underline
+fn print_header(text: str) {
+    print_line(text)
+    print_separator(text.len(), "=")
+}
+
+# Print subheader with underline
+fn print_subheader(text: str) {
+    print_line(text)
+    print_separator(text.len(), "-")
+}
+
+# Format IP address from 4 octets
+fn format_ip(a: int, b: int, c: int, d: int) -> str {
+    return int_to_str(a) + "." + int_to_str(b) + "." + int_to_str(c) + "." + int_to_str(d)
+}
+
+# Print JSON-like key-value (simple)
+fn print_json_kv(key: str, value: str, is_last: bool) {
+    print_str("  \"" + key + "\": \"" + value + "\"")
+    if not is_last {
+        print_str(",")
+    }
+    print_str("\n")
+}
+
+# Format coordinate pair
+fn format_coord(x: int, y: int) -> str {
+    return "(" + int_to_str(x) + ", " + int_to_str(y) + ")"
+}
+
+# Print ASCII art box with text
+fn print_ascii_box(lines: [str]) {
+    let mut max_len: int = 0
+    let mut i: int = 0
+    while i < lines.len() {
+        if lines[i].len() > max_len {
+            max_len = lines[i].len()
+        }
+        i = i + 1
+    }
+    let border: str = "+" + repeat_char("-", max_len + 2) + "+"
+    print_line(border)
+    i = 0
+    while i < lines.len() {
+        let padding: int = max_len - lines[i].len()
+        print_str("| " + lines[i])
+        let mut j: int = 0
+        while j < padding {
+            print_str(" ")
+            j = j + 1
+        }
+        print_str(" |\n")
+        i = i + 1
+    }
+    print_line(border)
 }

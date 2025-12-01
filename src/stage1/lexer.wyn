@@ -1,0 +1,285 @@
+# Stage 1 Lexer
+# Uses only Stage 0 compatible features
+
+import ./token
+
+struct Lexer {
+    source: str
+    pos: int
+    line: int
+    col: int
+    len: int
+}
+
+fn lexer_new(source: str) -> Lexer {
+    return Lexer{
+        source: source,
+        pos: 0,
+        line: 1,
+        col: 1,
+        len: len(source)
+    }
+}
+
+fn lexer_peek(lex: Lexer) -> str {
+    if lex.pos >= lex.len {
+        return ""
+    }
+    return substring(lex.source, lex.pos, lex.pos + 1)
+}
+
+fn lexer_peek_next(lex: Lexer) -> str {
+    if lex.pos + 1 >= lex.len {
+        return ""
+    }
+    return substring(lex.source, lex.pos + 1, lex.pos + 2)
+}
+
+fn lexer_advance(mut lex: Lexer) -> str {
+    if lex.pos >= lex.len {
+        return ""
+    }
+    let c: str = substring(lex.source, lex.pos, lex.pos + 1)
+    lex.pos = lex.pos + 1
+    if c == "\n" {
+        lex.line = lex.line + 1
+        lex.col = 1
+    } else {
+        lex.col = lex.col + 1
+    }
+    return c
+}
+
+fn is_whitespace(c: str) -> bool {
+    return c == " " or c == "\t" or c == "\n" or c == "\r"
+}
+
+fn is_digit(c: str) -> bool {
+    let code: int = ord(c)
+    return code >= 48 and code <= 57
+}
+
+fn is_alpha(c: str) -> bool {
+    let code: int = ord(c)
+    return (code >= 65 and code <= 90) or (code >= 97 and code <= 122) or c == "_"
+}
+
+fn is_alnum(c: str) -> bool {
+    return is_alpha(c) or is_digit(c)
+}
+
+fn lexer_skip_whitespace(mut lex: Lexer) {
+    while lex.pos < lex.len {
+        let c: str = lexer_peek(lex)
+        if is_whitespace(c) {
+            lexer_advance(lex)
+        } else if c == "#" {
+            # Skip comment to end of line
+            while lex.pos < lex.len and lexer_peek(lex) != "\n" {
+                lexer_advance(lex)
+            }
+        } else if c == "/" and lexer_peek_next(lex) == "/" {
+            # Skip // comment
+            while lex.pos < lex.len and lexer_peek(lex) != "\n" {
+                lexer_advance(lex)
+            }
+        } else {
+            break
+        }
+    }
+}
+
+fn keyword_or_ident(s: str) -> int {
+    if s == "fn" { return TK_FN }
+    if s == "let" { return TK_LET }
+    if s == "mut" { return TK_MUT }
+    if s == "if" { return TK_IF }
+    if s == "else" { return TK_ELSE }
+    if s == "while" { return TK_WHILE }
+    if s == "for" { return TK_FOR }
+    if s == "in" { return TK_IN }
+    if s == "return" { return TK_RETURN }
+    if s == "struct" { return TK_STRUCT }
+    if s == "enum" { return TK_ENUM }
+    if s == "match" { return TK_MATCH }
+    if s == "true" { return TK_TRUE }
+    if s == "false" { return TK_FALSE }
+    if s == "import" { return TK_IMPORT }
+    if s == "pub" { return TK_PUB }
+    if s == "break" { return TK_BREAK }
+    if s == "continue" { return TK_CONTINUE }
+    if s == "defer" { return TK_DEFER }
+    if s == "and" { return TK_AND }
+    if s == "or" { return TK_OR }
+    if s == "not" { return TK_NOT }
+    return TK_IDENT
+}
+
+fn lexer_next(mut lex: Lexer) -> Token {
+    lexer_skip_whitespace(lex)
+    
+    if lex.pos >= lex.len {
+        return token_new(TK_EOF, "", lex.line, lex.col)
+    }
+    
+    let start_line: int = lex.line
+    let start_col: int = lex.col
+    let c: str = lexer_peek(lex)
+    
+    # Identifiers and keywords
+    if is_alpha(c) {
+        let start: int = lex.pos
+        while lex.pos < lex.len and is_alnum(lexer_peek(lex)) {
+            lexer_advance(lex)
+        }
+        let value: str = substring(lex.source, start, lex.pos)
+        let kind: int = keyword_or_ident(value)
+        return token_new(kind, value, start_line, start_col)
+    }
+    
+    # Numbers
+    if is_digit(c) {
+        let start: int = lex.pos
+        while lex.pos < lex.len and is_digit(lexer_peek(lex)) {
+            lexer_advance(lex)
+        }
+        let kind: int = TK_INT
+        if lexer_peek(lex) == "." and is_digit(lexer_peek_next(lex)) {
+            lexer_advance(lex)
+            while lex.pos < lex.len and is_digit(lexer_peek(lex)) {
+                lexer_advance(lex)
+            }
+            kind = TK_FLOAT
+        }
+        let value: str = substring(lex.source, start, lex.pos)
+        return token_new(kind, value, start_line, start_col)
+    }
+    
+    # Strings
+    if c == "\"" {
+        lexer_advance(lex)
+        let start: int = lex.pos
+        while lex.pos < lex.len and lexer_peek(lex) != "\"" {
+            if lexer_peek(lex) == "\\" {
+                lexer_advance(lex)
+            }
+            lexer_advance(lex)
+        }
+        let value: str = substring(lex.source, start, lex.pos)
+        lexer_advance(lex)  # consume closing "
+        return token_new(TK_STRING, value, start_line, start_col)
+    }
+    
+    # Two-character operators
+    let c2: str = lexer_peek_next(lex)
+    
+    if c == "-" and c2 == ">" {
+        lexer_advance(lex)
+        lexer_advance(lex)
+        return token_new(TK_ARROW, "->", start_line, start_col)
+    }
+    if c == "=" and c2 == "=" {
+        lexer_advance(lex)
+        lexer_advance(lex)
+        return token_new(TK_EQEQ, "==", start_line, start_col)
+    }
+    if c == "!" and c2 == "=" {
+        lexer_advance(lex)
+        lexer_advance(lex)
+        return token_new(TK_NE, "!=", start_line, start_col)
+    }
+    if c == "<" and c2 == "=" {
+        lexer_advance(lex)
+        lexer_advance(lex)
+        return token_new(TK_LE, "<=", start_line, start_col)
+    }
+    if c == ">" and c2 == "=" {
+        lexer_advance(lex)
+        lexer_advance(lex)
+        return token_new(TK_GE, ">=", start_line, start_col)
+    }
+    if c == "." and c2 == "." {
+        lexer_advance(lex)
+        lexer_advance(lex)
+        if lexer_peek(lex) == "=" {
+            lexer_advance(lex)
+            return token_new(TK_DOTDOTEQ, "..=", start_line, start_col)
+        }
+        return token_new(TK_DOTDOT, "..", start_line, start_col)
+    }
+    if c == "?" and c2 == "?" {
+        lexer_advance(lex)
+        lexer_advance(lex)
+        return token_new(TK_QUESTIONQUESTION, "??", start_line, start_col)
+    }
+    if c == "=" and c2 == ">" {
+        lexer_advance(lex)
+        lexer_advance(lex)
+        return token_new(TK_FATARROW, "=>", start_line, start_col)
+    }
+    if c == "+" and c2 == "=" {
+        lexer_advance(lex)
+        lexer_advance(lex)
+        return token_new(TK_PLUSEQ, "+=", start_line, start_col)
+    }
+    if c == "-" and c2 == "=" {
+        lexer_advance(lex)
+        lexer_advance(lex)
+        return token_new(TK_MINUSEQ, "-=", start_line, start_col)
+    }
+    if c == "*" and c2 == "=" {
+        lexer_advance(lex)
+        lexer_advance(lex)
+        return token_new(TK_STAREQ, "*=", start_line, start_col)
+    }
+    if c == "/" and c2 == "=" {
+        lexer_advance(lex)
+        lexer_advance(lex)
+        return token_new(TK_SLASHEQ, "/=", start_line, start_col)
+    }
+    if c == "*" and c2 == "*" {
+        lexer_advance(lex)
+        lexer_advance(lex)
+        return token_new(TK_STARSTAR, "**", start_line, start_col)
+    }
+    if c == "<" and c2 == "<" {
+        lexer_advance(lex)
+        lexer_advance(lex)
+        return token_new(TK_LTLT, "<<", start_line, start_col)
+    }
+    if c == ">" and c2 == ">" {
+        lexer_advance(lex)
+        lexer_advance(lex)
+        return token_new(TK_GTGT, ">>", start_line, start_col)
+    }
+    
+    # Single-character tokens
+    lexer_advance(lex)
+    if c == "(" { return token_new(TK_LPAREN, "(", start_line, start_col) }
+    if c == ")" { return token_new(TK_RPAREN, ")", start_line, start_col) }
+    if c == "{" { return token_new(TK_LBRACE, "{", start_line, start_col) }
+    if c == "}" { return token_new(TK_RBRACE, "}", start_line, start_col) }
+    if c == "[" { return token_new(TK_LBRACKET, "[", start_line, start_col) }
+    if c == "]" { return token_new(TK_RBRACKET, "]", start_line, start_col) }
+    if c == "," { return token_new(TK_COMMA, ",", start_line, start_col) }
+    if c == ":" { return token_new(TK_COLON, ":", start_line, start_col) }
+    if c == ";" { return token_new(TK_SEMICOLON, ";", start_line, start_col) }
+    if c == "." { return token_new(TK_DOT, ".", start_line, start_col) }
+    if c == "=" { return token_new(TK_EQ, "=", start_line, start_col) }
+    if c == "<" { return token_new(TK_LT, "<", start_line, start_col) }
+    if c == ">" { return token_new(TK_GT, ">", start_line, start_col) }
+    if c == "+" { return token_new(TK_PLUS, "+", start_line, start_col) }
+    if c == "-" { return token_new(TK_MINUS, "-", start_line, start_col) }
+    if c == "*" { return token_new(TK_STAR, "*", start_line, start_col) }
+    if c == "/" { return token_new(TK_SLASH, "/", start_line, start_col) }
+    if c == "%" { return token_new(TK_PERCENT, "%", start_line, start_col) }
+    if c == "?" { return token_new(TK_QUESTION, "?", start_line, start_col) }
+    if c == "!" { return token_new(TK_BANG, "!", start_line, start_col) }
+    if c == "|" { return token_new(TK_PIPE, "|", start_line, start_col) }
+    if c == "&" { return token_new(TK_AMP, "&", start_line, start_col) }
+    if c == "^" { return token_new(TK_CARET, "^", start_line, start_col) }
+    if c == "~" { return token_new(TK_TILDE, "~", start_line, start_col) }
+    
+    # Unknown character
+    return token_new(TK_EOF, c, start_line, start_col)
+}

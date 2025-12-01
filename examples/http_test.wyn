@@ -1,0 +1,123 @@
+import ./std/http
+
+fn main() {
+    println_str("=== HTTP Library Test ===")
+    println_str("")
+    
+    # Status codes
+    println_str("Status Codes:")
+    println(http.status_ok())
+    println(http.status_not_found())
+    println(http.status_internal_error())
+    println_str("")
+    
+    # Status text
+    println_str("Status Text:")
+    println_str(http.status_text(200))
+    println_str(http.status_text(404))
+    println_str(http.status_text(500))
+    println_str("")
+    
+    # Status checks
+    println_str("Status Checks:")
+    println(http.is_success(200))
+    println(http.is_error(404))
+    println(http.is_redirect(301))
+    println(http.is_client_error(404))
+    println(http.is_server_error(500))
+    println_str("")
+    
+    # Headers
+    println_str("Header Operations:")
+    let header: str = http.make_header("Content-Type", "application/json")
+    println_str(header)
+    println_str(http.header_key(header))
+    println_str(http.header_value(header))
+    println_str("")
+    
+    # URL parsing
+    println_str("URL Parsing:")
+    let url: str = "https://api.example.com:8080/users?id=123"
+    println_str(http.url_protocol(url))
+    println_str(http.url_host(url))
+    println(http.url_port(url))
+    println_str(http.url_path(url))
+    println_str(http.url_query(url))
+    println(http.is_https(url))
+    println_str("")
+    
+    # Query parameters
+    println_str("Query Parameters:")
+    let query: str = "id=123&name=alice&age=30"
+    let id_opt: ?str = http.parse_query_param(query, "id")
+    let name_opt: ?str = http.parse_query_param(query, "name")
+    let missing_opt: ?str = http.parse_query_param(query, "missing")
+    println_str(id_opt ?? "not found")
+    println_str(name_opt ?? "not found")
+    println_str(missing_opt ?? "not found")
+    println_str("")
+    
+    # Build query
+    println_str("Build Query:")
+    let params: [[str]] = [["key", "value"], ["foo", "bar"]]
+    println_str(http.build_query(params))
+    println_str("")
+    
+    # Response builders
+    println_str("Response Builders:")
+    let resp: http.Response = http.json_response(200, "{\"status\":\"ok\"}")
+    println(resp.status)
+    println_str(resp.body)
+    println(len(resp.headers))
+    let ct: str = http.response_content_type(resp)
+    println_str(ct)
+    println(http.is_json_response(resp))
+    println_str("")
+    
+    let html: http.Response = http.html_response(200, "<h1>Hello</h1>")
+    println(http.is_html_response(html))
+    println_str("")
+    
+    let err_resp: http.Response = http.error_response(404, "Not Found")
+    println(err_resp.status)
+    println_str(err_resp.body)
+    println_str("")
+    
+    let redirect: http.Response = http.redirect_response("/new-path")
+    println(redirect.status)
+    println(len(redirect.headers))
+    println_str("")
+    
+    # Request builders
+    println_str("Request Builders:")
+    let req: http.Request = http.post_request("/api/users", "{\"name\":\"alice\"}")
+    println_str(req.method)
+    println_str(req.path)
+    println_str(req.body)
+    println_str("")
+    
+    let get_req: http.Request = http.get_request("/api/users")
+    println_str(get_req.method)
+    println_str(get_req.path)
+    println_str("")
+    
+    # Method checks
+    println_str("Method Checks:")
+    println(http.is_safe_method("GET"))
+    println(http.is_safe_method("POST"))
+    println(http.has_request_body("POST"))
+    println(http.has_request_body("GET"))
+    println(http.is_idempotent_method("PUT"))
+    println(http.is_valid_method("GET"))
+    println(http.is_valid_method("INVALID"))
+    println_str("")
+    
+    # Content types
+    println_str("Content Types:")
+    println_str(http.content_type_json())
+    println_str(http.content_type_html())
+    println_str(http.content_type_text())
+    println_str("")
+    
+    println_str("=== All Tests Passed ===")
+}

@@ -1,0 +1,13 @@
+# examples/compress_demo.wyn
+# Simple RLE demonstration
+
+fn main() {
+    print("RLE Compression Demo")
+    print("compress.wyn provides:")
+    print("- rle_encode(s: str) -> str")
+    print("- rle_decode(s: str) -> str")
+    print("- count_chars(s: str) -> int")
+    print("- compress_ratio(original: str, compressed: str) -> float")
+    print("")
+    print("Example: aaabbc encodes to 3a2b1c")
+}
