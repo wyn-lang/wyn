@@ -635,6 +635,7 @@ struct Expr {
         struct { char** keys; Expr** values; int count; } map;
         struct { char name[MAX_IDENT_LEN]; char fields[MAX_FIELDS][MAX_IDENT_LEN]; Expr* values[MAX_FIELDS]; int count; Type** type_args; int type_arg_count; } struct_lit;
         struct { Expr* cond; Expr* then_expr; Expr* else_expr; } if_expr;
+        struct { Expr* value; Expr** patterns; Expr** arms; int arm_count; char bindings[64][MAX_IDENT_LEN]; Type** binding_types; } match_expr;
         struct { Expr* value; } some;  // also used for ok/err
         struct { Expr* value; Expr* default_val; } default_expr;
         struct { Expr* object; Expr* start; Expr* end; Expr* step; } slice;
@@ -1151,7 +1152,10 @@ static Expr* parse_primary(Parser* p) {
                                  (next.kind == TOK_IDENT);
             if (is_struct_lit && next.kind == TOK_IDENT) {
                 parser_advance(p);  // consume ident
-                is_struct_lit = (p->current.kind == TOK_COLON);
+                // Field shorthand: {field} or {field, ...} or {field: value}
+                is_struct_lit = (p->current.kind == TOK_COLON || 
+                                 p->current.kind == TOK_COMMA ||
+                                 p->current.kind == TOK_RBRACE);
             }
             
             // Restore lexer state
@@ -1170,9 +1174,15 @@ static Expr* parse_primary(Parser* p) {
                 if (!parser_check(p, TOK_RBRACE)) {
                     do {
                         Token fld = parser_expect(p, TOK_IDENT, "field name");
-                        parser_expect(p, TOK_COLON, ":");
                         strcpy(e->struct_lit.fields[e->struct_lit.count], fld.ident);
-                        e->struct_lit.values[e->struct_lit.count] = parse_expr(p);
+                        if (parser_match(p, TOK_COLON)) {
+                            e->struct_lit.values[e->struct_lit.count] = parse_expr(p);
+                        } else {
+                            // Field shorthand: {field} means {field: field}
+                            Expr* ident = new_expr(EXPR_IDENT, fld.line, fld.column);
+                            strcpy(ident->ident, fld.ident);
+                            e->struct_lit.values[e->struct_lit.count] = ident;
+                        }
                         e->struct_lit.count++;
                     } while (parser_match(p, TOK_COMMA) && !parser_check(p, TOK_RBRACE));
                 }
@@ -1251,6 +1261,32 @@ static Expr* parse_primary(Parser* p) {
         e->if_expr.then_expr = parse_expr(p);
         parser_expect(p, TOK_ELSE, "else");
         e->if_expr.else_expr = parse_expr(p);
+        return e;
+    }
+    
+    // Match expression
+    if (parser_match(p, TOK_MATCH)) {
+        Expr* e = new_expr(EXPR_MATCH, line, col);
+        e->match_expr.value = parse_expr(p);
+        e->match_expr.patterns = malloc(sizeof(Expr*) * 64);
+        e->match_expr.arms = malloc(sizeof(Expr*) * 64);
+        e->match_expr.binding_types = malloc(sizeof(Type*) * 64);
+        e->match_expr.arm_count = 0;
+        parser_expect(p, TOK_LBRACE, "{");
+        while (!parser_check(p, TOK_RBRACE) && !parser_check(p, TOK_EOF)) {
+            Expr* pattern = parse_expr(p);
+            e->match_expr.patterns[e->match_expr.arm_count] = pattern;
+            e->match_expr.bindings[e->match_expr.arm_count][0] = '\0';
+            e->match_expr.binding_types[e->match_expr.arm_count] = NULL;
+            if ((pattern->kind == EXPR_SOME || pattern->kind == EXPR_OK || pattern->kind == EXPR_ERR) &&
+                pattern->some.value && pattern->some.value->kind == EXPR_IDENT) {
+                strcpy(e->match_expr.bindings[e->match_expr.arm_count], pattern->some.value->ident);
+            }
+            parser_expect(p, TOK_FATARROW, "=>");
+            e->match_expr.arms[e->match_expr.arm_count] = parse_expr(p);
+            e->match_expr.arm_count++;
+        }
+        parser_expect(p, TOK_RBRACE, "}");
         return e;
     }
     
@@ -2607,6 +2643,19 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
         case EXPR_DEFAULT: {
             tc_check_expr(tc, e->default_expr.value);
             return tc_check_expr(tc, e->default_expr.default_val);
+        }
+        
+        case EXPR_MATCH: {
+            tc_check_expr(tc, e->match_expr.value);
+            Type* result_type = NULL;
+            for (int i = 0; i < e->match_expr.arm_count; i++) {
+                tc_check_expr(tc, e->match_expr.patterns[i]);
+                Type* arm_type = tc_check_expr(tc, e->match_expr.arms[i]);
+                if (result_type == NULL) {
+                    result_type = arm_type;
+                }
+            }
+            return result_type ? result_type : new_type(TYPE_ANY);
         }
         
         default: return new_type(TYPE_ANY);
@@ -4179,6 +4228,32 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_emit(cg, "L%d:", end_lbl);
                 break;
             }
+            case EXPR_MATCH: {
+                int end_lbl = cg_new_label(cg);
+                cg_expr(cg, e->match_expr.value);
+                cg_emit(cg, "    pushq %%rax");
+                for (int i = 0; i < e->match_expr.arm_count; i++) {
+                    int next_lbl = cg_new_label(cg);
+                    Expr* pat = e->match_expr.patterns[i];
+                    if (pat->kind == EXPR_IDENT && strcmp(pat->ident, "_") == 0) {
+                        cg_emit(cg, "    popq %%rax");
+                        cg_expr(cg, e->match_expr.arms[i]);
+                        cg_emit(cg, "    jmp L%d", end_lbl);
+                    } else {
+                        cg_expr(cg, pat);
+                        cg_emit(cg, "    movq (%%rsp), %%rcx");
+                        cg_emit(cg, "    cmpq %%rax, %%rcx");
+                        cg_emit(cg, "    jne L%d", next_lbl);
+                        cg_emit(cg, "    popq %%rax");
+                        cg_expr(cg, e->match_expr.arms[i]);
+                        cg_emit(cg, "    jmp L%d", end_lbl);
+                        cg_emit(cg, "L%d:", next_lbl);
+                    }
+                }
+                cg_emit(cg, "    popq %%rax");
+                cg_emit(cg, "L%d:", end_lbl);
+                break;
+            }
             case EXPR_LAMBDA: {
                 // Store lambda for later emission, return function pointer
                 cg->lambdas[cg->lambda_count++] = e;
@@ -5377,6 +5452,33 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             cg_emit(cg, "    b L%d", end_lbl);
             cg_emit(cg, "L%d:", else_lbl);
             cg_expr(cg, e->if_expr.else_expr);
+            cg_emit(cg, "L%d:", end_lbl);
+            break;
+        }
+        
+        case EXPR_MATCH: {
+            int end_lbl = cg_new_label(cg);
+            cg_expr(cg, e->match_expr.value);
+            cg_emit(cg, "    str x0, [sp, #-16]!");
+            for (int i = 0; i < e->match_expr.arm_count; i++) {
+                int next_lbl = cg_new_label(cg);
+                Expr* pat = e->match_expr.patterns[i];
+                if (pat->kind == EXPR_IDENT && strcmp(pat->ident, "_") == 0) {
+                    cg_emit(cg, "    ldr x0, [sp], #16");
+                    cg_expr(cg, e->match_expr.arms[i]);
+                    cg_emit(cg, "    b L%d", end_lbl);
+                } else {
+                    cg_expr(cg, pat);
+                    cg_emit(cg, "    ldr x1, [sp]");
+                    cg_emit(cg, "    cmp x0, x1");
+                    cg_emit(cg, "    b.ne L%d", next_lbl);
+                    cg_emit(cg, "    ldr x0, [sp], #16");
+                    cg_expr(cg, e->match_expr.arms[i]);
+                    cg_emit(cg, "    b L%d", end_lbl);
+                    cg_emit(cg, "L%d:", next_lbl);
+                }
+            }
+            cg_emit(cg, "    ldr x0, [sp], #16");
             cg_emit(cg, "L%d:", end_lbl);
             break;
         }
