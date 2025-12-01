@@ -1126,24 +1126,48 @@ static Expr* parse_primary(Parser* p) {
         
         // Check for struct literal: Name { field: value, ... } or Name[T] { ... }
         // Only if name starts with uppercase (struct naming convention)
+        // AND the next tokens look like a struct literal (ident: or })
         if (parser_check(p, TOK_LBRACE) && name[0] >= 'A' && name[0] <= 'Z') {
-            parser_advance(p);
-            Expr* e = new_expr(EXPR_STRUCT, line, col);
-            strcpy(e->struct_lit.name, name);
-            e->struct_lit.count = 0;
-            e->struct_lit.type_args = type_args;
-            e->struct_lit.type_arg_count = type_arg_count;
-            if (!parser_check(p, TOK_RBRACE)) {
-                do {
-                    Token fld = parser_expect(p, TOK_IDENT, "field name");
-                    parser_expect(p, TOK_COLON, ":");
-                    strcpy(e->struct_lit.fields[e->struct_lit.count], fld.ident);
-                    e->struct_lit.values[e->struct_lit.count] = parse_expr(p);
-                    e->struct_lit.count++;
-                } while (parser_match(p, TOK_COMMA) && !parser_check(p, TOK_RBRACE));
+            // Save lexer state to peek ahead
+            int saved_pos = p->lexer->pos;
+            int saved_line = p->lexer->line;
+            int saved_col = p->lexer->column;
+            Token saved_current = p->current;
+            
+            parser_advance(p);  // consume {
+            Token next = p->current;
+            bool is_struct_lit = (next.kind == TOK_RBRACE) ||  // empty struct
+                                 (next.kind == TOK_IDENT);
+            if (is_struct_lit && next.kind == TOK_IDENT) {
+                parser_advance(p);  // consume ident
+                is_struct_lit = (p->current.kind == TOK_COLON);
             }
-            parser_expect(p, TOK_RBRACE, "}");
-            return e;
+            
+            // Restore lexer state
+            p->lexer->pos = saved_pos;
+            p->lexer->line = saved_line;
+            p->lexer->column = saved_col;
+            p->current = saved_current;
+            
+            if (is_struct_lit) {
+                parser_advance(p);  // consume { again
+                Expr* e = new_expr(EXPR_STRUCT, line, col);
+                strcpy(e->struct_lit.name, name);
+                e->struct_lit.count = 0;
+                e->struct_lit.type_args = type_args;
+                e->struct_lit.type_arg_count = type_arg_count;
+                if (!parser_check(p, TOK_RBRACE)) {
+                    do {
+                        Token fld = parser_expect(p, TOK_IDENT, "field name");
+                        parser_expect(p, TOK_COLON, ":");
+                        strcpy(e->struct_lit.fields[e->struct_lit.count], fld.ident);
+                        e->struct_lit.values[e->struct_lit.count] = parse_expr(p);
+                        e->struct_lit.count++;
+                    } while (parser_match(p, TOK_COMMA) && !parser_check(p, TOK_RBRACE));
+                }
+                parser_expect(p, TOK_RBRACE, "}");
+                return e;
+            }
         }
         
         Expr* e = new_expr(EXPR_IDENT, line, col);

@@ -100,12 +100,12 @@ This document tracks which features from SPEC.md sections 1-5 are implemented in
 
 | Module | Status | Notes |
 |--------|--------|-------|
-| io | ⚠️ | Needs match binding fixes |
-| fs | ✅ | 50 functions |
-| net | ✅ | 34 functions |
-| http | ✅ | 75 functions |
-| json | ✅ | 50+ functions |
-| os | ⚠️ | Needs match binding fixes |
+| io | ✅ | 59 | Clean |
+| fs | ✅ | 50 | Clean |
+| net | ✅ | 34 | Clean |
+| http | ✅ | 75 | Clean |
+| json | ✅ | 50+ | Clean |
+| os | ✅ | 20 | Clean |
 | time | ✅ | 60+ functions |
 | math | ✅ | 80+ functions |
 | crypto | ✅ | 40+ functions |
