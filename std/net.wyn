@@ -16,35 +16,45 @@ fn tcp_connect(host: str, port: int) -> Result[Socket, str] {
 # Returns a listening Socket on success, or an error message on failure
 # Requires: Runtime support for socket syscalls
 fn tcp_listen(host: str, port: int) -> Result[Socket, str] {
-    return err("not implemented")
+    let fd: int = tcp_listen(port)
+    if fd < 0 {
+        return err("failed to listen on port")
+    }
+    return ok(Socket { fd: fd })
 }
 
 # Accept an incoming connection on a listening socket
 # Returns a new Socket for the connection, or an error message on failure
 # Requires: Runtime support for socket syscalls
 fn accept(socket: Socket) -> Result[Socket, str] {
-    return err("not implemented")
+    let fd: int = tcp_accept(socket.fd)
+    if fd < 0 {
+        return err("failed to accept connection")
+    }
+    return ok(Socket { fd: fd })
 }
 
 # Send data through a TCP socket
 # Returns the number of bytes sent, or an error message on failure
-# Requires: Runtime support for socket syscalls
 fn send(socket: Socket, data: str) -> Result[int, str] {
-    return err("not implemented")
+    let sent: int = tcp_send(socket.fd, data)
+    if sent < 0 {
+        return err("send failed")
+    }
+    return ok(sent)
 }
 
 # Receive up to size bytes from a TCP socket
 # Returns the received data, or an error message on failure
-# Requires: Runtime support for socket syscalls
 fn recv(socket: Socket, size: int) -> Result[str, str] {
-    return err("not implemented")
+    let data: str = tcp_recv(socket.fd, size)
+    return ok(data)
 }
 
 # Close a socket and release its resources
-# Returns unit on success, or an error message on failure
-# Requires: Runtime support for socket syscalls
 fn close(socket: Socket) -> Result[(), str] {
-    return err("not implemented")
+    tcp_close(socket.fd)
+    return ok(())
 }
 
 # Bind a UDP socket to the given host and port

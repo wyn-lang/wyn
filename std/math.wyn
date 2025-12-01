@@ -44,21 +44,7 @@ fn sqrt(n: float) -> float {
     if n < 0.0 {
         return 0.0
     }
-    if n == 0.0 {
-        return 0.0
-    }
-    
-    let mut x: float = n
-    let mut prev: float = 0.0
-    let mut i: int = 0
-    
-    while i < 20 {
-        prev = x
-        x = (x + n / x) / 2.0
-        i = i + 1
-    }
-    
-    return x
+    return sqrtf(n)
 }
 
 # Round down to nearest integer (toward negative infinity)
@@ -94,27 +80,18 @@ fn round(n: float) -> int {
 }
 
 # Sine function
-# Requires: Runtime support for transcendental functions
 fn sin(x: float) -> float {
-    # Requires hardware/library support for trigonometric functions
-    # Will be implemented via FFI or compiler builtin
-    return 0.0
+    return sinf(x)
 }
 
 # Cosine function
-# Requires: Runtime support for transcendental functions
 fn cos(x: float) -> float {
-    # Requires hardware/library support for trigonometric functions
-    # Will be implemented via FFI or compiler builtin
-    return 0.0
+    return cosf(x)
 }
 
 # Tangent function
-# Requires: Runtime support for transcendental functions
 fn tan(x: float) -> float {
-    # Requires hardware/library support for trigonometric functions
-    # Will be implemented via FFI or compiler builtin
-    return 0.0
+    return tanf(x)
 }
 
 # Arcsine function
@@ -166,11 +143,8 @@ fn log10(x: float) -> float {
 }
 
 # Exponential function (e^x)
-# Requires: Runtime support for transcendental functions
 fn exp(x: float) -> float {
-    # Requires hardware/library support for exponential
-    # Will be implemented via FFI or compiler builtin
-    return 0.0
+    return expf(x)
 }
 
 # Return absolute value of a float
@@ -862,20 +836,10 @@ fn cbrt(n: float) -> float {
     return x
 }
 
-# Natural logarithm approximation (ln(x))
+# Natural logarithm (ln(x))
 fn ln(x: float) -> float {
     if x <= 0.0 { return 0.0 }
-    let mut result: float = 0.0
-    let mut y: float = (x - 1.0) / (x + 1.0)
-    let mut y_sq: float = y * y
-    let mut term: float = y
-    let mut i: int = 1
-    while i < 20 {
-        result = result + term / i.to_float()
-        term = term * y_sq
-        i = i + 2
-    }
-    return 2.0 * result
+    return logf(x)
 }
 
 # Logarithm base 2
@@ -887,7 +851,7 @@ fn log2(x: float) -> float {
 fn pow_float(base: float, exp: float) -> float {
     if exp == 0.0 { return 1.0 }
     if base == 0.0 { return 0.0 }
-    return exp(exp * ln(base))
+    return powf(base, exp)
 }
 
 # Hyperbolic sine

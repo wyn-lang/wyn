@@ -107,9 +107,12 @@ fn copy(src: str, dst: str) -> Result[(), str] {
 }
 
 # Move/rename file from src to dst
-# Requires: Runtime support for filesystem syscalls
 fn move(src: str, dst: str) -> Result[(), str] {
-    return err("not implemented")
+    let r: int = rename_file(src, dst)
+    if r != 0 {
+        return err("rename failed")
+    }
+    return ok(())
 }
 
 # --- File Metadata ---

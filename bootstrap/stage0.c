@@ -959,6 +959,84 @@ static Type* parse_type(Parser* p) {
     return new_type(TYPE_ANY);
 }
 
+// Helper to check if string has interpolation {expr}
+static bool has_interpolation(const char* s) {
+    for (int i = 0; s[i]; i++) {
+        if (s[i] == '{' && s[i+1] && s[i+1] != '{') return true;
+    }
+    return false;
+}
+
+// Parse interpolated string into concatenation expression
+static Expr* parse_interpolated_string(Parser* p, const char* str, int line, int col) {
+    Expr* result = NULL;
+    char buf[MAX_STRING_LEN];
+    int bi = 0;
+    
+    for (int i = 0; str[i]; i++) {
+        if (str[i] == '{' && str[i+1] && str[i+1] != '{') {
+            // Flush literal part
+            if (bi > 0) {
+                buf[bi] = '\0';
+                Expr* lit = new_expr(EXPR_STRING, line, col);
+                strcpy(lit->str_val, buf);
+                if (!result) result = lit;
+                else {
+                    Expr* cat = new_expr(EXPR_BINARY, line, col);
+                    cat->binary.op = TOK_PLUS;
+                    cat->binary.left = result;
+                    cat->binary.right = lit;
+                    result = cat;
+                }
+                bi = 0;
+            }
+            // Extract variable name
+            i++;
+            char var[256];
+            int vi = 0;
+            while (str[i] && str[i] != '}') {
+                var[vi++] = str[i++];
+            }
+            var[vi] = '\0';
+            // Create to_string(var) call
+            Expr* varexpr = new_expr(EXPR_IDENT, line, col);
+            strcpy(varexpr->ident, var);
+            Expr* call = new_expr(EXPR_CALL, line, col);
+            Expr* fn = new_expr(EXPR_IDENT, line, col);
+            strcpy(fn->ident, "to_string");
+            call->call.func = fn;
+            call->call.args = malloc(sizeof(Expr*));
+            call->call.args[0] = varexpr;
+            call->call.arg_count = 1;
+            if (!result) result = call;
+            else {
+                Expr* cat = new_expr(EXPR_BINARY, line, col);
+                cat->binary.op = TOK_PLUS;
+                cat->binary.left = result;
+                cat->binary.right = call;
+                result = cat;
+            }
+        } else {
+            buf[bi++] = str[i];
+        }
+    }
+    // Flush remaining literal
+    if (bi > 0) {
+        buf[bi] = '\0';
+        Expr* lit = new_expr(EXPR_STRING, line, col);
+        strcpy(lit->str_val, buf);
+        if (!result) result = lit;
+        else {
+            Expr* cat = new_expr(EXPR_BINARY, line, col);
+            cat->binary.op = TOK_PLUS;
+            cat->binary.left = result;
+            cat->binary.right = lit;
+            result = cat;
+        }
+    }
+    return result ? result : new_expr(EXPR_STRING, line, col);
+}
+
 // Expression parsing - precedence climbing
 static Expr* parse_primary(Parser* p) {
     int line = p->current.line, col = p->current.column;
@@ -977,9 +1055,14 @@ static Expr* parse_primary(Parser* p) {
         return e;
     }
     if (parser_check(p, TOK_STRING) || parser_check(p, TOK_RAW_STRING) || parser_check(p, TOK_MULTILINE_STRING)) {
-        Expr* e = new_expr(EXPR_STRING, line, col);
-        strcpy(e->str_val, p->current.str_val);
+        char str[MAX_STRING_LEN];
+        strcpy(str, p->current.str_val);
         parser_advance(p);
+        if (has_interpolation(str)) {
+            return parse_interpolated_string(p, str, line, col);
+        }
+        Expr* e = new_expr(EXPR_STRING, line, col);
+        strcpy(e->str_val, str);
         return e;
     }
     if (parser_match(p, TOK_TRUE)) {
@@ -2191,7 +2274,7 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     strcmp(e->ident, "println") == 0 || strcmp(e->ident, "println_str") == 0 ||
                     strcmp(e->ident, "print_float") == 0 || strcmp(e->ident, "print_char") == 0 ||
                     strcmp(e->ident, "print_newline") == 0 || strcmp(e->ident, "flush") == 0 ||
-                    strcmp(e->ident, "assert") == 0 || strcmp(e->ident, "sqrt") == 0 || 
+                    strcmp(e->ident, "assert") == 0 ||
                     strcmp(e->ident, "len") == 0 || strcmp(e->ident, "exit") == 0 ||
                     strcmp(e->ident, "abs") == 0 || strcmp(e->ident, "min") == 0 ||
                     strcmp(e->ident, "max") == 0 || strcmp(e->ident, "int_to_str") == 0 ||
@@ -2208,7 +2291,15 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     strcmp(e->ident, "sleep_ms") == 0 || strcmp(e->ident, "tcp_connect") == 0 ||
                     strcmp(e->ident, "tcp_close") == 0 || strcmp(e->ident, "char_at") == 0 ||
                     strcmp(e->ident, "str_find") == 0 || strcmp(e->ident, "str_cmp") == 0 ||
-                    strcmp(e->ident, "tcp_send") == 0 || strcmp(e->ident, "tcp_recv") == 0) {
+                    strcmp(e->ident, "tcp_send") == 0 || strcmp(e->ident, "tcp_recv") == 0 ||
+                    strcmp(e->ident, "tcp_listen") == 0 || strcmp(e->ident, "tcp_accept") == 0 ||
+                    strcmp(e->ident, "getcwd") == 0 || strcmp(e->ident, "chdir") == 0 ||
+                    strcmp(e->ident, "sqrtf") == 0 || strcmp(e->ident, "sinf") == 0 ||
+                    strcmp(e->ident, "cosf") == 0 || strcmp(e->ident, "tanf") == 0 ||
+                    strcmp(e->ident, "logf") == 0 || strcmp(e->ident, "expf") == 0 ||
+                    strcmp(e->ident, "powf") == 0 || strcmp(e->ident, "floorf") == 0 ||
+                    strcmp(e->ident, "ceilf") == 0 || strcmp(e->ident, "getpid") == 0 ||
+                    strcmp(e->ident, "rename_file") == 0 || strcmp(e->ident, "to_string") == 0) {
                     return new_type(TYPE_FUNCTION);
                 }
                 tc_error(tc, e->line, e->column, "undefined variable '%s'", e->ident);
@@ -2819,14 +2910,21 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 break;
             }
             case EXPR_BINARY: {
-                // Check for string concatenation - at least one side must be a string literal
-                // or a binary+ that contains a string literal (for chained concat)
+                // Check for string concatenation
                 if (e->binary.op == TOK_PLUS) {
                     bool left_is_str = (e->binary.left->kind == EXPR_STRING);
                     bool right_is_str = (e->binary.right->kind == EXPR_STRING);
+                    // Check if variables are string type
+                    if (e->binary.left->kind == EXPR_IDENT) {
+                        Type* t = cg_local_type(cg, e->binary.left->ident);
+                        if (t && t->kind == TYPE_STR) left_is_str = true;
+                    }
+                    if (e->binary.right->kind == EXPR_IDENT) {
+                        Type* t = cg_local_type(cg, e->binary.right->ident);
+                        if (t && t->kind == TYPE_STR) right_is_str = true;
+                    }
                     // Check for chained concat: (str + str) + str
                     if (e->binary.left->kind == EXPR_BINARY && e->binary.left->binary.op == TOK_PLUS) {
-                        // Recursively check if left subtree contains a string
                         Expr* l = e->binary.left;
                         while (l->kind == EXPR_BINARY && l->binary.op == TOK_PLUS) {
                             if (l->binary.right->kind == EXPR_STRING) { left_is_str = true; break; }
@@ -3344,6 +3442,149 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_emit(cg, "    movq %%r12, %%rax");  // return buf
                     break;
                 }
+                // Handle built-in tcp_listen(port) - returns listening fd
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "tcp_listen") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movq %%rax, %%rdi");
+                    cg_emit(cg, "    callq %s_wyn_tcp_listen", cg_sym_prefix(cg));
+                    break;
+                }
+                // Handle built-in tcp_accept(fd) - returns client fd
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "tcp_accept") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movl %%eax, %%edi");
+                    cg_emit(cg, "    xorl %%esi, %%esi");  // NULL
+                    cg_emit(cg, "    xorl %%edx, %%edx");  // NULL
+                    cg_emit(cg, "    callq %saccept", cg_sym_prefix(cg));
+                    break;
+                }
+                // Handle built-in getcwd() - returns current directory
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "getcwd") == 0) {
+                    cg_emit(cg, "    movq $1024, %%rdi");
+                    cg_emit(cg, "    callq %smalloc", cg_sym_prefix(cg));
+                    cg_emit(cg, "    movq %%rax, %%rdi");
+                    cg_emit(cg, "    movq $1024, %%rsi");
+                    cg_emit(cg, "    callq %sgetcwd", cg_sym_prefix(cg));
+                    break;
+                }
+                // Handle built-in chdir(path) - change directory, returns 0 on success
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "chdir") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movq %%rax, %%rdi");
+                    cg_emit(cg, "    callq %schdir", cg_sym_prefix(cg));
+                    break;
+                }
+                // Handle built-in sqrt(float) -> float
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "sqrtf") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movq %%rax, %%xmm0");
+                    cg_emit(cg, "    sqrtsd %%xmm0, %%xmm0");
+                    cg_emit(cg, "    movq %%xmm0, %%rax");
+                    break;
+                }
+                // Handle built-in sin(float) -> float
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "sinf") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movq %%rax, %%xmm0");
+                    cg_emit(cg, "    callq %ssin", cg_sym_prefix(cg));
+                    cg_emit(cg, "    movq %%xmm0, %%rax");
+                    break;
+                }
+                // Handle built-in cos(float) -> float
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "cosf") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movq %%rax, %%xmm0");
+                    cg_emit(cg, "    callq %scos", cg_sym_prefix(cg));
+                    cg_emit(cg, "    movq %%xmm0, %%rax");
+                    break;
+                }
+                // Handle built-in tan(float) -> float
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "tanf") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movq %%rax, %%xmm0");
+                    cg_emit(cg, "    callq %stan", cg_sym_prefix(cg));
+                    cg_emit(cg, "    movq %%xmm0, %%rax");
+                    break;
+                }
+                // Handle built-in log(float) -> float (natural log)
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "logf") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movq %%rax, %%xmm0");
+                    cg_emit(cg, "    callq %slog", cg_sym_prefix(cg));
+                    cg_emit(cg, "    movq %%xmm0, %%rax");
+                    break;
+                }
+                // Handle built-in exp(float) -> float
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "expf") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movq %%rax, %%xmm0");
+                    cg_emit(cg, "    callq %sexp", cg_sym_prefix(cg));
+                    cg_emit(cg, "    movq %%xmm0, %%rax");
+                    break;
+                }
+                // Handle built-in powf(base, exp) -> float
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "powf") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movq %%rax, %%xmm0");
+                    cg_expr(cg, e->call.args[1]);
+                    cg_emit(cg, "    movq %%rax, %%xmm1");
+                    cg_emit(cg, "    callq %spow", cg_sym_prefix(cg));
+                    cg_emit(cg, "    movq %%xmm0, %%rax");
+                    break;
+                }
+                // Handle built-in floor(float) -> float
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "floorf") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movq %%rax, %%xmm0");
+                    cg_emit(cg, "    roundsd $1, %%xmm0, %%xmm0");
+                    cg_emit(cg, "    movq %%xmm0, %%rax");
+                    break;
+                }
+                // Handle built-in ceil(float) -> float
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "ceilf") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movq %%rax, %%xmm0");
+                    cg_emit(cg, "    roundsd $2, %%xmm0, %%xmm0");
+                    cg_emit(cg, "    movq %%xmm0, %%rax");
+                    break;
+                }
+                // Handle built-in getpid() -> int
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "getpid") == 0) {
+                    cg_emit(cg, "    callq %sgetpid", cg_sym_prefix(cg));
+                    break;
+                }
+                // Handle built-in rename_file(old, new) -> int (0 on success)
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "rename_file") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    pushq %%rax");
+                    cg_expr(cg, e->call.args[1]);
+                    cg_emit(cg, "    movq %%rax, %%rsi");
+                    cg_emit(cg, "    popq %%rdi");
+                    cg_emit(cg, "    callq %srename", cg_sym_prefix(cg));
+                    break;
+                }
+                // Handle built-in to_string(val) - convert to string for interpolation
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "to_string") == 0) {
+                    Expr* arg = e->call.args[0];
+                    Type* t = cg_local_type(cg, arg->kind == EXPR_IDENT ? arg->ident : NULL);
+                    cg_expr(cg, arg);
+                    // If it's a string type, just return it
+                    if (t && t->kind == TYPE_STR) {
+                        break;  // already a string
+                    }
+                    // Allocate buffer and convert int to string
+                    cg_emit(cg, "    pushq %%rax");  // save value
+                    cg_emit(cg, "    movq $24, %%rdi");
+                    cg_emit(cg, "    callq %smalloc", cg_sym_prefix(cg));
+                    cg_emit(cg, "    movq %%rax, %%rdi");  // buffer
+                    cg_emit(cg, "    leaq L_.itsfmt(%%rip), %%rsi");  // format
+                    cg_emit(cg, "    popq %%rdx");  // value
+                    cg_emit(cg, "    xorl %%eax, %%eax");
+                    cg_emit(cg, "    pushq %%rdi");  // save buffer ptr
+                    cg_emit(cg, "    callq %ssprintf", cg_sym_prefix(cg));
+                    cg_emit(cg, "    popq %%rax");  // return buffer ptr
+                    break;
+                }
                 if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "assert") == 0) {
                     int ok_lbl = cg_new_label(cg);
                     cg_expr(cg, e->call.args[0]);
@@ -3839,10 +4080,19 @@ static void cg_expr(CodeGen* cg, Expr* e) {
         }
         
         case EXPR_BINARY: {
-            // Check for string concatenation - at least one side must be a string literal
+            // Check for string concatenation
             if (e->binary.op == TOK_PLUS) {
                 bool left_is_str = (e->binary.left->kind == EXPR_STRING);
                 bool right_is_str = (e->binary.right->kind == EXPR_STRING);
+                // Check if variables are string type
+                if (e->binary.left->kind == EXPR_IDENT) {
+                    Type* t = cg_local_type(cg, e->binary.left->ident);
+                    if (t && t->kind == TYPE_STR) left_is_str = true;
+                }
+                if (e->binary.right->kind == EXPR_IDENT) {
+                    Type* t = cg_local_type(cg, e->binary.right->ident);
+                    if (t && t->kind == TYPE_STR) right_is_str = true;
+                }
                 // Check for chained concat: (str + str) + str
                 if (e->binary.left->kind == EXPR_BINARY && e->binary.left->binary.op == TOK_PLUS) {
                     Expr* l = e->binary.left;
@@ -4385,6 +4635,146 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_emit(cg, "    bl %srecv", cg_sym_prefix(cg));
                 cg_emit(cg, "    strb wzr, [x19, x0]");  // null terminate
                 cg_emit(cg, "    mov x0, x19");  // return buf
+                break;
+            }
+            // Handle built-in tcp_listen(port) - returns listening fd
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "tcp_listen") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    bl %s_wyn_tcp_listen", cg_sym_prefix(cg));
+                break;
+            }
+            // Handle built-in tcp_accept(fd) - returns client fd
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "tcp_accept") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    mov x1, #0");  // NULL
+                cg_emit(cg, "    mov x2, #0");  // NULL
+                cg_emit(cg, "    bl %saccept", cg_sym_prefix(cg));
+                break;
+            }
+            // Handle built-in getcwd() - returns current directory
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "getcwd") == 0) {
+                cg_emit(cg, "    mov x0, #1024");
+                cg_emit(cg, "    bl %smalloc", cg_sym_prefix(cg));
+                cg_emit(cg, "    mov x1, #1024");
+                cg_emit(cg, "    bl %sgetcwd", cg_sym_prefix(cg));
+                break;
+            }
+            // Handle built-in chdir(path) - change directory, returns 0 on success
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "chdir") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    bl %schdir", cg_sym_prefix(cg));
+                break;
+            }
+            // Handle built-in sqrt(float) -> float
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "sqrtf") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    fmov d0, x0");
+                cg_emit(cg, "    fsqrt d0, d0");
+                cg_emit(cg, "    fmov x0, d0");
+                break;
+            }
+            // Handle built-in sin(float) -> float
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "sinf") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    fmov d0, x0");
+                cg_emit(cg, "    bl %ssin", cg_sym_prefix(cg));
+                cg_emit(cg, "    fmov x0, d0");
+                break;
+            }
+            // Handle built-in cos(float) -> float
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "cosf") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    fmov d0, x0");
+                cg_emit(cg, "    bl %scos", cg_sym_prefix(cg));
+                cg_emit(cg, "    fmov x0, d0");
+                break;
+            }
+            // Handle built-in tan(float) -> float
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "tanf") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    fmov d0, x0");
+                cg_emit(cg, "    bl %stan", cg_sym_prefix(cg));
+                cg_emit(cg, "    fmov x0, d0");
+                break;
+            }
+            // Handle built-in log(float) -> float
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "logf") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    fmov d0, x0");
+                cg_emit(cg, "    bl %slog", cg_sym_prefix(cg));
+                cg_emit(cg, "    fmov x0, d0");
+                break;
+            }
+            // Handle built-in exp(float) -> float
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "expf") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    fmov d0, x0");
+                cg_emit(cg, "    bl %sexp", cg_sym_prefix(cg));
+                cg_emit(cg, "    fmov x0, d0");
+                break;
+            }
+            // Handle built-in powf(base, exp) -> float
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "powf") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    str x0, [sp, #-16]!");
+                cg_expr(cg, e->call.args[1]);
+                cg_emit(cg, "    fmov d1, x0");
+                cg_emit(cg, "    ldr x0, [sp], #16");
+                cg_emit(cg, "    fmov d0, x0");
+                cg_emit(cg, "    bl %spow", cg_sym_prefix(cg));
+                cg_emit(cg, "    fmov x0, d0");
+                break;
+            }
+            // Handle built-in floor(float) -> float
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "floorf") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    fmov d0, x0");
+                cg_emit(cg, "    frintm d0, d0");
+                cg_emit(cg, "    fmov x0, d0");
+                break;
+            }
+            // Handle built-in ceil(float) -> float
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "ceilf") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    fmov d0, x0");
+                cg_emit(cg, "    frintp d0, d0");
+                cg_emit(cg, "    fmov x0, d0");
+                break;
+            }
+            // Handle built-in getpid() -> int
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "getpid") == 0) {
+                cg_emit(cg, "    bl %sgetpid", cg_sym_prefix(cg));
+                break;
+            }
+            // Handle built-in rename_file(old, new) -> int (0 on success)
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "rename_file") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    str x0, [sp, #-16]!");
+                cg_expr(cg, e->call.args[1]);
+                cg_emit(cg, "    mov x1, x0");
+                cg_emit(cg, "    ldr x0, [sp], #16");
+                cg_emit(cg, "    bl %srename", cg_sym_prefix(cg));
+                break;
+            }
+            // Handle built-in to_string(val) - convert to string for interpolation
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "to_string") == 0) {
+                Expr* arg = e->call.args[0];
+                Type* t = cg_local_type(cg, arg->kind == EXPR_IDENT ? arg->ident : NULL);
+                cg_expr(cg, arg);
+                if (t && t->kind == TYPE_STR) {
+                    break;  // already a string
+                }
+                // Allocate buffer and convert int to string
+                cg_emit(cg, "    str x0, [sp, #-16]!");  // save value
+                cg_emit(cg, "    mov x0, #24");
+                cg_emit(cg, "    bl %smalloc", cg_sym_prefix(cg));
+                cg_emit(cg, "    str x0, [sp, #-16]!");  // save buffer ptr
+                cg_emit(cg, "    ldr x2, [sp, #16]");  // value
+                cg_emit_adrp(cg, "x1", "L_.itsfmt");
+                cg_emit_add_pageoff(cg, "x1", "x1", "L_.itsfmt");
+                cg_emit(cg, "    bl %ssprintf", cg_sym_prefix(cg));
+                cg_emit(cg, "    ldr x0, [sp], #16");  // return buffer ptr
+                cg_emit(cg, "    add sp, sp, #16");  // clean up value
                 break;
             }
             // Handle built-in assert()
@@ -5773,6 +6163,51 @@ static void codegen_module(CodeGen* cg) {
         cg_emit(cg, "3:  leave");
         cg_emit(cg, "    retq");
         
+        // __wyn_tcp_listen: create listening socket, returns fd or -1
+        cg_emit(cg, "    .globl %s_wyn_tcp_listen", pfx);
+        cg_emit(cg, "    .p2align 4");
+        cg_emit(cg, "%s_wyn_tcp_listen:", pfx);
+        cg_emit(cg, "    pushq %%rbp");
+        cg_emit(cg, "    movq %%rsp, %%rbp");
+        cg_emit(cg, "    subq $32, %%rsp");
+        cg_emit(cg, "    movq %%rdi, -8(%%rbp)");      // save port
+        // socket(AF_INET=2, SOCK_STREAM=1, 0)
+        cg_emit(cg, "    movl $2, %%edi");
+        cg_emit(cg, "    movl $1, %%esi");
+        cg_emit(cg, "    xorl %%edx, %%edx");
+        cg_emit(cg, "    callq %ssocket", pfx);
+        cg_emit(cg, "    testl %%eax, %%eax");
+        cg_emit(cg, "    js 1f");
+        cg_emit(cg, "    movl %%eax, -12(%%rbp)");     // save sockfd
+        // Build sockaddr_in: sin_family=AF_INET, sin_port=htons(port), sin_addr=INADDR_ANY
+        cg_emit(cg, "    movw $2, -24(%%rbp)");        // sin_family = AF_INET
+        cg_emit(cg, "    movq -8(%%rbp), %%rdi");      // port
+        cg_emit(cg, "    callq %shtons", pfx);
+        cg_emit(cg, "    movw %%ax, -22(%%rbp)");      // sin_port
+        cg_emit(cg, "    movl $0, -20(%%rbp)");        // sin_addr = INADDR_ANY
+        cg_emit(cg, "    xorq %%rax, %%rax");
+        cg_emit(cg, "    movq %%rax, -16(%%rbp)");     // sin_zero
+        // bind(sockfd, &addr, 16)
+        cg_emit(cg, "    movl -12(%%rbp), %%edi");
+        cg_emit(cg, "    leaq -24(%%rbp), %%rsi");
+        cg_emit(cg, "    movl $16, %%edx");
+        cg_emit(cg, "    callq %sbind", pfx);
+        cg_emit(cg, "    testl %%eax, %%eax");
+        cg_emit(cg, "    jnz 2f");
+        // listen(sockfd, 5)
+        cg_emit(cg, "    movl -12(%%rbp), %%edi");
+        cg_emit(cg, "    movl $5, %%esi");
+        cg_emit(cg, "    callq %slisten", pfx);
+        cg_emit(cg, "    testl %%eax, %%eax");
+        cg_emit(cg, "    jnz 2f");
+        cg_emit(cg, "    movl -12(%%rbp), %%eax");     // return sockfd
+        cg_emit(cg, "    jmp 3f");
+        cg_emit(cg, "2:  movl -12(%%rbp), %%edi");     // close on error
+        cg_emit(cg, "    callq %sclose", pfx);
+        cg_emit(cg, "1:  movl $-1, %%eax");            // return -1
+        cg_emit(cg, "3:  leave");
+        cg_emit(cg, "    retq");
+        
         // __wyn_char_at: get character at index, returns single-char string or ""
         cg_emit(cg, "    .globl %s_wyn_char_at", pfx);
         cg_emit(cg, "    .p2align 4");
@@ -6307,6 +6742,51 @@ static void codegen_module(CodeGen* cg) {
     cg_emit(cg, "3:  ldp x19, x20, [sp, #48]");
     cg_emit(cg, "    ldp x29, x30, [sp, #64]");
     cg_emit(cg, "    add sp, sp, #80");
+    cg_emit(cg, "    ret");
+    
+    // __wyn_tcp_listen: create listening socket, returns fd or -1
+    cg_emit(cg, "    .globl %s_wyn_tcp_listen", pfx);
+    cg_emit(cg, "    .p2align 2");
+    cg_emit(cg, "%s_wyn_tcp_listen:", pfx);
+    cg_emit(cg, "    sub sp, sp, #48");
+    cg_emit(cg, "    stp x29, x30, [sp, #32]");
+    cg_emit(cg, "    add x29, sp, #32");
+    cg_emit(cg, "    str x0, [sp, #24]");             // save port
+    // socket(AF_INET=2, SOCK_STREAM=1, 0)
+    cg_emit(cg, "    mov w0, #2");
+    cg_emit(cg, "    mov w1, #1");
+    cg_emit(cg, "    mov w2, #0");
+    cg_emit(cg, "    bl %ssocket", pfx);
+    cg_emit(cg, "    cmp w0, #0");
+    cg_emit(cg, "    blt 1f");
+    cg_emit(cg, "    str w0, [sp, #20]");             // save sockfd
+    // Build sockaddr_in: sin_family=AF_INET, sin_port=htons(port), sin_addr=INADDR_ANY
+    cg_emit(cg, "    mov w1, #2");
+    cg_emit(cg, "    strh w1, [sp, #0]");             // sin_family = AF_INET
+    cg_emit(cg, "    ldr x0, [sp, #24]");             // port
+    cg_emit(cg, "    bl %shtons", pfx);
+    cg_emit(cg, "    strh w0, [sp, #2]");             // sin_port
+    cg_emit(cg, "    str wzr, [sp, #4]");             // sin_addr = INADDR_ANY
+    cg_emit(cg, "    str xzr, [sp, #8]");             // sin_zero
+    // bind(sockfd, &addr, 16)
+    cg_emit(cg, "    ldr w0, [sp, #20]");
+    cg_emit(cg, "    mov x1, sp");
+    cg_emit(cg, "    mov w2, #16");
+    cg_emit(cg, "    bl %sbind", pfx);
+    cg_emit(cg, "    cbnz w0, 2f");
+    // listen(sockfd, 5)
+    cg_emit(cg, "    ldr w0, [sp, #20]");
+    cg_emit(cg, "    mov w1, #5");
+    cg_emit(cg, "    bl %slisten", pfx);
+    cg_emit(cg, "    cbnz w0, 2f");
+    cg_emit(cg, "    ldr w0, [sp, #20]");             // return sockfd
+    cg_emit(cg, "    b 3f");
+    cg_emit(cg, "2:  ldr w0, [sp, #20]");             // close on error
+    cg_emit(cg, "    bl %sclose", pfx);
+    cg_emit(cg, "1:  mov w0, #-1");                   // return -1
+    cg_emit(cg, "    sxtw x0, w0");                   // sign extend to 64-bit
+    cg_emit(cg, "3:  ldp x29, x30, [sp, #32]");
+    cg_emit(cg, "    add sp, sp, #48");
     cg_emit(cg, "    ret");
     
     // __wyn_char_at: get character at index, returns single-char string or ""

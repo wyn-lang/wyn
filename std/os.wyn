@@ -166,19 +166,24 @@ fn setenv(key: str, value: str) -> Result[(), str] {
 }
 
 # Get current working directory
-# Requires: getcwd builtin (not yet available)
 fn cwd() -> Result[str, str] {
-    return err("getcwd builtin not implemented")
+    let path: str = getcwd()
+    if path == "" {
+        return err("getcwd failed")
+    }
+    return ok(path)
 }
 
 # Change current working directory
-# Requires: chdir builtin (not yet available)
-fn chdir(path: str) -> Result[(), str] {
-    return err("chdir builtin not implemented")
+fn cd(path: str) -> Result[(), str] {
+    let r: int = chdir(path)
+    if r != 0 {
+        return err("chdir failed")
+    }
+    return ok(())
 }
 
 # Get current process ID
-# Requires: getpid builtin (not yet available)
 fn pid() -> int {
-    return -1  # Invalid PID indicates not implemented
+    return getpid()
 }

@@ -166,7 +166,7 @@ This document tracks which features from SPEC.md sections 1-5 are implemented in
 | Spawn | 3.1 | Parsed | Codegen (runs synchronously) |
 | Parallel for | 3.2 | Parsed | Codegen (runs sequentially) |
 | Maps | 2.2 | Parsed | Codegen for map operations |
-| String interpolation | 8.2 | Lexer | Codegen for `{expr}` in strings |
+| String interpolation | 8.2 | ⚠️ Partial | Works for strings, int needs int_to_str |
 | Raw strings | 8.1 | Lexer | Full support |
 | Multi-line strings | 8.1 | Lexer | Full support |
 | pub visibility | 2.4 | Parsed | Enforcement |

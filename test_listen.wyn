@@ -1,0 +1,16 @@
+# Test tcp_listen and tcp_accept builtins
+
+fn main() {
+    # Create a listening socket on port 8080
+    let listen_fd: int = tcp_listen(8080)
+    
+    if listen_fd < 0 {
+        exit(1)
+    }
+    
+    print(listen_fd)
+    print_newline()
+    
+    # Close the socket
+    tcp_close(listen_fd)
+}
