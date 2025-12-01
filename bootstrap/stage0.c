@@ -595,7 +595,7 @@ Token lexer_peek(Lexer* l) {
 typedef enum {
     TYPE_INT, TYPE_FLOAT, TYPE_STR, TYPE_BOOL, TYPE_BYTE, TYPE_ANY, TYPE_VOID,
     TYPE_ARRAY, TYPE_MAP, TYPE_TUPLE, TYPE_OPTIONAL, TYPE_RESULT,
-    TYPE_FUNCTION, TYPE_NAMED, TYPE_GENERIC
+    TYPE_FUNCTION, TYPE_NAMED, TYPE_GENERIC, TYPE_POINTER
 } TypeKind;
 
 struct Type {
@@ -614,7 +614,7 @@ typedef enum {
     EXPR_BINARY, EXPR_UNARY, EXPR_CALL, EXPR_INDEX, EXPR_FIELD,
     EXPR_ARRAY, EXPR_MAP, EXPR_TUPLE, EXPR_LAMBDA, EXPR_STRUCT,
     EXPR_IF, EXPR_MATCH, EXPR_SOME, EXPR_NONE, EXPR_OK, EXPR_ERR,
-    EXPR_UNWRAP, EXPR_TRY, EXPR_DEFAULT, EXPR_SLICE
+    EXPR_UNWRAP, EXPR_TRY, EXPR_DEFAULT, EXPR_SLICE, EXPR_ADDR, EXPR_DEREF
 } ExprKind;
 
 struct Expr {
@@ -859,6 +859,13 @@ static Type* new_type(TypeKind kind) {
 // Type parsing
 static Type* parse_type(Parser* p) {
     Type* t = NULL;
+    
+    // Pointer type: *Type
+    if (parser_match(p, TOK_STAR)) {
+        t = new_type(TYPE_POINTER);
+        t->inner = parse_type(p);
+        return t;
+    }
     
     // Optional type: ?Type
     if (parser_match(p, TOK_QUESTION)) {
@@ -1483,6 +1490,20 @@ static Expr* parse_postfix(Parser* p) {
 static Expr* parse_unary(Parser* p) {
     int line = p->current.line, col = p->current.column;
     
+    // Address-of: &expr
+    if (parser_match(p, TOK_AMPERSAND)) {
+        Expr* e = new_expr(EXPR_ADDR, line, col);
+        e->unary.operand = parse_unary(p);
+        return e;
+    }
+    
+    // Dereference: *expr
+    if (parser_match(p, TOK_STAR)) {
+        Expr* e = new_expr(EXPR_DEREF, line, col);
+        e->unary.operand = parse_unary(p);
+        return e;
+    }
+    
     if (parser_check(p, TOK_MINUS) || parser_check(p, TOK_NOT) || 
         parser_check(p, TOK_BANG) || parser_check(p, TOK_TILDE)) {
         TokenKind op = p->current.kind;
@@ -1697,6 +1718,38 @@ static Stmt* parse_stmt(Parser* p) {
     if (parser_check(p, TOK_LBRACE)) {
         Stmt* s = new_stmt(STMT_BLOCK, line, col);
         s->block.stmts = parse_block(p, &s->block.count);
+        return s;
+    }
+    
+    // Special handling for pointer dereference assignment: *ident = value
+    if (parser_check(p, TOK_STAR)) {
+        parser_advance(p);  // consume *
+        Expr* target = new_expr(EXPR_DEREF, line, col);
+        // Parse just the identifier or parenthesized expression
+        if (parser_check(p, TOK_IDENT)) {
+            Expr* ident = new_expr(EXPR_IDENT, p->current.line, p->current.column);
+            strcpy(ident->ident, p->current.ident);
+            parser_advance(p);
+            target->unary.operand = ident;
+        } else if (parser_check(p, TOK_LPAREN)) {
+            parser_advance(p);
+            target->unary.operand = parse_expr(p);
+            parser_expect(p, TOK_RPAREN, ")");
+        } else {
+            target->unary.operand = parse_primary(p);
+        }
+        
+        if (parser_check(p, TOK_EQ)) {
+            Stmt* s = new_stmt(STMT_ASSIGN, line, col);
+            s->assign.target = target;
+            s->assign.op = TOK_EQ;
+            parser_advance(p);  // consume =
+            s->assign.value = parse_expr(p);
+            return s;
+        }
+        // Not an assignment, wrap in expression statement
+        Stmt* s = new_stmt(STMT_EXPR, line, col);
+        s->expr.expr = target;
         return s;
     }
     
@@ -2214,7 +2267,7 @@ static bool types_equal(Type* a, Type* b) {
     if (a->kind == TYPE_ANY || b->kind == TYPE_ANY) return true;
     if (a->kind != b->kind) return false;
     if (a->kind == TYPE_NAMED) return strcmp(a->name, b->name) == 0;
-    if (a->kind == TYPE_ARRAY || a->kind == TYPE_OPTIONAL) {
+    if (a->kind == TYPE_ARRAY || a->kind == TYPE_OPTIONAL || a->kind == TYPE_POINTER) {
         if (!a->inner || !b->inner) return true;  // Unknown inner types are compatible
         return types_equal(a->inner, b->inner);
     }
@@ -2247,6 +2300,10 @@ static const char* type_name(Type* t) {
         case TYPE_ANY: return "any";
         case TYPE_VOID: return "void";
         case TYPE_NAMED: return t->name;
+        case TYPE_POINTER:
+            if (t->inner) snprintf(buf, 256, "*%s", type_name(t->inner));
+            else snprintf(buf, 256, "*");
+            return buf;
         case TYPE_ARRAY: 
             if (t->inner) snprintf(buf, 256, "[%s]", type_name(t->inner)); 
             else snprintf(buf, 256, "[]");
@@ -2380,6 +2437,21 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
             Type* operand = tc_check_expr(tc, e->unary.operand);
             if (e->unary.op == TOK_NOT || e->unary.op == TOK_BANG) return new_type(TYPE_BOOL);
             return operand;
+        }
+        
+        case EXPR_ADDR: {
+            Type* operand = tc_check_expr(tc, e->unary.operand);
+            Type* ptr = new_type(TYPE_POINTER);
+            ptr->inner = operand;
+            return ptr;
+        }
+        
+        case EXPR_DEREF: {
+            Type* operand = tc_check_expr(tc, e->unary.operand);
+            if (operand && operand->kind == TYPE_POINTER && operand->inner) {
+                return operand->inner;
+            }
+            return new_type(TYPE_ANY);
         }
         
         case EXPR_CALL: {
@@ -3166,6 +3238,20 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_emit(cg, "    sete %%al");
                     cg_emit(cg, "    movzbq %%al, %%rax");
                 }
+                break;
+            case EXPR_ADDR:
+                // Address-of: get address of variable
+                if (e->unary.operand->kind == EXPR_IDENT) {
+                    int off = cg_local_offset(cg, e->unary.operand->ident);
+                    if (off) cg_emit(cg, "    leaq -%d(%%rbp), %%rax", off);
+                } else {
+                    cg_expr(cg, e->unary.operand);  // For other expressions, just evaluate
+                }
+                break;
+            case EXPR_DEREF:
+                // Dereference: load value at pointer
+                cg_expr(cg, e->unary.operand);
+                cg_emit(cg, "    movq (%%rax), %%rax");
                 break;
             case EXPR_UNWRAP:
                 // Unwrap optional: get value (second word)
@@ -4394,6 +4480,22 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             }
             break;
         
+        case EXPR_ADDR:
+            // Address-of: get address of variable
+            if (e->unary.operand->kind == EXPR_IDENT) {
+                int off = cg_local_offset(cg, e->unary.operand->ident);
+                if (off) cg_emit(cg, "    add x0, x29, #%d", 16 + off);
+            } else {
+                cg_expr(cg, e->unary.operand);  // For other expressions, just evaluate
+            }
+            break;
+        
+        case EXPR_DEREF:
+            // Dereference: load value at pointer
+            cg_expr(cg, e->unary.operand);
+            cg_emit(cg, "    ldr x0, [x0]");
+            break;
+        
         case EXPR_UNWRAP:
             // Unwrap optional: get value (second word)
             cg_expr(cg, e->unary.operand);
@@ -5289,6 +5391,12 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                 if (s->assign.target->kind == EXPR_IDENT) {
                     int off = cg_local_offset(cg, s->assign.target->ident);
                     if (off) cg_emit(cg, "    movq %%rax, -%d(%%rbp)", off);
+                } else if (s->assign.target->kind == EXPR_DEREF) {
+                    // *ptr = value: store through pointer
+                    cg_emit(cg, "    pushq %%rax");  // save value
+                    cg_expr(cg, s->assign.target->unary.operand);  // get pointer
+                    cg_emit(cg, "    popq %%rcx");  // restore value
+                    cg_emit(cg, "    movq %%rcx, (%%rax)");  // store through pointer
                 } else if (s->assign.target->kind == EXPR_FIELD) {
                     cg_emit(cg, "    pushq %%rax");
                     cg_expr(cg, s->assign.target->field.object);
@@ -5534,6 +5642,12 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
             if (s->assign.target->kind == EXPR_IDENT) {
                 int off = cg_local_offset(cg, s->assign.target->ident);
                 if (off) cg_emit(cg, "    str x0, [x29, #%d]", 16 + off);
+            } else if (s->assign.target->kind == EXPR_DEREF) {
+                // *ptr = value: store through pointer
+                cg_emit(cg, "    str x0, [sp, #-16]!");  // save value
+                cg_expr(cg, s->assign.target->unary.operand);  // get pointer
+                cg_emit(cg, "    ldr x1, [sp], #16");  // restore value
+                cg_emit(cg, "    str x1, [x0]");  // store through pointer
             } else if (s->assign.target->kind == EXPR_FIELD) {
                 cg_emit(cg, "    str x0, [sp, #-16]!");
                 cg_expr(cg, s->assign.target->field.object);
