@@ -4,7 +4,8 @@ struct Point {
 }
 
 struct Rect {
-    origin: Point
+    x: int
+    y: int
     width: int
     height: int
     
@@ -19,12 +20,13 @@ fn main() {
     assert(p.y == 4)
     
     let r: Rect = Rect {
-        origin: Point { x: 0, y: 0 },
+        x: 0,
+        y: 0,
         width: 10,
         height: 5
     }
     assert(r.width == 10)
-    assert(r.origin.x == 0)
+    assert(r.x == 0)
     assert(r.area() == 50)
     
     print_str("struct_test: PASS")

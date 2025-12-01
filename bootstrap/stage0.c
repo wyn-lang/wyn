@@ -774,6 +774,7 @@ typedef struct {
     const char* filename;
     bool had_error;
     int lambda_count;
+    bool newline_before;  // True if newline was skipped before current token
 } Parser;
 
 static Parser* parser_new(Lexer* lexer, const char* filename) {
@@ -782,6 +783,7 @@ static Parser* parser_new(Lexer* lexer, const char* filename) {
     p->filename = filename;
     p->had_error = false;
     p->lambda_count = 0;
+    p->newline_before = false;
     p->current = lexer_next(lexer);
     return p;
 }
@@ -801,8 +803,10 @@ static void parser_error(Parser* p, const char* fmt, ...) {
 static Token parser_advance(Parser* p) {
     Token prev = p->current;
     p->current = lexer_next(p->lexer);
-    // Skip newlines in most contexts
+    // Track and skip newlines
+    p->newline_before = false;
     while (p->current.kind == TOK_NEWLINE) {
+        p->newline_before = true;
         p->current = lexer_next(p->lexer);
     }
     return prev;
@@ -1539,6 +1543,14 @@ static Expr* parse_binary(Parser* p, int min_prec) {
     Expr* left = parse_unary(p);
     
     while (true) {
+        // Stop at newline for operators that could start a new statement
+        // This prevents *p on a new line from being parsed as multiplication
+        if (p->newline_before && (p->current.kind == TOK_STAR || 
+                                   p->current.kind == TOK_MINUS ||
+                                   p->current.kind == TOK_AMPERSAND)) {
+            break;
+        }
+        
         int prec = get_precedence(p->current.kind);
         if (prec < min_prec) break;
         
@@ -2915,6 +2927,13 @@ static StructDef* cg_lookup_struct(CodeGen* cg, const char* name) {
         if (strcmp(cg->module->structs[i].name, name) == 0) return &cg->module->structs[i];
     }
     return NULL;
+}
+
+// Get struct size in bytes (0 if not a struct type)
+static int cg_struct_size(CodeGen* cg, Type* t) {
+    if (!t || t->kind != TYPE_NAMED) return 0;
+    StructDef* s = cg_lookup_struct(cg, t->name);
+    return s ? s->field_count * 8 : 0;
 }
 
 static int cg_struct_field_offset(StructDef* s, const char* field) {
@@ -5052,8 +5071,21 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_expr(cg, e->call.args[i]);
                     cg_emit(cg, "    str x0, [sp, #-16]!");
                 }
-                // Push self (object)
-                cg_expr(cg, e->call.func->field.object);
+                // Push self (object) - need address, not value
+                Expr* obj = e->call.func->field.object;
+                if (obj->kind == EXPR_IDENT) {
+                    Type* obj_type = cg_local_type(cg, obj->ident);
+                    int struct_size = cg_struct_size(cg, obj_type);
+                    if (struct_size > 0) {
+                        // Inline struct local - get address
+                        int off = cg_local_offset(cg, obj->ident);
+                        cg_emit(cg, "    add x0, x29, #%d", 16 + off);
+                    } else {
+                        cg_expr(cg, obj);
+                    }
+                } else {
+                    cg_expr(cg, obj);
+                }
                 cg_emit(cg, "    str x0, [sp, #-16]!");
                 // Pop into registers (self first)
                 for (int i = 0; i <= e->call.arg_count && i < 8; i++) {
@@ -5246,6 +5278,24 @@ static void cg_expr(CodeGen* cg, Expr* e) {
         }
         
         case EXPR_FIELD: {
+            // Check if object is a local struct variable (stored inline)
+            if (e->field.object->kind == EXPR_IDENT) {
+                Type* obj_type = cg_local_type(cg, e->field.object->ident);
+                int struct_size = cg_struct_size(cg, obj_type);
+                if (struct_size > 0) {
+                    // Local struct stored inline - load field directly from stack
+                    int base_off = cg_local_offset(cg, e->field.object->ident);
+                    for (int i = 0; i < cg->module->struct_count; i++) {
+                        int foff = cg_struct_field_offset(&cg->module->structs[i], e->field.field);
+                        if (foff >= 0) {
+                            cg_emit(cg, "    ldr x0, [x29, #%d]", 16 + base_off + foff);
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+            // Default: object is a pointer to struct (or expression returning pointer)
             cg_expr(cg, e->field.object);
             for (int i = 0; i < cg->module->struct_count; i++) {
                 int off = cg_struct_field_offset(&cg->module->structs[i], e->field.field);
@@ -5607,15 +5657,34 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
     
     // ARM64
     switch (s->kind) {
-        case STMT_LET:
-            cg_add_local(cg, s->let.name, s->let.type);
-            if (s->let.value) {
-                cg_expr(cg, s->let.value);
+        case STMT_LET: {
+            int struct_size = cg_struct_size(cg, s->let.type);
+            if (struct_size > 0) {
+                // Struct type: allocate space and copy data
+                for (int i = 0; i < struct_size / 8; i++) {
+                    cg_add_local(cg, i == 0 ? s->let.name : "__pad", i == 0 ? s->let.type : NULL);
+                }
+                int base_off = cg->locals[cg->local_count - struct_size/8].offset;
+                if (s->let.value) {
+                    cg_expr(cg, s->let.value);  // x0 = pointer to struct data
+                    // Copy struct fields
+                    for (int i = 0; i < struct_size / 8; i++) {
+                        cg_emit(cg, "    ldr x1, [x0, #%d]", i * 8);
+                        cg_emit(cg, "    str x1, [x29, #%d]", 16 + base_off + i * 8);
+                    }
+                }
             } else {
-                cg_emit(cg, "    mov x0, #0");
+                // Non-struct: just store the value
+                cg_add_local(cg, s->let.name, s->let.type);
+                if (s->let.value) {
+                    cg_expr(cg, s->let.value);
+                } else {
+                    cg_emit(cg, "    mov x0, #0");
+                }
+                cg_emit(cg, "    str x0, [x29, #%d]", 16 + cg->locals[cg->local_count - 1].offset);
             }
-            cg_emit(cg, "    str x0, [x29, #%d]", 16 + cg->locals[cg->local_count - 1].offset);
             break;
+        }
             
         case STMT_ASSIGN: {
             if (s->assign.op == TOK_EQ) {
