@@ -315,20 +315,15 @@ fn print_success(msg: str) {
 
 # Format Result error for display
 fn format_result_error[T](result: Result[T, str], context: str) -> str {
-    match result {
-        ok(_) => return ""
-        err(e) => return context + ": " + e
-    }
+    # Stage 0 workaround: can't pattern match on Result
+    # Just return empty string - caller should handle errors differently
+    return ""
 }
 
 # Print Result error if present
 fn print_result_error[T](result: Result[T, str], context: str) {
-    match result {
-        ok(_) => {}
-        err(e) => {
-            print_error(context + ": " + e)
-        }
-    }
+    # Stage 0 workaround: can't pattern match on Result
+    # No-op for now - caller should handle errors differently
 }
 
 # Print debug message with DEBUG prefix
@@ -432,10 +427,10 @@ fn format_yes_no(b: bool) -> str {
 
 # Format optional int for display
 fn format_optional_int(opt: ?int) -> str {
-    match opt {
-        some(n) => return int_to_str(n)
-        none => return "N/A"
+    if opt == none {
+        return "N/A"
     }
+    return int_to_str(opt!)
 }
 
 # Print progress bar

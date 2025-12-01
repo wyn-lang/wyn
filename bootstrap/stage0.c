@@ -658,7 +658,7 @@ struct Stmt {
         struct { Expr* cond; Stmt** then_block; int then_count; Stmt** else_block; int else_count; } if_stmt;
         struct { Expr* cond; Stmt** body; int body_count; } while_stmt;
         struct { char var[MAX_IDENT_LEN]; Expr* iter; Stmt** body; int body_count; bool is_parallel; } for_stmt;
-        struct { Expr* value; Expr** patterns; Stmt*** arms; int* arm_counts; int arm_count; } match_stmt;
+        struct { Expr* value; Expr** patterns; Stmt*** arms; int* arm_counts; int arm_count; char bindings[64][MAX_IDENT_LEN]; } match_stmt;
         struct { Stmt** stmts; int count; } block;
         struct { Expr* expr; } defer;
         struct { Stmt** body; int body_count; } spawn;
@@ -1563,6 +1563,12 @@ static Stmt* parse_stmt(Parser* p) {
             // Parse pattern (expression or _ for wildcard)
             Expr* pattern = parse_expr(p);
             s->match_stmt.patterns[s->match_stmt.arm_count] = pattern;
+            // Extract binding variable from patterns like some(x), ok(v), err(e)
+            s->match_stmt.bindings[s->match_stmt.arm_count][0] = '\0';
+            if ((pattern->kind == EXPR_SOME || pattern->kind == EXPR_OK || pattern->kind == EXPR_ERR) &&
+                pattern->some.value && pattern->some.value->kind == EXPR_IDENT) {
+                strcpy(s->match_stmt.bindings[s->match_stmt.arm_count], pattern->some.value->ident);
+            }
             parser_expect(p, TOK_FATARROW, "=>");
             // Parse arm body - either block or single statement
             if (parser_check(p, TOK_LBRACE)) {
@@ -2504,10 +2510,32 @@ static void tc_check_stmt(TypeChecker* tc, Stmt* s) {
             break;
         
         case STMT_MATCH: {
-            tc_check_expr(tc, s->match_stmt.value);
+            Type* match_type = tc_check_expr(tc, s->match_stmt.value);
             for (int i = 0; i < s->match_stmt.arm_count; i++) {
-                tc_check_expr(tc, s->match_stmt.patterns[i]);
+                Expr* pat = s->match_stmt.patterns[i];
+                // Don't type-check binding patterns (some(x), ok(v), err(e)) - they introduce variables
+                bool is_binding_pattern = (pat->kind == EXPR_SOME || pat->kind == EXPR_OK || pat->kind == EXPR_ERR) &&
+                                          pat->some.value && pat->some.value->kind == EXPR_IDENT;
+                if (!is_binding_pattern) {
+                    tc_check_expr(tc, pat);
+                }
                 tc_enter_scope(tc);
+                // Add binding variable to scope if present
+                if (s->match_stmt.bindings[i][0] != '\0') {
+                    // For some(x)/ok(x), binding gets the inner type
+                    // For err(e), binding gets the error type (str for now)
+                    Type* bind_type = new_type(TYPE_INT);  // Default
+                    if (match_type && match_type->kind == TYPE_OPTIONAL && match_type->inner) {
+                        bind_type = match_type->inner;
+                    } else if (match_type && match_type->kind == TYPE_RESULT) {
+                        if (pat->kind == EXPR_ERR) {
+                            bind_type = new_type(TYPE_STR);  // Error type is str
+                        } else if (match_type->inner) {
+                            bind_type = match_type->inner;
+                        }
+                    }
+                    tc_define(tc, s->match_stmt.bindings[i], bind_type, false);
+                }
                 for (int j = 0; j < s->match_stmt.arm_counts[i]; j++) {
                     tc_check_stmt(tc, s->match_stmt.arms[i][j]);
                 }
@@ -4625,13 +4653,46 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                 cg_emit(cg, "    pushq %%rax");
                 for (int i = 0; i < s->match_stmt.arm_count; i++) {
                     int next_lbl = cg_new_label(cg);
+                    Expr* pat = s->match_stmt.patterns[i];
                     // Check if pattern is wildcard (_)
-                    bool is_wildcard = s->match_stmt.patterns[i]->kind == EXPR_IDENT &&
-                                       strcmp(s->match_stmt.patterns[i]->ident, "_") == 0;
-                    if (!is_wildcard) {
+                    bool is_wildcard = pat->kind == EXPR_IDENT && strcmp(pat->ident, "_") == 0;
+                    
+                    if (pat->kind == EXPR_SOME || pat->kind == EXPR_OK) {
+                        // Match some(x) or ok(v): check has_value == 1
+                        cg_emit(cg, "    movq (%%rsp), %%rax");  // Load optional/result ptr
+                        cg_emit(cg, "    movq (%%rax), %%rcx");  // Load has_value/is_ok flag
+                        cg_emit(cg, "    cmpq $1, %%rcx");
+                        cg_emit(cg, "    jne L%d", next_lbl);
+                        // Bind variable if present
+                        if (s->match_stmt.bindings[i][0] != '\0') {
+                            cg_emit(cg, "    movq (%%rsp), %%rax");
+                            cg_emit(cg, "    movq 8(%%rax), %%rax");  // Load inner value
+                            cg_add_local(cg, s->match_stmt.bindings[i], new_type(TYPE_INT));
+                            cg_emit(cg, "    movq %%rax, -%d(%%rbp)", cg->stack_offset);
+                        }
+                    } else if (pat->kind == EXPR_NONE) {
+                        // Match none: check has_value == 0
+                        cg_emit(cg, "    movq (%%rsp), %%rax");
+                        cg_emit(cg, "    movq (%%rax), %%rcx");
+                        cg_emit(cg, "    cmpq $0, %%rcx");
+                        cg_emit(cg, "    jne L%d", next_lbl);
+                    } else if (pat->kind == EXPR_ERR) {
+                        // Match err(e): check is_ok == 0
+                        cg_emit(cg, "    movq (%%rsp), %%rax");
+                        cg_emit(cg, "    movq (%%rax), %%rcx");
+                        cg_emit(cg, "    cmpq $0, %%rcx");
+                        cg_emit(cg, "    jne L%d", next_lbl);
+                        // Bind error variable if present
+                        if (s->match_stmt.bindings[i][0] != '\0') {
+                            cg_emit(cg, "    movq (%%rsp), %%rax");
+                            cg_emit(cg, "    movq 8(%%rax), %%rax");  // Load error value
+                            cg_add_local(cg, s->match_stmt.bindings[i], new_type(TYPE_STR));
+                            cg_emit(cg, "    movq %%rax, -%d(%%rbp)", cg->stack_offset);
+                        }
+                    } else if (!is_wildcard) {
                         cg_emit(cg, "    movq (%%rsp), %%rax");  // Load match value
                         cg_emit(cg, "    pushq %%rax");
-                        cg_expr(cg, s->match_stmt.patterns[i]);
+                        cg_expr(cg, pat);
                         cg_emit(cg, "    popq %%rcx");
                         cg_emit(cg, "    cmpq %%rax, %%rcx");
                         cg_emit(cg, "    jne L%d", next_lbl);
@@ -4874,13 +4935,46 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
             cg_emit(cg, "    str x0, [sp, #-16]!");
             for (int i = 0; i < s->match_stmt.arm_count; i++) {
                 int next_lbl = cg_new_label(cg);
+                Expr* pat = s->match_stmt.patterns[i];
                 // Check if pattern is wildcard (_)
-                bool is_wildcard = s->match_stmt.patterns[i]->kind == EXPR_IDENT &&
-                                   strcmp(s->match_stmt.patterns[i]->ident, "_") == 0;
-                if (!is_wildcard) {
+                bool is_wildcard = pat->kind == EXPR_IDENT && strcmp(pat->ident, "_") == 0;
+                
+                if (pat->kind == EXPR_SOME || pat->kind == EXPR_OK) {
+                    // Match some(x) or ok(v): check has_value == 1
+                    cg_emit(cg, "    ldr x0, [sp]");  // Load optional/result ptr
+                    cg_emit(cg, "    ldr x1, [x0]");  // Load has_value/is_ok flag
+                    cg_emit(cg, "    cmp x1, #1");
+                    cg_emit(cg, "    b.ne L%d", next_lbl);
+                    // Bind variable if present
+                    if (s->match_stmt.bindings[i][0] != '\0') {
+                        cg_emit(cg, "    ldr x0, [sp]");
+                        cg_emit(cg, "    ldr x0, [x0, #8]");  // Load inner value
+                        cg_add_local(cg, s->match_stmt.bindings[i], new_type(TYPE_INT));
+                        cg_emit(cg, "    str x0, [x29, #%d]", 16 + cg->stack_offset);
+                    }
+                } else if (pat->kind == EXPR_NONE) {
+                    // Match none: check has_value == 0
+                    cg_emit(cg, "    ldr x0, [sp]");
+                    cg_emit(cg, "    ldr x1, [x0]");
+                    cg_emit(cg, "    cmp x1, #0");
+                    cg_emit(cg, "    b.ne L%d", next_lbl);
+                } else if (pat->kind == EXPR_ERR) {
+                    // Match err(e): check is_ok == 0
+                    cg_emit(cg, "    ldr x0, [sp]");
+                    cg_emit(cg, "    ldr x1, [x0]");
+                    cg_emit(cg, "    cmp x1, #0");
+                    cg_emit(cg, "    b.ne L%d", next_lbl);
+                    // Bind error variable if present
+                    if (s->match_stmt.bindings[i][0] != '\0') {
+                        cg_emit(cg, "    ldr x0, [sp]");
+                        cg_emit(cg, "    ldr x0, [x0, #8]");  // Load error value
+                        cg_add_local(cg, s->match_stmt.bindings[i], new_type(TYPE_STR));
+                        cg_emit(cg, "    str x0, [x29, #%d]", 16 + cg->stack_offset);
+                    }
+                } else if (!is_wildcard) {
                     cg_emit(cg, "    ldr x0, [sp]");  // Load match value
                     cg_emit(cg, "    str x0, [sp, #-16]!");
-                    cg_expr(cg, s->match_stmt.patterns[i]);
+                    cg_expr(cg, pat);
                     cg_emit(cg, "    ldr x1, [sp], #16");
                     cg_emit(cg, "    cmp x1, x0");
                     cg_emit(cg, "    b.ne L%d", next_lbl);

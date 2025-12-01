@@ -884,14 +884,13 @@ fn unescape_quotes(s: str) -> str {
 # Replace first occurrence of old with new
 fn replace_first(s: str, old: str, new: str) -> str {
     let idx: ?int = index_of(s, old)
-    match idx {
-        some(i) => {
-            let before: str = s[:i]
-            let after: str = s[i + old.len():]
-            return before + new + after
-        }
-        none => return s
+    if idx == none {
+        return s
     }
+    let i: int = idx!
+    let before: str = s[:i]
+    let after: str = s[i + old.len():]
+    return before + new + after
 }
 
 # Check if string is palindrome (ignoring case)
@@ -926,19 +925,19 @@ fn strip_suffix(s: str, suffix: str) -> str {
 # Check if string is a valid email (basic check)
 fn is_valid_email(s: str) -> bool {
     let at_idx: ?int = index_of(s, "@")
-    match at_idx {
-        none => return false
-        some(idx) => {
-            if idx == 0 or idx == s.len() - 1 {
-                return false
-            }
-            let dot_idx: ?int = last_index_of(s, ".")
-            match dot_idx {
-                none => return false
-                some(d) => return d > idx and d < s.len() - 1
-            }
-        }
+    if at_idx == none {
+        return false
     }
+    let idx: int = at_idx!
+    if idx == 0 or idx == s.len() - 1 {
+        return false
+    }
+    let dot_idx: ?int = last_index_of(s, ".")
+    if dot_idx == none {
+        return false
+    }
+    let d: int = dot_idx!
+    return d > idx and d < s.len() - 1
 }
 
 # Check if string is a valid URL (basic check)
@@ -949,18 +948,18 @@ fn is_valid_url(s: str) -> bool {
 # Extract substring between two delimiters
 fn substring_between(s: str, start_delim: str, end_delim: str) -> ?str {
     let start_idx: ?int = index_of(s, start_delim)
-    match start_idx {
-        none => return none
-        some(si) => {
-            let search_start: int = si + start_delim.len()
-            let remaining: str = s[search_start:]
-            let end_idx: ?int = index_of(remaining, end_delim)
-            match end_idx {
-                none => return none
-                some(ei) => return some(remaining[:ei])
-            }
-        }
+    if start_idx == none {
+        return none
     }
+    let si: int = start_idx!
+    let search_start: int = si + start_delim.len()
+    let remaining: str = s[search_start:]
+    let end_idx: ?int = index_of(remaining, end_delim)
+    if end_idx == none {
+        return none
+    }
+    let ei: int = end_idx!
+    return some(remaining[:ei])
 }
 
 # Levenshtein distance between two strings

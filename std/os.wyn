@@ -18,10 +18,7 @@ fn arg_count() -> int {
 # Check if environment variable exists and has a value
 fn has_env(key: str) -> bool {
     let val: ?str = getenv(key)
-    match val {
-        some(_) => return true
-        none => return false
-    }
+    return val != none
 }
 
 # Get environment variable value or return default if not set
