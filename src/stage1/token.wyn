@@ -53,6 +53,34 @@ enum TK {
     NONE = 56
     OK = 57
     ERR = 58
+    PUB = 59
+    BREAK = 60
+    CONTINUE = 61
+    DEFER = 62
+    NE = 63
+    LE = 64
+    GE = 65
+    DOTDOT = 66
+    DOTDOTEQ = 67
+    QUESTIONQUESTION = 68
+    FATARROW = 69
+    PLUSEQ = 70
+    MINUSEQ = 71
+    STAREQ = 72
+    SLASHEQ = 73
+    PERCENTEQ = 74
+    ANDEQ = 75
+    OREQ = 76
+    AMPAMP = 77
+    PIPEPIPE = 78
+    BANG = 79
+    AMP = 80
+    PIPE = 81
+    CARET = 82
+    TILDE = 83
+    LTLT = 84
+    GTGT = 85
+    STARSTAR = 86
 }
 
 struct Token {

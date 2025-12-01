@@ -143,7 +143,7 @@ fn lexer_next(mut lex: Lexer) -> Token {
         while lex.pos < lex.len and is_digit(lexer_peek(lex)) {
             lexer_advance(lex)
         }
-        let kind: int = INT
+        let mut kind: int = INT
         if lexer_peek(lex) == "." and is_digit(lexer_peek_next(lex)) {
             lexer_advance(lex)
             while lex.pos < lex.len and is_digit(lexer_peek(lex)) {

@@ -53,6 +53,34 @@ enum TK {
     NONE = 56
     OK = 57
     ERR = 58
+    PUB = 59
+    BREAK = 60
+    CONTINUE = 61
+    DEFER = 62
+    NE = 63
+    LE = 64
+    GE = 65
+    DOTDOT = 66
+    DOTDOTEQ = 67
+    QUESTIONQUESTION = 68
+    FATARROW = 69
+    PLUSEQ = 70
+    MINUSEQ = 71
+    STAREQ = 72
+    SLASHEQ = 73
+    PERCENTEQ = 74
+    ANDEQ = 75
+    OREQ = 76
+    AMPAMP = 77
+    PIPEPIPE = 78
+    BANG = 79
+    AMP = 80
+    PIPE = 81
+    CARET = 82
+    TILDE = 83
+    LTLT = 84
+    GTGT = 85
+    STARSTAR = 86
 }
 
 struct Token {
@@ -100,19 +128,19 @@ fn token_kind_name(kind: int) -> str {
 
 struct Lexer {
     source: str
+    len: int
     pos: int
     line: int
     col: int
-    len: int
 }
 
 fn lexer_new(source: str) -> Lexer {
     return Lexer{
         source: source,
+        len: len(source),
         pos: 0,
         line: 1,
-        col: 1,
-        len: len(source)
+        col: 1
     }
 }
 
@@ -120,21 +148,21 @@ fn lexer_peek(lex: Lexer) -> str {
     if lex.pos >= lex.len {
         return ""
     }
-    return substring(lex.source, lex.pos, lex.pos + 1)
+    return substring(lex.source, lex.pos, 1)
 }
 
 fn lexer_peek_next(lex: Lexer) -> str {
     if lex.pos + 1 >= lex.len {
         return ""
     }
-    return substring(lex.source, lex.pos + 1, lex.pos + 2)
+    return substring(lex.source, lex.pos + 1, 1)
 }
 
 fn lexer_advance(mut lex: Lexer) -> str {
     if lex.pos >= lex.len {
         return ""
     }
-    let c: str = substring(lex.source, lex.pos, lex.pos + 1)
+    let c: str = substring(lex.source, lex.pos, 1)
     lex.pos = lex.pos + 1
     if c == "\n" {
         lex.line = lex.line + 1
@@ -227,7 +255,7 @@ fn lexer_next(mut lex: Lexer) -> Token {
         while lex.pos < lex.len and is_alnum(lexer_peek(lex)) {
             lexer_advance(lex)
         }
-        let value: str = substring(lex.source, start, lex.pos)
+        let value: str = substring(lex.source, start, lex.pos - start)
         let kind: int = keyword_or_ident(value)
         return token_new(kind, value, start_line, start_col)
     }
@@ -238,7 +266,7 @@ fn lexer_next(mut lex: Lexer) -> Token {
         while lex.pos < lex.len and is_digit(lexer_peek(lex)) {
             lexer_advance(lex)
         }
-        let kind: int = INT
+        let mut kind: int = INT
         if lexer_peek(lex) == "." and is_digit(lexer_peek_next(lex)) {
             lexer_advance(lex)
             while lex.pos < lex.len and is_digit(lexer_peek(lex)) {
@@ -246,7 +274,7 @@ fn lexer_next(mut lex: Lexer) -> Token {
             }
             kind = FLOAT
         }
-        let value: str = substring(lex.source, start, lex.pos)
+        let value: str = substring(lex.source, start, lex.pos - start)
         return token_new(kind, value, start_line, start_col)
     }
     
@@ -260,7 +288,7 @@ fn lexer_next(mut lex: Lexer) -> Token {
             }
             lexer_advance(lex)
         }
-        let value: str = substring(lex.source, start, lex.pos)
+        let value: str = substring(lex.source, start, lex.pos - start)
         lexer_advance(lex)  # consume closing "
         return token_new(STRING, value, start_line, start_col)
     }
@@ -377,4 +405,24 @@ fn lexer_next(mut lex: Lexer) -> Token {
     
     # Unknown character
     return token_new(EOF, c, start_line, start_col)
+}
+
+# Test main
+fn main() {
+    println_str("Creating lexer")
+    let lex: Lexer = lexer_new("hello")
+    println_str("Checking pos < len")
+    println(lex.pos)
+    println(lex.len)
+    if lex.pos >= lex.len {
+        println_str("pos >= len, returning EOF")
+    } else {
+        println_str("pos < len, continuing")
+        let c: str = lexer_peek(lex)
+        println_str("Peeked char:")
+        println_str(c)
+        if is_alpha(c) {
+            println_str("Is alpha")
+        }
+    }
 }

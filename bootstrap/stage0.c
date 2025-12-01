@@ -29,7 +29,7 @@
 #define MAX_STRING_LEN 4096
 #define MAX_PARAMS 32
 #define MAX_FIELDS 64
-#define MAX_VARIANTS 64
+#define MAX_VARIANTS 128
 #define MAX_GENERICS 8
 
 // Forward declarations
@@ -2786,6 +2786,21 @@ static void cg_emit(CodeGen* cg, const char* fmt, ...) {
     vfprintf(cg->out, fmt, args);
     va_end(args);
     fprintf(cg->out, "\n");
+}
+
+// Escape string for assembly .asciz directive
+static void escape_string_for_asm(const char* src, char* dst, size_t dst_size) {
+    size_t j = 0;
+    for (size_t i = 0; src[i] && j < dst_size - 2; i++) {
+        char c = src[i];
+        if (c == '\n') { dst[j++] = '\\'; dst[j++] = 'n'; }
+        else if (c == '\r') { dst[j++] = '\\'; dst[j++] = 'r'; }
+        else if (c == '\t') { dst[j++] = '\\'; dst[j++] = 't'; }
+        else if (c == '"') { dst[j++] = '\\'; dst[j++] = '"'; }
+        else if (c == '\\') { dst[j++] = '\\'; dst[j++] = '\\'; }
+        else dst[j++] = c;
+    }
+    dst[j] = '\0';
 }
 
 // Emit adrp instruction with correct syntax for target OS
@@ -6411,7 +6426,9 @@ static void codegen_module(CodeGen* cg) {
         
         for (int i = 0; i < cg->string_count; i++) {
             cg_emit(cg, "L_.str%d:", cg->strings[i].label);
-            cg_emit(cg, "    .asciz \"%s\"", cg->strings[i].str);
+            char escaped[4096];
+            escape_string_for_asm(cg->strings[i].str, escaped, sizeof(escaped));
+            cg_emit(cg, "    .asciz \"%s\"", escaped);
         }
         return;
     }
@@ -6924,7 +6941,9 @@ static void codegen_module(CodeGen* cg) {
     // Emit string literals
     for (int i = 0; i < cg->string_count; i++) {
         cg_emit(cg, "L_.str%d:", cg->strings[i].label);
-        cg_emit(cg, "    .asciz \"%s\"", cg->strings[i].str);
+        char escaped[4096];
+        escape_string_for_asm(cg->strings[i].str, escaped, sizeof(escaped));
+        cg_emit(cg, "    .asciz \"%s\"", escaped);
     }
     
     // Emit float literals
