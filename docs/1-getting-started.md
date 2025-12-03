@@ -4,7 +4,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-repo/wyn-lang.git
+git clone https://github.com/wyn-lang/wyn.git
 cd wyn-lang
 
 # Build the compiler
