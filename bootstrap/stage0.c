@@ -4386,21 +4386,40 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             }
             // Check for string comparison
             if ((e->binary.op == TOK_EQEQ || e->binary.op == TOK_NOTEQ)) {
-                if (e->binary.left->kind == EXPR_STRING && e->binary.right->kind == EXPR_STRING) {
-                    int lbl1 = cg->label_count++, lbl2 = cg->label_count++, loop_lbl = cg_new_label(cg), end_lbl = cg_new_label(cg);
-                    cg->strings[cg->string_count].str = e->binary.left->str_val;
-                    cg->strings[cg->string_count].label = lbl1;
-                    cg->string_count++;
-                    cg->strings[cg->string_count].str = e->binary.right->str_val;
-                    cg->strings[cg->string_count].label = lbl2;
-                    cg->string_count++;
-                    char label1[32], label2[32];
-                    snprintf(label1, sizeof(label1), "L_.str%d", lbl1);
-                    snprintf(label2, sizeof(label2), "L_.str%d", lbl2);
-                    cg_emit_adrp(cg, "x1", label1);
-                    cg_emit_add_pageoff(cg, "x1", "x1", label1);
-                    cg_emit_adrp(cg, "x2", label2);
-                    cg_emit_add_pageoff(cg, "x2", "x2", label2);
+                bool left_is_str = (e->binary.left->kind == EXPR_STRING);
+                bool right_is_str = (e->binary.right->kind == EXPR_STRING);
+                if (e->binary.left->kind == EXPR_IDENT) {
+                    Type* t = cg_local_type(cg, e->binary.left->ident);
+                    if (t && t->kind == TYPE_STR) left_is_str = true;
+                }
+                if (e->binary.right->kind == EXPR_IDENT) {
+                    Type* t = cg_local_type(cg, e->binary.right->ident);
+                    if (t && t->kind == TYPE_STR) right_is_str = true;
+                }
+                // Check for known string-returning function calls
+                if (e->binary.left->kind == EXPR_CALL && e->binary.left->call.func->kind == EXPR_IDENT) {
+                    const char* fn = e->binary.left->call.func->ident;
+                    if (strcmp(fn, "str_lower") == 0 || strcmp(fn, "str_upper") == 0 ||
+                        strcmp(fn, "str_trim") == 0 || strcmp(fn, "read_file") == 0 ||
+                        strcmp(fn, "to_string") == 0) left_is_str = true;
+                }
+                if (e->binary.right->kind == EXPR_CALL && e->binary.right->call.func->kind == EXPR_IDENT) {
+                    const char* fn = e->binary.right->call.func->ident;
+                    if (strcmp(fn, "str_lower") == 0 || strcmp(fn, "str_upper") == 0 ||
+                        strcmp(fn, "str_trim") == 0 || strcmp(fn, "read_file") == 0 ||
+                        strcmp(fn, "to_string") == 0) right_is_str = true;
+                }
+                
+                if (left_is_str || right_is_str) {
+                    // Evaluate left, save on stack
+                    cg_expr(cg, e->binary.left);
+                    cg_emit(cg, "    str x0, [sp, #-16]!");
+                    // Evaluate right
+                    cg_expr(cg, e->binary.right);
+                    cg_emit(cg, "    mov x2, x0");  // right ptr in x2
+                    cg_emit(cg, "    ldr x1, [sp], #16");  // left ptr in x1
+                    // strcmp loop
+                    int loop_lbl = cg_new_label(cg), end_lbl = cg_new_label(cg);
                     cg_emit(cg, "L%d:", loop_lbl);
                     cg_emit(cg, "    ldrb w3, [x1], #1");
                     cg_emit(cg, "    ldrb w4, [x2], #1");
@@ -7369,6 +7388,7 @@ int main(int argc, char** argv) {
     bool compile_only = false;
     bool emit_asm = false;
     bool emit_ir = false;
+    bool quiet = false;
     int opt_level = 0;
     Arch target_arch = ARCH_ARM64;  // Default for macOS ARM
     TargetOS target_os = OS_MACOS;  // Default OS
@@ -7402,6 +7422,8 @@ int main(int argc, char** argv) {
             opt_level = 1;
         } else if (strcmp(argv[i], "-O2") == 0) {
             opt_level = 2;
+        } else if (strcmp(argv[i], "-q") == 0 || strcmp(argv[i], "--quiet") == 0) {
+            quiet = true;
         } else if (strcmp(argv[i], "--target") == 0 && i + 1 < argc) {
             i++;
             if (strcmp(argv[i], "arm64") == 0) target_arch = ARCH_ARM64;
@@ -7425,8 +7447,10 @@ int main(int argc, char** argv) {
         return 1;
     }
     
-    printf("Wyn Bootstrap Compiler (Stage 0)\n");
-    printf("Compiling: %s\n", input_file);
+    if (!quiet) {
+        printf("Wyn Bootstrap Compiler (Stage 0)\n");
+        printf("Compiling: %s\n", input_file);
+    }
     
     char* source = read_file(input_file);
     Lexer* lexer = lexer_new(source, input_file);
@@ -7444,7 +7468,7 @@ int main(int argc, char** argv) {
     resolve_imports(module, input_file);
     
     // Print AST summary
-    print_module(module);
+    if (!quiet) print_module(module);
     
     // Type check
     TypeChecker* tc = typechecker_new(module, input_file);\
@@ -7452,7 +7476,7 @@ int main(int argc, char** argv) {
         fprintf(stderr, "Type checking failed.\n");
         return 1;
     }
-    printf("\nType checking passed.\n");
+    if (!quiet) printf("\nType checking passed.\n");
     
     // Code generation
     if (emit_asm) {
@@ -7487,7 +7511,7 @@ int main(int argc, char** argv) {
                 fprintf(stderr, "Compilation failed.\n");
                 return 1;
             }
-            printf("Compiled to: %s\n", output_file);
+            if (!quiet) printf("Compiled to: %s\n", output_file);
         } else {
             snprintf(cmd, 512, "cc -c -o %s %s", obj_file, asm_file);
             if (system(cmd) != 0) {
