@@ -1,106 +1,152 @@
 # Stage 1 Parser - Recursive Descent Parser for Wyn
 # 
-# This file documents the AST structure and provides a minimal parser implementation.
-# The full parser will be implemented once Stage 1 compiler is bootstrapped.
+# This file documents the parser design and AST structure for Stage 1.
+# Full implementation will be done in C or once Stage 1 is bootstrapped.
 #
 # Reference: bootstrap/stage0.c lines 595-1800
-
+#
 # ============================================================================
-# AST Node Type Enums
+# PARSER DESIGN
 # ============================================================================
-
-# Type Kinds
-# INT=0 FLOAT=1 STR=2 BOOL=3 BYTE=4 ANY=5 VOID=6
-# ARRAY=7 MAP=8 TUPLE=9 OPTIONAL=10 RESULT=11
-# FUNCTION=12 NAMED=13 GENERIC=14 POINTER=15
-
-# Expression Kinds  
-# INT=0 FLOAT=1 STRING=2 BOOL=3 IDENT=4
-# BINARY=5 UNARY=6 CALL=7 INDEX=8 FIELD=9
-# ARRAY=10 MAP=11 TUPLE=12 LAMBDA=13 STRUCT=14
-# IF=15 MATCH=16 SOME=17 NONE=18 OK=19 ERR=20
-# UNWRAP=21 TRY=22 DEFAULT=23 SLICE=24 ADDR=25 DEREF=26
-
-# Statement Kinds
-# LET=0 ASSIGN=1 EXPR=2 RETURN=3 IF=4 WHILE=5
-# FOR=6 MATCH=7 BLOCK=8 BREAK=9 CONTINUE=10 DEFER=11 SPAWN=12
-
+#
+# The parser uses recursive descent with precedence climbing for expressions.
+#
+# ## AST Node Types
+#
+# ### Type Kinds (TypeKind enum)
+# - INT, FLOAT, STR, BOOL, BYTE, ANY, VOID (primitives)
+# - ARRAY, MAP, TUPLE (collections)
+# - OPTIONAL, RESULT (error handling)
+# - FUNCTION, NAMED, GENERIC, POINTER (complex types)
+#
+# ### Expression Kinds (ExprKind enum)
+# - INT, FLOAT, STRING, BOOL, IDENT (literals)
+# - BINARY, UNARY (operators)
+# - CALL, INDEX, FIELD (access)
+# - ARRAY, MAP, TUPLE, STRUCT (constructors)
+# - LAMBDA (closures)
+# - IF, MATCH (control flow expressions)
+# - SOME, NONE, OK, ERR (option/result constructors)
+# - UNWRAP, TRY, DEFAULT (option/result operations)
+# - SLICE, ADDR, DEREF (advanced operations)
+#
+# ### Statement Kinds (StmtKind enum)
+# - LET, ASSIGN (variables)
+# - EXPR (expression statement)
+# - RETURN (function return)
+# - IF, WHILE, FOR, MATCH (control flow)
+# - BLOCK (statement grouping)
+# - BREAK, CONTINUE (loop control)
+# - DEFER, SPAWN (advanced control)
+#
+# ## Operator Precedence (highest to lowest)
+#
+# 11: **           (exponentiation)
+# 10: * / %        (multiplication, division, modulo)
+#  9: + -          (addition, subtraction)
+#  8: << >>        (bit shifts)
+#  7: &            (bitwise and)
+#  6: ^            (bitwise xor)
+#  5: |            (bitwise or)
+#  4: < > <= >=    (comparison)
+#  3: == !=        (equality)
+#  2: and &&       (logical and)
+#  1: or ||        (logical or)
+#  0: ??           (null coalescing)
+#
+# ## Parsing Functions
+#
+# ### Top Level
+# - parse_module() -> Module
+#   Parses imports, functions, structs, enums
+#
+# ### Declarations
+# - parse_function(is_pub: bool) -> FnDef
+#   Syntax: fn name[T](params) -> Type { body }
+#
+# - parse_struct(is_pub: bool) -> StructDef
+#   Syntax: struct Name[T] { fields }
+#
+# - parse_enum(is_pub: bool) -> EnumDef
+#   Syntax: enum Name[T] { variants }
+#
+# ### Statements
+# - parse_stmt() -> Stmt
+#   Parses: let, mut, if, while, for, match, return, break, continue, defer, block, expr
+#
+# ### Expressions (Precedence Climbing)
+# - parse_expr() -> Expr
+#   Entry point, calls parse_binary(0)
+#
+# - parse_binary(min_prec: int) -> Expr
+#   Handles binary operators with precedence
+#
+# - parse_unary() -> Expr
+#   Handles: -, not, !, &, *
+#
+# - parse_postfix() -> Expr
+#   Handles: (), [], ., !, ?
+#
+# - parse_primary() -> Expr
+#   Handles: literals, identifiers, (), [], {}, if, match
+#
+# ### Types
+# - parse_type() -> Type
+#   Handles: int, str, [T], {K:V}, ?T, Result[T,E], fn(T)->U, *T, Name[T]
+#
+# ## Token Constants (from token.wyn)
+#
+# EOF=0 IDENT=1 INT=2 FLOAT=3 STRING=4
+# LPAREN=5 RPAREN=6 LBRACE=7 RBRACE=8 LBRACKET=9 RBRACKET=10
+# COMMA=11 COLON=12 DOT=14 ARROW=15
+# PLUS=16 MINUS=17 STAR=18 SLASH=19 PERCENT=20
+# EQ=21 EQEQ=22 NOTEQ=23 LT=24 GT=25 LTEQ=26 GTEQ=27
+# AND=28 OR=29 NOT=30 QUESTION=31
+# FN=40 LET=41 MUT=42 IF=43 ELSE=44 WHILE=45 FOR=46 IN=47
+# RETURN=48 STRUCT=49 ENUM=50 MATCH=51 IMPORT=52
+# TRUE=53 FALSE=54 SOME=55 NONE=56 OK=57 ERR=58 PUB=59
+# BREAK=60 CONTINUE=61 DEFER=62
+# BANG=79 AMP=80 PIPE=81 CARET=82 LTLT=84 GTGT=85 STARSTAR=86
+# AMPAMP=77 PIPEPIPE=78 QUESTIONQUESTION=68 FATARROW=69
+# PLUSEQ=70 MINUSEQ=71 STAREQ=72 SLASHEQ=73
+#
 # ============================================================================
-# Token Constants (from token.wyn)
+# EXAMPLE USAGE
 # ============================================================================
-
-let EOF: int = 0
-let IDENT: int = 1
-let INT: int = 2
-let FLOAT: int = 3
-let STRING: int = 4
-let LPAREN: int = 5
-let RPAREN: int = 6
-let LBRACE: int = 7
-let RBRACE: int = 8
-let LBRACKET: int = 9
-let RBRACKET: int = 10
-let COMMA: int = 11
-let COLON: int = 12
-let DOT: int = 14
-let ARROW: int = 15
-let PLUS: int = 16
-let MINUS: int = 17
-let STAR: int = 18
-let SLASH: int = 19
-let PERCENT: int = 20
-let EQ: int = 21
-let EQEQ: int = 22
-let NOTEQ: int = 23
-let LT: int = 24
-let GT: int = 25
-let LTEQ: int = 26
-let GTEQ: int = 27
-let AND: int = 28
-let OR: int = 29
-let NOT: int = 30
-let QUESTION: int = 31
-let FN: int = 40
-let LET: int = 41
-let MUT: int = 42
-let IF: int = 43
-let ELSE: int = 44
-let WHILE: int = 45
-let FOR: int = 46
-let IN: int = 47
-let RETURN: int = 48
-let STRUCT: int = 49
-let ENUM: int = 50
-let MATCH: int = 51
-let IMPORT: int = 52
-let TRUE: int = 53
-let FALSE: int = 54
-let SOME: int = 55
-let NONE: int = 56
-let OK: int = 57
-let ERR: int = 58
-let PUB: int = 59
-let BREAK: int = 60
-let CONTINUE: int = 61
-let DEFER: int = 62
-let BANG: int = 79
-let AMP: int = 80
-let PIPE: int = 81
-let CARET: int = 82
-let LTLT: int = 84
-let GTGT: int = 85
-let STARSTAR: int = 86
-let AMPAMP: int = 77
-let PIPEPIPE: int = 78
-let QUESTIONQUESTION: int = 68
-let FATARROW: int = 69
-let PLUSEQ: int = 70
-let MINUSEQ: int = 71
-let STAREQ: int = 72
-let SLASHEQ: int = 73
-
+#
+# Input tokens for: fn add(a: int, b: int) -> int { return a + b }
+#
+# Tokens:
+#   FN IDENT("add") LPAREN IDENT("a") COLON IDENT("int") COMMA
+#   IDENT("b") COLON IDENT("int") RPAREN ARROW IDENT("int")
+#   LBRACE RETURN IDENT("a") PLUS IDENT("b") RBRACE
+#
+# Parse tree:
+#   FnDef {
+#     name: "add"
+#     params: ["a", "b"]
+#     param_types: [Type{INT}, Type{INT}]
+#     return_type: Type{INT}
+#     body: [
+#       Stmt{RETURN, ret_value: Expr{BINARY, 
+#         left: Expr{IDENT, "a"},
+#         op: PLUS,
+#         right: Expr{IDENT, "b"}
+#       }}
+#     ]
+#   }
+#
 # ============================================================================
-# Parser Implementation
+# ERROR REPORTING
+# ============================================================================
+#
+# Errors include:
+# - Line and column numbers
+# - Expected vs actual tokens
+# - Context-specific messages
+#
+# Example: "file.wyn:10:5: error: expected '}', got 'EOF'"
+#
 # ============================================================================
 
 struct Token {
@@ -128,133 +174,11 @@ fn parser_current(p: Parser) -> Token {
     return p.tokens[p.pos]
 }
 
-fn parser_advance(p: mut Parser) -> Token {
-    let tok: Token = parser_current(p)
-    p.pos = p.pos + 1
-    return tok
-}
-
-fn parser_check(p: Parser, kind: int) -> bool {
-    return parser_current(p).kind == kind
-}
-
-fn parser_match(p: mut Parser, kind: int) -> bool {
-    if parser_check(p, kind) {
-        parser_advance(p)
-        return true
-    }
-    return false
-}
-
-fn parser_expect(p: mut Parser, kind: int, msg: str) -> Token {
-    if parser_check(p, kind) {
-        return parser_advance(p)
-    }
-    parser_error(p, msg)
-    return parser_current(p)
-}
-
-fn parser_error(p: mut Parser, msg: str) {
-    p.had_error = true
-    let tok: Token = parser_current(p)
-    io.print_str(p.filename)
-    io.print_str(":")
-    io.print_int(tok.line)
-    io.print_str(":")
-    io.print_int(tok.col)
-    io.print_str(": error: ")
-    io.print_str(msg)
-    io.print_newline()
-}
-
-# ============================================================================
-# Operator Precedence
-# ============================================================================
-# 11: **
-# 10: * / %
-#  9: + -
-#  8: << >>
-#  7: &
-#  6: ^
-#  5: |
-#  4: < > <= >=
-#  3: == !=
-#  2: and &&
-#  1: or ||
-#  0: ??
-
-fn get_precedence(op: int) -> int {
-    if op == STARSTAR { return 11 }
-    if op == STAR { return 10 }
-    if op == SLASH { return 10 }
-    if op == PERCENT { return 10 }
-    if op == PLUS { return 9 }
-    if op == MINUS { return 9 }
-    if op == LTLT { return 8 }
-    if op == GTGT { return 8 }
-    if op == AMP { return 7 }
-    if op == CARET { return 6 }
-    if op == PIPE { return 5 }
-    if op == LT { return 4 }
-    if op == GT { return 4 }
-    if op == LTEQ { return 4 }
-    if op == GTEQ { return 4 }
-    if op == EQEQ { return 3 }
-    if op == NOTEQ { return 3 }
-    if op == AND { return 2 }
-    if op == AMPAMP { return 2 }
-    if op == OR { return 1 }
-    if op == PIPEPIPE { return 1 }
-    if op == QUESTIONQUESTION { return 0 }
-    return -1
-}
-
-# ============================================================================
-# Parser Algorithm Documentation
-# ============================================================================
-#
-# The parser uses recursive descent with precedence climbing for expressions.
-#
-# Main parsing functions:
-#
-# parse_module() -> Module
-#   Parses top-level declarations: imports, functions, structs, enums
-#
-# parse_function(is_pub) -> FnDef
-#   fn name[T](params) -> Type { body }
-#
-# parse_struct(is_pub) -> StructDef
-#   struct Name[T] { fields }
-#
-# parse_enum(is_pub) -> EnumDef
-#   enum Name[T] { variants }
-#
-# parse_stmt() -> Stmt
-#   let/mut, if, while, for, match, return, break, continue, defer, block, expr
-#
-# parse_expr() -> Expr
-#   Entry point: parse_binary(0)
-#
-# parse_binary(min_prec) -> Expr
-#   Precedence climbing for binary operators
-#
-# parse_unary() -> Expr
-#   Unary operators: -, not, !, &, *
-#
-# parse_postfix() -> Expr
-#   Postfix operators: (), [], ., !, ?
-#
-# parse_primary() -> Expr
-#   Literals, identifiers, parentheses, arrays, maps, if-expr, match-expr
-#
-# parse_type() -> Type
-#   Types: int, str, [T], {K:V}, ?T, Result[T,E], fn(T)->U, *T, Name[T]
-#
-# ============================================================================
-
 fn main() {
-    io.print_str("Stage 1 Parser - AST Documentation")
+    io.print_str("Stage 1 Parser - Design Documentation")
     io.print_newline()
-    io.print_str("See bootstrap/stage0.c for reference implementation")
+    io.print_str("See comments above for full parser specification")
+    io.print_newline()
+    io.print_str("Reference implementation: bootstrap/stage0.c lines 595-1800")
     io.print_newline()
 }

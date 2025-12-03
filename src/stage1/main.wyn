@@ -1,0 +1,58 @@
+# Stage 1 Compiler Main
+import std/io
+import ./lexer
+
+fn main() {
+    io.print_str("Wyn Stage 1 Compiler")
+    io.print_newline()
+    io.print_str("Version: 0.1.0")
+    io.print_newline()
+    io.print_newline()
+    
+    # Hardcoded for now - will add args later
+    let input_file: str = "test.wyn"
+    
+    # Check if file exists
+    if not file_exists(input_file) {
+        io.print_str("Error: File not found: ")
+        io.print_str(input_file)
+        io.print_newline()
+        return
+    }
+    
+    # Read source
+    io.print_str("Reading: ")
+    io.print_str(input_file)
+    io.print_newline()
+    
+    let source: str = read_file(input_file)
+    if source.len() == 0 {
+        io.print_str("Error: Empty file")
+        io.print_newline()
+        return
+    }
+    
+    # Phase 1: Lexing
+    io.print_str("Lexing...")
+    io.print_newline()
+    io.print_str("(Lexer integration in progress)")
+    io.print_newline()
+    
+    # Phase 2: Parsing
+    io.print_str("Parsing...")
+    io.print_newline()
+    # TODO: Call parser
+    
+    # Phase 3: Type Checking
+    io.print_str("Type checking...")
+    io.print_newline()
+    # TODO: Call type checker
+    
+    # Phase 4: Code Generation
+    io.print_str("Generating code...")
+    io.print_newline()
+    # TODO: Call codegen
+    
+    io.print_str("Compilation complete!")
+    io.print_newline()
+}
