@@ -122,7 +122,7 @@ fn replace(s: str, old: str, new: str) -> str {
 
 # Check if string contains substring
 fn contains(s: str, substr: str) -> bool {
-    return str_find(s, substr) >= 0
+    return s.contains(substr)
 }
 
 # Check if string starts with prefix
@@ -180,7 +180,7 @@ fn count_char(s: str, c: str) -> int {
 
 # Find first index of substring, returns -1 if not found
 fn index_of(s: str, substr: str) -> int {
-    return str_find(s, substr)
+    return s.index_of(substr)
 }
 
 # Find last index of substring, returns -1 if not found
