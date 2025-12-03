@@ -1,0 +1,52 @@
+# File System Module
+# File and directory operations
+
+# Read entire file to string
+fn read_file(path: str) -> str {
+    # Implemented as builtin
+}
+
+# Write string to file
+fn write_file(path: str, content: str) {
+    # Implemented as builtin
+}
+
+# Append string to file
+fn append_file(path: str, content: str) {
+    # Implemented as builtin
+}
+
+# Delete file
+fn delete_file(path: str) {
+    # Implemented as builtin
+}
+
+# Check if file exists
+fn file_exists(path: str) -> bool {
+    # Implemented as builtin
+}
+
+# Get file size in bytes
+fn file_size(path: str) -> int {
+    # Implemented as builtin
+}
+
+# Check if path is a directory
+fn is_dir(path: str) -> bool {
+    # Implemented as builtin
+}
+
+# List directory contents
+fn list_dir(path: str) -> [str] {
+    # Implemented as builtin
+}
+
+# Create directory
+fn mkdir(path: str) {
+    # Implemented as builtin
+}
+
+# Remove directory
+fn rmdir(path: str) {
+    # Implemented as builtin
+}
