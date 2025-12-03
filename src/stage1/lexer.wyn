@@ -1,62 +1,68 @@
 # Stage 1 Lexer
-# Uses only Stage 0 compatible features
+import std/io
 
-import ./token
+struct Token {
+    kind: int
+    value: str
+    line: int
+    col: int
+}
 
 struct Lexer {
     source: str
     pos: int
     line: int
     col: int
-    len: int
 }
 
-fn lexer_new(source: str) -> Lexer {
-    return Lexer{
-        source: source,
-        pos: 0,
-        line: 1,
-        col: 1,
-        len: len(source)
-    }
+fn new_lexer(source: str) -> Lexer {
+    return Lexer{source: source, pos: 0, line: 1, col: 1}
 }
 
-fn lexer_peek(lex: Lexer) -> str {
-    if lex.pos >= lex.len {
+fn peek(lex: Lexer) -> str {
+    if lex.pos >= lex.source.len() {
         return ""
     }
-    return substring(lex.source, lex.pos, lex.pos + 1)
+    return str_substr(lex.source, lex.pos, 1)
 }
 
-fn lexer_peek_next(lex: Lexer) -> str {
-    if lex.pos + 1 >= lex.len {
-        return ""
+fn advance(lex: Lexer) -> Lexer {
+    if lex.pos >= lex.source.len() {
+        return lex
     }
-    return substring(lex.source, lex.pos + 1, lex.pos + 2)
-}
-
-fn lexer_advance(mut lex: Lexer) -> str {
-    if lex.pos >= lex.len {
-        return ""
-    }
-    let c: str = substring(lex.source, lex.pos, lex.pos + 1)
-    lex.pos = lex.pos + 1
+    
+    let c: str = str_substr(lex.source, lex.pos, 1)
+    let mut new_lex: Lexer = lex
+    new_lex.pos = lex.pos + 1
+    
     if c == "\n" {
-        lex.line = lex.line + 1
-        lex.col = 1
+        new_lex.line = lex.line + 1
+        new_lex.col = 1
     } else {
-        lex.col = lex.col + 1
+        new_lex.col = lex.col + 1
     }
-    return c
+    
+    return new_lex
 }
 
-fn is_whitespace(c: str) -> bool {
-    return c == " " or c == "\t" or c == "\n" or c == "\r"
+fn skip_whitespace(lex: Lexer) -> Lexer {
+    let mut l: Lexer = lex
+    
+    while l.pos < l.source.len() {
+        let c: str = peek(l)
+        if c == " " or c == "\t" or c == "\n" or c == "\r" {
+            l = advance(l)
+        } else {
+            break
+        }
+    }
+    
+    return l
 }
 
 fn is_digit(c: str) -> bool {
-    let code: int = ord(c)
-    return code >= 48 and code <= 57
+    return c == "0" or c == "1" or c == "2" or c == "3" or c == "4" or
+           c == "5" or c == "6" or c == "7" or c == "8" or c == "9"
 }
 
 fn is_alpha(c: str) -> bool {
@@ -64,222 +70,101 @@ fn is_alpha(c: str) -> bool {
     return (code >= 65 and code <= 90) or (code >= 97 and code <= 122) or c == "_"
 }
 
-fn is_alnum(c: str) -> bool {
-    return is_alpha(c) or is_digit(c)
+fn lex_number(lex: Lexer) -> (Lexer, Token) {
+    let start: int = lex.pos
+    let mut l: Lexer = lex
+    
+    # Read digits
+    while l.pos < l.source.len() and is_digit(peek(l)) {
+        l = advance(l)
+    }
+    
+    # Check for decimal
+    if l.pos < l.source.len() and peek(l) == "." {
+        l = advance(l)
+        
+        while l.pos < l.source.len() and is_digit(peek(l)) {
+            l = advance(l)
+        }
+    }
+    
+    let value: str = str_substr(lex.source, start, l.pos - start)
+    let tok: Token = Token{kind: 2, value: value, line: lex.line, col: lex.col}
+    
+    return (l, tok)
 }
 
-fn lexer_skip_whitespace(mut lex: Lexer) {
-    while lex.pos < lex.len {
-        let c: str = lexer_peek(lex)
-        if is_whitespace(c) {
-            lexer_advance(lex)
-        } else if c == "#" {
-            # Skip comment to end of line
-            while lex.pos < lex.len and lexer_peek(lex) != "\n" {
-                lexer_advance(lex)
-            }
-        } else if c == "/" and lexer_peek_next(lex) == "/" {
-            # Skip // comment
-            while lex.pos < lex.len and lexer_peek(lex) != "\n" {
-                lexer_advance(lex)
-            }
+fn lex_ident(lex: Lexer) -> (Lexer, Token) {
+    let start: int = lex.pos
+    let mut l: Lexer = lex
+    
+    while l.pos < l.source.len() {
+        let c: str = peek(l)
+        if is_alpha(c) or is_digit(c) {
+            l = advance(l)
         } else {
             break
         }
     }
+    
+    let value: str = str_substr(lex.source, start, l.pos - start)
+    let kind: int = keyword_kind(value)
+    let tok: Token = Token{kind: kind, value: value, line: lex.line, col: lex.col}
+    
+    return (l, tok)
 }
 
-fn keyword_or_ident(s: str) -> int {
-    if s == "fn" { return FN }
-    if s == "let" { return LET }
-    if s == "mut" { return MUT }
-    if s == "if" { return IF }
-    if s == "else" { return ELSE }
-    if s == "while" { return WHILE }
-    if s == "for" { return FOR }
-    if s == "in" { return IN }
-    if s == "return" { return RETURN }
-    if s == "struct" { return STRUCT }
-    if s == "enum" { return ENUM }
-    if s == "match" { return MATCH }
-    if s == "true" { return TRUE }
-    if s == "false" { return FALSE }
-    if s == "import" { return IMPORT }
-    if s == "pub" { return PUB }
-    if s == "break" { return BREAK }
-    if s == "continue" { return CONTINUE }
-    if s == "defer" { return DEFER }
-    if s == "and" { return AND }
-    if s == "or" { return OR }
-    if s == "not" { return NOT }
-    return IDENT
+fn keyword_kind(word: str) -> int {
+    if word == "fn" { return 40 }
+    if word == "let" { return 41 }
+    if word == "mut" { return 42 }
+    if word == "if" { return 43 }
+    if word == "else" { return 44 }
+    if word == "while" { return 45 }
+    if word == "for" { return 46 }
+    if word == "return" { return 47 }
+    if word == "struct" { return 48 }
+    if word == "enum" { return 49 }
+    if word == "match" { return 50 }
+    if word == "import" { return 51 }
+    if word == "true" { return 52 }
+    if word == "false" { return 53 }
+    return 1  # IDENT
 }
 
-fn lexer_next(mut lex: Lexer) -> Token {
-    lexer_skip_whitespace(lex)
+fn next_token(lex: Lexer) -> (Lexer, Token) {
+    let l: Lexer = skip_whitespace(lex)
     
-    if lex.pos >= lex.len {
-        return token_new(EOF, "", lex.line, lex.col)
+    if l.pos >= l.source.len() {
+        let tok: Token = Token{kind: 0, value: "", line: l.line, col: l.col}
+        return (l, tok)
     }
     
-    let start_line: int = lex.line
-    let start_col: int = lex.col
-    let c: str = lexer_peek(lex)
-    
-    # Identifiers and keywords
-    if is_alpha(c) {
-        let start: int = lex.pos
-        while lex.pos < lex.len and is_alnum(lexer_peek(lex)) {
-            lexer_advance(lex)
-        }
-        let value: str = substring(lex.source, start, lex.pos)
-        let kind: int = keyword_or_ident(value)
-        return token_new(kind, value, start_line, start_col)
-    }
+    let c: str = peek(l)
     
     # Numbers
     if is_digit(c) {
-        let start: int = lex.pos
-        while lex.pos < lex.len and is_digit(lexer_peek(lex)) {
-            lexer_advance(lex)
-        }
-        let mut kind: int = INT
-        if lexer_peek(lex) == "." and is_digit(lexer_peek_next(lex)) {
-            lexer_advance(lex)
-            while lex.pos < lex.len and is_digit(lexer_peek(lex)) {
-                lexer_advance(lex)
-            }
-            kind = FLOAT
-        }
-        let value: str = substring(lex.source, start, lex.pos)
-        return token_new(kind, value, start_line, start_col)
+        return lex_number(l)
     }
     
-    # Strings
-    if c == "\"" {
-        lexer_advance(lex)
-        let start: int = lex.pos
-        while lex.pos < lex.len and lexer_peek(lex) != "\"" {
-            if lexer_peek(lex) == "\\" {
-                lexer_advance(lex)
-            }
-            lexer_advance(lex)
-        }
-        let value: str = substring(lex.source, start, lex.pos)
-        lexer_advance(lex)  # consume closing "
-        return token_new(STRING, value, start_line, start_col)
+    # Identifiers and keywords
+    if is_alpha(c) {
+        return lex_ident(l)
     }
     
-    # Two-character operators
-    let c2: str = lexer_peek_next(lex)
+    # Single char tokens
+    let new_lex: Lexer = advance(l)
     
-    if c == "-" and c2 == ">" {
-        lexer_advance(lex)
-        lexer_advance(lex)
-        return token_new(ARROW, "->", start_line, start_col)
-    }
-    if c == "=" and c2 == "=" {
-        lexer_advance(lex)
-        lexer_advance(lex)
-        return token_new(EQEQ, "==", start_line, start_col)
-    }
-    if c == "!" and c2 == "=" {
-        lexer_advance(lex)
-        lexer_advance(lex)
-        return token_new(NE, "!=", start_line, start_col)
-    }
-    if c == "<" and c2 == "=" {
-        lexer_advance(lex)
-        lexer_advance(lex)
-        return token_new(LE, "<=", start_line, start_col)
-    }
-    if c == ">" and c2 == "=" {
-        lexer_advance(lex)
-        lexer_advance(lex)
-        return token_new(GE, ">=", start_line, start_col)
-    }
-    if c == "." and c2 == "." {
-        lexer_advance(lex)
-        lexer_advance(lex)
-        if lexer_peek(lex) == "=" {
-            lexer_advance(lex)
-            return token_new(DOTDOTEQ, "..=", start_line, start_col)
-        }
-        return token_new(DOTDOT, "..", start_line, start_col)
-    }
-    if c == "?" and c2 == "?" {
-        lexer_advance(lex)
-        lexer_advance(lex)
-        return token_new(QUESTIONQUESTION, "??", start_line, start_col)
-    }
-    if c == "=" and c2 == ">" {
-        lexer_advance(lex)
-        lexer_advance(lex)
-        return token_new(FATARROW, "=>", start_line, start_col)
-    }
-    if c == "+" and c2 == "=" {
-        lexer_advance(lex)
-        lexer_advance(lex)
-        return token_new(PLUSEQ, "+=", start_line, start_col)
-    }
-    if c == "-" and c2 == "=" {
-        lexer_advance(lex)
-        lexer_advance(lex)
-        return token_new(MINUSEQ, "-=", start_line, start_col)
-    }
-    if c == "*" and c2 == "=" {
-        lexer_advance(lex)
-        lexer_advance(lex)
-        return token_new(STAREQ, "*=", start_line, start_col)
-    }
-    if c == "/" and c2 == "=" {
-        lexer_advance(lex)
-        lexer_advance(lex)
-        return token_new(SLASHEQ, "/=", start_line, start_col)
-    }
-    if c == "*" and c2 == "*" {
-        lexer_advance(lex)
-        lexer_advance(lex)
-        return token_new(STARSTAR, "**", start_line, start_col)
-    }
-    if c == "<" and c2 == "<" {
-        lexer_advance(lex)
-        lexer_advance(lex)
-        return token_new(LTLT, "<<", start_line, start_col)
-    }
-    if c == ">" and c2 == ">" {
-        lexer_advance(lex)
-        lexer_advance(lex)
-        return token_new(GTGT, ">>", start_line, start_col)
-    }
+    if c == "(" { return (new_lex, Token{kind: 5, value: c, line: l.line, col: l.col}) }
+    if c == ")" { return (new_lex, Token{kind: 6, value: c, line: l.line, col: l.col}) }
+    if c == "," { return (new_lex, Token{kind: 11, value: c, line: l.line, col: l.col}) }
+    if c == ":" { return (new_lex, Token{kind: 12, value: c, line: l.line, col: l.col}) }
+    if c == "+" { return (new_lex, Token{kind: 16, value: c, line: l.line, col: l.col}) }
+    if c == "-" { return (new_lex, Token{kind: 17, value: c, line: l.line, col: l.col}) }
+    if c == "*" { return (new_lex, Token{kind: 18, value: c, line: l.line, col: l.col}) }
+    if c == "/" { return (new_lex, Token{kind: 19, value: c, line: l.line, col: l.col}) }
     
-    # Single-character tokens
-    lexer_advance(lex)
-    if c == "(" { return token_new(LPAREN, "(", start_line, start_col) }
-    if c == ")" { return token_new(RPAREN, ")", start_line, start_col) }
-    if c == "{" { return token_new(LBRACE, "{", start_line, start_col) }
-    if c == "}" { return token_new(RBRACE, "}", start_line, start_col) }
-    if c == "[" { return token_new(LBRACKET, "[", start_line, start_col) }
-    if c == "]" { return token_new(RBRACKET, "]", start_line, start_col) }
-    if c == "," { return token_new(COMMA, ",", start_line, start_col) }
-    if c == ":" { return token_new(COLON, ":", start_line, start_col) }
-    if c == ";" { return token_new(SEMICOLON, ";", start_line, start_col) }
-    if c == "." { return token_new(DOT, ".", start_line, start_col) }
-    if c == "=" { return token_new(EQ, "=", start_line, start_col) }
-    if c == "<" { return token_new(LT, "<", start_line, start_col) }
-    if c == ">" { return token_new(GT, ">", start_line, start_col) }
-    if c == "+" { return token_new(PLUS, "+", start_line, start_col) }
-    if c == "-" { return token_new(MINUS, "-", start_line, start_col) }
-    if c == "*" { return token_new(STAR, "*", start_line, start_col) }
-    if c == "/" { return token_new(SLASH, "/", start_line, start_col) }
-    if c == "%" { return token_new(PERCENT, "%", start_line, start_col) }
-    if c == "?" { return token_new(QUESTION, "?", start_line, start_col) }
-    if c == "!" { return token_new(BANG, "!", start_line, start_col) }
-    if c == "|" { return token_new(PIPE, "|", start_line, start_col) }
-    if c == "&" { return token_new(AMP, "&", start_line, start_col) }
-    if c == "^" { return token_new(CARET, "^", start_line, start_col) }
-    if c == "~" { return token_new(TILDE, "~", start_line, start_col) }
-    
-    # Unknown character
-    return token_new(EOF, c, start_line, start_col)
+    # Unknown
+    let tok: Token = Token{kind: 99, value: c, line: l.line, col: l.col}
+    return (new_lex, tok)
 }
