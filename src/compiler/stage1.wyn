@@ -335,6 +335,12 @@ fn main() {
             str_count = str_count + 1
         }
         
+        // Detect print(number) - write code immediately
+        if do_codegen and prev2_kind == 1 and prev_text == "print" and prev_kind == 14 and tok.kind == 2 {
+            append_file(output, "    mov x0, #" + tok.text + "\n")
+            append_file(output, "    bl _wyn_print_int\n")
+        }
+        
         // Track paren depth
         if tok.kind == 14 { paren_depth = paren_depth + 1 }  // (
         if tok.kind == 15 { paren_depth = paren_depth - 1 }  // )
@@ -448,8 +454,16 @@ fn main() {
         print_str(output)
         print_newline()
         
-        // Write main epilogue and data section
-        append_file(output, "    mov x0, #0\n    ldp x29, x30, [sp, #16]\n    add sp, sp, #32\n    ret\n\n    .section __DATA,__data\n")
+        // Write main epilogue
+        append_file(output, "    mov x0, #0\n    ldp x29, x30, [sp, #16]\n    add sp, sp, #32\n    ret\n\n")
+        
+        // Write print_int helper
+        append_file(output, "_wyn_print_int:\n    sub sp, sp, #48\n    stp x29, x30, [sp, #32]\n    add x29, sp, #32\n")
+        append_file(output, "    str x0, [sp, #0]\n    adrp x0, L_.fmt@PAGE\n    add x0, x0, L_.fmt@PAGEOFF\n")
+        append_file(output, "    add x1, sp, #0\n    bl _vprintf\n    ldp x29, x30, [sp, #32]\n    add sp, sp, #48\n    ret\n\n")
+        
+        // Write data section
+        append_file(output, "    .section __DATA,__data\nL_.fmt:\n    .asciz \"%lld\\n\"\n")
         append_file(output, strings)
         
         print_str("Written: ")
