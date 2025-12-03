@@ -91,11 +91,11 @@
 | Builtin | Needed By | Status |\n|---------|-----------|--------|\n| `str_concat(a, b)` | string.wyn | ✅ Working |\n| `str_substr(s, start, len)` | string.wyn | ✅ Working |\n| `str_split(s, delim)` | string.wyn | ⚠️ Implemented but needs debugging |
 
 ### Priority 2 - Useful for stdlib
-| Builtin | Needed By | Implementation |
-|---------|-----------|----------------|
-| `list_dir(path)` | fs.wyn | opendir/readdir |
-| `file_size(path)` | fs.wyn | stat() |
-| `is_dir(path)` | fs.wyn | stat() |
+| Builtin | Needed By | Status |
+|---------|-----------|--------|
+| `list_dir(path)` | fs.wyn | ❌ Not yet (needs opendir/readdir) |
+| `file_size(path)` | fs.wyn | ✅ Working |
+| `is_dir(path)` | fs.wyn | ✅ Working |
 
 ### Priority 3 - Nice to have
 | Builtin | Needed By | Implementation |
