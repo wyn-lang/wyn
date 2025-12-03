@@ -1,3 +1,4 @@
+import std/io
 # String stdlib tests
 # NOTE: These compile but have runtime issues in Stage 0
 # Tests will be fully functional in Stage 1

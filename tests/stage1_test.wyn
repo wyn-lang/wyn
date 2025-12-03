@@ -1,3 +1,4 @@
+import std/io
 # Test that Stage 1 compiler can be compiled and run
 
 fn main() {

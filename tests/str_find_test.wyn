@@ -1,3 +1,4 @@
+import std/io
 # Test str_find builtin
 
 fn main() {

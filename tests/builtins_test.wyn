@@ -1,19 +1,21 @@
+import std/io
+
 fn main() {
-    # abs - using method syntax (unchanged)
+    # abs - using method syntax
     assert((-5).abs() == 5)
     assert((5).abs() == 5)
     assert((0).abs() == 0)
     
-    # min/max - these remain as builtins for now
-    assert(min(3, 7) == 3)
-    assert(max(3, 7) == 7)
-    assert(min(-5, -2) == -5)
-    assert(max(-5, -2) == -2)
+    # min/max - using module syntax
+    assert(math.min(3, 7) == 3)
+    assert(math.max(3, 7) == 7)
+    assert(math.min(-5, -2) == -5)
+    assert(math.max(-5, -2) == -2)
     
-    # Method syntax (unchanged)
+    # Method syntax
     assert((-10).abs() == 10)
     assert("hello".len() == 5)
     assert("123".to_int() == 123)
     
-    print_str("builtins_test: PASS")
+    io.print_str("builtins_test: PASS")
 }

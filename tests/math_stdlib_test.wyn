@@ -1,3 +1,4 @@
+import std/io
 fn main() {
     test_abs()
     test_min_max()

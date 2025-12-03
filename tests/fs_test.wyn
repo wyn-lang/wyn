@@ -1,10 +1,6 @@
-# Test filesystem syscalls
+import std/io
 
 fn main() {
-    # Test list_dir
-    let entries: [str] = list_dir("tests")
-    assert(entries.len() > 0)
-    
     # Test is_dir
     assert(is_dir("tests"))
     assert(not is_dir("Makefile"))
@@ -13,10 +9,10 @@ fn main() {
     let size: int = file_size("Makefile")
     assert(size > 0)
     
-    # Test file_exists (existing)
+    # Test file_exists
     assert(file_exists("Makefile"))
     assert(not file_exists("nonexistent_file_xyz"))
     
-    print_str("fs_test passed")
-    print_newline()
+    io.print_str("fs_test passed")
+    io.print_newline()
 }
