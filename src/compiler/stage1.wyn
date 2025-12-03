@@ -1,0 +1,295 @@
+// Wyn Stage 1 Compiler - Minimal Self-Hosting Version
+// This version uses only features that Stage 0 supports
+
+// Token structure
+struct Token {
+    kind: int
+    text: str
+    int_val: int
+    line: int
+    col: int
+}
+
+// Lexer state
+struct Lexer {
+    source: str
+    pos: int
+    len: int
+    line: int
+    col: int
+}
+
+fn lexer_new(source: str) -> Lexer {
+    return Lexer{source: source, pos: 0, len: source.len(), line: 1, col: 1}
+}
+
+fn is_alpha(c: str) -> bool {
+    return (str_cmp(c, "a") >= 0 and str_cmp(c, "z") <= 0) or
+           (str_cmp(c, "A") >= 0 and str_cmp(c, "Z") <= 0) or
+           c == "_"
+}
+
+fn is_digit(c: str) -> bool {
+    return str_cmp(c, "0") >= 0 and str_cmp(c, "9") <= 0
+}
+
+fn is_alnum(c: str) -> bool {
+    return is_alpha(c) or is_digit(c)
+}
+
+fn lexer_peek(lex: Lexer) -> str {
+    if lex.pos >= lex.len {
+        return ""
+    }
+    return substring(lex.source, lex.pos, 1)
+}
+
+fn lexer_advance(mut lex: Lexer) -> str {
+    let c: str = lexer_peek(lex)
+    lex.pos = lex.pos + 1
+    if c == "\n" {
+        lex.line = lex.line + 1
+        lex.col = 1
+    } else {
+        lex.col = lex.col + 1
+    }
+    return c
+}
+
+fn lexer_skip_ws(mut lex: Lexer) {
+    while lex.pos < lex.len {
+        let c: str = lexer_peek(lex)
+        if c == " " or c == "\t" or c == "\n" or c == "\r" {
+            lexer_advance(lex)
+        } else if c == "#" {
+            while lex.pos < lex.len and lexer_peek(lex) != "\n" {
+                lexer_advance(lex)
+            }
+        } else if c == "/" and lex.pos + 1 < lex.len {
+            let next: str = substring(lex.source, lex.pos + 1, 1)
+            if next == "/" {
+                while lex.pos < lex.len and lexer_peek(lex) != "\n" {
+                    lexer_advance(lex)
+                }
+            } else {
+                break
+            }
+        } else {
+            break
+        }
+    }
+}
+
+fn keyword_kind(text: str) -> int {
+    // Token kinds: 0=EOF, 1=IDENT, 2=INT, 3=STRING, 4=FN, 5=LET, etc.
+    if text == "fn" { return 4 }
+    if text == "let" { return 5 }
+    if text == "mut" { return 6 }
+    if text == "if" { return 7 }
+    if text == "else" { return 8 }
+    if text == "while" { return 9 }
+    if text == "for" { return 10 }
+    if text == "in" { return 11 }
+    if text == "return" { return 12 }
+    if text == "struct" { return 13 }
+    if text == "true" { return 34 }
+    if text == "false" { return 35 }
+    if text == "and" { return 36 }
+    if text == "or" { return 37 }
+    if text == "not" { return 38 }
+    if text == "match" { return 39 }
+    if text == "import" { return 41 }
+    return 1  // IDENT
+}
+
+fn lexer_next(mut lex: Lexer) -> Token {
+    lexer_skip_ws(lex)
+    
+    if lex.pos >= lex.len {
+        return Token{kind: 0, text: "", int_val: 0, line: lex.line, col: lex.col}
+    }
+    
+    let start_line: int = lex.line
+    let start_col: int = lex.col
+    let c: str = lexer_peek(lex)
+    
+    // Identifiers and keywords
+    if is_alpha(c) {
+        let start: int = lex.pos
+        while lex.pos < lex.len and is_alnum(lexer_peek(lex)) {
+            lexer_advance(lex)
+        }
+        let text: str = substring(lex.source, start, lex.pos - start)
+        let kind: int = keyword_kind(text)
+        return Token{kind: kind, text: text, int_val: 0, line: start_line, col: start_col}
+    }
+    
+    // Numbers
+    if is_digit(c) {
+        let start: int = lex.pos
+        let mut val: int = 0
+        while lex.pos < lex.len and is_digit(lexer_peek(lex)) {
+            val = val * 10 + (ord(lexer_peek(lex)) - ord("0"))
+            lexer_advance(lex)
+        }
+        let text: str = substring(lex.source, start, lex.pos - start)
+        return Token{kind: 2, text: text, int_val: val, line: start_line, col: start_col}
+    }
+    
+    // Strings
+    if c == "\"" {
+        lexer_advance(lex)
+        let start: int = lex.pos
+        while lex.pos < lex.len and lexer_peek(lex) != "\"" {
+            if lexer_peek(lex) == "\\" {
+                lexer_advance(lex)
+            }
+            lexer_advance(lex)
+        }
+        let text: str = substring(lex.source, start, lex.pos - start)
+        lexer_advance(lex)  // consume closing quote
+        return Token{kind: 3, text: text, int_val: 0, line: start_line, col: start_col}
+    }
+    
+    // Two-character operators
+    if lex.pos + 1 < lex.len {
+        let two: str = substring(lex.source, lex.pos, 2)
+        if two == "==" {
+            lexer_advance(lex)
+            lexer_advance(lex)
+            return Token{kind: 31, text: "==", int_val: 0, line: start_line, col: start_col}
+        }
+        if two == "->" {
+            lexer_advance(lex)
+            lexer_advance(lex)
+            return Token{kind: 32, text: "->", int_val: 0, line: start_line, col: start_col}
+        }
+        if two == "=>" {
+            lexer_advance(lex)
+            lexer_advance(lex)
+            return Token{kind: 40, text: "=>", int_val: 0, line: start_line, col: start_col}
+        }
+        if two == ".." {
+            lexer_advance(lex)
+            lexer_advance(lex)
+            return Token{kind: 33, text: "..", int_val: 0, line: start_line, col: start_col}
+        }
+    }
+    
+    // Single-character tokens
+    lexer_advance(lex)
+    if c == "(" { return Token{kind: 14, text: "(", int_val: 0, line: start_line, col: start_col} }
+    if c == ")" { return Token{kind: 15, text: ")", int_val: 0, line: start_line, col: start_col} }
+    if c == "{" { return Token{kind: 16, text: "{", int_val: 0, line: start_line, col: start_col} }
+    if c == "}" { return Token{kind: 17, text: "}", int_val: 0, line: start_line, col: start_col} }
+    if c == "[" { return Token{kind: 18, text: "[", int_val: 0, line: start_line, col: start_col} }
+    if c == "]" { return Token{kind: 19, text: "]", int_val: 0, line: start_line, col: start_col} }
+    if c == "," { return Token{kind: 20, text: ",", int_val: 0, line: start_line, col: start_col} }
+    if c == ":" { return Token{kind: 21, text: ":", int_val: 0, line: start_line, col: start_col} }
+    if c == ";" { return Token{kind: 22, text: ";", int_val: 0, line: start_line, col: start_col} }
+    if c == "." { return Token{kind: 23, text: ".", int_val: 0, line: start_line, col: start_col} }
+    if c == "=" { return Token{kind: 24, text: "=", int_val: 0, line: start_line, col: start_col} }
+    if c == "+" { return Token{kind: 25, text: "+", int_val: 0, line: start_line, col: start_col} }
+    if c == "-" { return Token{kind: 26, text: "-", int_val: 0, line: start_line, col: start_col} }
+    if c == "*" { return Token{kind: 27, text: "*", int_val: 0, line: start_line, col: start_col} }
+    if c == "/" { return Token{kind: 28, text: "/", int_val: 0, line: start_line, col: start_col} }
+    if c == "<" { return Token{kind: 29, text: "<", int_val: 0, line: start_line, col: start_col} }
+    if c == ">" { return Token{kind: 30, text: ">", int_val: 0, line: start_line, col: start_col} }
+    
+    return Token{kind: 0, text: "", int_val: 0, line: start_line, col: start_col}
+}
+
+fn token_name(kind: int) -> str {
+    if kind == 0 { return "EOF" }
+    if kind == 1 { return "IDENT" }
+    if kind == 2 { return "INT" }
+    if kind == 3 { return "STRING" }
+    if kind == 4 { return "fn" }
+    if kind == 5 { return "let" }
+    if kind == 6 { return "mut" }
+    if kind == 7 { return "if" }
+    if kind == 8 { return "else" }
+    if kind == 9 { return "while" }
+    if kind == 10 { return "for" }
+    if kind == 11 { return "in" }
+    if kind == 12 { return "return" }
+    if kind == 13 { return "struct" }
+    if kind == 14 { return "(" }
+    if kind == 15 { return ")" }
+    if kind == 16 { return "{" }
+    if kind == 17 { return "}" }
+    if kind == 18 { return "[" }
+    if kind == 19 { return "]" }
+    if kind == 20 { return "," }
+    if kind == 21 { return ":" }
+    if kind == 24 { return "=" }
+    if kind == 25 { return "+" }
+    if kind == 26 { return "-" }
+    if kind == 27 { return "*" }
+    if kind == 28 { return "/" }
+    if kind == 31 { return "==" }
+    if kind == 32 { return "->" }
+    return "?"
+}
+
+// Main entry point
+fn main() {
+    let argv: [str] = args()
+    
+    if argv.len() < 2 {
+        print_str("Wyn Stage 1 Compiler")
+        print_newline()
+        print_str("Usage: stage1 <input.wyn>")
+        print_newline()
+        exit(1)
+    }
+    
+    let input: str = argv[1]
+    let source: str = read_file(input)
+    
+    if source.len() == 0 {
+        print_str("Error: Could not read file: ")
+        print_str(input)
+        print_newline()
+        exit(1)
+    }
+    
+    print_str("Compiling: ")
+    print_str(input)
+    print_newline()
+    print_str("Source: ")
+    print(source.len())
+    print_str(" bytes")
+    print_newline()
+    
+    // Tokenize
+    let mut lex: Lexer = lexer_new(source)
+    let mut count: int = 0
+    
+    print_str("Tokens (first 20):")
+    print_newline()
+    
+    while true {
+        let tok: Token = lexer_next(lex)
+        if count < 20 {
+            print_str("  ")
+            print_str(token_name(tok.kind))
+            if tok.kind == 1 or tok.kind == 2 or tok.kind == 3 {
+                print_str(" ")
+                print_str(tok.text)
+            }
+            print_newline()
+        }
+        count = count + 1
+        if tok.kind == 0 {
+            break
+        }
+    }
+    
+    print_str("Total tokens: ")
+    print(count)
+    print_newline()
+    
+    print_str("Stage 1 compilation complete")
+    print_newline()
+}
