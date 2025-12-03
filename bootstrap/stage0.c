@@ -840,6 +840,21 @@ static const char* map_module_function(const char* module, const char* function)
     return NULL;
 }
 
+// Helper: Check if a call expression is calling a specific builtin
+// Handles both direct calls (func()) and module calls (module.func())
+static bool is_builtin_call(Expr* call_func, const char* builtin_name) {
+    if (call_func->kind == EXPR_IDENT) {
+        return strcmp(call_func->ident, builtin_name) == 0;
+    }
+    if (call_func->kind == EXPR_FIELD && call_func->field.object->kind == EXPR_IDENT) {
+        const char* module = call_func->field.object->ident;
+        const char* function = call_func->field.field;
+        const char* mapped = map_module_function(module, function);
+        return mapped && strcmp(mapped, builtin_name) == 0;
+    }
+    return false;
+}
+
 static void parser_error(Parser* p, const char* fmt, ...) {
     p->had_error = true;
     fprintf(stderr, "%s:%d:%d: error: ", p->filename, p->current.line, p->current.column);
@@ -2558,6 +2573,23 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
         }
         
         case EXPR_CALL: {
+            // Check if this is a module.function() call
+            if (e->call.func->kind == EXPR_FIELD && 
+                e->call.func->field.object->kind == EXPR_IDENT) {
+                const char* module = e->call.func->field.object->ident;
+                const char* function = e->call.func->field.field;
+                const char* builtin_name = map_module_function(module, function);
+                if (builtin_name) {
+                    // It's a valid module.function() call - check args
+                    for (int i = 0; i < e->call.arg_count; i++) {
+                        tc_check_expr(tc, e->call.args[i]);
+                    }
+                    // Return appropriate type based on function
+                    // For now, return ANY - could be improved with a lookup table
+                    return new_type(TYPE_ANY);
+                }
+            }
+            
             Type* func_type = tc_check_expr(tc, e->call.func);
             (void)func_type;
             for (int i = 0; i < e->call.arg_count; i++) {
@@ -3482,7 +3514,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     break;
                 }
                 // Handle built-in abs()
-                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "abs") == 0) {
+                if (is_builtin_call(e->call.func, "abs")) {
                     cg_expr(cg, e->call.args[0]);
                     cg_emit(cg, "    movq %%rax, %%rcx");
                     cg_emit(cg, "    negq %%rax");
@@ -3490,7 +3522,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     break;
                 }
                 // Handle built-in min()
-                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "min") == 0) {
+                if (is_builtin_call(e->call.func, "min")) {
                     cg_expr(cg, e->call.args[1]);
                     cg_emit(cg, "    pushq %%rax");
                     cg_expr(cg, e->call.args[0]);
@@ -3500,7 +3532,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     break;
                 }
                 // Handle built-in max()
-                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "max") == 0) {
+                if (is_builtin_call(e->call.func, "max")) {
                     cg_expr(cg, e->call.args[1]);
                     cg_emit(cg, "    pushq %%rax");
                     cg_expr(cg, e->call.args[0]);
@@ -4215,10 +4247,25 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 // Look up function for default parameters
                 FnDef* fn = NULL;
                 int total_args = e->call.arg_count;
+                const char* func_name = NULL;
+                
                 if (e->call.func->kind == EXPR_IDENT) {
-                    fn = cg_lookup_fn(cg, e->call.func->ident);
+                    func_name = e->call.func->ident;
+                    fn = cg_lookup_fn(cg, func_name);
                     if (fn) total_args = fn->param_count;
+                } else if (e->call.func->kind == EXPR_FIELD && 
+                           e->call.func->field.object->kind == EXPR_IDENT) {
+                    // Check if this is a module.function() call
+                    const char* module = e->call.func->field.object->ident;
+                    const char* function = e->call.func->field.field;
+                    func_name = map_module_function(module, function);
+                    if (func_name) {
+                        // Treat as builtin function call
+                        fn = cg_lookup_fn(cg, func_name);
+                        if (fn) total_args = fn->param_count;
+                    }
                 }
+                
                 // x86_64 SysV ABI: rdi, rsi, rdx, rcx, r8, r9
                 const char* regs[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
                 // Push default values for missing args (in reverse order)
@@ -4241,7 +4288,10 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 for (int i = 0; i < total_args && i < 6; i++) {
                     cg_emit(cg, "    popq %%%s", regs[i]);
                 }
-                if (e->call.func->kind == EXPR_IDENT) {
+                if (func_name) {
+                    cg_emit(cg, "    xorl %%eax, %%eax");  // Clear AL for varargs
+                    cg_emit(cg, "    callq %s%s", cg_sym_prefix(cg), func_name);
+                } else if (e->call.func->kind == EXPR_IDENT) {
                     cg_emit(cg, "    xorl %%eax, %%eax");  // Clear AL for varargs
                     // Check if it's a local variable (function pointer) or global function
                     if (fn) {
@@ -4984,14 +5034,14 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 break;
             }
             // Handle built-in abs()
-            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "abs") == 0) {
+            if (is_builtin_call(e->call.func, "abs")) {
                 cg_expr(cg, e->call.args[0]);
                 cg_emit(cg, "    cmp x0, #0");
                 cg_emit(cg, "    cneg x0, x0, lt");
                 break;
             }
             // Handle built-in min()
-            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "min") == 0) {
+            if (is_builtin_call(e->call.func, "min")) {
                 cg_expr(cg, e->call.args[1]);
                 cg_emit(cg, "    str x0, [sp, #-16]!");
                 cg_expr(cg, e->call.args[0]);
@@ -5001,7 +5051,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 break;
             }
             // Handle built-in max()
-            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "max") == 0) {
+            if (is_builtin_call(e->call.func, "max")) {
                 cg_expr(cg, e->call.args[1]);
                 cg_emit(cg, "    str x0, [sp, #-16]!");
                 cg_expr(cg, e->call.args[0]);
@@ -5719,6 +5769,43 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     break;
                 }
             }
+            // Check for module.function() call first
+            if (e->call.func->kind == EXPR_FIELD && 
+                e->call.func->field.object->kind == EXPR_IDENT) {
+                const char* module = e->call.func->field.object->ident;
+                const char* function = e->call.func->field.field;
+                const char* builtin_name = map_module_function(module, function);
+                if (builtin_name) {
+                    // It's a module.function() call - handle like a regular function call
+                    // Push default values and args, then call the builtin
+                    FnDef* fn = cg_lookup_fn(cg, builtin_name);
+                    int total_args = e->call.arg_count;
+                    if (fn) total_args = fn->param_count;
+                    
+                    // Push default values for missing args (in reverse order)
+                    if (fn && e->call.arg_count < fn->param_count) {
+                        for (int i = fn->param_count - 1; i >= e->call.arg_count; i--) {
+                            if (fn->params[i].default_val) {
+                                cg_expr(cg, fn->params[i].default_val);
+                                cg_emit(cg, "    str x0, [sp, #-16]!");
+                            } else {
+                                cg_emit(cg, "    str xzr, [sp, #-16]!");
+                            }
+                        }
+                    }
+                    // Push all provided args
+                    for (int i = e->call.arg_count - 1; i >= 0; i--) {
+                        cg_expr(cg, e->call.args[i]);
+                        cg_emit(cg, "    str x0, [sp, #-16]!");
+                    }
+                    // Pop into argument registers
+                    for (int i = 0; i < total_args && i < 8; i++) {
+                        cg_emit(cg, "    ldr x%d, [sp], #16", i);
+                    }
+                    cg_emit(cg, "    bl %s%s", cg_sym_prefix(cg), builtin_name);
+                    break;
+                }
+            }
             // Method call: obj.method(args)
             if (e->call.func->kind == EXPR_FIELD) {
                 // Push args in reverse
@@ -5766,10 +5853,25 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             // Look up function for default parameters
             FnDef* fn = NULL;
             int total_args = e->call.arg_count;
+            const char* func_name = NULL;
+            
             if (e->call.func->kind == EXPR_IDENT) {
-                fn = cg_lookup_fn(cg, e->call.func->ident);
+                func_name = e->call.func->ident;
+                fn = cg_lookup_fn(cg, func_name);
                 if (fn) total_args = fn->param_count;
+            } else if (e->call.func->kind == EXPR_FIELD && 
+                       e->call.func->field.object->kind == EXPR_IDENT) {
+                // Check if this is a module.function() call
+                const char* module = e->call.func->field.object->ident;
+                const char* function = e->call.func->field.field;
+                func_name = map_module_function(module, function);
+                if (func_name) {
+                    // Treat as builtin function call
+                    fn = cg_lookup_fn(cg, func_name);
+                    if (fn) total_args = fn->param_count;
+                }
             }
+            
             // Push default values for missing args (in reverse order)
             if (fn && e->call.arg_count < fn->param_count) {
                 for (int i = fn->param_count - 1; i >= e->call.arg_count; i--) {
@@ -5803,7 +5905,9 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             for (int i = 0; i < total_args && i < 8; i++) {
                 cg_emit(cg, "    ldr x%d, [sp], #16", i);
             }
-            if (e->call.func->kind == EXPR_IDENT) {
+            if (func_name) {
+                cg_emit(cg, "    bl %s%s", cg_sym_prefix(cg), func_name);
+            } else if (e->call.func->kind == EXPR_IDENT) {
                 // Check if it's a local variable (function pointer) or global function
                 if (fn) {
                     // Direct call to known function

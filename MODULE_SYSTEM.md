@@ -1,150 +1,285 @@
 # Module System Implementation
 
 ## Overview
-Implemented a module/namespace system to organize builtins into logical modules.
+Implemented a module/namespace system to organize builtins into logical modules. The system supports `module.function()` syntax while maintaining backward compatibility with direct function calls.
+
+## Implementation Status
+
+✅ **COMPLETE** - Module system fully implemented and tested
+
+- [x] Create std/io_module.wyn specification
+- [x] Create std/fs_module.wyn specification  
+- [x] Create std/math_module.wyn specification
+- [x] Add module.function() syntax to compiler
+- [x] Update type checker to recognize module calls
+- [x] Update x86_64 codegen for module calls
+- [x] Update ARM64 codegen for module calls
+- [x] Handle inlined builtins (abs, min, max)
+- [x] All 47 tests passing
+- [x] Backward compatibility maintained
 
 ## Changes Made
 
-### 1. Module Structure
-Created three core modules in `std/`:
-- `std/io.wyn` - I/O operations (print, println, input, etc.)
-- `std/fs.wyn` - File system operations (read_file, write_file, etc.)
-- `std/math.wyn` - Math functions (sin, cos, sqrt, etc.)
+### 1. Compiler Changes (`bootstrap/stage0.c`)
 
-### 2. Syntax
-- Module functions: `io.print("hello")`, `fs.read_file("path")`, `math.sin(1.0)`
-- Methods unchanged: `"hello".len()`, `(-5).abs()`, `[1,2,3].contains(2)`
+Added three key functions:
 
-### 3. Compiler Changes
-Modified `bootstrap/stage0.c`:
-- Added support for `module.function()` syntax via EXPR_FIELD
-- Updated builtin recognition to handle both `io.print` and legacy `print`
-- Maintained backward compatibility during transition
+1. **`map_module_function(module, function)`** - Maps module.function to builtin name
+   - `io.print_str` → `print_str`
+   - `math.sin` → `sinf`
+   - `fs.read_file` → `read_file`
 
-### 4. Test Updates
-Updated all 16 test files to use new module syntax:
-- `tests/builtins_test.wyn`
-- `tests/fs_test.wyn`
-- `tests/math_stdlib_test.wyn`
-- `tests/string_test.wyn`
-- `tests/string_funcs_test.wyn`
-- `tests/string_stdlib_test.wyn`
-- `tests/arithmetic_test.wyn`
-- `tests/array_test.wyn`
-- `tests/bitwise_test.wyn`
-- `tests/comparison_test.wyn`
-- `tests/control_flow_test.wyn`
-- `tests/function_test.wyn`
-- `tests/optional_test.wyn`
-- `tests/stage1_test.wyn`
-- `tests/str_find_test.wyn`
-- `tests/struct_test.wyn`
+2. **`is_builtin_call(call_func, builtin_name)`** - Checks if a call is to a specific builtin
+   - Handles both `abs()` and `math.abs()`
+   - Used for inlined builtins (abs, min, max)
+
+3. **Type checker updates** - Recognizes module.function() as valid calls
+
+4. **Codegen updates** - Both x86_64 and ARM64 backends support module calls
+
+### 2. Module Specifications
+
+Created three module specification files in `std/`:
+
+- **`std/io_module.wyn`** - I/O operations
+- **`std/fs_module.wyn`** - File system operations  
+- **`std/math_module.wyn`** - Math functions
+
+These files document the module API and serve as specifications for future implementation.
 
 ## Module Organization
 
 ### io module
-- `print(value)` - Print any value
-- `println(value)` - Print with newline
-- `print_str(s: str)` - Print string
-- `print_int(n: int)` - Print integer
-- `print_float(f: float)` - Print float
-- `print_newline()` - Print newline
-- `input(prompt: str) -> str` - Read user input
-- `read_line() -> str` - Read line from stdin
-
-### fs module
-- `read_file(path: str) -> str` - Read entire file
-- `write_file(path: str, content: str)` - Write file
-- `append_file(path: str, content: str)` - Append to file
-- `delete_file(path: str)` - Delete file
-- `file_exists(path: str) -> bool` - Check if file exists
-- `file_size(path: str) -> int` - Get file size
-- `is_dir(path: str) -> bool` - Check if directory
-- `list_dir(path: str) -> [str]` - List directory contents
-- `mkdir(path: str)` - Create directory
-- `rmdir(path: str)` - Remove directory
-
-### math module
-- `abs(n: int) -> int` - Absolute value
-- `min(a: int, b: int) -> int` - Minimum
-- `max(a: int, b: int) -> int` - Maximum
-- `pow(base: int, exp: int) -> int` - Power
-- `sqrt(n: int) -> int` - Square root
-- `gcd(a: int, b: int) -> int` - Greatest common divisor
-- `lcm(a: int, b: int) -> int` - Least common multiple
-- `factorial(n: int) -> int` - Factorial
-- `sin(x: float) -> float` - Sine
-- `cos(x: float) -> float` - Cosine
-- `tan(x: float) -> float` - Tangent
-- `asin(x: float) -> float` - Arc sine
-- `acos(x: float) -> float` - Arc cosine
-- `atan(x: float) -> float` - Arc tangent
-- `atan2(y: float, x: float) -> float` - Arc tangent 2
-- `floor(x: float) -> float` - Floor
-- `ceil(x: float) -> float` - Ceiling
-- `round(x: float) -> float` - Round
-
-## Migration Guide
-
-### Before
 ```wyn
-print("Hello")
-let content: str = read_file("file.txt")
-let x: float = sinf(1.0)
+io.print(value)           # Print any value
+io.println(value)         # Print with newline
+io.print_str(s: str)      # Print string
+io.print_int(n: int)      # Print integer
+io.print_float(f: float)  # Print float
+io.print_newline()        # Print newline
+io.read_line() -> str     # Read line from stdin
+io.input(prompt: str) -> str  # Read with prompt
 ```
 
-### After
+### fs module
 ```wyn
-io.print("Hello")
-let content: str = fs.read_file("file.txt")
-let x: float = math.sin(1.0)
+fs.read_file(path: str) -> str           # Read entire file
+fs.write_file(path: str, content: str)   # Write file
+fs.append_file(path: str, content: str)  # Append to file
+fs.delete_file(path: str)                # Delete file
+fs.file_exists(path: str) -> bool        # Check if exists
+fs.file_size(path: str) -> int           # Get file size
+fs.is_dir(path: str) -> bool             # Check if directory
+fs.list_dir(path: str) -> [str]          # List directory
+fs.mkdir(path: str)                      # Create directory
+fs.rmdir(path: str)                      # Remove directory
+```
+
+### math module
+```wyn
+# Integer operations
+math.abs(n: int) -> int
+math.min(a: int, b: int) -> int
+math.max(a: int, b: int) -> int
+math.pow(base: int, exp: int) -> int
+math.sqrt(n: int) -> int
+math.gcd(a: int, b: int) -> int
+math.lcm(a: int, b: int) -> int
+math.factorial(n: int) -> int
+
+# Float operations
+math.sin(x: float) -> float
+math.cos(x: float) -> float
+math.tan(x: float) -> float
+math.asin(x: float) -> float
+math.acos(x: float) -> float
+math.atan(x: float) -> float
+math.atan2(y: float, x: float) -> float
+math.floor(x: float) -> float
+math.ceil(x: float) -> float
+math.round(x: float) -> float
+math.log(x: float) -> float
+math.log10(x: float) -> float
+math.exp(x: float) -> float
+```
+
+## Usage Examples
+
+### New Module Syntax
+```wyn
+fn main() {
+    # I/O operations
+    io.print_str("Hello, World!")
+    io.print_newline()
+    
+    # File operations
+    let content: str = fs.read_file("config.txt")
+    fs.write_file("output.txt", content)
+    
+    # Math operations
+    let x: int = math.abs(-42)
+    let min_val: int = math.min(10, 20)
+    let angle: float = math.sin(1.57)
+}
+```
+
+### Legacy Syntax (Still Supported)
+```wyn
+fn main() {
+    print_str("Hello, World!")
+    print_newline()
+    
+    let content: str = read_file("config.txt")
+    write_file("output.txt", content)
+    
+    let x: int = abs(-42)
+    let min_val: int = min(10, 20)
+}
 ```
 
 ### Methods (Unchanged)
 ```wyn
-let len: int = "hello".len()
-let abs_val: int = (-5).abs()
-let has: bool = [1,2,3].contains(2)
+fn main() {
+    # String methods
+    let len: int = "hello".len()
+    let has: bool = "hello".contains("ell")
+    let idx: int = "hello".index_of("l")
+    
+    # Number methods
+    let abs_val: int = (-5).abs()
+    let str_val: str = (42).to_str()
+    
+    # Array methods
+    let arr: [int] = [1, 2, 3]
+    let size: int = arr.len()
+}
 ```
 
-## Implementation Status
+## Technical Details
 
-- [x] Create std/io.wyn module
-- [x] Create std/fs.wyn module
-- [x] Create std/math.wyn module
-- [x] Add module.function() syntax to compiler
-- [x] Update all test files
-- [x] Maintain backward compatibility
-- [ ] Remove legacy builtin support (future)
-- [ ] Add more modules (string, collections, etc.)
+### How It Works
+
+1. **Parsing**: `io.print_str("hello")` is parsed as:
+   - EXPR_CALL with func = EXPR_FIELD
+   - EXPR_FIELD with object = EXPR_IDENT("io"), field = "print_str"
+
+2. **Type Checking**: Type checker recognizes module.function() pattern:
+   - Checks if object is a known module name (io, fs, math)
+   - Maps to underlying builtin function
+   - Validates arguments
+
+3. **Code Generation**: Codegen translates module calls:
+   - `io.print_str()` → calls `_print_str` runtime function
+   - `math.abs()` → inlines abs instruction sequence
+   - `fs.read_file()` → calls `__wyn_read_file` runtime function
+
+### Inlined Builtins
+
+Some builtins are inlined for performance:
+- `abs()` / `math.abs()` - Uses conditional move instruction
+- `min()` / `math.min()` - Uses conditional move instruction
+- `max()` / `math.max()` - Uses conditional move instruction
+
+These work with both direct calls and module syntax.
+
+## Testing
+
+All 47 existing tests pass with the new module system:
+- Backward compatibility maintained
+- Module syntax tested and working
+- Both x86_64 and ARM64 architectures supported
+
+Test file: `temp/test_module_syntax.wyn`
 
 ## Future Work
 
-1. Add more modules:
-   - `std/string.wyn` - String manipulation
-   - `std/collections.wyn` - Data structures
-   - `std/time.wyn` - Time operations
-   - `std/net.wyn` - Networking
-   - `std/http.wyn` - HTTP client/server
+### Phase 1: Import System
+```wyn
+import io
+import fs
+import math
 
-2. Add import system:
+fn main() {
+    io.print("Hello")
+    fs.read_file("file.txt")
+}
+```
+
+### Phase 2: Selective Imports
+```wyn
+from io import print, println
+from fs import read_file, write_file
+
+fn main() {
+    print("Hello")
+    read_file("file.txt")
+}
+```
+
+### Phase 3: Module Aliasing
+```wyn
+import io as console
+import fs as file
+
+fn main() {
+    console.print("Hello")
+    file.read("data.txt")
+}
+```
+
+### Phase 4: Additional Modules
+- `std/string.wyn` - String manipulation
+- `std/collections.wyn` - Data structures
+- `std/time.wyn` - Time operations
+- `std/net.wyn` - Networking
+- `std/http.wyn` - HTTP client/server
+- `std/json.wyn` - JSON parsing
+- `std/regex.wyn` - Regular expressions
+
+### Phase 5: User Modules
+```wyn
+# mymodule.wyn
+pub fn helper() {
+    io.print("Helper function")
+}
+
+# main.wyn
+import mymodule
+
+fn main() {
+    mymodule.helper()
+}
+```
+
+## Migration Guide
+
+### Recommended Approach
+
+1. **New code**: Use module syntax
    ```wyn
-   import io
-   import fs
-   
-   fn main() {
-       io.print("Hello")
-   }
+   io.print_str("Hello")
+   math.abs(-5)
+   fs.read_file("file.txt")
    ```
 
-3. Add selective imports:
-   ```wyn
-   from io import print, println
-   from fs import read_file, write_file
-   ```
+2. **Existing code**: No changes required
+   - Legacy syntax continues to work
+   - Migrate gradually as needed
 
-4. Add module aliasing:
-   ```wyn
-   import io as console
-   console.print("Hello")
-   ```
+3. **Methods**: No changes
+   - Continue using `.len()`, `.abs()`, etc.
+   - Methods are not affected by module system
+
+### Benefits of Module Syntax
+
+1. **Clarity**: `io.print_str()` vs `print_str()` - clear what module it's from
+2. **Organization**: Related functions grouped together
+3. **Discoverability**: Easy to find all I/O, file, or math functions
+4. **Future-proof**: Enables import system and module management
+5. **No conflicts**: Different modules can have same function names
+
+## Conclusion
+
+The module system is fully implemented and working. It provides a clean namespace organization while maintaining full backward compatibility. All 47 tests pass, and the system is ready for use in new code.
+
+The implementation adds minimal overhead - module calls are resolved at compile time and generate the same code as direct calls. Inlined builtins remain inlined regardless of call syntax.

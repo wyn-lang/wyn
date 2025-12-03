@@ -16,8 +16,6 @@ Wyn is a general-purpose programming language designed to be universal, fast, si
 ## Quick Start
 
 ```wyn
-import std/io
-
 fn main() {
     io.print("Hello, World!")
 }
@@ -70,8 +68,8 @@ wyn-lang/
 The Stage 0 compiler (written in C) successfully compiles:
 - ✅ **47 test programs** - All passing
 - ✅ **500+ stdlib functions** - 12 modules (fs, net, http, json, math, crypto, regex, collections, time, log, and more)
+- ✅ **Module system** - Clean namespace organization (io.print, fs.read_file, math.abs)
 - ✅ **Self-hosting ready** - Language features sufficient for Stage 1 compiler
-- ✅ **Module system** - Clean namespace organization (io, fs, math, etc.)
 - ✅ **Method syntax** - `.len()`, `.contains()`, `.index_of()` on primitives
 - ✅ **10+ new builtins** - String operations, math functions, file system
 
@@ -116,6 +114,22 @@ The Stage 0 compiler (written in C) successfully compiles:
 See [SPEC_STATUS.md](SPEC_STATUS.md) for detailed feature tracking.
 
 ## Design Highlights
+
+### Module System
+
+```wyn
+# I/O operations
+io.print_str("Hello, World!")
+io.print_newline()
+
+# File operations
+let content: str = fs.read_file("config.txt")
+fs.write_file("output.txt", content)
+
+# Math operations
+let x: int = math.abs(-42)
+let angle: float = math.sin(1.57)
+```
 
 ### Explicit Types
 

@@ -1,0 +1,68 @@
+# Module System Demo
+# Demonstrates the new module.function() syntax
+
+fn main() {
+    io.print_str("=== Wyn Module System Demo ===")
+    io.print_newline()
+    io.print_newline()
+    
+    # I/O Module
+    io.print_str("1. I/O Module:")
+    io.print_newline()
+    io.print_str("   - io.print_str() for output")
+    io.print_newline()
+    io.print_str("   - io.print_newline() for line breaks")
+    io.print_newline()
+    io.print_newline()
+    
+    # Math Module
+    io.print_str("2. Math Module:")
+    io.print_newline()
+    
+    let x: int = math.abs(-42)
+    io.print_str("   - math.abs(-42) = 42")
+    io.print_newline()
+    
+    let min_val: int = math.min(10, 20)
+    io.print_str("   - math.min(10, 20) = 10")
+    io.print_newline()
+    
+    let max_val: int = math.max(10, 20)
+    io.print_str("   - math.max(10, 20) = 20")
+    io.print_newline()
+    io.print_newline()
+    
+    # File System Module
+    io.print_str("3. File System Module:")
+    io.print_newline()
+    io.print_str("   - fs.file_exists() checks files")
+    io.print_newline()
+    io.print_str("   - fs.read_file() reads content")
+    io.print_newline()
+    io.print_str("   - fs.write_file() writes content")
+    io.print_newline()
+    io.print_newline()
+    
+    # Backward Compatibility
+    io.print_str("4. Backward Compatibility:")
+    io.print_newline()
+    print_str("   - Old syntax still works!")
+    print_newline()
+    io.print_str("   - Both styles can coexist")
+    io.print_newline()
+    io.print_newline()
+    
+    # Methods (unchanged)
+    io.print_str("5. Methods (unchanged):")
+    io.print_newline()
+    let len: int = "hello".len()
+    io.print_str("   - \"hello\".len() = 5")
+    io.print_newline()
+    let abs_method: int = (-10).abs()
+    io.print_str("   - (-10).abs() = 10")
+    io.print_newline()
+    io.print_newline()
+    
+    io.print_str("=== Demo Complete ===")
+    io.print_newline()
+}
