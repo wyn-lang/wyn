@@ -2963,6 +2963,36 @@ static void cg_emit_ldr_pageoff(CodeGen* cg, const char* reg, const char* base, 
     }
 }
 
+// Emit str with large offset support (>4095 uses add+str)
+static void cg_emit_str_offset(CodeGen* cg, const char* reg, int offset) {
+    if (offset <= 4095) {
+        cg_emit(cg, "    str %s, [x29, #%d]", reg, offset);
+    } else {
+        cg_emit(cg, "    mov x9, #%d", offset);
+        cg_emit(cg, "    str %s, [x29, x9]", reg);
+    }
+}
+
+// Emit ldr with large offset support
+static void cg_emit_ldr_offset(CodeGen* cg, const char* reg, int offset) {
+    if (offset <= 4095) {
+        cg_emit(cg, "    ldr %s, [x29, #%d]", reg, offset);
+    } else {
+        cg_emit(cg, "    mov x9, #%d", offset);
+        cg_emit(cg, "    ldr %s, [x29, x9]", reg);
+    }
+}
+
+// Emit add with large offset support
+static void cg_emit_add_offset(CodeGen* cg, const char* dst, int offset) {
+    if (offset <= 4095) {
+        cg_emit(cg, "    add %s, x29, #%d", dst, offset);
+    } else {
+        cg_emit(cg, "    mov x9, #%d", offset);
+        cg_emit(cg, "    add %s, x29, x9", dst);
+    }
+}
+
 static int cg_local_offset(CodeGen* cg, const char* name) {
     // Search from end to find most recent variable with this name
     for (int i = cg->local_count - 1; i >= 0; i--) {
@@ -4336,7 +4366,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             } else {
                 int off = cg_local_offset(cg, e->ident);
                 if (off) {
-                    cg_emit(cg, "    ldr x0, [x29, #%d]", 16 + off);  // +16 for saved x29/x30
+                    cg_emit_ldr_offset(cg, "x0", 16 + off);  // +16 for saved x29/x30
                 }
             }
             break;
@@ -4381,7 +4411,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     
                     // Copy left string to buffer
                     cg_emit(cg, "    ldr x1, [sp, #16]");  // left ptr
-                    cg_emit(cg, "    add x0, x29, #%d", 16 + buf_off);  // dest buffer
+                    cg_emit_add_offset(cg, "x0", 16 + buf_off);  // dest buffer
                     int copy1 = cg_new_label(cg);
                     cg_emit(cg, "L%d:", copy1);
                     cg_emit(cg, "    ldrb w3, [x1], #1");
@@ -4398,7 +4428,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_emit(cg, "    cbnz w3, L%d", copy2);
                     
                     cg_emit(cg, "    add sp, sp, #16");  // clean up left ptr
-                    cg_emit(cg, "    add x0, x29, #%d", 16 + buf_off);  // return buffer ptr
+                    cg_emit_add_offset(cg, "x0", 16 + buf_off);  // return buffer ptr
                     break;
                 }
             }
@@ -4615,7 +4645,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             // Address-of: get address of variable
             if (e->unary.operand->kind == EXPR_IDENT) {
                 int off = cg_local_offset(cg, e->unary.operand->ident);
-                if (off) cg_emit(cg, "    add x0, x29, #%d", 16 + off);
+                if (off) cg_emit_add_offset(cg, "x0", 16 + off);
             } else {
                 cg_expr(cg, e->unary.operand);  // For other expressions, just evaluate
             }
@@ -4885,7 +4915,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_emit(cg, "    add x12, x12, #1");
                 cg_emit(cg, "    b L%d", loop_lbl);
                 cg_emit(cg, "L%d:", end_lbl);
-                cg_emit(cg, "    add x0, x29, #%d", 16 + arr_off);  // return array ptr
+                cg_emit_add_offset(cg, "x0", 16 + arr_off);  // return array ptr
                 break;
             }
             // Handle built-in system(cmd) - run shell command
@@ -5231,7 +5261,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     if (struct_size > 0) {
                         // Inline struct local - get address
                         int off = cg_local_offset(cg, obj->ident);
-                        cg_emit(cg, "    add x0, x29, #%d", 16 + off);
+                        cg_emit_add_offset(cg, "x0", 16 + off);
                     } else {
                         cg_expr(cg, obj);
                     }
@@ -5288,7 +5318,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     if (struct_size > 0) {
                         // Pass address of inline struct
                         int off = cg_local_offset(cg, arg->ident);
-                        cg_emit(cg, "    add x0, x29, #%d", 16 + off);
+                        cg_emit_add_offset(cg, "x0", 16 + off);
                         cg_emit(cg, "    str x0, [sp, #-16]!");
                         continue;
                     }
@@ -5328,14 +5358,14 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             cg->stack_offset += (count + 1) * 8;
             // Store length
             cg_emit(cg, "    mov x0, #%d", count);
-            cg_emit(cg, "    str x0, [x29, #%d]", 16 + base_off);
+            cg_emit_str_offset(cg, "x0", 16 + base_off);
             // Store elements
             for (int i = 0; i < count; i++) {
                 cg_expr(cg, e->array.elements[i]);
-                cg_emit(cg, "    str x0, [x29, #%d]", 16 + base_off + (i + 1) * 8);
+                cg_emit_str_offset(cg, "x0", 16 + base_off + (i + 1) * 8);
             }
             // Return pointer to array
-            cg_emit(cg, "    add x0, x29, #%d", 16 + base_off);
+            cg_emit_add_offset(cg, "x0", 16 + base_off);
             break;
         }
         
@@ -5436,9 +5466,9 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 int foff = s ? cg_struct_field_offset(s, e->struct_lit.fields[i]) : i * 8;
                 if (foff < 0) foff = i * 8;
                 cg_expr(cg, e->struct_lit.values[i]);
-                cg_emit(cg, "    str x0, [x29, #%d]", 16 + base_off + foff);
+                cg_emit_str_offset(cg, "x0", 16 + base_off + foff);
             }
-            cg_emit(cg, "    add x0, x29, #%d", 16 + base_off);
+            cg_emit_add_offset(cg, "x0", 16 + base_off);
             break;
         }
         
@@ -5458,10 +5488,10 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                             int field_struct_size = cg_struct_size(cg, field_type);
                             if (field_struct_size > 0) {
                                 // Field is a struct - return address, not value
-                                cg_emit(cg, "    add x0, x29, #%d", 16 + base_off + foff);
+                                cg_emit_add_offset(cg, "x0", 16 + base_off + foff);
                             } else {
                                 // Field is a primitive - load value
-                                cg_emit(cg, "    ldr x0, [x29, #%d]", 16 + base_off + foff);
+                                cg_emit_ldr_offset(cg, "x0", 16 + base_off + foff);
                             }
                             break;
                         }
@@ -5495,10 +5525,10 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             int base_off = cg->stack_offset + 8;
             cg->stack_offset += 16;
             cg_emit(cg, "    mov x0, #1");
-            cg_emit(cg, "    str x0, [x29, #%d]", 16 + base_off);  // has_value = 1
+            cg_emit_str_offset(cg, "x0", 16 + base_off);  // has_value = 1
             cg_expr(cg, e->some.value);
-            cg_emit(cg, "    str x0, [x29, #%d]", 16 + base_off + 8);  // value
-            cg_emit(cg, "    add x0, x29, #%d", 16 + base_off);
+            cg_emit_str_offset(cg, "x0", 16 + base_off + 8);  // value
+            cg_emit_add_offset(cg, "x0", 16 + base_off);
             break;
         }
         
@@ -5507,9 +5537,9 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             int base_off = cg->stack_offset + 8;
             cg->stack_offset += 16;
             cg_emit(cg, "    mov x0, #0");
-            cg_emit(cg, "    str x0, [x29, #%d]", 16 + base_off);  // has_value = 0
-            cg_emit(cg, "    str x0, [x29, #%d]", 16 + base_off + 8);  // value = 0
-            cg_emit(cg, "    add x0, x29, #%d", 16 + base_off);
+            cg_emit_str_offset(cg, "x0", 16 + base_off);  // has_value = 0
+            cg_emit_str_offset(cg, "x0", 16 + base_off + 8);  // value = 0
+            cg_emit_add_offset(cg, "x0", 16 + base_off);
             break;
         }
         
@@ -5518,10 +5548,10 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             int base_off = cg->stack_offset + 8;
             cg->stack_offset += 16;
             cg_emit(cg, "    mov x0, #1");
-            cg_emit(cg, "    str x0, [x29, #%d]", 16 + base_off);  // is_ok = 1
+            cg_emit_str_offset(cg, "x0", 16 + base_off);  // is_ok = 1
             cg_expr(cg, e->some.value);
-            cg_emit(cg, "    str x0, [x29, #%d]", 16 + base_off + 8);  // value
-            cg_emit(cg, "    add x0, x29, #%d", 16 + base_off);
+            cg_emit_str_offset(cg, "x0", 16 + base_off + 8);  // value
+            cg_emit_add_offset(cg, "x0", 16 + base_off);
             break;
         }
         
@@ -5530,10 +5560,10 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             int base_off = cg->stack_offset + 8;
             cg->stack_offset += 16;
             cg_emit(cg, "    mov x0, #0");
-            cg_emit(cg, "    str x0, [x29, #%d]", 16 + base_off);  // is_ok = 0
+            cg_emit_str_offset(cg, "x0", 16 + base_off);  // is_ok = 0
             cg_expr(cg, e->some.value);
-            cg_emit(cg, "    str x0, [x29, #%d]", 16 + base_off + 8);  // error
-            cg_emit(cg, "    add x0, x29, #%d", 16 + base_off);
+            cg_emit_str_offset(cg, "x0", 16 + base_off + 8);  // error
+            cg_emit_add_offset(cg, "x0", 16 + base_off);
             break;
         }
         
@@ -5898,7 +5928,7 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                 } else {
                     cg_emit(cg, "    mov x0, #0");
                 }
-                cg_emit(cg, "    str x0, [x29, #%d]", 16 + cg->locals[cg->local_count - 1].offset);
+                cg_emit_str_offset(cg, "x0", 16 + cg->locals[cg->local_count - 1].offset);
             }
             break;
         }
@@ -5910,7 +5940,7 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                 // Compound assignment: load current value, apply op, store
                 if (s->assign.target->kind == EXPR_IDENT) {
                     int off = cg_local_offset(cg, s->assign.target->ident);
-                    if (off) cg_emit(cg, "    ldr x0, [x29, #%d]", 16 + off);
+                    if (off) cg_emit_ldr_offset(cg, "x0", 16 + off);
                 }
                 cg_emit(cg, "    str x0, [sp, #-16]!");
                 cg_expr(cg, s->assign.value);
@@ -5927,7 +5957,7 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
             }
             if (s->assign.target->kind == EXPR_IDENT) {
                 int off = cg_local_offset(cg, s->assign.target->ident);
-                if (off) cg_emit(cg, "    str x0, [x29, #%d]", 16 + off);
+                if (off) cg_emit_str_offset(cg, "x0", 16 + off);
             } else if (s->assign.target->kind == EXPR_DEREF) {
                 // *ptr = value: store through pointer
                 cg_emit(cg, "    str x0, [sp, #-16]!");  // save value
@@ -5961,7 +5991,7 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                 cg_emit(cg, "    ldr x0, [sp], #16");    // Restore return value
             }
             cg_emit(cg, "    ldp x29, x30, [sp]");
-            cg_emit(cg, "    add sp, sp, #2048");
+            cg_emit(cg, "    add sp, sp, #4096");
             cg_emit(cg, "    ret");
             break;
         
@@ -6030,35 +6060,35 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                 cg_add_local(cg, "__arr", NULL);
                 int arr_off = 16 + cg->locals[cg->local_count - 1].offset;
                 cg_expr(cg, s->for_stmt.iter);
-                cg_emit(cg, "    str x0, [x29, #%d]", arr_off);
+                cg_emit_str_offset(cg, "x0", arr_off);
                 
                 cg_add_local(cg, "__idx", NULL);
                 int idx_off = 16 + cg->locals[cg->local_count - 1].offset;
                 cg_emit(cg, "    mov x0, #0");
-                cg_emit(cg, "    str x0, [x29, #%d]", idx_off);
+                cg_emit_str_offset(cg, "x0", idx_off);
                 
                 cg_add_local(cg, s->for_stmt.var, NULL);
                 int var_off = 16 + cg->locals[cg->local_count - 1].offset;
                 
                 cg_emit(cg, "L%d:", start_lbl);
-                cg_emit(cg, "    ldr x0, [x29, #%d]", arr_off);
+                cg_emit_ldr_offset(cg, "x0", arr_off);
                 cg_emit(cg, "    ldr x1, [x0]");  // length
                 cg_emit(cg, "    ldr x2, [x29, #%d]", idx_off);
                 cg_emit(cg, "    cmp x2, x1");
                 cg_emit(cg, "    b.ge L%d", end_lbl);
                 
                 // Load element: arr[idx]
-                cg_emit(cg, "    ldr x0, [x29, #%d]", arr_off);
+                cg_emit_ldr_offset(cg, "x0", arr_off);
                 cg_emit(cg, "    ldr x1, [x29, #%d]", idx_off);
                 cg_emit(cg, "    add x1, x1, #1");
                 cg_emit(cg, "    ldr x0, [x0, x1, lsl #3]");
-                cg_emit(cg, "    str x0, [x29, #%d]", var_off);
+                cg_emit_str_offset(cg, "x0", var_off);
                 
                 for (int i = 0; i < s->for_stmt.body_count; i++) cg_stmt(cg, s->for_stmt.body[i]);
                 cg_emit(cg, "L%d:", cont_lbl);
-                cg_emit(cg, "    ldr x0, [x29, #%d]", idx_off);
+                cg_emit_ldr_offset(cg, "x0", idx_off);
                 cg_emit(cg, "    add x0, x0, #1");
-                cg_emit(cg, "    str x0, [x29, #%d]", idx_off);
+                cg_emit_str_offset(cg, "x0", idx_off);
                 cg_emit(cg, "    b L%d", start_lbl);
             } else {
                 // Range iteration: for i in start..end or start..=end
@@ -6072,18 +6102,18 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                 if (s->for_stmt.iter && s->for_stmt.iter->kind == EXPR_BINARY) {
                     // Initialize start value
                     cg_expr(cg, s->for_stmt.iter->binary.left);
-                    cg_emit(cg, "    str x0, [x29, #%d]", var_off);
+                    cg_emit_str_offset(cg, "x0", var_off);
                     // Initialize end value
                     cg_expr(cg, s->for_stmt.iter->binary.right);
-                    cg_emit(cg, "    str x0, [x29, #%d]", end_off);
+                    cg_emit_str_offset(cg, "x0", end_off);
                 } else {
                     cg_emit(cg, "    mov x0, #0");
-                    cg_emit(cg, "    str x0, [x29, #%d]", var_off);
-                    cg_emit(cg, "    str x0, [x29, #%d]", end_off);
+                    cg_emit_str_offset(cg, "x0", var_off);
+                    cg_emit_str_offset(cg, "x0", end_off);
                 }
                 
                 cg_emit(cg, "L%d:", start_lbl);
-                cg_emit(cg, "    ldr x0, [x29, #%d]", var_off);
+                cg_emit_ldr_offset(cg, "x0", var_off);
                 cg_emit(cg, "    ldr x1, [x29, #%d]", end_off);
                 cg_emit(cg, "    cmp x0, x1");
                 cg_emit(cg, "    b.%s L%d", inclusive ? "gt" : "ge", end_lbl);
@@ -6093,9 +6123,9 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                 }
                 
                 cg_emit(cg, "L%d:", cont_lbl);
-                cg_emit(cg, "    ldr x0, [x29, #%d]", var_off);
+                cg_emit_ldr_offset(cg, "x0", var_off);
                 cg_emit(cg, "    add x0, x0, #1");
-                cg_emit(cg, "    str x0, [x29, #%d]", var_off);
+                cg_emit_str_offset(cg, "x0", var_off);
                 cg_emit(cg, "    b L%d", start_lbl);
             }
             
@@ -6136,7 +6166,7 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                         cg_emit(cg, "    ldr x0, [x0, #8]");  // Load inner value
                         Type* bind_type = s->match_stmt.binding_types[i] ? s->match_stmt.binding_types[i] : new_type(TYPE_INT);
                         cg_add_local(cg, s->match_stmt.bindings[i], bind_type);
-                        cg_emit(cg, "    str x0, [x29, #%d]", 16 + cg->stack_offset);
+                        cg_emit_str_offset(cg, "x0", 16 + cg->stack_offset);
                     }
                 } else if (pat->kind == EXPR_NONE) {
                     // Match none: check has_value == 0
@@ -6156,7 +6186,7 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                         cg_emit(cg, "    ldr x0, [x0, #8]");  // Load error value
                         Type* bind_type = s->match_stmt.binding_types[i] ? s->match_stmt.binding_types[i] : new_type(TYPE_STR);
                         cg_add_local(cg, s->match_stmt.bindings[i], bind_type);
-                        cg_emit(cg, "    str x0, [x29, #%d]", 16 + cg->stack_offset);
+                        cg_emit_str_offset(cg, "x0", 16 + cg->stack_offset);
                     }
                 } else if (!is_wildcard) {
                     cg_emit(cg, "    ldr x0, [sp]");  // Load match value
@@ -6218,7 +6248,7 @@ static void cg_method(CodeGen* cg, const char* struct_name, FnDef* fn) {
     cg_emit(cg, "    .globl %s%s", pfx, mangled);
     cg_emit(cg, "    .p2align 2");
     cg_emit(cg, "%s%s:", pfx, mangled);
-    cg_emit(cg, "    sub sp, sp, #2048");
+    cg_emit(cg, "    sub sp, sp, #4096");
     cg_emit(cg, "    stp x29, x30, [sp]");
     cg_emit(cg, "    mov x29, sp");
     
@@ -6231,14 +6261,14 @@ static void cg_method(CodeGen* cg, const char* struct_name, FnDef* fn) {
         } else {
             cg_add_local(cg, fn->params[i].name, param_type);
         }
-        cg_emit(cg, "    str x%d, [x29, #%d]", i, 16 + cg->locals[cg->local_count - 1].offset);
+        { int off = 16 + cg->locals[cg->local_count - 1].offset; if (off <= 4095) cg_emit(cg, "    str x%d, [x29, #%d]", i, off); else { cg_emit(cg, "    mov x9, #%d", off); cg_emit(cg, "    str x%d, [x29, x9]", i); } }
     }
     
     for (int i = 0; i < fn->body_count; i++) cg_stmt(cg, fn->body[i]);
     
     cg_emit(cg, "    mov x0, #0");
     cg_emit(cg, "    ldp x29, x30, [sp]");
-    cg_emit(cg, "    add sp, sp, #2048");
+    cg_emit(cg, "    add sp, sp, #4096");
     cg_emit(cg, "    ret");
 }
 
@@ -6276,7 +6306,7 @@ static void cg_function(CodeGen* cg, FnDef* fn) {
     cg_emit(cg, "    .globl %s%s", pfx, fn->name);
     cg_emit(cg, "    .p2align 2");
     cg_emit(cg, "%s%s:", pfx, fn->name);
-    cg_emit(cg, "    sub sp, sp, #2048");
+    cg_emit(cg, "    sub sp, sp, #4096");
     cg_emit(cg, "    stp x29, x30, [sp]");
     cg_emit(cg, "    mov x29, sp");
     
@@ -6299,7 +6329,7 @@ static void cg_function(CodeGen* cg, FnDef* fn) {
         } else {
             cg_add_local(cg, fn->params[i].name, param_type);
         }
-        cg_emit(cg, "    str x%d, [x29, #%d]", i, 16 + cg->locals[cg->local_count - 1].offset);
+        { int off = 16 + cg->locals[cg->local_count - 1].offset; if (off <= 4095) cg_emit(cg, "    str x%d, [x29, #%d]", i, off); else { cg_emit(cg, "    mov x9, #%d", off); cg_emit(cg, "    str x%d, [x29, x9]", i); } }
     }
     
     for (int i = 0; i < fn->body_count; i++) {
@@ -6309,7 +6339,7 @@ static void cg_function(CodeGen* cg, FnDef* fn) {
     cg_emit_defers(cg);  // Execute defers at implicit return
     cg_emit(cg, "    mov x0, #0");
     cg_emit(cg, "    ldp x29, x30, [sp]");
-    cg_emit(cg, "    add sp, sp, #2048");
+    cg_emit(cg, "    add sp, sp, #4096");
     cg_emit(cg, "    ret");
 }
 
@@ -6353,7 +6383,7 @@ static void cg_emit_lambda_arm(CodeGen* cg, Expr* e) {
     const char* pfx = cg_sym_prefix(cg);
     cg_emit(cg, "    .p2align 2");
     cg_emit(cg, "%s_lambda%d:", pfx, e->lambda.id);
-    cg_emit(cg, "    sub sp, sp, #2048");
+    cg_emit(cg, "    sub sp, sp, #4096");
     cg_emit(cg, "    stp x29, x30, [sp]");
     cg_emit(cg, "    mov x29, sp");
     
@@ -6369,7 +6399,7 @@ static void cg_emit_lambda_arm(CodeGen* cg, Expr* e) {
         cg->locals[cg->local_count].offset = cg->stack_offset;
         cg->locals[cg->local_count].type = e->lambda.param_types[i];
         cg->local_count++;
-        cg_emit(cg, "    str x%d, [x29, #%d]", i, 16 + cg->stack_offset);
+        { int off = 16 + cg->stack_offset; if (off <= 4095) cg_emit(cg, "    str x%d, [x29, #%d]", i, off); else { cg_emit(cg, "    mov x9, #%d", off); cg_emit(cg, "    str x%d, [x29, x9]", i); } }
     }
     
     for (int i = 0; i < e->lambda.body_count; i++) {
@@ -6378,7 +6408,7 @@ static void cg_emit_lambda_arm(CodeGen* cg, Expr* e) {
     
     cg_emit(cg, "    mov x0, #0");
     cg_emit(cg, "    ldp x29, x30, [sp]");
-    cg_emit(cg, "    add sp, sp, #2048");
+    cg_emit(cg, "    add sp, sp, #4096");
     cg_emit(cg, "    ret");
     
     cg->local_count = saved_local_count;

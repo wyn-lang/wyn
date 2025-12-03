@@ -274,13 +274,14 @@ fn main() {
     print_str(input)
     print_newline()
     
-    // Single pass: tokenize and parse
+    // Single pass: tokenize, parse, and generate code
     let mut lex: Lexer = lexer_new(source)
     let mut token_count: int = 0
     let mut fn_count: int = 0
     let mut struct_count: int = 0
     let mut prev_kind: int = 0
     let mut prev2_kind: int = 0
+    let mut prev_text: str = ""
     
     // State for current function/struct being parsed
     let mut in_fn: bool = false
@@ -296,9 +297,22 @@ fn main() {
     let mut cur_struct_name: str = ""
     let mut has_return: bool = false
     
+    // Code generation state
+    let mut asm: str = ""
+    let mut strings: str = ""
+    let mut str_count: int = 0
+    let do_codegen: bool = argv.len() >= 3
+    
     while true {
         let tok: Token = lexer_next(lex)
         token_count = token_count + 1
+        
+        // Code generation disabled for now
+        // if do_codegen and prev2_kind == 1 and prev_text == "print" and prev_kind == 14 {
+        //     if tok.kind == 3 {  // STRING
+        //         ...
+        //     }
+        // }
         
         // Track paren depth
         if tok.kind == 14 { paren_depth = paren_depth + 1 }  // (
@@ -382,6 +396,9 @@ fn main() {
         
         prev2_kind = prev_kind
         prev_kind = tok.kind
+        if tok.kind == 1 {
+            prev_text = tok.text
+        }
         if tok.kind == 0 { break }
     }
     
@@ -397,6 +414,29 @@ fn main() {
     print_str("Structs: ")
     print(struct_count)
     print_newline()
+    
+    // Generate code if output specified
+    print_str("Checking codegen...")
+    print_newline()
+    if do_codegen {
+        print_str("Codegen enabled")
+        print_newline()
+        let output: str = argv[2]
+        
+        // Build assembly with minimal concatenation
+        let header: str = "    .section __TEXT,__text\n    .globl _main\n    .p2align 2\n_main:\n    sub sp, sp, #32\n    stp x29, x30, [sp, #16]\n    add x29, sp, #16\n"
+        let footer: str = "    mov x0, #0\n    ldp x29, x30, [sp, #16]\n    add sp, sp, #32\n    ret\n"
+        let data: str = "\n    .section __DATA,__data\nL_.fmt:\n    .asciz \"%lld\\n\"\n"
+        
+        let mut code: str = header
+        code = code + footer
+        code = code + data
+        
+        write_file(output, code)
+        print_str("Written: ")
+        print_str(output)
+        print_newline()
+    }
     
     print_str("Stage 1 compilation complete")
     print_newline()
