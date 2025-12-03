@@ -2978,6 +2978,537 @@ static bool typecheck_module(TypeChecker* tc) {
 }
 
 // ============================================================================
+// Stage 1 Type Checker (Enhanced)
+// ============================================================================
+
+typedef struct {
+    Module* module;
+    const char* filename;
+    Symbol symbols[2048];
+    int symbol_count;
+    int scope_depth;
+    Type* current_return_type;
+    bool had_error;
+    bool enable_inference;
+} TypeChecker1;
+
+static TypeChecker1* tc1_new(Module* m, const char* filename) {
+    TypeChecker1* tc = calloc(1, sizeof(TypeChecker1));
+    tc->module = m;
+    tc->filename = filename;
+    tc->enable_inference = true;
+    return tc;
+}
+
+static void tc1_error(TypeChecker1* tc, int line, int col, const char* fmt, ...) {
+    fprintf(stderr, "%s:%d:%d: error: ", tc->filename, line, col);
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
+    va_end(args);
+    fprintf(stderr, "\n");
+    tc->had_error = true;
+}
+
+static void tc1_suggest(TypeChecker1* tc, const char* suggestion) {
+    fprintf(stderr, "  suggestion: %s\n", suggestion);
+}
+
+static void tc1_enter_scope(TypeChecker1* tc) { tc->scope_depth++; }
+
+static void tc1_exit_scope(TypeChecker1* tc) {
+    while (tc->symbol_count > 0 && tc->symbols[tc->symbol_count - 1].scope_depth == tc->scope_depth) {
+        tc->symbol_count--;
+    }
+    tc->scope_depth--;
+}
+
+static void tc1_define(TypeChecker1* tc, const char* name, Type* type, bool is_mut) {
+    Symbol* s = &tc->symbols[tc->symbol_count++];
+    strcpy(s->name, name);
+    s->type = type;
+    s->is_mut = is_mut;
+    s->scope_depth = tc->scope_depth;
+}
+
+static Symbol* tc1_lookup(TypeChecker1* tc, const char* name) {
+    for (int i = tc->symbol_count - 1; i >= 0; i--) {
+        if (strcmp(tc->symbols[i].name, name) == 0) return &tc->symbols[i];
+    }
+    return NULL;
+}
+
+static Type* tc1_infer_binary(TypeChecker1* tc, Type* left, Type* right, TokenKind op) {
+    if (op == TOK_DOTDOT || op == TOK_DOTDOTEQ) {
+        Type* t = new_type(TYPE_ARRAY);
+        t->inner = left;
+        return t;
+    }
+    if (op == TOK_IN) return new_type(TYPE_BOOL);
+    if (op == TOK_PLUS && left->kind == TYPE_STR && right->kind == TYPE_STR) return new_type(TYPE_STR);
+    if (op == TOK_EQEQ || op == TOK_NOTEQ || op == TOK_LT || op == TOK_GT || op == TOK_LTEQ || op == TOK_GTEQ) 
+        return new_type(TYPE_BOOL);
+    if (op == TOK_AND || op == TOK_OR) return new_type(TYPE_BOOL);
+    return left->kind != TYPE_ANY ? left : right;
+}
+
+static Type* tc1_check_expr(TypeChecker1* tc, Expr* e);
+
+static Type* tc1_check_expr(TypeChecker1* tc, Expr* e) {
+    if (!e) return NULL;
+    
+    switch (e->kind) {
+        case EXPR_INT: return new_type(TYPE_INT);
+        case EXPR_FLOAT: return new_type(TYPE_FLOAT);
+        case EXPR_STRING: return new_type(TYPE_STR);
+        case EXPR_BOOL: return new_type(TYPE_BOOL);
+        
+        case EXPR_IDENT: {
+            if (strcmp(e->ident, "_") == 0) return new_type(TYPE_ANY);
+            Symbol* s = tc1_lookup(tc, e->ident);
+            if (!s) {
+                if (tc_is_enum_variant((TypeChecker*)tc, e->ident)) return new_type(TYPE_INT);
+                if (tc_lookup_fn((TypeChecker*)tc, e->ident)) return new_type(TYPE_FUNCTION);
+                tc1_error(tc, e->line, e->column, "undefined variable '%s'", e->ident);
+                tc1_suggest(tc, "check spelling or declare the variable");
+                return new_type(TYPE_ANY);
+            }
+            return s->type;
+        }
+        
+        case EXPR_BINARY: {
+            Type* left = tc1_check_expr(tc, e->binary.left);
+            Type* right = tc1_check_expr(tc, e->binary.right);
+            TokenKind op = e->binary.op;
+            
+            Type* result = tc1_infer_binary(tc, left, right, op);
+            
+            if (op == TOK_AND || op == TOK_OR) {
+                if (left->kind != TYPE_BOOL) {
+                    tc1_error(tc, e->line, e->column, "left operand must be bool, got %s", type_name(left));
+                    tc1_suggest(tc, "use comparison operators like ==, !=, <, >");
+                }
+                if (right->kind != TYPE_BOOL) {
+                    tc1_error(tc, e->line, e->column, "right operand must be bool, got %s", type_name(right));
+                }
+            } else if (!types_equal(left, right) && left->kind != TYPE_ANY && right->kind != TYPE_ANY) {
+                tc1_error(tc, e->line, e->column, "type mismatch: %s vs %s", type_name(left), type_name(right));
+                if (left->kind == TYPE_INT && right->kind == TYPE_FLOAT)
+                    tc1_suggest(tc, "convert int to float with .to_float()");
+                else if (left->kind == TYPE_FLOAT && right->kind == TYPE_INT)
+                    tc1_suggest(tc, "convert int to float with .to_float()");
+            }
+            return result;
+        }
+        
+        case EXPR_UNARY: {
+            Type* operand = tc1_check_expr(tc, e->unary.operand);
+            if (e->unary.op == TOK_NOT || e->unary.op == TOK_BANG) {
+                if (operand->kind != TYPE_BOOL && operand->kind != TYPE_ANY) {
+                    tc1_error(tc, e->line, e->column, "not operator requires bool, got %s", type_name(operand));
+                }
+                return new_type(TYPE_BOOL);
+            }
+            return operand;
+        }
+        
+        case EXPR_ADDR: {
+            Type* operand = tc1_check_expr(tc, e->unary.operand);
+            Type* ptr = new_type(TYPE_POINTER);
+            ptr->inner = operand;
+            return ptr;
+        }
+        
+        case EXPR_DEREF: {
+            Type* operand = tc1_check_expr(tc, e->unary.operand);
+            if (operand && operand->kind == TYPE_POINTER && operand->inner) return operand->inner;
+            if (operand->kind != TYPE_POINTER && operand->kind != TYPE_ANY) {
+                tc1_error(tc, e->line, e->column, "cannot dereference non-pointer type %s", type_name(operand));
+            }
+            return new_type(TYPE_ANY);
+        }
+        
+        case EXPR_CALL: {
+            if (e->call.func->kind == EXPR_FIELD && e->call.func->field.object->kind == EXPR_IDENT) {
+                const char* module = e->call.func->field.object->ident;
+                const char* function = e->call.func->field.field;
+                const char* builtin_name = map_module_function(module, function);
+                if (builtin_name) {
+                    for (int i = 0; i < e->call.arg_count; i++) tc1_check_expr(tc, e->call.args[i]);
+                    return new_type(TYPE_ANY);
+                }
+            }
+            
+            Type* func_type = tc1_check_expr(tc, e->call.func);
+            (void)func_type;
+            for (int i = 0; i < e->call.arg_count; i++) tc1_check_expr(tc, e->call.args[i]);
+            
+            if (e->call.func->kind == EXPR_IDENT) {
+                FnDef* fn = tc_lookup_fn((TypeChecker*)tc, e->call.func->ident);
+                if (fn) {
+                    if (e->call.arg_count != fn->param_count) {
+                        tc1_error(tc, e->line, e->column, "function '%s' expects %d arguments, got %d",
+                                  e->call.func->ident, fn->param_count, e->call.arg_count);
+                    }
+                    if (fn->return_type) {
+                        if (e->call.type_arg_count > 0 && fn->generic_count > 0) {
+                            Type* ret = fn->return_type;
+                            if (ret->kind == TYPE_NAMED) {
+                                for (int i = 0; i < fn->generic_count && i < e->call.type_arg_count; i++) {
+                                    if (strcmp(ret->name, fn->generics[i]) == 0) return e->call.type_args[i];
+                                }
+                            }
+                            return ret;
+                        }
+                        return fn->return_type;
+                    }
+                }
+            }
+            
+            if (e->call.func->kind == EXPR_FIELD) {
+                const char* method_name = e->call.func->field.field;
+                if (strcmp(method_name, "len") == 0) return new_type(TYPE_INT);
+                if (strcmp(method_name, "abs") == 0) return new_type(TYPE_INT);
+                if (strcmp(method_name, "to_str") == 0) return new_type(TYPE_STR);
+                if (strcmp(method_name, "to_int") == 0) return new_type(TYPE_INT);
+                if (strcmp(method_name, "to_float") == 0) return new_type(TYPE_FLOAT);
+                if (strcmp(method_name, "contains") == 0) return new_type(TYPE_BOOL);
+                if (strcmp(method_name, "index_of") == 0) return new_type(TYPE_INT);
+                
+                for (int i = 0; i < tc->module->struct_count; i++) {
+                    StructDef* s = &tc->module->structs[i];
+                    for (int j = 0; j < s->method_count; j++) {
+                        if (strcmp(s->methods[j].name, method_name) == 0) {
+                            return s->methods[j].return_type;
+                        }
+                    }
+                }
+            }
+            return new_type(TYPE_ANY);
+        }
+        
+        case EXPR_INDEX: {
+            Type* obj = tc1_check_expr(tc, e->index.object);
+            Type* idx = tc1_check_expr(tc, e->index.index);
+            if (idx->kind != TYPE_INT && idx->kind != TYPE_ANY) {
+                tc1_error(tc, e->line, e->column, "index must be int, got %s", type_name(idx));
+            }
+            if (obj->kind == TYPE_ARRAY) return obj->inner ? obj->inner : new_type(TYPE_ANY);
+            if (obj->kind == TYPE_STR) return new_type(TYPE_STR);
+            if (obj->kind != TYPE_ANY) {
+                tc1_error(tc, e->line, e->column, "cannot index type %s", type_name(obj));
+            }
+            return new_type(TYPE_ANY);
+        }
+        
+        case EXPR_SLICE: {
+            Type* obj = tc1_check_expr(tc, e->slice.object);
+            if (e->slice.start) tc1_check_expr(tc, e->slice.start);
+            if (e->slice.end) tc1_check_expr(tc, e->slice.end);
+            if (e->slice.step) tc1_check_expr(tc, e->slice.step);
+            return obj;
+        }
+        
+        case EXPR_FIELD: {
+            Type* obj = tc1_check_expr(tc, e->field.object);
+            if (obj->kind == TYPE_NAMED) {
+                StructDef* s = tc_lookup_struct((TypeChecker*)tc, obj->name);
+                if (s) {
+                    for (int i = 0; i < s->field_count; i++) {
+                        if (strcmp(s->fields[i].name, e->field.field) == 0) return s->fields[i].type;
+                    }
+                    tc1_error(tc, e->line, e->column, "struct '%s' has no field '%s'", obj->name, e->field.field);
+                }
+            }
+            return new_type(TYPE_ANY);
+        }
+        
+        case EXPR_ARRAY: {
+            Type* elem_type = NULL;
+            for (int i = 0; i < e->array.count; i++) {
+                Type* t = tc1_check_expr(tc, e->array.elements[i]);
+                if (!elem_type) elem_type = t;
+                else if (!types_equal(elem_type, t) && t->kind != TYPE_ANY) {
+                    tc1_error(tc, e->line, e->column, "array elements must have same type");
+                }
+            }
+            Type* arr = new_type(TYPE_ARRAY);
+            arr->inner = elem_type ? elem_type : new_type(TYPE_ANY);
+            return arr;
+        }
+        
+        case EXPR_STRUCT: {
+            StructDef* s = tc_lookup_struct((TypeChecker*)tc, e->struct_lit.name);
+            if (!s) {
+                tc1_error(tc, e->line, e->column, "unknown struct '%s'", e->struct_lit.name);
+                return new_type(TYPE_ANY);
+            }
+            for (int i = 0; i < e->struct_lit.count; i++) tc1_check_expr(tc, e->struct_lit.values[i]);
+            
+            if (e->struct_lit.type_arg_count > 0) {
+                Type* t = new_type(TYPE_GENERIC);
+                strcpy(t->name, e->struct_lit.name);
+                t->params = malloc(sizeof(Type*) * e->struct_lit.type_arg_count);
+                t->param_count = e->struct_lit.type_arg_count;
+                for (int i = 0; i < e->struct_lit.type_arg_count; i++) t->params[i] = e->struct_lit.type_args[i];
+                return t;
+            }
+            Type* t = new_type(TYPE_NAMED);
+            strcpy(t->name, e->struct_lit.name);
+            return t;
+        }
+        
+        case EXPR_MAP: {
+            for (int i = 0; i < e->map.count; i++) tc1_check_expr(tc, e->map.values[i]);
+            return new_type(TYPE_MAP);
+        }
+        
+        case EXPR_IF: {
+            Type* cond = tc1_check_expr(tc, e->if_expr.cond);
+            if (cond->kind != TYPE_BOOL && cond->kind != TYPE_ANY) {
+                tc1_error(tc, e->line, e->column, "condition must be bool, got %s", type_name(cond));
+            }
+            Type* then_t = tc1_check_expr(tc, e->if_expr.then_expr);
+            Type* else_t = tc1_check_expr(tc, e->if_expr.else_expr);
+            if (!types_equal(then_t, else_t) && then_t->kind != TYPE_ANY && else_t->kind != TYPE_ANY) {
+                tc1_error(tc, e->line, e->column, "if branches have different types: %s vs %s",
+                          type_name(then_t), type_name(else_t));
+            }
+            return then_t;
+        }
+        
+        case EXPR_SOME: {
+            Type* inner = tc1_check_expr(tc, e->some.value);
+            Type* opt = new_type(TYPE_OPTIONAL);
+            opt->inner = inner;
+            return opt;
+        }
+        
+        case EXPR_NONE: return new_type(TYPE_OPTIONAL);
+        
+        case EXPR_OK: {
+            Type* inner = tc1_check_expr(tc, e->some.value);
+            Type* res = new_type(TYPE_RESULT);
+            res->inner = inner;
+            return res;
+        }
+        
+        case EXPR_ERR: {
+            Type* inner = tc1_check_expr(tc, e->some.value);
+            Type* res = new_type(TYPE_RESULT);
+            res->value_type = inner;
+            return res;
+        }
+        
+        case EXPR_DEFAULT: {
+            tc1_check_expr(tc, e->default_expr.value);
+            return tc1_check_expr(tc, e->default_expr.default_val);
+        }
+        
+        case EXPR_MATCH: {
+            tc1_check_expr(tc, e->match_expr.value);
+            Type* result_type = NULL;
+            for (int i = 0; i < e->match_expr.arm_count; i++) {
+                tc1_check_expr(tc, e->match_expr.patterns[i]);
+                Type* arm_type = tc1_check_expr(tc, e->match_expr.arms[i]);
+                if (result_type == NULL) result_type = arm_type;
+            }
+            return result_type ? result_type : new_type(TYPE_ANY);
+        }
+        
+        default: return new_type(TYPE_ANY);
+    }
+}
+
+static void tc1_check_stmt(TypeChecker1* tc, Stmt* s);
+
+static void tc1_check_stmt(TypeChecker1* tc, Stmt* s) {
+    if (!s) return;
+    
+    switch (s->kind) {
+        case STMT_LET: {
+            Type* init_type = s->let.value ? tc1_check_expr(tc, s->let.value) : NULL;
+            Type* decl_type = s->let.type;
+            
+            if (tc->enable_inference && !decl_type && init_type) decl_type = init_type;
+            
+            if (decl_type && init_type && !types_equal(decl_type, init_type) && 
+                init_type->kind != TYPE_ANY && decl_type->kind != TYPE_ANY) {
+                tc1_error(tc, s->line, s->column, "type mismatch: expected %s, got %s",
+                          type_name(decl_type), type_name(init_type));
+                if (decl_type->kind == TYPE_INT && init_type->kind == TYPE_FLOAT)
+                    tc1_suggest(tc, "use .to_int() to convert float to int");
+            }
+            
+            tc1_define(tc, s->let.name, decl_type ? decl_type : init_type, s->let.is_mut);
+            break;
+        }
+        
+        case STMT_ASSIGN: {
+            Type* target = tc1_check_expr(tc, s->assign.target);
+            Type* value = tc1_check_expr(tc, s->assign.value);
+            
+            if (s->assign.target->kind == EXPR_IDENT) {
+                Symbol* sym = tc1_lookup(tc, s->assign.target->ident);
+                if (sym && !sym->is_mut) {
+                    tc1_error(tc, s->line, s->column, "cannot assign to immutable variable '%s'", 
+                              s->assign.target->ident);
+                    tc1_suggest(tc, "declare with 'let mut' to make it mutable");
+                }
+            }
+            
+            if (!types_equal(target, value) && target->kind != TYPE_ANY && value->kind != TYPE_ANY) {
+                tc1_error(tc, s->line, s->column, "type mismatch in assignment: %s vs %s",
+                          type_name(target), type_name(value));
+            }
+            break;
+        }
+        
+        case STMT_EXPR:
+            tc1_check_expr(tc, s->expr.expr);
+            break;
+        
+        case STMT_RETURN: {
+            Type* ret_type = s->ret.value ? tc1_check_expr(tc, s->ret.value) : new_type(TYPE_VOID);
+            if (tc->current_return_type && !types_equal(tc->current_return_type, ret_type) &&
+                ret_type->kind != TYPE_ANY && tc->current_return_type->kind != TYPE_ANY) {
+                tc1_error(tc, s->line, s->column, "return type mismatch: expected %s, got %s",
+                          type_name(tc->current_return_type), type_name(ret_type));
+            }
+            break;
+        }
+        
+        case STMT_IF: {
+            Type* cond = tc1_check_expr(tc, s->if_stmt.cond);
+            if (cond->kind != TYPE_BOOL && cond->kind != TYPE_ANY) {
+                tc1_error(tc, s->line, s->column, "condition must be bool, got %s", type_name(cond));
+            }
+            tc1_enter_scope(tc);
+            for (int i = 0; i < s->if_stmt.then_count; i++) tc1_check_stmt(tc, s->if_stmt.then_block[i]);
+            tc1_exit_scope(tc);
+            if (s->if_stmt.else_block) {
+                tc1_enter_scope(tc);
+                for (int i = 0; i < s->if_stmt.else_count; i++) tc1_check_stmt(tc, s->if_stmt.else_block[i]);
+                tc1_exit_scope(tc);
+            }
+            break;
+        }
+        
+        case STMT_WHILE: {
+            Type* cond = tc1_check_expr(tc, s->while_stmt.cond);
+            if (cond->kind != TYPE_BOOL && cond->kind != TYPE_ANY) {
+                tc1_error(tc, s->line, s->column, "condition must be bool, got %s", type_name(cond));
+            }
+            tc1_enter_scope(tc);
+            for (int i = 0; i < s->while_stmt.body_count; i++) tc1_check_stmt(tc, s->while_stmt.body[i]);
+            tc1_exit_scope(tc);
+            break;
+        }
+        
+        case STMT_FOR: {
+            Type* iter = tc1_check_expr(tc, s->for_stmt.iter);
+            tc1_enter_scope(tc);
+            Type* var_type = new_type(TYPE_INT);
+            if (iter && iter->kind == TYPE_ARRAY && iter->inner) var_type = iter->inner;
+            tc1_define(tc, s->for_stmt.var, var_type, false);
+            for (int i = 0; i < s->for_stmt.body_count; i++) tc1_check_stmt(tc, s->for_stmt.body[i]);
+            tc1_exit_scope(tc);
+            break;
+        }
+        
+        case STMT_BLOCK:
+            tc1_enter_scope(tc);
+            for (int i = 0; i < s->block.count; i++) tc1_check_stmt(tc, s->block.stmts[i]);
+            tc1_exit_scope(tc);
+            break;
+        
+        case STMT_DEFER:
+            tc1_check_expr(tc, s->defer.expr);
+            break;
+        
+        case STMT_SPAWN:
+            tc1_enter_scope(tc);
+            for (int i = 0; i < s->spawn.body_count; i++) tc1_check_stmt(tc, s->spawn.body[i]);
+            tc1_exit_scope(tc);
+            break;
+        
+        case STMT_MATCH: {
+            Type* match_type = tc1_check_expr(tc, s->match_stmt.value);
+            for (int i = 0; i < s->match_stmt.arm_count; i++) {
+                Expr* pat = s->match_stmt.patterns[i];
+                bool is_binding_pattern = (pat->kind == EXPR_SOME || pat->kind == EXPR_OK || pat->kind == EXPR_ERR) &&
+                                          pat->some.value && pat->some.value->kind == EXPR_IDENT;
+                if (!is_binding_pattern) tc1_check_expr(tc, pat);
+                
+                tc1_enter_scope(tc);
+                if (s->match_stmt.bindings[i][0] != '\0') {
+                    Type* bind_type = new_type(TYPE_INT);
+                    if (match_type && match_type->kind == TYPE_OPTIONAL && match_type->inner) {
+                        bind_type = match_type->inner;
+                    } else if (match_type && match_type->kind == TYPE_RESULT) {
+                        if (pat->kind == EXPR_ERR) bind_type = new_type(TYPE_STR);
+                        else if (match_type->inner) bind_type = match_type->inner;
+                    }
+                    s->match_stmt.binding_types[i] = bind_type;
+                    tc1_define(tc, s->match_stmt.bindings[i], bind_type, false);
+                }
+                for (int j = 0; j < s->match_stmt.arm_counts[i]; j++) {
+                    tc1_check_stmt(tc, s->match_stmt.arms[i][j]);
+                }
+                tc1_exit_scope(tc);
+            }
+            break;
+        }
+        
+        case STMT_BREAK:
+        case STMT_CONTINUE:
+            break;
+        
+        default: break;
+    }
+}
+
+static void tc1_check_function(TypeChecker1* tc, FnDef* fn, Type* self_type) {
+    tc1_enter_scope(tc);
+    
+    for (int i = 0; i < fn->param_count; i++) {
+        Type* param_type = fn->params[i].type;
+        if (strcmp(fn->params[i].name, "self") == 0 && self_type) param_type = self_type;
+        tc1_define(tc, fn->params[i].name, param_type, false);
+    }
+    
+    tc->current_return_type = fn->return_type;
+    for (int i = 0; i < fn->body_count; i++) tc1_check_stmt(tc, fn->body[i]);
+    tc->current_return_type = NULL;
+    tc1_exit_scope(tc);
+}
+
+static bool typecheck_module_stage1(TypeChecker1* tc) {
+    for (int i = 0; i < tc->module->function_count; i++) {
+        tc1_check_function(tc, &tc->module->functions[i], NULL);
+    }
+    
+    for (int i = 0; i < tc->module->struct_count; i++) {
+        StructDef* s = &tc->module->structs[i];
+        Type* self_type = new_type(TYPE_NAMED);
+        strcpy(self_type->name, s->name);
+        for (int j = 0; j < s->method_count; j++) {
+            tc1_check_function(tc, &s->methods[j], self_type);
+        }
+    }
+    
+    for (int i = 0; i < tc->module->test_count; i++) {
+        tc1_enter_scope(tc);
+        for (int j = 0; j < tc->module->tests[i].body_count; j++) {
+            tc1_check_stmt(tc, tc->module->tests[i].body[j]);
+        }
+        tc1_exit_scope(tc);
+    }
+    
+    return !tc->had_error;
+}
+
+// ============================================================================
 // Code Generator (ARM64 for Apple Silicon)
 // ============================================================================
 
@@ -8281,6 +8812,8 @@ int main(int argc, char** argv) {
     bool emit_ir = false;
     bool quiet = false;
     int opt_level = 0;
+    bool stage1_opt = false;  // Enable Stage 1 optimizations
+    bool use_stage1_tc = false;  // Use Stage 1 type checker
     Arch target_arch = ARCH_ARM64;  // Default for macOS ARM
     TargetOS target_os = OS_MACOS;  // Default OS
     
@@ -8313,8 +8846,12 @@ int main(int argc, char** argv) {
             opt_level = 1;
         } else if (strcmp(argv[i], "-O2") == 0) {
             opt_level = 2;
+        } else if (strcmp(argv[i], "--stage1") == 0) {
+            stage1_opt = true;
         } else if (strcmp(argv[i], "-q") == 0 || strcmp(argv[i], "--quiet") == 0) {
             quiet = true;
+        } else if (strcmp(argv[i], "--stage1-tc") == 0) {
+            use_stage1_tc = true;
         } else if (strcmp(argv[i], "--target") == 0 && i + 1 < argc) {
             i++;
             if (strcmp(argv[i], "arm64") == 0) target_arch = ARCH_ARM64;
@@ -8362,12 +8899,25 @@ int main(int argc, char** argv) {
     if (!quiet) print_module(module);
     
     // Type check
-    TypeChecker* tc = typechecker_new(module, input_file);\
-    if (!typecheck_module(tc)) {
-        fprintf(stderr, "Type checking failed.\n");
-        return 1;
+    TypeChecker* tc = NULL;
+    if (use_stage1_tc) {
+        if (!quiet) printf("Using Stage 1 type checker...\n");
+        TypeChecker1* tc1 = tc1_new(module, input_file);
+        if (!typecheck_module_stage1(tc1)) {
+            fprintf(stderr, "Type checking failed.\n");
+            return 1;
+        }
+        if (!quiet) printf("\nType checking passed.\n");
+        // Create dummy TypeChecker for codegen compatibility
+        tc = typechecker_new(module, input_file);
+    } else {
+        tc = typechecker_new(module, input_file);
+        if (!typecheck_module(tc)) {
+            fprintf(stderr, "Type checking failed.\n");
+            return 1;
+        }
+        if (!quiet) printf("\nType checking passed.\n");
     }
-    if (!quiet) printf("\nType checking passed.\n");
     
     // Code generation
     if (emit_asm) {
