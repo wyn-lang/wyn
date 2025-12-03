@@ -43,8 +43,74 @@ pub fn options(url: str) -> Result[Response, str] {
     return err("HTTP client not implemented in Stage 0")
 }
 
+# --- HTTP Server (basic implementation using TCP) ---
+
 pub fn serve(host: str, port: int) -> Result[int, str] {
-    return err("HTTP server not implemented in Stage 0")
+    let server_fd: int = tcp_listen(port)
+    if server_fd < 0 {
+        return err("Failed to create server socket")
+    }
+    return ok(server_fd)
+}
+
+pub fn accept_connection(server_fd: int) -> Result[int, str] {
+    let client_fd: int = tcp_accept(server_fd)
+    if client_fd < 0 {
+        return err("Failed to accept connection")
+    }
+    return ok(client_fd)
+}
+
+pub fn read_request(client_fd: int) -> Result[Request, str] {
+    let data: str = tcp_recv(client_fd, 4096)
+    if data.len() == 0 {
+        return err("Failed to read request")
+    }
+    
+    # Parse first line: METHOD /path HTTP/1.1
+    let lines: [str] = str_split(data, "\n")
+    if lines.len() == 0 {
+        return err("Empty request")
+    }
+    
+    let first_line: str = lines[0]
+    let parts: [str] = str_split(first_line, " ")
+    if parts.len() < 2 {
+        return err("Invalid request line")
+    }
+    
+    let req: Request = Request {
+        method: parts[0],
+        path: parts[1],
+        headers: [],
+        body: ""
+    }
+    
+    return ok(req)
+}
+
+pub fn send_response(client_fd: int, status: int, body: str) -> Result[int, str] {
+    let status_line: str = str_concat("HTTP/1.1 ", int_to_str(status))
+    status_line = str_concat(status_line, " OK\r\n")
+    
+    let headers: str = "Content-Type: text/plain\r\n"
+    headers = str_concat(headers, "Content-Length: ")
+    headers = str_concat(headers, int_to_str(body.len()))
+    headers = str_concat(headers, "\r\n\r\n")
+    
+    let response: str = str_concat(status_line, headers)
+    response = str_concat(response, body)
+    
+    let sent: int = tcp_send(client_fd, response)
+    if sent < 0 {
+        return err("Failed to send response")
+    }
+    
+    return ok(sent)
+}
+
+pub fn close_connection(fd: int) {
+    tcp_close(fd)
 }
 
 # --- HTTP Methods ---

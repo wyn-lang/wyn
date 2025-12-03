@@ -1,709 +1,255 @@
-# std/json.wyn
-# JSON encoding and decoding
+# JSON parsing and serialization
+# Supports strings, numbers, booleans, null, arrays, and objects
 
-# Parse a JSON string into a value
-# Returns ok(value) on success, or err(message) on parse error
-# Requires: Runtime support for JSON parsing
-fn parse(json_str: str) -> Result[str, str] {
-    return err("not implemented")
-}
-
-# Convert a value to a JSON string
-# Returns ok(json) on success, or err(message) on serialization error
-# Requires: Runtime support for JSON serialization
-fn stringify(value: str) -> Result[str, str] {
-    return err("not implemented")
-}
-
-# Alias for parse - deserialize JSON string to value
-# Requires: Runtime support for JSON parsing
-fn from_str(json_str: str) -> Result[str, str] {
-    return err("not implemented")
-}
-
-# Alias for stringify - serialize value to JSON string
-# Requires: Runtime support for JSON serialization
-fn to_str(value: str) -> Result[str, str] {
-    return err("not implemented")
-}
-
-# JSON value types
-
-enum JsonType {
+enum JsonValue {
+    String(str)
+    Number(float)
+    Bool(bool)
     Null
-    Bool
-    Number
-    String
-    Array
-    Object
+    Array([JsonValue])
+    Object([(str, JsonValue)])
 }
 
-# Basic serialization helpers
+struct Parser {
+    input: str
+    pos: int
+    len: int
+}
 
-# Escape a string for JSON encoding
-# Handles quotes, backslashes, newlines, tabs, and carriage returns
-fn escape_string(s: str) -> str {
-    let mut result: str = chr(34)  # opening quote
-    let mut i: int = 0
-    while i < s.len() {
-        let c: int = ord(s[i:i+1][0])
-        if c == 34 {  # '"'
-            result = result + chr(92) + chr(34)  # \"
-        } else if c == 92 {  # '\\'
-            result = result + chr(92) + chr(92)  # \\
-        } else if c == 10 {  # '\n'
-            result = result + chr(92) + "n"  # \n
-        } else if c == 13 {  # '\r'
-            result = result + chr(92) + "r"  # \r
-        } else if c == 9 {  # '\t'
-            result = result + chr(92) + "t"  # \t
-        } else {
-            result = result + s[i:i+1]
+fn parse(json_str: str) -> Result[JsonValue, str] {
+    let mut p: Parser = Parser{input: json_str, pos: 0, len: json_str.len()}
+    skip_whitespace(mut p)
+    return parse_value(mut p)
+}
+
+fn parse_value(mut p: Parser) -> Result[JsonValue, str] {
+    skip_whitespace(mut p)
+    if p.pos >= p.len {
+        return err("Unexpected end of input")
+    }
+    
+    let c: str = str_substr(p.input, p.pos, 1)
+    
+    if c == "\"" {
+        return parse_string(mut p)
+    } else if c == "{" {
+        return parse_object(mut p)
+    } else if c == "[" {
+        return parse_array(mut p)
+    } else if c == "t" {
+        return parse_true(mut p)
+    } else if c == "f" {
+        return parse_false(mut p)
+    } else if c == "n" {
+        return parse_null(mut p)
+    } else if c == "-" or is_digit(c) {
+        return parse_number(mut p)
+    }
+    
+    return err("Unexpected character")
+}
+
+fn parse_string(mut p: Parser) -> Result[JsonValue, str] {
+    p.pos = p.pos + 1  # Skip opening "
+    let start: int = p.pos
+    
+    while p.pos < p.len {
+        let c: str = str_substr(p.input, p.pos, 1)
+        if c == "\"" {
+            let s: str = str_substr(p.input, start, p.pos - start)
+            p.pos = p.pos + 1
+            return ok(JsonValue.String(s))
         }
-        i = i + 1
+        p.pos = p.pos + 1
     }
-    result = result + chr(34)  # closing quote
-    return result
+    
+    return err("Unterminated string")
 }
 
-# Unescape a JSON string
-# Handles escaped quotes, backslashes, newlines, tabs, and carriage returns
-fn unescape_string(s: str) -> str {
-    let mut result: str = ""
-    let mut i: int = 0
-    while i < s.len() {
-        let c: int = ord(s[i:i+1][0])
-        if c == 92 and i + 1 < s.len() {  # '\\'
-            let next: int = ord(s[i+1:i+2][0])
-            if next == 110 {  # 'n'
-                result = result + "\n"
-                i = i + 2
-            } else if next == 114 {  # 'r'
-                result = result + "\r"
-                i = i + 2
-            } else if next == 116 {  # 't'
-                result = result + "\t"
-                i = i + 2
-            } else if next == 34 or next == 92 {  # '"' or '\\'
-                result = result + s[i+1:i+2]
-                i = i + 2
-            } else {
-                result = result + s[i:i+1]
-                i = i + 1
-            }
-        } else {
-            result = result + s[i:i+1]
-            i = i + 1
+fn parse_number(mut p: Parser) -> Result[JsonValue, str] {
+    let start: int = p.pos
+    
+    if str_substr(p.input, p.pos, 1) == "-" {
+        p.pos = p.pos + 1
+    }
+    
+    while p.pos < p.len and is_digit(str_substr(p.input, p.pos, 1)) {
+        p.pos = p.pos + 1
+    }
+    
+    if p.pos < p.len and str_substr(p.input, p.pos, 1) == "." {
+        p.pos = p.pos + 1
+        while p.pos < p.len and is_digit(str_substr(p.input, p.pos, 1)) {
+            p.pos = p.pos + 1
         }
     }
-    return result
+    
+    let num_str: str = str_substr(p.input, start, p.pos - start)
+    let num: float = str_to_float(num_str)
+    return ok(JsonValue.Number(num))
 }
 
-# Check if a character code is whitespace (space, tab, newline, carriage return)
-fn is_whitespace(c: int) -> bool {
-    return c == 32 or c == 9 or c == 10 or c == 13
-}
-
-# Skip whitespace characters in a string starting from a given position
-# Returns the index of the first non-whitespace character
-fn skip_whitespace(s: str, start: int) -> int {
-    let mut i: int = start
-    while i < s.len() and is_whitespace(ord(s[i:i+1][0])) {
-        i = i + 1
+fn parse_true(mut p: Parser) -> Result[JsonValue, str] {
+    if p.pos + 4 <= p.len and str_substr(p.input, p.pos, 4) == "true" {
+        p.pos = p.pos + 4
+        return ok(JsonValue.Bool(true))
     }
-    return i
+    return err("Invalid boolean")
 }
 
-# Check if a character is a valid JSON digit (0-9)
-fn is_json_digit(c: int) -> bool {
-    return c >= 48 and c <= 57
+fn parse_false(mut p: Parser) -> Result[JsonValue, str] {
+    if p.pos + 5 <= p.len and str_substr(p.input, p.pos, 5) == "false" {
+        p.pos = p.pos + 5
+        return ok(JsonValue.Bool(false))
+    }
+    return err("Invalid boolean")
 }
 
-# Check if a character is a valid JSON number start (digit, minus, or plus)
-fn is_json_number_start(c: int) -> bool {
-    return is_json_digit(c) or c == 45 or c == 43  # '-' or '+'
+fn parse_null(mut p: Parser) -> Result[JsonValue, str] {
+    if p.pos + 4 <= p.len and str_substr(p.input, p.pos, 4) == "null" {
+        p.pos = p.pos + 4
+        return ok(JsonValue.Null)
+    }
+    return err("Invalid null")
 }
 
-# Serialize an integer to JSON
-fn int_to_json(n: int) -> str {
-    return int_to_str(n)
+fn parse_array(mut p: Parser) -> Result[JsonValue, str] {
+    p.pos = p.pos + 1  # Skip [
+    skip_whitespace(mut p)
+    
+    let mut items: [JsonValue] = []
+    
+    if p.pos < p.len and str_substr(p.input, p.pos, 1) == "]" {
+        p.pos = p.pos + 1
+        return ok(JsonValue.Array(items))
+    }
+    
+    while p.pos < p.len {
+        let val: JsonValue = parse_value(mut p)?
+        items.push(val)
+        
+        skip_whitespace(mut p)
+        if p.pos >= p.len {
+            return err("Unterminated array")
+        }
+        
+        let c: str = str_substr(p.input, p.pos, 1)
+        if c == "]" {
+            p.pos = p.pos + 1
+            return ok(JsonValue.Array(items))
+        } else if c == "," {
+            p.pos = p.pos + 1
+            skip_whitespace(mut p)
+        } else {
+            return err("Expected , or ]")
+        }
+    }
+    
+    return err("Unterminated array")
 }
 
-# Serialize a boolean to JSON
-fn bool_to_json(b: bool) -> str {
-    return if b then "true" else "false"
+fn parse_object(mut p: Parser) -> Result[JsonValue, str] {
+    p.pos = p.pos + 1  # Skip {
+    skip_whitespace(mut p)
+    
+    let mut pairs: [(str, JsonValue)] = []
+    
+    if p.pos < p.len and str_substr(p.input, p.pos, 1) == "}" {
+        p.pos = p.pos + 1
+        return ok(JsonValue.Object(pairs))
+    }
+    
+    while p.pos < p.len {
+        skip_whitespace(mut p)
+        
+        let key_val: JsonValue = parse_string(mut p)?
+        let key: str = match key_val {
+            JsonValue.String(s) => s
+            _ => return err("Expected string key")
+        }
+        
+        skip_whitespace(mut p)
+        if p.pos >= p.len or str_substr(p.input, p.pos, 1) != ":" {
+            return err("Expected :")
+        }
+        p.pos = p.pos + 1
+        
+        let val: JsonValue = parse_value(mut p)?
+        pairs.push((key, val))
+        
+        skip_whitespace(mut p)
+        if p.pos >= p.len {
+            return err("Unterminated object")
+        }
+        
+        let c: str = str_substr(p.input, p.pos, 1)
+        if c == "}" {
+            p.pos = p.pos + 1
+            return ok(JsonValue.Object(pairs))
+        } else if c == "," {
+            p.pos = p.pos + 1
+        } else {
+            return err("Expected , or }")
+        }
+    }
+    
+    return err("Unterminated object")
 }
 
-# Create a JSON null value
-fn json_null() -> str {
-    return "null"
+fn skip_whitespace(mut p: Parser) {
+    while p.pos < p.len {
+        let c: str = str_substr(p.input, p.pos, 1)
+        if c == " " or c == "\n" or c == "\r" or c == "\t" {
+            p.pos = p.pos + 1
+        } else {
+            break
+        }
+    }
 }
 
-# Create a JSON array from a list of JSON strings
-fn json_array(items: [str]) -> str {
+fn is_digit(c: str) -> bool {
+    return c == "0" or c == "1" or c == "2" or c == "3" or c == "4" or 
+           c == "5" or c == "6" or c == "7" or c == "8" or c == "9"
+}
+
+fn stringify(value: JsonValue) -> str {
+    return match value {
+        JsonValue.String(s) => str_concat("\"", str_concat(s, "\""))
+        JsonValue.Number(n) => float_to_str(n)
+        JsonValue.Bool(b) => if b then "true" else "false"
+        JsonValue.Null => "null"
+        JsonValue.Array(items) => stringify_array(items)
+        JsonValue.Object(pairs) => stringify_object(pairs)
+    }
+}
+
+fn stringify_array(items: [JsonValue]) -> str {
     let mut result: str = "["
     let mut i: int = 0
     while i < items.len() {
         if i > 0 {
-            result = result + ","
+            result = str_concat(result, ",")
         }
-        result = result + items[i]
+        result = str_concat(result, stringify(items[i]))
         i = i + 1
     }
-    result = result + "]"
-    return result
+    return str_concat(result, "]")
 }
 
-# Create a JSON object from parallel arrays of keys and values
-fn json_object(keys: [str], values: [str]) -> str {
+fn stringify_object(pairs: [(str, JsonValue)]) -> str {
     let mut result: str = "{"
     let mut i: int = 0
-    let count: int = min(keys.len(), values.len())
-    while i < count {
+    while i < pairs.len() {
         if i > 0 {
-            result = result + ","
+            result = str_concat(result, ",")
         }
-        result = result + escape_string(keys[i]) + ":" + values[i]
+        let key: str = pairs[i].0
+        let val: JsonValue = pairs[i].1
+        result = str_concat(result, "\"")
+        result = str_concat(result, key)
+        result = str_concat(result, "\":")
+        result = str_concat(result, stringify(val))
         i = i + 1
     }
-    result = result + "}"
-    return result
-}
-
-# Pretty-print JSON with indentation
-# Adds newlines and spaces for readability
-fn pretty_json(json: str, indent: int) -> str {
-    let mut result: str = ""
-    let mut level: int = 0
-    let mut i: int = 0
-    let mut in_string: bool = false
-    
-    while i < json.len() {
-        let c: str = json[i:i+1]
-        let code: int = ord(c[0])
-        
-        if code == 34 and (i == 0 or ord(json[i-1:i][0]) != 92) {  # '"' not escaped
-            in_string = not in_string
-            result = result + c
-        } else if not in_string {
-            if c == "{" or c == "[" {
-                result = result + c + "\n"
-                level = level + 1
-                let mut j: int = 0
-                while j < level * indent {
-                    result = result + " "
-                    j = j + 1
-                }
-            } else if c == "}" or c == "]" {
-                result = result + "\n"
-                level = level - 1
-                let mut j: int = 0
-                while j < level * indent {
-                    result = result + " "
-                    j = j + 1
-                }
-                result = result + c
-            } else if c == "," {
-                result = result + c + "\n"
-                let mut j: int = 0
-                while j < level * indent {
-                    result = result + " "
-                    j = j + 1
-                }
-            } else if c == ":" {
-                result = result + c + " "
-            } else if not is_whitespace(code) {
-                result = result + c
-            }
-        } else {
-            result = result + c
-        }
-        i = i + 1
-    }
-    
-    return result
-}
-
-# Minify JSON by removing unnecessary whitespace
-fn minify_json(json: str) -> str {
-    let mut result: str = ""
-    let mut i: int = 0
-    let mut in_string: bool = false
-    
-    while i < json.len() {
-        let c: str = json[i:i+1]
-        let code: int = ord(c[0])
-        
-        if code == 34 and (i == 0 or ord(json[i-1:i][0]) != 92) {  # '"' not escaped
-            in_string = not in_string
-            result = result + c
-        } else if in_string {
-            result = result + c
-        } else if not is_whitespace(code) {
-            result = result + c
-        }
-        i = i + 1
-    }
-    
-    return result
-}
-
-# Validate JSON structure (basic check for balanced brackets and quotes)
-# Returns ok(1) if valid, err(message) if invalid
-fn validate_json(json: str) -> Result[int, str] {
-    let mut depth: int = 0
-    let mut in_string: bool = false
-    let mut i: int = 0
-    
-    while i < json.len() {
-        let c: str = json[i:i+1]
-        let code: int = ord(c[0])
-        
-        if code == 34 and (i == 0 or ord(json[i-1:i][0]) != 92) {  # '"' not escaped
-            in_string = not in_string
-        } else if not in_string {
-            if c == "{" or c == "[" {
-                depth = depth + 1
-            } else if c == "}" or c == "]" {
-                depth = depth - 1
-                if depth < 0 {
-                    return err("unmatched closing bracket")
-                }
-            }
-        }
-        i = i + 1
-    }
-    
-    if in_string {
-        return err("unclosed string")
-    }
-    if depth != 0 {
-        return err("unmatched opening bracket")
-    }
-    
-    return ok(1)
-}
-
-# Extract a value from JSON by key path (simple dot notation)
-# Requires: Runtime support for JSON path traversal
-fn json_get(json: str, path: str) -> ?str {
-    return none
-}
-
-# Set a value in JSON by key path (simple dot notation)
-# Returns ok(modified_json) on success, err(message) on failure
-# Requires: Runtime support for JSON manipulation
-fn json_set(json: str, path: str, value: str) -> Result[str, str] {
-    return err("not implemented")
-}
-
-# Delete a key from JSON object by path
-# Returns ok(modified_json) on success, err(message) on failure
-# Requires: Runtime support for JSON manipulation
-fn json_delete(json: str, path: str) -> Result[str, str] {
-    return err("not implemented")
-}
-
-# Check if JSON contains a key at the given path
-# Returns true if key exists, false otherwise
-fn json_has_key(json: str, path: str) -> bool {
-    return false
-}
-
-# Get all keys from a JSON object
-# Returns an array of key names
-# Stage 1: Will support array building for key extraction
-fn json_keys(json: str) -> [str] {
-    return []
-}
-
-# Get all values from a JSON object
-# Returns an array of values as JSON strings
-# Stage 1: Will support array building for value extraction
-fn json_values(json: str) -> [str] {
-    return []
-}
-
-# Merge two JSON objects
-# Returns ok(merged_json) on success, err(message) on failure
-# Requires: Runtime support for JSON manipulation
-fn json_merge(json1: str, json2: str) -> Result[str, str] {
-    return err("not implemented")
-}
-
-# Check if a JSON string represents a specific type
-fn is_json_null(json: str) -> bool {
-    return trim(json) == "null"
-}
-
-# Check if a JSON string represents a boolean
-fn is_json_bool(json: str) -> bool {
-    let t: str = trim(json)
-    return t == "true" or t == "false"
-}
-
-# Check if a JSON string represents a number
-fn is_json_number(json: str) -> bool {
-    let t: str = trim(json)
-    if t.len() == 0 {
-        return false
-    }
-    let first: int = ord(t[0:1][0])
-    return is_json_number_start(first)
-}
-
-# Check if a JSON string represents a string
-fn is_json_string(json: str) -> bool {
-    let t: str = trim(json)
-    return t.len() >= 2 and t[0:1] == chr(34) and t[t.len()-1:t.len()] == chr(34)
-}
-
-# Check if a JSON string represents an array
-fn is_json_array(json: str) -> bool {
-    let t: str = trim(json)
-    return t.len() >= 2 and t[0:1] == "[" and t[t.len()-1:t.len()] == "]"
-}
-
-# Check if a JSON string represents an object
-fn is_json_object(json: str) -> bool {
-    let t: str = trim(json)
-    return t.len() >= 2 and t[0:1] == "{" and t[t.len()-1:t.len()] == "}"
-}
-
-# Count elements in a JSON array
-# Returns the number of top-level elements, or 0 if not an array
-fn json_array_length(json: str) -> int {
-    let trimmed: str = trim(json)
-    if trimmed.len() < 2 or trimmed[0:1] != "[" {
-        return 0
-    }
-    
-    let mut count: int = 0
-    let mut depth: int = 0
-    let mut in_string: bool = false
-    let mut i: int = 1
-    
-    while i < trimmed.len() - 1 {
-        let c: str = trimmed[i:i+1]
-        let code: int = ord(c[0])
-        
-        if code == 34 and (i == 0 or ord(trimmed[i-1:i][0]) != 92) {
-            in_string = not in_string
-        } else if not in_string {
-            if c == "[" or c == "{" {
-                depth = depth + 1
-            } else if c == "]" or c == "}" {
-                depth = depth - 1
-            } else if c == "," and depth == 0 {
-                count = count + 1
-            }
-        }
-        i = i + 1
-    }
-    
-    if count > 0 or (trimmed.len() > 2 and not is_whitespace(ord(trimmed[1:2][0]))) {
-        count = count + 1
-    }
-    
-    return count
-}
-
-# Trim whitespace from start and end of string
-fn trim(s: str) -> str {
-    let start: int = skip_whitespace(s, 0)
-    let mut end: int = s.len() - 1
-    
-    while end >= start and is_whitespace(ord(s[end:end+1][0])) {
-        end = end - 1
-    }
-    
-    if start > end {
-        return ""
-    }
-    
-    return s[start:end+1]
-}
-
-# Helper: minimum of two integers
-fn min(a: int, b: int) -> int {
-    return if a < b then a else b
-}
-
-# Parse JSON boolean
-fn parse_bool(json: str) -> ?bool {
-    let t: str = trim(json)
-    if t == "true" { return some(true) }
-    if t == "false" { return some(false) }
-    return none
-}
-
-# Parse JSON number as integer
-fn parse_int(json: str) -> ?int {
-    let t: str = trim(json)
-    if t.len() == 0 { return none }
-    let first: int = ord(t[0:1])
-    if not is_json_number_start(first) { return none }
-    return some(str_to_int(t))
-}
-
-# Parse JSON string (remove quotes and unescape)
-fn parse_string(json: str) -> ?str {
-    let t: str = trim(json)
-    if t.len() < 2 { return none }
-    if t[0:1] != "\"" or t[t.len()-1:t.len()] != "\"" { return none }
-    return some(unescape_string(t[1:t.len()-1]))
-}
-
-# Extract array element at index
-fn json_array_get(json: str, index: int) -> ?str {
-    let trimmed: str = trim(json)
-    if trimmed.len() < 2 or trimmed[0:1] != "[" { return none }
-    
-    let mut current_index: int = 0
-    let mut depth: int = 0
-    let mut in_string: bool = false
-    let mut start: int = 1
-    let mut i: int = 1
-    
-    while i < trimmed.len() {
-        let c: str = trimmed[i:i+1]
-        let code: int = ord(c)
-        
-        if code == 34 and (i == 0 or ord(trimmed[i-1:i]) != 92) {
-            in_string = not in_string
-        } else if not in_string {
-            if c == "[" or c == "{" {
-                depth = depth + 1
-            } else if c == "]" or c == "}" {
-                depth = depth - 1
-                if depth < 0 {
-                    if current_index == index {
-                        return some(trim(trimmed[start:i]))
-                    }
-                    return none
-                }
-            } else if c == "," and depth == 0 {
-                if current_index == index {
-                    return some(trim(trimmed[start:i]))
-                }
-                current_index = current_index + 1
-                start = i + 1
-            }
-        }
-        i = i + 1
-    }
-    
-    return none
-}
-
-# Extract object value by key
-fn json_object_get(json: str, key: str) -> ?str {
-    let trimmed: str = trim(json)
-    if trimmed.len() < 2 or trimmed[0:1] != "{" { return none }
-    
-    let mut depth: int = 0
-    let mut in_string: bool = false
-    let mut i: int = 1
-    
-    while i < trimmed.len() - 1 {
-        i = skip_whitespace(trimmed, i)
-        if i >= trimmed.len() - 1 { break }
-        
-        if trimmed[i:i+1] != "\"" { break }
-        
-        let mut key_end: int = i + 1
-        while key_end < trimmed.len() and trimmed[key_end:key_end+1] != "\"" {
-            if trimmed[key_end:key_end+1] == "\\" { key_end = key_end + 1 }
-            key_end = key_end + 1
-        }
-        
-        let found_key: str = trimmed[i+1:key_end]
-        i = key_end + 1
-        i = skip_whitespace(trimmed, i)
-        
-        if i >= trimmed.len() or trimmed[i:i+1] != ":" { break }
-        i = i + 1
-        i = skip_whitespace(trimmed, i)
-        
-        let value_start: int = i
-        depth = 0
-        in_string = false
-        
-        while i < trimmed.len() {
-            let c: str = trimmed[i:i+1]
-            let code: int = ord(c)
-            
-            if code == 34 and (i == 0 or ord(trimmed[i-1:i]) != 92) {
-                in_string = not in_string
-            } else if not in_string {
-                if c == "{" or c == "[" {
-                    depth = depth + 1
-                } else if c == "}" or c == "]" {
-                    if depth == 0 {
-                        if found_key == key {
-                            return some(trim(trimmed[value_start:i]))
-                        }
-                        break
-                    }
-                    depth = depth - 1
-                } else if c == "," and depth == 0 {
-                    if found_key == key {
-                        return some(trim(trimmed[value_start:i]))
-                    }
-                    break
-                }
-            }
-            i = i + 1
-        }
-        
-        if found_key == key {
-            return some(trim(trimmed[value_start:i]))
-        }
-        
-        if i < trimmed.len() and trimmed[i:i+1] == "," {
-            i = i + 1
-        }
-    }
-    
-    return none
-}
-
-# Count keys in JSON object
-fn json_object_size(json: str) -> int {
-    let trimmed: str = trim(json)
-    if trimmed.len() < 2 or trimmed[0:1] != "{" { return 0 }
-    
-    let mut count: int = 0
-    let mut depth: int = 0
-    let mut in_string: bool = false
-    let mut i: int = 1
-    
-    while i < trimmed.len() - 1 {
-        let c: str = trimmed[i:i+1]
-        let code: int = ord(c)
-        
-        if code == 34 and (i == 0 or ord(trimmed[i-1:i]) != 92) {
-            in_string = not in_string
-            if in_string and depth == 0 {
-                let mut j: int = i + 1
-                while j < trimmed.len() and trimmed[j:j+1] != "\"" {
-                    if trimmed[j:j+1] == "\\" { j = j + 1 }
-                    j = j + 1
-                }
-                j = skip_whitespace(trimmed, j + 1)
-                if j < trimmed.len() and trimmed[j:j+1] == ":" {
-                    count = count + 1
-                }
-            }
-        } else if not in_string {
-            if c == "{" or c == "[" {
-                depth = depth + 1
-            } else if c == "}" or c == "]" {
-                depth = depth - 1
-            }
-        }
-        i = i + 1
-    }
-    
-    return count
-}
-
-# Convert JSON to compact single-line format
-fn json_compact(json: str) -> str {
-    return minify_json(json)
-}
-
-# Encode string array as JSON array
-fn encode_string_array(arr: [str]) -> str {
-    let mut items: [str] = []
-    let mut i: int = 0
-    while i < arr.len() {
-        items = items + [escape_string(arr[i])]
-        i = i + 1
-    }
-    return json_array(items)
-}
-
-# Encode int array as JSON array
-fn encode_int_array(arr: [int]) -> str {
-    let mut items: [str] = []
-    let mut i: int = 0
-    while i < arr.len() {
-        items = items + [int_to_json(arr[i])]
-        i = i + 1
-    }
-    return json_array(items)
-}
-
-# Encode bool array as JSON array
-fn encode_bool_array(arr: [bool]) -> str {
-    let mut items: [str] = []
-    let mut i: int = 0
-    while i < arr.len() {
-        items = items + [bool_to_json(arr[i])]
-        i = i + 1
-    }
-    return json_array(items)
-}
-
-# Create JSON object from single key-value pair
-fn json_kv(key: str, value: str) -> str {
-    return "{" + escape_string(key) + ":" + value + "}"
-}
-
-# Check if JSON is empty array or object
-fn json_is_empty(json: str) -> bool {
-    let t: str = trim(json)
-    return t == "[]" or t == "{}"
-}
-
-# Get JSON type as string
-fn json_type(json: str) -> str {
-    if is_json_null(json) { return "null" }
-    if is_json_bool(json) { return "bool" }
-    if is_json_number(json) { return "number" }
-    if is_json_string(json) { return "string" }
-    if is_json_array(json) { return "array" }
-    if is_json_object(json) { return "object" }
-    return "unknown"
-}
-
-# Format JSON with custom indentation
-fn json_format(json: str, spaces: int) -> str {
-    return pretty_json(json, spaces)
-}
-
-# Escape special characters for JSON
-fn json_escape(s: str) -> str {
-    return escape_string(s)
-}
-
-# Unescape JSON string
-fn json_unescape(s: str) -> str {
-    return unescape_string(s)
-}
-
-# Create empty JSON object
-fn json_empty_object() -> str {
-    return "{}"
-}
-
-# Create empty JSON array
-fn json_empty_array() -> str {
-    return "[]"
-}
-
-# Wrap value in JSON string quotes
-fn json_string(s: str) -> str {
-    return escape_string(s)
-}
-
-# Create JSON number from int
-fn json_number(n: int) -> str {
-    return int_to_json(n)
-}
-
-# Create JSON boolean
-fn json_boolean(b: bool) -> str {
-    return bool_to_json(b)
+    return str_concat(result, "}")
 }
