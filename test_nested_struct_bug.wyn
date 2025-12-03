@@ -1,0 +1,23 @@
+struct Inner {
+    value: int
+}
+
+struct Outer {
+    inner: Inner
+    name: str
+}
+
+fn main() {
+    let inner: Inner = Inner { value: 42 }
+    let outer: Outer = Outer { inner: inner, name: "test" }
+    
+    # Test 1: Single level access (should work)
+    print("outer.name = ")
+    print(outer.name)
+    print_newline()
+    
+    # Test 2: Nested access (crashes according to TODO)
+    print("outer.inner.value = ")
+    print(outer.inner.value)
+    print_newline()
+}

@@ -2420,6 +2420,8 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     strcmp(e->ident, "sleep_ms") == 0 || strcmp(e->ident, "tcp_connect") == 0 ||
                     strcmp(e->ident, "tcp_close") == 0 || strcmp(e->ident, "char_at") == 0 ||
                     strcmp(e->ident, "str_find") == 0 || strcmp(e->ident, "str_cmp") == 0 ||
+                    strcmp(e->ident, "str_concat") == 0 || strcmp(e->ident, "str_substr") == 0 ||
+                    strcmp(e->ident, "str_split") == 0 ||
                     strcmp(e->ident, "tcp_send") == 0 || strcmp(e->ident, "tcp_recv") == 0 ||
                     strcmp(e->ident, "tcp_listen") == 0 || strcmp(e->ident, "tcp_accept") == 0 ||
                     strcmp(e->ident, "getcwd") == 0 || strcmp(e->ident, "chdir") == 0 ||
@@ -3644,6 +3646,107 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_emit(cg, "    callq %sstrcmp", cg_sym_prefix(cg));
                     break;
                 }
+                // Handle built-in str_concat(a, b) -> str
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "str_concat") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    pushq %%rax");
+                    cg_expr(cg, e->call.args[1]);
+                    cg_emit(cg, "    pushq %%rax");
+                    cg_emit(cg, "    movq 8(%%rsp), %%rdi");
+                    cg_emit(cg, "    callq %sstrlen", cg_sym_prefix(cg));
+                    cg_emit(cg, "    pushq %%rax");
+                    cg_emit(cg, "    movq 8(%%rsp), %%rdi");
+                    cg_emit(cg, "    callq %sstrlen", cg_sym_prefix(cg));
+                    cg_emit(cg, "    popq %%rdi");
+                    cg_emit(cg, "    addq %%rdi, %%rax");
+                    cg_emit(cg, "    incq %%rax");
+                    cg_emit(cg, "    movq %%rax, %%rdi");
+                    cg_emit(cg, "    callq %smalloc", cg_sym_prefix(cg));
+                    cg_emit(cg, "    movq %%rax, %%rdi");
+                    cg_emit(cg, "    movq 16(%%rsp), %%rsi");
+                    cg_emit(cg, "    callq %sstrcpy", cg_sym_prefix(cg));
+                    cg_emit(cg, "    movq %%rax, %%rdi");
+                    cg_emit(cg, "    movq (%%rsp), %%rsi");
+                    cg_emit(cg, "    callq %sstrcat", cg_sym_prefix(cg));
+                    cg_emit(cg, "    addq $24, %%rsp");
+                    break;
+                }
+                // Handle built-in str_substr(s, start, len) -> str
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "str_substr") == 0) {
+                    cg_expr(cg, e->call.args[2]);
+                    cg_emit(cg, "    incq %%rax");
+                    cg_emit(cg, "    movq %%rax, %%rdi");
+                    cg_emit(cg, "    callq %smalloc", cg_sym_prefix(cg));
+                    cg_emit(cg, "    pushq %%rax");
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    pushq %%rax");
+                    cg_expr(cg, e->call.args[1]);
+                    cg_emit(cg, "    popq %%rsi");
+                    cg_emit(cg, "    addq %%rax, %%rsi");
+                    cg_expr(cg, e->call.args[2]);
+                    cg_emit(cg, "    movq %%rax, %%rdx");
+                    cg_emit(cg, "    movq (%%rsp), %%rdi");
+                    cg_emit(cg, "    callq %smemcpy", cg_sym_prefix(cg));
+                    cg_expr(cg, e->call.args[2]);
+                    cg_emit(cg, "    movq (%%rsp), %%rdi");
+                    cg_emit(cg, "    addq %%rax, %%rdi");
+                    cg_emit(cg, "    movb $0, (%%rdi)");
+                    cg_emit(cg, "    popq %%rax");
+                    break;
+                }
+                // Handle built-in str_split(s, delim) -> [str]
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "str_split") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movq %%rax, %%rdi");
+                    cg_emit(cg, "    callq %sstrlen", cg_sym_prefix(cg));
+                    cg_emit(cg, "    incq %%rax");
+                    cg_emit(cg, "    movq %%rax, %%rdi");
+                    cg_emit(cg, "    callq %smalloc", cg_sym_prefix(cg));
+                    cg_emit(cg, "    movq %%rax, %%r12");
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movq %%rax, %%rsi");
+                    cg_emit(cg, "    movq %%r12, %%rdi");
+                    cg_emit(cg, "    callq %sstrcpy", cg_sym_prefix(cg));
+                    cg_expr(cg, e->call.args[1]);
+                    cg_emit(cg, "    pushq %%rax");
+                    cg_emit(cg, "    movq $16, %%rdi");
+                    cg_emit(cg, "    callq %smalloc", cg_sym_prefix(cg));
+                    cg_emit(cg, "    movq $0, (%%rax)");
+                    cg_emit(cg, "    movq $16, 8(%%rax)");
+                    cg_emit(cg, "    pushq %%rax");
+                    cg_emit(cg, "    movq $128, %%rdi");
+                    cg_emit(cg, "    callq %smalloc", cg_sym_prefix(cg));
+                    cg_emit(cg, "    movq (%%rsp), %%rdi");
+                    cg_emit(cg, "    movq %%rax, 16(%%rdi)");
+                    int loop_lbl = cg_new_label(cg), end_lbl = cg_new_label(cg);
+                    cg_emit(cg, "L%d:", loop_lbl);
+                    cg_emit(cg, "    movq %%r12, %%rdi");
+                    cg_emit(cg, "    movq 8(%%rsp), %%rsi");
+                    cg_emit(cg, "    callq %sstrstr", cg_sym_prefix(cg));
+                    cg_emit(cg, "    testq %%rax, %%rax");
+                    cg_emit(cg, "    jz L%d", end_lbl);
+                    cg_emit(cg, "    movq %%rax, %%r13");
+                    cg_emit(cg, "    movb $0, (%%r13)");
+                    cg_emit(cg, "    movq (%%rsp), %%rdi");
+                    cg_emit(cg, "    movq (%%rdi), %%rsi");
+                    cg_emit(cg, "    movq 16(%%rdi), %%rdx");
+                    cg_emit(cg, "    movq %%r12, (%%rdx,%%rsi,8)");
+                    cg_emit(cg, "    incq (%%rdi)");
+                    cg_emit(cg, "    movq 8(%%rsp), %%rdi");
+                    cg_emit(cg, "    callq %sstrlen", cg_sym_prefix(cg));
+                    cg_emit(cg, "    leaq 1(%%r13,%%rax), %%r12");
+                    cg_emit(cg, "    jmp L%d", loop_lbl);
+                    cg_emit(cg, "L%d:", end_lbl);
+                    cg_emit(cg, "    movq (%%rsp), %%rdi");
+                    cg_emit(cg, "    movq (%%rdi), %%rsi");
+                    cg_emit(cg, "    movq 16(%%rdi), %%rdx");
+                    cg_emit(cg, "    movq %%r12, (%%rdx,%%rsi,8)");
+                    cg_emit(cg, "    incq (%%rdi)");
+                    cg_emit(cg, "    popq %%rax");
+                    cg_emit(cg, "    addq $8, %%rsp");
+                    cg_emit(cg, "    addq $16, %%rax");
+                    break;
+                }
                 // Handle built-in tcp_send(fd, data) - returns bytes sent
                 if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "tcp_send") == 0) {
                     cg_expr(cg, e->call.args[0]);
@@ -4694,6 +4797,45 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 }
                 break;
             }
+            // Handle built-in print() - type-aware dispatch
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "print") == 0 && e->call.arg_count > 0) {
+                Expr* arg = e->call.args[0];
+                Type* arg_type = NULL;
+                if (arg->kind == EXPR_IDENT) {
+                    arg_type = cg_local_type(cg, arg->ident);
+                } else if (arg->kind == EXPR_STRING) {
+                    arg_type = new_type(TYPE_STR);
+                } else if (arg->kind == EXPR_FIELD) {
+                    // For field access, need to look up the field type
+                    Type* obj_type = NULL;
+                    if (arg->field.object->kind == EXPR_IDENT) {
+                        obj_type = cg_local_type(cg, arg->field.object->ident);
+                    }
+                    if (obj_type && obj_type->kind == TYPE_NAMED) {
+                        for (int i = 0; i < cg->module->struct_count; i++) {
+                            if (strcmp(cg->module->structs[i].name, obj_type->name) == 0) {
+                                StructDef* s = &cg->module->structs[i];
+                                for (int j = 0; j < s->field_count; j++) {
+                                    if (strcmp(s->fields[j].name, arg->field.field) == 0) {
+                                        arg_type = s->fields[j].type;
+                                        break;
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+                cg_expr(cg, arg);
+                if (arg_type && arg_type->kind == TYPE_STR) {
+                    cg_emit(cg, "    bl %sprint_str", cg_sym_prefix(cg));
+                } else if (arg_type && arg_type->kind == TYPE_FLOAT) {
+                    cg_emit(cg, "    bl %sprint_float", cg_sym_prefix(cg));
+                } else {
+                    cg_emit(cg, "    bl %sprint", cg_sym_prefix(cg));
+                }
+                break;
+            }
             // Handle built-in abs()
             if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "abs") == 0) {
                 cg_expr(cg, e->call.args[0]);
@@ -4951,6 +5093,106 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_emit(cg, "    mov x1, x0");
                 cg_emit(cg, "    ldr x0, [sp], #16");
                 cg_emit(cg, "    bl %sstrcmp", cg_sym_prefix(cg));
+                break;
+            }
+            // Handle built-in str_concat(a, b) -> str
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "str_concat") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    str x0, [sp, #-16]!");
+                cg_expr(cg, e->call.args[1]);
+                cg_emit(cg, "    str x0, [sp, #-16]!");
+                cg_emit(cg, "    ldr x0, [sp, #16]");
+                cg_emit(cg, "    bl %sstrlen", cg_sym_prefix(cg));
+                cg_emit(cg, "    str x0, [sp, #-16]!");
+                cg_emit(cg, "    ldr x0, [sp, #16]");
+                cg_emit(cg, "    bl %sstrlen", cg_sym_prefix(cg));
+                cg_emit(cg, "    ldr x1, [sp], #16");
+                cg_emit(cg, "    add x0, x0, x1");
+                cg_emit(cg, "    add x0, x0, #1");
+                cg_emit(cg, "    bl %smalloc", cg_sym_prefix(cg));
+                cg_emit(cg, "    mov x19, x0");
+                cg_emit(cg, "    ldr x1, [sp, #16]");
+                cg_emit(cg, "    bl %sstrcpy", cg_sym_prefix(cg));
+                cg_emit(cg, "    mov x0, x19");
+                cg_emit(cg, "    ldr x1, [sp], #16");
+                cg_emit(cg, "    bl %sstrcat", cg_sym_prefix(cg));
+                cg_emit(cg, "    add sp, sp, #16");
+                break;
+            }
+            // Handle built-in str_substr(s, start, len) -> str
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "str_substr") == 0) {
+                cg_expr(cg, e->call.args[2]);
+                cg_emit(cg, "    add x0, x0, #1");
+                cg_emit(cg, "    bl %smalloc", cg_sym_prefix(cg));
+                cg_emit(cg, "    str x0, [sp, #-16]!");
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    str x0, [sp, #-16]!");
+                cg_expr(cg, e->call.args[1]);
+                cg_emit(cg, "    ldr x1, [sp], #16");
+                cg_emit(cg, "    add x1, x1, x0");
+                cg_expr(cg, e->call.args[2]);
+                cg_emit(cg, "    mov x2, x0");
+                cg_emit(cg, "    ldr x0, [sp]");
+                cg_emit(cg, "    bl %smemcpy", cg_sym_prefix(cg));
+                cg_expr(cg, e->call.args[2]);
+                cg_emit(cg, "    ldr x1, [sp]");
+                cg_emit(cg, "    add x1, x1, x0");
+                cg_emit(cg, "    strb wzr, [x1]");
+                cg_emit(cg, "    ldr x0, [sp], #16");
+                break;
+            }
+            // Handle built-in str_split(s, delim) -> [str]
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "str_split") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    bl %sstrlen", cg_sym_prefix(cg));
+                cg_emit(cg, "    add x0, x0, #1");
+                cg_emit(cg, "    bl %smalloc", cg_sym_prefix(cg));
+                cg_emit(cg, "    mov x19, x0");
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    mov x1, x0");
+                cg_emit(cg, "    mov x0, x19");
+                cg_emit(cg, "    bl %sstrcpy", cg_sym_prefix(cg));
+                cg_expr(cg, e->call.args[1]);
+                cg_emit(cg, "    str x0, [sp, #-16]!");
+                cg_emit(cg, "    mov x0, #16");
+                cg_emit(cg, "    bl %smalloc", cg_sym_prefix(cg));
+                cg_emit(cg, "    str xzr, [x0]");
+                cg_emit(cg, "    mov x1, #16");
+                cg_emit(cg, "    str x1, [x0, #8]");
+                cg_emit(cg, "    str x0, [sp, #-16]!");
+                cg_emit(cg, "    mov x0, #128");
+                cg_emit(cg, "    bl %smalloc", cg_sym_prefix(cg));
+                cg_emit(cg, "    ldr x1, [sp]");
+                cg_emit(cg, "    str x0, [x1, #16]");
+                int loop_lbl = cg_new_label(cg), end_lbl = cg_new_label(cg);
+                cg_emit(cg, "L%d:", loop_lbl);
+                cg_emit(cg, "    mov x0, x19");
+                cg_emit(cg, "    ldr x1, [sp, #8]");
+                cg_emit(cg, "    bl %sstrstr", cg_sym_prefix(cg));
+                cg_emit(cg, "    cbz x0, L%d", end_lbl);
+                cg_emit(cg, "    mov x20, x0");
+                cg_emit(cg, "    strb wzr, [x20]");
+                cg_emit(cg, "    ldr x1, [sp]");
+                cg_emit(cg, "    ldr x2, [x1]");
+                cg_emit(cg, "    ldr x3, [x1, #16]");
+                cg_emit(cg, "    str x19, [x3, x2, lsl #3]");
+                cg_emit(cg, "    add x2, x2, #1");
+                cg_emit(cg, "    str x2, [x1]");
+                cg_emit(cg, "    ldr x0, [sp, #8]");
+                cg_emit(cg, "    bl %sstrlen", cg_sym_prefix(cg));
+                cg_emit(cg, "    add x19, x20, x0");
+                cg_emit(cg, "    add x19, x19, #1");
+                cg_emit(cg, "    b L%d", loop_lbl);
+                cg_emit(cg, "L%d:", end_lbl);
+                cg_emit(cg, "    ldr x1, [sp]");
+                cg_emit(cg, "    ldr x2, [x1]");
+                cg_emit(cg, "    ldr x3, [x1, #16]");
+                cg_emit(cg, "    str x19, [x3, x2, lsl #3]");
+                cg_emit(cg, "    add x2, x2, #1");
+                cg_emit(cg, "    str x2, [x1]");
+                cg_emit(cg, "    ldr x0, [sp], #16");
+                cg_emit(cg, "    add sp, sp, #16");
+                cg_emit(cg, "    add x0, x0, #16");
                 break;
             }
             // Handle built-in tcp_send(fd, data) - returns bytes sent

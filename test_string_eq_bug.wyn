@@ -1,0 +1,32 @@
+fn main() {
+    let s: str = "hello"
+    
+    # Test 1: variable == literal
+    if s == "hello" {
+        print("PASS: s == \"hello\"")
+    } else {
+        print("FAIL: s == \"hello\"")
+    }
+    
+    # Test 2: literal == variable
+    if "hello" == s {
+        print("PASS: \"hello\" == s")
+    } else {
+        print("FAIL: \"hello\" == s")
+    }
+    
+    # Test 3: variable == variable
+    let t: str = "hello"
+    if s == t {
+        print("PASS: s == t")
+    } else {
+        print("FAIL: s == t")
+    }
+    
+    # Test 4: workaround with str_cmp
+    if str_cmp(s, "hello") == 0 {
+        print("PASS: str_cmp(s, \"hello\") == 0")
+    } else {
+        print("FAIL: str_cmp(s, \"hello\") == 0")
+    }
+}

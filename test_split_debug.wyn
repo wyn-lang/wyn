@@ -1,0 +1,7 @@
+fn main() {
+    let text: str = "one,two"
+    print(text)
+    let parts: [str] = str_split(text, ",")
+    let first: str = parts[0]
+    print(first)
+}

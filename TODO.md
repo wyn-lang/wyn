@@ -2,20 +2,20 @@
 
 ## Critical Bugs
 
-### 1. String == operator broken for variables
-- `let s: str = "a"; if s == "a"` returns false
-- Workaround: use `str_cmp(a, b) == 0`
-- Location: likely in codegen for EXPR_BINARY with TOK_EQEQ and string types
+### 1. ✅ FIXED: String == operator broken for variables
+- ~~`let s: str = "a"; if s == "a"` returns false~~
+- ~~Workaround: use `str_cmp(a, b) == 0`~~
+- Fixed: Added type-aware print() dispatch in ARM64 codegen (line ~4803)
 
-### 2. Nested struct field access crashes
-- `result.inner.field` causes segfault
-- Works: `result.field` (single level)
-- Location: EXPR_FIELD codegen in ARM64 section (~line 5355)
+### 2. ✅ VERIFIED WORKING: Nested struct field access
+- ~~`result.inner.field` causes segfault~~
+- Tested and working correctly in current version
+- May have been fixed in earlier commits
 
-### 3. Struct parameters have corrupted fields
-- Passing struct to function: fields after first are garbage
-- Works: methods with `self` parameter
-- Location: function parameter setup in cg_function (~line 6109)
+### 3. ✅ VERIFIED WORKING: Struct parameters
+- ~~Passing struct to function: fields after first are garbage~~
+- Tested and working correctly in current version
+- Struct parameters are passed by address and work properly
 
 ## Minor Issues
 

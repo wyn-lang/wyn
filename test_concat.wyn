@@ -1,0 +1,6 @@
+fn main() {
+    let a: str = "Hello"
+    let b: str = " World"
+    let c: str = str_concat(a, b)
+    print(c)
+}

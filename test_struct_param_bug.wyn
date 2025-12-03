@@ -1,0 +1,33 @@
+struct Point {
+    x: int
+    y: int
+    z: int
+}
+
+fn print_point(p: Point) {
+    print("Point(")
+    print(p.x)
+    print(", ")
+    print(p.y)
+    print(", ")
+    print(p.z)
+    print(")")
+    print_newline()
+}
+
+fn main() {
+    let p: Point = Point { x: 10, y: 20, z: 30 }
+    
+    # Test direct access (should work)
+    print("Direct: ")
+    print(p.x)
+    print(", ")
+    print(p.y)
+    print(", ")
+    print(p.z)
+    print_newline()
+    
+    # Test passing to function (may have corrupted fields)
+    print("Function: ")
+    print_point(p)
+}
