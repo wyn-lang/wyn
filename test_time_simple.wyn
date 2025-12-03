@@ -1,8 +1,0 @@
-fn main() {
-    let now: int = time_now()
-    println(now)
-    
-    print_str("Sleeping...\n")
-    sleep_ms(500)
-    print_str("Done!\n")
-}

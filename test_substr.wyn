@@ -1,5 +1,0 @@
-fn main() {
-    let s: str = "Hello World"
-    let sub: str = str_substr(s, 0, 5)
-    print(sub)
-}

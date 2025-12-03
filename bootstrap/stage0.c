@@ -3709,15 +3709,10 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_emit(cg, "    callq %sstrcpy", cg_sym_prefix(cg));
                     cg_expr(cg, e->call.args[1]);
                     cg_emit(cg, "    pushq %%rax");
-                    cg_emit(cg, "    movq $16, %%rdi");
+                    cg_emit(cg, "    movq $136, %%rdi");
                     cg_emit(cg, "    callq %smalloc", cg_sym_prefix(cg));
                     cg_emit(cg, "    movq $0, (%%rax)");
-                    cg_emit(cg, "    movq $16, 8(%%rax)");
                     cg_emit(cg, "    pushq %%rax");
-                    cg_emit(cg, "    movq $128, %%rdi");
-                    cg_emit(cg, "    callq %smalloc", cg_sym_prefix(cg));
-                    cg_emit(cg, "    movq (%%rsp), %%rdi");
-                    cg_emit(cg, "    movq %%rax, 16(%%rdi)");
                     int loop_lbl = cg_new_label(cg), end_lbl = cg_new_label(cg);
                     cg_emit(cg, "L%d:", loop_lbl);
                     cg_emit(cg, "    movq %%r12, %%rdi");
@@ -3729,8 +3724,8 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_emit(cg, "    movb $0, (%%r13)");
                     cg_emit(cg, "    movq (%%rsp), %%rdi");
                     cg_emit(cg, "    movq (%%rdi), %%rsi");
-                    cg_emit(cg, "    movq 16(%%rdi), %%rdx");
-                    cg_emit(cg, "    movq %%r12, (%%rdx,%%rsi,8)");
+                    cg_emit(cg, "    incq %%rsi");
+                    cg_emit(cg, "    movq %%r12, (%%rdi,%%rsi,8)");
                     cg_emit(cg, "    incq (%%rdi)");
                     cg_emit(cg, "    movq 8(%%rsp), %%rdi");
                     cg_emit(cg, "    callq %sstrlen", cg_sym_prefix(cg));
@@ -3739,12 +3734,11 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_emit(cg, "L%d:", end_lbl);
                     cg_emit(cg, "    movq (%%rsp), %%rdi");
                     cg_emit(cg, "    movq (%%rdi), %%rsi");
-                    cg_emit(cg, "    movq 16(%%rdi), %%rdx");
-                    cg_emit(cg, "    movq %%r12, (%%rdx,%%rsi,8)");
+                    cg_emit(cg, "    incq %%rsi");
+                    cg_emit(cg, "    movq %%r12, (%%rdi,%%rsi,8)");
                     cg_emit(cg, "    incq (%%rdi)");
                     cg_emit(cg, "    popq %%rax");
                     cg_emit(cg, "    addq $8, %%rsp");
-                    cg_emit(cg, "    addq $16, %%rax");
                     break;
                 }
                 // Handle built-in tcp_send(fd, data) - returns bytes sent
@@ -5154,16 +5148,10 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_emit(cg, "    bl %sstrcpy", cg_sym_prefix(cg));
                 cg_expr(cg, e->call.args[1]);
                 cg_emit(cg, "    str x0, [sp, #-16]!");
-                cg_emit(cg, "    mov x0, #16");
+                cg_emit(cg, "    mov x0, #136");
                 cg_emit(cg, "    bl %smalloc", cg_sym_prefix(cg));
                 cg_emit(cg, "    str xzr, [x0]");
-                cg_emit(cg, "    mov x1, #16");
-                cg_emit(cg, "    str x1, [x0, #8]");
                 cg_emit(cg, "    str x0, [sp, #-16]!");
-                cg_emit(cg, "    mov x0, #128");
-                cg_emit(cg, "    bl %smalloc", cg_sym_prefix(cg));
-                cg_emit(cg, "    ldr x1, [sp]");
-                cg_emit(cg, "    str x0, [x1, #16]");
                 int loop_lbl = cg_new_label(cg), end_lbl = cg_new_label(cg);
                 cg_emit(cg, "L%d:", loop_lbl);
                 cg_emit(cg, "    mov x0, x19");
@@ -5174,8 +5162,8 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_emit(cg, "    strb wzr, [x20]");
                 cg_emit(cg, "    ldr x1, [sp]");
                 cg_emit(cg, "    ldr x2, [x1]");
-                cg_emit(cg, "    ldr x3, [x1, #16]");
-                cg_emit(cg, "    str x19, [x3, x2, lsl #3]");
+                cg_emit(cg, "    add x3, x2, #1");
+                cg_emit(cg, "    str x19, [x1, x3, lsl #3]");
                 cg_emit(cg, "    add x2, x2, #1");
                 cg_emit(cg, "    str x2, [x1]");
                 cg_emit(cg, "    ldr x0, [sp, #8]");
@@ -5186,13 +5174,12 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_emit(cg, "L%d:", end_lbl);
                 cg_emit(cg, "    ldr x1, [sp]");
                 cg_emit(cg, "    ldr x2, [x1]");
-                cg_emit(cg, "    ldr x3, [x1, #16]");
-                cg_emit(cg, "    str x19, [x3, x2, lsl #3]");
+                cg_emit(cg, "    add x3, x2, #1");
+                cg_emit(cg, "    str x19, [x1, x3, lsl #3]");
                 cg_emit(cg, "    add x2, x2, #1");
                 cg_emit(cg, "    str x2, [x1]");
                 cg_emit(cg, "    ldr x0, [sp], #16");
                 cg_emit(cg, "    add sp, sp, #16");
-                cg_emit(cg, "    add x0, x0, #16");
                 break;
             }
             // Handle built-in tcp_send(fd, data) - returns bytes sent

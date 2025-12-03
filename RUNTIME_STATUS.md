@@ -88,10 +88,7 @@
 ## Missing Builtins (Needed for stdlib)
 
 ### Priority 1 - Essential for Stage 1
-All implemented! ✅
-
-Previously needed:
-| Builtin | Needed By | Status |\n|---------|-----------|--------|\n| `str_concat(a, b)` | string.wyn | ✅ Working |\n| `str_substr(s, start, len)` | string.wyn | ✅ Working |\n| `str_split(s, delim)` | string.wyn | ✅ Working |
+| Builtin | Needed By | Status |\n|---------|-----------|--------|\n| `str_concat(a, b)` | string.wyn | ✅ Working |\n| `str_substr(s, start, len)` | string.wyn | ✅ Working |\n| `str_split(s, delim)` | string.wyn | ⚠️ Implemented but needs debugging |
 
 ### Priority 2 - Useful for stdlib
 | Builtin | Needed By | Implementation |
@@ -136,12 +133,12 @@ Previously needed:
 2. Fix std/os.wyn to use getenv, system
 3. Fix std/time.wyn to use time_now, sleep_ms
 
-### Phase 2: Add string builtins ✅ COMPLETE
+### Phase 2: Add string builtins (mostly complete)
 1. ✅ str_concat(a, b) -> str
 2. ✅ str_substr(s, start, len) -> str
 3. ✅ str_find(haystack, needle) -> int (-1 if not found)
 4. ✅ str_cmp(a, b) -> int (0 if equal)
-5. ✅ str_split(s, delim) -> [str]
+5. ⚠️ str_split(s, delim) -> [str] (implemented but needs debugging)
 
 ### Phase 3: Add network builtins ✅ COMPLETE
 1. ✅ tcp_send(fd, data) -> int (bytes sent)

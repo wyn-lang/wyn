@@ -1,5 +1,0 @@
-fn main() {
-    let s: str = "hello"
-    print(s)
-    print("world")
-}
