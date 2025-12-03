@@ -1,0 +1,88 @@
+# Math Module
+# Mathematical functions and operations
+
+# Integer operations
+fn abs(n: int) -> int {
+    # Implemented as builtin
+}
+
+fn min(a: int, b: int) -> int {
+    # Implemented as builtin
+}
+
+fn max(a: int, b: int) -> int {
+    # Implemented as builtin
+}
+
+fn pow(base: int, exp: int) -> int {
+    # Implemented as builtin
+}
+
+fn sqrt(n: int) -> int {
+    # Implemented as builtin
+}
+
+fn gcd(a: int, b: int) -> int {
+    # Implemented as builtin
+}
+
+fn lcm(a: int, b: int) -> int {
+    # Implemented as builtin
+}
+
+fn factorial(n: int) -> int {
+    # Implemented as builtin
+}
+
+# Float operations
+fn sin(x: float) -> float {
+    # Implemented as builtin
+}
+
+fn cos(x: float) -> float {
+    # Implemented as builtin
+}
+
+fn tan(x: float) -> float {
+    # Implemented as builtin
+}
+
+fn asin(x: float) -> float {
+    # Implemented as builtin
+}
+
+fn acos(x: float) -> float {
+    # Implemented as builtin
+}
+
+fn atan(x: float) -> float {
+    # Implemented as builtin
+}
+
+fn atan2(y: float, x: float) -> float {
+    # Implemented as builtin
+}
+
+fn floor(x: float) -> float {
+    # Implemented as builtin
+}
+
+fn ceil(x: float) -> float {
+    # Implemented as builtin
+}
+
+fn round(x: float) -> float {
+    # Implemented as builtin
+}
+
+fn log(x: float) -> float {
+    # Implemented as builtin
+}
+
+fn log10(x: float) -> float {
+    # Implemented as builtin
+}
+
+fn exp(x: float) -> float {
+    # Implemented as builtin
+}

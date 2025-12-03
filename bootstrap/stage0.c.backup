@@ -791,55 +791,6 @@ static Parser* parser_new(Lexer* lexer, const char* filename) {
 
 static void parser_free(Parser* p) { free(p); }
 
-// Helper: Map module.function() to builtin function name
-// Returns the builtin name if it's a module call, NULL otherwise
-static const char* map_module_function(const char* module, const char* function) {
-    if (strcmp(module, "io") == 0) {
-        if (strcmp(function, "print") == 0) return "print";
-        if (strcmp(function, "println") == 0) return "println";
-        if (strcmp(function, "print_str") == 0) return "print_str";
-        if (strcmp(function, "print_int") == 0) return "print_int";
-        if (strcmp(function, "print_float") == 0) return "print_float";
-        if (strcmp(function, "print_newline") == 0) return "print_newline";
-        if (strcmp(function, "read_line") == 0) return "read_line";
-        if (strcmp(function, "input") == 0) return "input";
-    } else if (strcmp(module, "fs") == 0) {
-        if (strcmp(function, "read_file") == 0) return "read_file";
-        if (strcmp(function, "write_file") == 0) return "write_file";
-        if (strcmp(function, "append_file") == 0) return "append_file";
-        if (strcmp(function, "delete_file") == 0) return "delete_file";
-        if (strcmp(function, "file_exists") == 0) return "file_exists";
-        if (strcmp(function, "file_size") == 0) return "file_size";
-        if (strcmp(function, "is_dir") == 0) return "is_dir";
-        if (strcmp(function, "list_dir") == 0) return "list_dir";
-        if (strcmp(function, "mkdir") == 0) return "mkdir";
-        if (strcmp(function, "rmdir") == 0) return "rmdir";
-    } else if (strcmp(module, "math") == 0) {
-        if (strcmp(function, "abs") == 0) return "abs";
-        if (strcmp(function, "min") == 0) return "min";
-        if (strcmp(function, "max") == 0) return "max";
-        if (strcmp(function, "pow") == 0) return "pow";
-        if (strcmp(function, "sqrt") == 0) return "sqrt";
-        if (strcmp(function, "gcd") == 0) return "gcd";
-        if (strcmp(function, "lcm") == 0) return "lcm";
-        if (strcmp(function, "factorial") == 0) return "factorial";
-        if (strcmp(function, "sin") == 0) return "sinf";
-        if (strcmp(function, "cos") == 0) return "cosf";
-        if (strcmp(function, "tan") == 0) return "tanf";
-        if (strcmp(function, "asin") == 0) return "asinf";
-        if (strcmp(function, "acos") == 0) return "acosf";
-        if (strcmp(function, "atan") == 0) return "atanf";
-        if (strcmp(function, "atan2") == 0) return "atan2f";
-        if (strcmp(function, "floor") == 0) return "floorf";
-        if (strcmp(function, "ceil") == 0) return "ceilf";
-        if (strcmp(function, "round") == 0) return "roundf";
-        if (strcmp(function, "log") == 0) return "logf";
-        if (strcmp(function, "log10") == 0) return "log10f";
-        if (strcmp(function, "exp") == 0) return "expf";
-    }
-    return NULL;
-}
-
 static void parser_error(Parser* p, const char* fmt, ...) {
     p->had_error = true;
     fprintf(stderr, "%s:%d:%d: error: ", p->filename, p->current.line, p->current.column);

@@ -1,12 +1,21 @@
 # Wyn SPEC Implementation Status
 
-**Date:** 2025-12-01  
+**Date:** 2025-12-03  
 **Stage 0 Compiler Version:** v0.1.0  
 **SPEC Version:** 0.2.0-draft
 
 ## Summary
 
-This document tracks which features from SPEC.md sections 1-5 are implemented in the Stage 0 bootstrap compiler (written in C). The compiler successfully compiles 40 test programs and a 500+ function standard library.
+This document tracks which features from SPEC.md sections 1-5 are implemented in the Stage 0 bootstrap compiler (written in C). The compiler successfully compiles 47 test programs and a 500+ function standard library.
+
+## Recent Updates (Dec 3, 2025)
+
+- ✅ Fixed 4 critical bugs (string ==, method calls in if, etc.)
+- ✅ Added 10 new builtins (str_concat, str_substr, asinf, acosf, atanf, atan2f, log10f, file_size, is_dir)
+- ✅ Implemented method syntax for strings (.contains(), .index_of())
+- ✅ Implemented replace() in stdlib
+- ⚠️ Module system refactor in progress (moving to io.print(), fs.read_file(), etc.)
+- ⚠️ str_split has a bug (returns 1 element instead of multiple)
 
 ## SPEC Coverage by Section
 
@@ -18,7 +27,14 @@ This document tracks which features from SPEC.md sections 1-5 are implemented in
 #### 2.1 Syntax Overview
 ✅ **Complete** - All basic syntax working
 
-#### 2.2 Type System
+#### 2.2 Module System
+⚠️ **In Progress** - Refactoring to module-based API
+- Moving print() → io.print()
+- Moving read_file() → fs.read_file()
+- Moving sinf() → math.sin()
+- Keeping methods (.len(), .contains()) as-is
+
+#### 2.3 Type System
 | Feature | Status | Notes |
 |---------|--------|-------|
 | Primitive types (int, float, str, bool) | ✅ | byte, any not yet |

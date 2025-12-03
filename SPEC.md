@@ -35,8 +35,10 @@ Wyn looks and feels like Python, but compiles to native code:
 
 ```wyn
 // Hello World
+import std/io
+
 fn main() {
-    print("Hello, World!")
+    io.print("Hello, World!")
 }
 
 // Variables - types required
@@ -49,7 +51,7 @@ fn add(a: int, b: int) -> int {
     return a + b
 }
 
-// Structs
+// Structs with methods
 struct User {
     name: str
     age: int
@@ -66,7 +68,77 @@ match result {
 }
 ```
 
-### 2.2 Type System
+### 2.2 Module System
+
+Wyn follows the principle: **"One obvious way to do things"**
+
+All functionality is organized into modules. No top-level functions except language keywords.
+
+#### Standard Library Modules
+
+```wyn
+import std/io
+import std/fs
+import std/math
+import std/string
+
+fn main() {
+    // I/O operations
+    io.print("Hello")
+    io.println("World")
+    let input: str = io.read_line()
+    
+    // File operations
+    let content: str = fs.read_file("data.txt")
+    fs.write_file("out.txt", content)
+    let size: int = fs.file_size("data.txt")
+    
+    // Math operations
+    let x: float = math.sin(1.0)
+    let y: float = math.sqrt(4.0)
+    
+    // String methods (on the object)
+    let len: int = "hello".len()
+    let has: bool = "hello".contains("ell")
+    let idx: int = "hello".index_of("l")
+}
+```
+
+#### Module Organization
+
+| Module | Purpose | Examples |
+|--------|---------|----------|
+| `std/io` | Input/output | `print`, `println`, `read_line`, `flush` |
+| `std/fs` | File system | `read_file`, `write_file`, `file_exists`, `mkdir` |
+| `std/math` | Mathematics | `sin`, `cos`, `sqrt`, `pow`, `abs` |
+| `std/string` | String utilities | Helper functions (most use methods) |
+| `std/array` | Array utilities | `sum`, `max`, `min`, `sort` |
+| `std/net` | Networking | `tcp_connect`, `tcp_send`, `tcp_recv` |
+| `std/http` | HTTP client/server | `get`, `post`, `serve` |
+| `std/json` | JSON encoding | `parse`, `stringify` |
+| `std/time` | Time operations | `now`, `sleep`, `format` |
+| `std/os` | OS operations | `getenv`, `system`, `getcwd` |
+
+#### Methods vs Functions
+
+**Methods** - operations ON an object:
+```wyn
+"hello".len()           // Get length
+"hello".contains("l")   // Check substring
+[1,2,3].len()          // Array length
+x.abs()                // Absolute value
+```
+
+**Module Functions** - operations WITH objects:
+```wyn
+io.print("hello")       // Print to stdout
+fs.read_file("x")       // Read file
+math.sin(1.0)          // Calculate sine
+```
+
+**Rule:** If it's a property or transformation of the object, use a method. If it's an action involving the object, use a module function.
+
+### 2.3 Type System
 
 #### Primitive Types
 
