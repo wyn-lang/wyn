@@ -293,6 +293,7 @@ fn main() {
     let mut param_count: int = 0
     let mut field_count: int = 0
     let mut stmt_count: int = 0
+    let mut var_count: int = 0
     let mut cur_fn_name: str = ""
     let mut cur_struct_name: str = ""
     let mut has_return: bool = false
@@ -339,6 +340,7 @@ fn main() {
             cur_fn_name = tok.text
             param_count = 0
             stmt_count = 0
+            var_count = 0
             has_return = false
             fn_count = fn_count + 1
         }
@@ -361,6 +363,9 @@ fn main() {
             if tok.kind == 5 or tok.kind == 12 or tok.kind == 7 or tok.kind == 9 or tok.kind == 10 {
                 stmt_count = stmt_count + 1
             }
+            if tok.kind == 5 {  // let
+                var_count = var_count + 1
+            }
         }
         
         // End of function (closing brace at fn_start_depth + 1 going to fn_start_depth)
@@ -375,6 +380,8 @@ fn main() {
                     print_str(" -> ...")
                 }
                 print_str(" [")
+                print(var_count)
+                print_str(" vars, ")
                 print(stmt_count)
                 print_str(" stmts]")
                 print_newline()
