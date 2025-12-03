@@ -30,3 +30,9 @@ Thumbs.db
 # Temporary files
 /tmp/
 *.tmp
+
+# Temporary test files
+temp/
+test_*.wyn
+test_*
+!tests/
