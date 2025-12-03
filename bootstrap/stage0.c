@@ -2427,6 +2427,9 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     strcmp(e->ident, "getcwd") == 0 || strcmp(e->ident, "chdir") == 0 ||
                     strcmp(e->ident, "sqrtf") == 0 || strcmp(e->ident, "sinf") == 0 ||
                     strcmp(e->ident, "cosf") == 0 || strcmp(e->ident, "tanf") == 0 ||
+                    strcmp(e->ident, "asinf") == 0 || strcmp(e->ident, "acosf") == 0 ||
+                    strcmp(e->ident, "atanf") == 0 || strcmp(e->ident, "atan2f") == 0 ||
+                    strcmp(e->ident, "log10f") == 0 ||
                     strcmp(e->ident, "logf") == 0 || strcmp(e->ident, "expf") == 0 ||
                     strcmp(e->ident, "powf") == 0 || strcmp(e->ident, "floorf") == 0 ||
                     strcmp(e->ident, "ceilf") == 0 || strcmp(e->ident, "getpid") == 0 ||
@@ -3900,6 +3903,48 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_emit(cg, "    movq %%xmm0, %%rax");
                     break;
                 }
+                // Handle built-in asin(float) -> float
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "asinf") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movq %%rax, %%xmm0");
+                    cg_emit(cg, "    callq %sasin", cg_sym_prefix(cg));
+                    cg_emit(cg, "    movq %%xmm0, %%rax");
+                    break;
+                }
+                // Handle built-in acos(float) -> float
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "acosf") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movq %%rax, %%xmm0");
+                    cg_emit(cg, "    callq %sacos", cg_sym_prefix(cg));
+                    cg_emit(cg, "    movq %%xmm0, %%rax");
+                    break;
+                }
+                // Handle built-in atan(float) -> float
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "atanf") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movq %%rax, %%xmm0");
+                    cg_emit(cg, "    callq %satan", cg_sym_prefix(cg));
+                    cg_emit(cg, "    movq %%xmm0, %%rax");
+                    break;
+                }
+                // Handle built-in atan2(y, x) -> float
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "atan2f") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movq %%rax, %%xmm0");
+                    cg_expr(cg, e->call.args[1]);
+                    cg_emit(cg, "    movq %%rax, %%xmm1");
+                    cg_emit(cg, "    callq %satan2", cg_sym_prefix(cg));
+                    cg_emit(cg, "    movq %%xmm0, %%rax");
+                    break;
+                }
+                // Handle built-in log10(float) -> float
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "log10f") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movq %%rax, %%xmm0");
+                    cg_emit(cg, "    callq %slog10", cg_sym_prefix(cg));
+                    cg_emit(cg, "    movq %%xmm0, %%rax");
+                    break;
+                }
                 // Handle built-in getpid() -> int
                 if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "getpid") == 0) {
                     cg_emit(cg, "    callq %sgetpid", cg_sym_prefix(cg));
@@ -5181,7 +5226,6 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_emit(cg, "    str x2, [x1]");
                 cg_emit(cg, "    ldr x0, [sp, #8]");
                 cg_emit(cg, "    bl %sstrlen", cg_sym_prefix(cg));
-                cg_emit(cg, "    add x0, x0, #1");
                 cg_emit(cg, "    add x19, x20, x0");
                 cg_emit(cg, "    b L%d", loop_lbl);
                 cg_emit(cg, "L%d:", end_lbl);
@@ -5336,6 +5380,50 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_expr(cg, e->call.args[0]);
                 cg_emit(cg, "    fmov d0, x0");
                 cg_emit(cg, "    frintp d0, d0");
+                cg_emit(cg, "    fmov x0, d0");
+                break;
+            }
+            // Handle built-in asin(float) -> float
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "asinf") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    fmov d0, x0");
+                cg_emit(cg, "    bl %sasin", cg_sym_prefix(cg));
+                cg_emit(cg, "    fmov x0, d0");
+                break;
+            }
+            // Handle built-in acos(float) -> float
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "acosf") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    fmov d0, x0");
+                cg_emit(cg, "    bl %sacos", cg_sym_prefix(cg));
+                cg_emit(cg, "    fmov x0, d0");
+                break;
+            }
+            // Handle built-in atan(float) -> float
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "atanf") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    fmov d0, x0");
+                cg_emit(cg, "    bl %satan", cg_sym_prefix(cg));
+                cg_emit(cg, "    fmov x0, d0");
+                break;
+            }
+            // Handle built-in atan2(y, x) -> float
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "atan2f") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    str x0, [sp, #-16]!");
+                cg_expr(cg, e->call.args[1]);
+                cg_emit(cg, "    fmov d1, x0");
+                cg_emit(cg, "    ldr x0, [sp], #16");
+                cg_emit(cg, "    fmov d0, x0");
+                cg_emit(cg, "    bl %satan2", cg_sym_prefix(cg));
+                cg_emit(cg, "    fmov x0, d0");
+                break;
+            }
+            // Handle built-in log10(float) -> float
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "log10f") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    fmov d0, x0");
+                cg_emit(cg, "    bl %slog10", cg_sym_prefix(cg));
                 cg_emit(cg, "    fmov x0, d0");
                 break;
             }
