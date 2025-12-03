@@ -307,7 +307,7 @@ fn main() {
     // Write header if doing codegen
     if do_codegen {
         output = argv[2]
-        write_file(output, "    .section __TEXT,__text\n    .globl _main\n    .p2align 2\n_main:\n    sub sp, sp, #32\n    stp x29, x30, [sp, #16]\n    add x29, sp, #16\n")
+        write_file(output, "    .section __TEXT,__text\n    .globl _main\n    .p2align 2\n_main:\n    sub sp, sp, #256\n    stp x29, x30, [sp, #240]\n    add x29, sp, #240\n")
     }
     
     while true {
@@ -455,7 +455,7 @@ fn main() {
         print_newline()
         
         // Write main epilogue
-        append_file(output, "    mov x0, #0\n    ldp x29, x30, [sp, #16]\n    add sp, sp, #32\n    ret\n\n")
+        append_file(output, "    mov x0, #0\n    ldp x29, x30, [sp, #240]\n    add sp, sp, #256\n    ret\n\n")
         
         // Write print_int helper
         append_file(output, "_wyn_print_int:\n    sub sp, sp, #48\n    stp x29, x30, [sp, #32]\n    add x29, sp, #32\n")
