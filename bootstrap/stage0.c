@@ -2537,6 +2537,14 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
             // Handle method calls (obj.method())
             if (e->call.func->kind == EXPR_FIELD) {
                 const char* method_name = e->call.func->field.field;
+                // Check for primitive type methods first
+                if (strcmp(method_name, "len") == 0) return new_type(TYPE_INT);
+                if (strcmp(method_name, "abs") == 0) return new_type(TYPE_INT);
+                if (strcmp(method_name, "to_str") == 0) return new_type(TYPE_STR);
+                if (strcmp(method_name, "to_int") == 0) return new_type(TYPE_INT);
+                if (strcmp(method_name, "to_float") == 0) return new_type(TYPE_FLOAT);
+                if (strcmp(method_name, "contains") == 0) return new_type(TYPE_BOOL);
+                if (strcmp(method_name, "index_of") == 0) return new_type(TYPE_INT);
                 // Look up method in all structs
                 for (int i = 0; i < tc->module->struct_count; i++) {
                     StructDef* s = &tc->module->structs[i];
@@ -4098,6 +4106,29 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                         cg_emit(cg, "    movq %%xmm0, %%rax");
                         break;
                     }
+                    // .contains(substr) -> str_find(obj, substr) != -1
+                    if (strcmp(method, "contains") == 0 && e->call.arg_count == 1) {
+                        cg_expr(cg, obj);
+                        cg_emit(cg, "    pushq %%rax");
+                        cg_expr(cg, e->call.args[0]);
+                        cg_emit(cg, "    movq %%rax, %%rsi");
+                        cg_emit(cg, "    popq %%rdi");
+                        cg_emit(cg, "    callq %s_wyn_str_find", cg_sym_prefix(cg));
+                        cg_emit(cg, "    cmpq $-1, %%rax");
+                        cg_emit(cg, "    setne %%al");
+                        cg_emit(cg, "    movzbq %%al, %%rax");
+                        break;
+                    }
+                    // .index_of(substr) -> str_find(obj, substr)
+                    if (strcmp(method, "index_of") == 0 && e->call.arg_count == 1) {
+                        cg_expr(cg, obj);
+                        cg_emit(cg, "    pushq %%rax");
+                        cg_expr(cg, e->call.args[0]);
+                        cg_emit(cg, "    movq %%rax, %%rsi");
+                        cg_emit(cg, "    popq %%rdi");
+                        cg_emit(cg, "    callq %s_wyn_str_find", cg_sym_prefix(cg));
+                        break;
+                    }
                 }
                 // Method call: obj.method(args)
                 if (e->call.func->kind == EXPR_FIELD) {
@@ -5600,6 +5631,42 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_expr(cg, obj);
                     cg_emit(cg, "    scvtf d0, x0");
                     cg_emit(cg, "    fmov x0, d0");
+                    break;
+                }
+                // .contains(substr) -> str_find(obj, substr) != -1
+                if (strcmp(method, "contains") == 0 && e->call.arg_count == 1) {
+                    cg_expr(cg, obj);
+                    cg_emit(cg, "    str x0, [sp, #-16]!");
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    mov x1, x0");
+                    cg_emit(cg, "    ldr x0, [sp], #16");
+                    cg_emit(cg, "    str x0, [sp, #-16]!");
+                    cg_emit(cg, "    bl %sstrstr", cg_sym_prefix(cg));
+                    cg_emit(cg, "    ldr x1, [sp], #16");
+                    cg_emit(cg, "    cbnz x0, 1f");
+                    cg_emit(cg, "    mov x0, #0");
+                    cg_emit(cg, "    b 2f");
+                    cg_emit(cg, "1:  mov x0, #1");
+                    cg_emit(cg, "2:");
+                    break;
+                }
+                // .index_of(substr) -> str_find(obj, substr)
+                if (strcmp(method, "index_of") == 0 && e->call.arg_count == 1) {
+                    cg_expr(cg, obj);
+                    cg_emit(cg, "    str x0, [sp, #-16]!");
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    mov x1, x0");
+                    cg_emit(cg, "    ldr x0, [sp], #16");
+                    cg_emit(cg, "    str x0, [sp, #-16]!");
+                    cg_emit(cg, "    bl %sstrstr", cg_sym_prefix(cg));
+                    cg_emit(cg, "    ldr x1, [sp], #16");
+                    int found_lbl = cg_new_label(cg), end_lbl = cg_new_label(cg);
+                    cg_emit(cg, "    cbnz x0, L%d", found_lbl);
+                    cg_emit(cg, "    mov x0, #-1");
+                    cg_emit(cg, "    b L%d", end_lbl);
+                    cg_emit(cg, "L%d:", found_lbl);
+                    cg_emit(cg, "    sub x0, x0, x1");
+                    cg_emit(cg, "L%d:", end_lbl);
                     break;
                 }
             }
