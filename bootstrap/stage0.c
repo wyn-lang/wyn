@@ -2530,6 +2530,19 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     return fn->return_type;
                 }
             }
+            // Handle method calls (obj.method())
+            if (e->call.func->kind == EXPR_FIELD) {
+                const char* method_name = e->call.func->field.field;
+                // Look up method in all structs
+                for (int i = 0; i < tc->module->struct_count; i++) {
+                    StructDef* s = &tc->module->structs[i];
+                    for (int j = 0; j < s->method_count; j++) {
+                        if (strcmp(s->methods[j].name, method_name) == 0) {
+                            return s->methods[j].return_type;
+                        }
+                    }
+                }
+            }
             return new_type(TYPE_ANY);
         }
         
@@ -5168,8 +5181,8 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_emit(cg, "    str x2, [x1]");
                 cg_emit(cg, "    ldr x0, [sp, #8]");
                 cg_emit(cg, "    bl %sstrlen", cg_sym_prefix(cg));
+                cg_emit(cg, "    add x0, x0, #1");
                 cg_emit(cg, "    add x19, x20, x0");
-                cg_emit(cg, "    add x19, x19, #1");
                 cg_emit(cg, "    b L%d", loop_lbl);
                 cg_emit(cg, "L%d:", end_lbl);
                 cg_emit(cg, "    ldr x1, [sp]");

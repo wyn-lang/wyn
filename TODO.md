@@ -23,6 +23,7 @@
 - `str[0:1]` returns wrong value
 - Workaround: use `substring(str, start, len)`
 
-### 5. Method calls can't be used directly in if conditions
-- `if obj.method()` fails type check
-- Workaround: `let result: bool = obj.method(); if result`
+### 5. ✅ VERIFIED WORKING: Method calls in if conditions
+- ~~`if obj.method()` fails type check~~
+- Works correctly when method is defined inside struct
+- Added method return type lookup in type checker
