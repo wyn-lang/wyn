@@ -1,0 +1,102 @@
+#!/bin/bash
+# Wyn Package Manager
+# Simple package management inspired by Go
+
+set -e
+
+CMD="${1:-help}"
+shift || true
+
+case "$CMD" in
+    init)
+        echo "Initializing Wyn project..."
+        cat > wyn.toml << 'EOF'
+[package]
+name = "myproject"
+version = "0.1.0"
+
+[build]
+entry = "src/main.wyn"
+EOF
+        mkdir -p src build .wyn
+        cat > src/main.wyn << 'EOF'
+import std/io
+
+fn main() {
+    io.print_str("Hello, Wyn!")
+    io.print_newline()
+}
+EOF
+        echo "✓ Initialized Wyn project"
+        ;;
+        
+    new)
+        NAME="$1"
+        if [ -z "$NAME" ]; then
+            echo "Usage: wyn new <name>"
+            exit 1
+        fi
+        echo "Creating project: $NAME"
+        mkdir -p "$NAME"/{src,build,.wyn}
+        cat > "$NAME/wyn.toml" << EOF
+[package]
+name = "$NAME"
+version = "0.1.0"
+
+[build]
+entry = "src/main.wyn"
+EOF
+        cat > "$NAME/src/main.wyn" << 'EOF'
+import std/io
+
+fn main() {
+    io.print_str("Hello from $NAME!")
+    io.print_newline()
+}
+EOF
+        echo "✓ Created project: $NAME"
+        ;;
+        
+    build)
+        if [ ! -f wyn.toml ]; then
+            echo "Error: Not a Wyn project (no wyn.toml)"
+            exit 1
+        fi
+        echo "Building project..."
+        ./build/stage0 -o build/app src/main.wyn
+        echo "✓ Build successful: build/app"
+        ;;
+        
+    run)
+        $0 build
+        echo "Running..."
+        ./build/app
+        ;;
+        
+    test)
+        echo "Running tests..."
+        ./tests/run_tests.sh
+        ;;
+        
+    help|*)
+        cat << 'EOF'
+Wyn Package Manager
+
+Usage: wyn <command> [arguments]
+
+Commands:
+  init           Initialize a new project in current directory
+  new <name>     Create a new project
+  build          Build the project
+  run            Build and run the project
+  test           Run tests
+  help           Show this help
+
+Examples:
+  wyn new myapp
+  cd myapp
+  wyn build
+  wyn run
+EOF
+        ;;
+esac

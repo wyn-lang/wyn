@@ -1,0 +1,158 @@
+# Wyn Package Manager
+# Simple package management inspired by Go modules
+
+import std/io
+import std/fs
+
+struct Package {
+    name: str
+    version: str
+    description: str
+}
+
+fn main() {
+    let args: [str] = args()
+    
+    if args.len() < 2 {
+        print_help()
+        return
+    }
+    
+    let cmd: str = args[1]
+    
+    if cmd == "init" {
+        cmd_init()
+    } else if cmd == "new" {
+        if args.len() < 3 {
+            io.print_str("Usage: wyn pkg new <name>")
+            io.print_newline()
+            return
+        }
+        cmd_new(args[2])
+    } else if cmd == "build" {
+        cmd_build()
+    } else if cmd == "run" {
+        cmd_run()
+    } else if cmd == "test" {
+        cmd_test()
+    } else {
+        io.print_str("Unknown command: ")
+        io.print_str(cmd)
+        io.print_newline()
+        print_help()
+    }
+}
+
+fn print_help() {
+    io.print_str("Wyn Package Manager")
+    io.print_newline()
+    io.print_str("Usage: wyn pkg <command>")
+    io.print_newline()
+    io.print_newline()
+    io.print_str("Commands:")
+    io.print_newline()
+    io.print_str("  init       Initialize a new project in current directory")
+    io.print_newline()
+    io.print_str("  new <name> Create a new project")
+    io.print_newline()
+    io.print_str("  build      Build the project")
+    io.print_newline()
+    io.print_str("  run        Build and run the project")
+    io.print_newline()
+    io.print_str("  test       Run tests")
+    io.print_newline()
+}
+
+fn cmd_init() {
+    # Create wyn.toml
+    let manifest: str = "[package]\nname = \"myproject\"\nversion = \"0.1.0\"\n\n[build]\nentry = \"src/main.wyn\"\n"
+    
+    if file_exists("wyn.toml") {
+        io.print_str("Error: wyn.toml already exists")
+        io.print_newline()
+        return
+    }
+    
+    write_file("wyn.toml", manifest)
+    
+    # Create directories
+    mkdir("src")
+    mkdir("build")
+    mkdir(".wyn")
+    
+    # Create main.wyn
+    let main_content: str = "import std/io\n\nfn main() {\n    io.print_str(\"Hello, Wyn!\")\n    io.print_newline()
+\n}\n"
+    write_file("src/main.wyn", main_content)
+    
+    io.print_str("Initialized Wyn project")
+    io.print_newline()
+}
+
+fn cmd_new(name: str) {
+    # Create directory
+    mkdir(name)
+    
+    # Create manifest
+    let manifest: str = str_concat("[package]\nname = \"", name)
+    manifest = str_concat(manifest, "\"\nversion = \"0.1.0\"\n\n[build]\nentry = \"src/main.wyn\"\n")
+    
+    let manifest_path: str = str_concat(name, "/wyn.toml")
+    write_file(manifest_path, manifest)
+    
+    # Create directories
+    let src_path: str = str_concat(name, "/src")
+    let build_path: str = str_concat(name, "/build")
+    let wyn_path: str = str_concat(name, "/.wyn")
+    
+    mkdir(src_path)
+    mkdir(build_path)
+    mkdir(wyn_path)
+    
+    # Create main.wyn
+    let main_content: str = "import std/io\n\nfn main() {\n    io.print_str(\"Hello from "
+    main_content = str_concat(main_content, name)
+    main_content = str_concat(main_content, "!\")\n    io.print_newline()\n}\n")
+    
+    let main_path: str = str_concat(src_path, "/main.wyn")
+    write_file(main_path, main_content)
+    
+    io.print_str("Created project: ")
+    io.print_str(name)
+    io.print_newline()
+}
+
+fn cmd_build() {
+    if not file_exists("wyn.toml") {
+        io.print_str("Error: Not a Wyn project (no wyn.toml)")
+        io.print_newline()
+        return
+    }
+    
+    io.print_str("Building project...")
+    io.print_newline()
+    
+    # Simple build: compile src/main.wyn
+    let result: int = system("./build/stage0 -o build/app src/main.wyn")
+    
+    if result == 0 {
+        io.print_str("Build successful!")
+        io.print_newline()
+    } else {
+        io.print_str("Build failed")
+        io.print_newline()
+    }
+}
+
+fn cmd_run() {
+    cmd_build()
+    io.print_str("Running...")
+    io.print_newline()
+    system("./build/app")
+}
+
+fn cmd_test() {
+    io.print_str("Running tests...")
+    io.print_newline()
+    system("./tests/run_tests.sh")
+}
