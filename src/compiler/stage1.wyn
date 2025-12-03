@@ -273,10 +273,6 @@ fn main() {
     print_str("Compiling: ")
     print_str(input)
     print_newline()
-    print_str("Source: ")
-    print(source.len())
-    print_str(" bytes")
-    print_newline()
     
     // Single pass: tokenize and parse
     let mut lex: Lexer = lexer_new(source)
@@ -284,39 +280,122 @@ fn main() {
     let mut fn_count: int = 0
     let mut struct_count: int = 0
     let mut prev_kind: int = 0
+    let mut prev2_kind: int = 0
+    
+    // State for current function/struct being parsed
+    let mut in_fn: bool = false
+    let mut in_struct: bool = false
+    let mut fn_start_depth: int = 0
+    let mut struct_start_depth: int = 0
+    let mut brace_depth: int = 0
+    let mut paren_depth: int = 0
+    let mut param_count: int = 0
+    let mut field_count: int = 0
+    let mut stmt_count: int = 0
+    let mut cur_fn_name: str = ""
+    let mut cur_struct_name: str = ""
+    let mut has_return: bool = false
     
     while true {
         let tok: Token = lexer_next(lex)
         token_count = token_count + 1
         
-        // Track fn definitions
-        if prev_kind == 4 and tok.kind == 1 {  // fn followed by IDENT
-            print_str("  fn ")
-            print_str(tok.text)
-            print_newline()
+        // Track paren depth
+        if tok.kind == 14 { paren_depth = paren_depth + 1 }  // (
+        if tok.kind == 15 { paren_depth = paren_depth - 1 }  // )
+        
+        // Start of function (only at top level or inside struct)
+        if prev_kind == 4 and tok.kind == 1 {  // fn IDENT
+            in_fn = true
+            fn_start_depth = brace_depth
+            cur_fn_name = tok.text
+            param_count = 0
+            stmt_count = 0
+            has_return = false
             fn_count = fn_count + 1
         }
         
-        // Track struct definitions  
-        if prev_kind == 13 and tok.kind == 1 {  // struct followed by IDENT
-            print_str("  struct ")
-            print_str(tok.text)
-            print_newline()
+        // Count parameters (identifiers before : inside parens, before fn body)
+        if in_fn and brace_depth == fn_start_depth and paren_depth == 1 and prev_kind == 1 and tok.kind == 21 {
+            param_count = param_count + 1
+        }
+        
+        // Check for return type
+        if in_fn and brace_depth == fn_start_depth and tok.kind == 32 {  // ->
+            has_return = true
+        }
+        
+        // Track brace depth (after checking fn start)
+        if tok.kind == 16 { brace_depth = brace_depth + 1 }  // {
+        
+        // Count statements inside function body
+        if in_fn and brace_depth == fn_start_depth + 1 {
+            if tok.kind == 5 or tok.kind == 12 or tok.kind == 7 or tok.kind == 9 or tok.kind == 10 {
+                stmt_count = stmt_count + 1
+            }
+        }
+        
+        // End of function (closing brace at fn_start_depth + 1 going to fn_start_depth)
+        if tok.kind == 17 {  // }
+            if in_fn and brace_depth == fn_start_depth + 1 {
+                print_str("  fn ")
+                print_str(cur_fn_name)
+                print_str("(")
+                print(param_count)
+                print_str(" params)")
+                if has_return {
+                    print_str(" -> ...")
+                }
+                print_str(" [")
+                print(stmt_count)
+                print_str(" stmts]")
+                print_newline()
+                in_fn = false
+            }
+            brace_depth = brace_depth - 1
+        }
+        
+        // Start of struct
+        if prev_kind == 13 and tok.kind == 1 and not in_struct {  // struct IDENT
+            in_struct = true
+            struct_start_depth = brace_depth
+            cur_struct_name = tok.text
+            field_count = 0
             struct_count = struct_count + 1
         }
         
+        // Count fields (identifiers followed by : inside struct braces, not in method)
+        if in_struct and not in_fn and brace_depth == struct_start_depth + 1 and prev_kind == 1 and tok.kind == 21 {
+            field_count = field_count + 1
+        }
+        
+        // End of struct
+        if in_struct and brace_depth == struct_start_depth and prev_kind == 17 {
+            print_str("  struct ")
+            print_str(cur_struct_name)
+            print_str(" [")
+            print(field_count)
+            print_str(" fields]")
+            print_newline()
+            in_struct = false
+        }
+        
+        prev2_kind = prev_kind
         prev_kind = tok.kind
         if tok.kind == 0 { break }
     }
     
+    print_newline()
+    print_str("=== Summary ===")
+    print_newline()
     print_str("Tokens: ")
     print(token_count)
     print_newline()
-    print_str("Parsed: ")
+    print_str("Functions: ")
     print(fn_count)
-    print_str(" functions, ")
+    print_newline()
+    print_str("Structs: ")
     print(struct_count)
-    print_str(" structs")
     print_newline()
     
     print_str("Stage 1 compilation complete")
