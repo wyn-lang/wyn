@@ -1,7 +1,7 @@
 // Parser for the Wyn compiler (Stage 1)
 
 import compiler.lexer.token.{Token, TokenKind, Span}
-import compiler.parser.ast.{Module, Item, FnDef, Param, Block, Stmt, Expr, Type, Visibility, Pattern}
+import compiler.parser.ast.{Module, Item, FnDef, Param, Block, Stmt, Expr, Type, Visibility, Pattern, Import, ImplDef, MatchArm}
 
 pub struct Parser {
     tokens: [Token]
@@ -14,12 +14,37 @@ impl Parser {
     }
     
     pub fn parse(mut self) -> Module {
+        let imports: [Import] = []
+        while self.check(Import) {
+            imports = imports + [self.parse_import()]
+        }
         let items: [Item] = []
         while not self.is_eof() {
-            let item = self.parse_item()
-            items = items + [item]
+            items = items + [self.parse_item()]
         }
-        return Module{name: "", imports: [], items}
+        return Module{name: "", imports, items}
+    }
+    
+    fn parse_import(mut self) -> Import {
+        let span = self.peek().span
+        self.expect(Import)
+        let path: [str] = [self.expect_ident()]
+        while self.check(Dot) {
+            self.advance()
+            if self.check(LBrace) {
+                // import foo.bar.{a, b}
+                self.advance()
+                let items: [str] = []
+                while not self.check(RBrace) and not self.is_eof() {
+                    items = items + [self.expect_ident()]
+                    if not self.check(RBrace) { self.expect(Comma) }
+                }
+                self.expect(RBrace)
+                return Import{path, alias: none, items: some(items), span}
+            }
+            path = path + [self.expect_ident()]
+        }
+        return Import{path, alias: none, items: none, span}
     }
     
     fn parse_item(mut self) -> Item {
@@ -28,6 +53,7 @@ impl Parser {
             Fn => Function(self.parse_fn(vis))
             Struct => Struct(self.parse_struct(vis))
             Enum => Enum(self.parse_enum(vis))
+            Impl => Impl(self.parse_impl())
             _ => {
                 self.error("Expected item")
                 Function(self.parse_fn(vis))
@@ -50,17 +76,44 @@ impl Parser {
         self.expect(LParen)
         let params = self.parse_params()
         self.expect(RParen)
-        let ret = if self.check(Arrow) {
-            self.advance()
-            some(self.parse_type())
-        } else { none }
+        let ret = if self.check(Arrow) { self.advance(); some(self.parse_type()) } else { none }
         let body = if self.check(LBrace) { some(self.parse_block()) } else { none }
         return FnDef{name, generics: [], params, return_type: ret, body, visibility: vis, attributes: [], span: start}
+    }
+    
+    fn parse_impl(mut self) -> ImplDef {
+        let span = self.peek().span
+        self.expect(Impl)
+        let ty = self.parse_type()
+        self.expect(LBrace)
+        let methods: [FnDef] = []
+        while not self.check(RBrace) and not self.is_eof() {
+            let vis = self.parse_visibility()
+            methods = methods + [self.parse_fn(vis)]
+        }
+        self.expect(RBrace)
+        return ImplDef{generics: [], trait_: none, type_: ty, methods, span}
     }
     
     fn parse_params(mut self) -> [Param] {
         let params: [Param] = []
         while not self.check(RParen) and not self.is_eof() {
+            // Handle 'self' and 'mut self'
+            if self.check(Mut) {
+                self.advance()
+                if self.check(Self_) {
+                    self.advance()
+                    params = params + [Param{name: "self", type_: SelfType, default: none, span: self.peek().span}]
+                    if not self.check(RParen) { self.expect(Comma) }
+                    continue
+                }
+            }
+            if self.check(Self_) {
+                self.advance()
+                params = params + [Param{name: "self", type_: SelfType, default: none, span: self.peek().span}]
+                if not self.check(RParen) { self.expect(Comma) }
+                continue
+            }
             let name = self.expect_ident()
             self.expect(Colon)
             let ty = self.parse_type()
@@ -91,7 +144,18 @@ impl Parser {
             While => self.parse_while()
             For => self.parse_for()
             If => Expr(self.parse_if_expr(), span)
-            _ => Expr(self.parse_expr(), span)
+            Match => Expr(self.parse_match(), span)
+            Defer => { self.advance(); Defer(self.parse_expr(), span) }
+            _ => {
+                let expr = self.parse_expr()
+                // Check for assignment
+                if self.check(Eq) {
+                    self.advance()
+                    let value = self.parse_expr()
+                    return Assign(expr, value, span)
+                }
+                return Expr(expr, span)
+            }
         }
     }
     
@@ -125,6 +189,44 @@ impl Parser {
         return For(Ident(name, false, span), iter, body, span)
     }
     
+    fn parse_match(mut self) -> Expr {
+        let span = self.peek().span
+        self.expect(Match)
+        let value = self.parse_expr()
+        self.expect(LBrace)
+        let arms: [MatchArm] = []
+        while not self.check(RBrace) and not self.is_eof() {
+            let pat = self.parse_pattern()
+            self.expect(FatArrow)
+            let body = self.parse_expr()
+            arms = arms + [MatchArm{pattern: pat, guard: none, body, span}]
+        }
+        self.expect(RBrace)
+        return Match(Box{value}, arms, span)
+    }
+    
+    fn parse_pattern(mut self) -> Pattern {
+        let span = self.peek().span
+        match self.peek().kind {
+            Underscore => { self.advance(); Wildcard(span) }
+            Int(n) => { self.advance(); Literal(IntLit(n, span)) }
+            String(s) => { self.advance(); Literal(StringLit(s, span)) }
+            True => { self.advance(); Literal(BoolLit(true, span)) }
+            False => { self.advance(); Literal(BoolLit(false, span)) }
+            None_ => { self.advance(); Literal(None_(span)) }
+            Some_ => {
+                self.advance()
+                self.expect(LParen)
+                let inner = self.parse_pattern()
+                self.expect(RParen)
+                // Return as enum pattern for some(x)
+                Enum("Option", "some", some([inner]), span)
+            }
+            Ident(name) => { self.advance(); Ident(name, false, span) }
+            _ => { self.error("Expected pattern"); Wildcard(span) }
+        }
+    }
+    
     fn parse_expr(mut self) -> Expr {
         return self.parse_or()
     }
@@ -150,11 +252,26 @@ impl Parser {
     }
     
     fn parse_comparison(mut self) -> Expr {
-        let left = self.parse_additive()
+        let left = self.parse_range()
         if self.check(EqEq) or self.check(NotEq) or self.check(Lt) or self.check(Gt) or self.check(LtEq) or self.check(GtEq) {
             let op = self.parse_cmp_op()
-            let right = self.parse_additive()
+            let right = self.parse_range()
             return Binary(Box{value: left}, op, Box{value: right}, self.peek().span)
+        }
+        return left
+    }
+    
+    fn parse_range(mut self) -> Expr {
+        let left = self.parse_additive()
+        if self.check(DotDot) {
+            self.advance()
+            let right = self.parse_additive()
+            return Binary(Box{value: left}, Range, Box{value: right}, self.peek().span)
+        }
+        if self.check(DotDotEq) {
+            self.advance()
+            let right = self.parse_additive()
+            return Binary(Box{value: left}, RangeInclusive, Box{value: right}, self.peek().span)
         }
         return left
     }
@@ -190,10 +307,10 @@ impl Parser {
             self.advance()
             return Unary(Not, Box{value: self.parse_unary()}, self.peek().span)
         }
-        return self.parse_call()
+        return self.parse_postfix()
     }
     
-    fn parse_call(mut self) -> Expr {
+    fn parse_postfix(mut self) -> Expr {
         let expr = self.parse_primary()
         while true {
             if self.check(LParen) {
@@ -217,6 +334,9 @@ impl Parser {
                 let idx = self.parse_expr()
                 self.expect(RBracket)
                 expr = Index(Box{value: expr}, Box{value: idx}, self.peek().span)
+            } else if self.check(Question) {
+                self.advance()
+                expr = Try(Box{value: expr}, self.peek().span)
             } else {
                 break
             }
@@ -232,12 +352,81 @@ impl Parser {
             String(s) => { self.advance(); StringLit(s, span) }
             True => { self.advance(); BoolLit(true, span) }
             False => { self.advance(); BoolLit(false, span) }
-            Ident(name) => { self.advance(); Ident(name, span) }
-            LParen => { self.advance(); let e = self.parse_expr(); self.expect(RParen); e }
+            None_ => { self.advance(); None_(span) }
+            Some_ => {
+                self.advance()
+                self.expect(LParen)
+                let inner = self.parse_expr()
+                self.expect(RParen)
+                Some_(Box{value: inner}, span)
+            }
+            Ident(name) => {
+                self.advance()
+                // Check for struct literal: Name { ... }
+                if self.check(LBrace) {
+                    return self.parse_struct_lit(name, span)
+                }
+                Ident(name, span)
+            }
+            LParen => {
+                self.advance()
+                let e = self.parse_expr()
+                // Check for tuple
+                if self.check(Comma) {
+                    let elems: [Expr] = [e]
+                    while self.check(Comma) {
+                        self.advance()
+                        if self.check(RParen) { break }
+                        elems = elems + [self.parse_expr()]
+                    }
+                    self.expect(RParen)
+                    return TupleLit(elems, span)
+                }
+                self.expect(RParen)
+                e
+            }
             LBracket => self.parse_array_lit()
             If => self.parse_if_expr()
+            Match => self.parse_match()
+            Pipe => self.parse_closure()
             _ => { self.error("Expected expression"); IntLit(0, span) }
         }
+    }
+    
+    fn parse_struct_lit(mut self, name: str, span: Span) -> Expr {
+        self.expect(LBrace)
+        let fields: [(str, Expr)] = []
+        while not self.check(RBrace) and not self.is_eof() {
+            let fname = self.expect_ident()
+            let value = if self.check(Colon) {
+                self.advance()
+                self.parse_expr()
+            } else {
+                Ident(fname, span)  // shorthand: {x} means {x: x}
+            }
+            fields = fields + [(fname, value)]
+            if not self.check(RBrace) { self.expect(Comma) }
+        }
+        self.expect(RBrace)
+        return StructLit(Named(name, []), fields, span)
+    }
+    
+    fn parse_closure(mut self) -> Expr {
+        let span = self.peek().span
+        self.expect(Pipe)
+        let params: [Param] = []
+        while not self.check(Pipe) and not self.is_eof() {
+            let name = self.expect_ident()
+            let ty = if self.check(Colon) { self.advance(); self.parse_type() } else { Infer }
+            params = params + [Param{name, type_: ty, default: none, span}]
+            if not self.check(Pipe) { self.expect(Comma) }
+        }
+        self.expect(Pipe)
+        let ret = if self.check(Arrow) { self.advance(); some(self.parse_type()) } else { none }
+        let body = if self.check(LBrace) { self.parse_block() } else {
+            Block{stmts: [], expr: some(self.parse_expr()), span}
+        }
+        return Closure(params, ret, body, span)
     }
     
     fn parse_if_expr(mut self) -> Expr {
@@ -272,9 +461,25 @@ impl Parser {
     
     fn parse_type(mut self) -> Type {
         match self.peek().kind {
-            Ident(name) => { self.advance(); Named(name, []) }
+            Ident(name) => {
+                self.advance()
+                // Check for generic params: Name[T, U]
+                if self.check(LBracket) {
+                    self.advance()
+                    let params: [Type] = []
+                    while not self.check(RBracket) and not self.is_eof() {
+                        params = params + [self.parse_type()]
+                        if not self.check(RBracket) { self.expect(Comma) }
+                    }
+                    self.expect(RBracket)
+                    return Named(name, params)
+                }
+                Named(name, [])
+            }
             Question => { self.advance(); Optional(Box{value: self.parse_type()}) }
             LBracket => { self.advance(); let t = self.parse_type(); self.expect(RBracket); Slice(Box{value: t}) }
+            Star => { self.advance(); Pointer(Box{value: self.parse_type()}) }
+            Self_ => { self.advance(); SelfType }
             _ => { self.error("Expected type"); Int }
         }
     }
@@ -330,6 +535,6 @@ impl Parser {
     fn check(self, kind: TokenKind) -> bool { return self.peek().kind == kind }
     fn expect(mut self, kind: TokenKind) { if not self.check(kind) { self.error("Expected token") }; self.advance() }
     fn expect_ident(mut self) -> str { match self.advance().kind { Ident(s) => s, _ => "" } }
-    fn check_expr_start(self) -> bool { match self.peek().kind { Int(_) | Float(_) | String(_) | Ident(_) | LParen | LBracket | If | True | False => true, _ => false } }
+    fn check_expr_start(self) -> bool { match self.peek().kind { Int(_) | Float(_) | String(_) | Ident(_) | LParen | LBracket | If | Match | True | False | None_ | Some_ | Pipe => true, _ => false } }
     fn error(self, msg: str) { print_str("Parse error: " + msg) }
 }

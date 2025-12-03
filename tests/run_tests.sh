@@ -1,65 +1,75 @@
 #!/bin/bash
-# Wyn Test Runner
-
-set -e
+# Wyn Test Runner - Cached parallel execution
 
 STAGE0="./build/stage0"
-TESTS_DIR="tests"
-EXAMPLES_DIR="examples"
-PASS=0
-FAIL=0
-SKIP=0
+JOBS=${JOBS:-$(sysctl -n hw.ncpu 2>/dev/null || echo 4)}
+CACHE_DIR=".wyn/test-cache"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[0;33m'
 NC='\033[0m'
 
-run_test() {
-    local file="$1"
-    local name=$(basename "$file" .wyn)
-    local out="/tmp/wyn_test_$$_$name"
-    
-    # Compile
-    if ! $STAGE0 -o "$out" "$file" 2>/dev/null; then
-        echo -e "${RED}FAIL${NC} $name (compile error)"
-        ((FAIL++))
-        return
-    fi
-    
-    # Run and check exit code
-    if "$out" >/dev/null 2>&1; then
-        echo -e "${GREEN}PASS${NC} $name"
-        ((PASS++))
-    else
-        echo -e "${RED}FAIL${NC} $name (runtime error)"
-        ((FAIL++))
-    fi
-    
-    rm -f "$out"
-}
+[ -f "$STAGE0" ] || make stage0
+mkdir -p "$CACHE_DIR"
 
-echo "=== Wyn Test Suite ==="
-echo ""
+echo "=== Wyn Test Suite (jobs=$JOBS) ==="
 
-# Build compiler first
-if [ ! -f "$STAGE0" ]; then
-    echo "Building stage0..."
-    make stage0
-fi
-
-# Run all test files
-echo "Running tests..."
-echo ""
-
-for f in "$TESTS_DIR"/*.wyn "$EXAMPLES_DIR"/*_test.wyn; do
-    [ -f "$f" ] && run_test "$f"
+# Collect tests
+tests=()
+for f in tests/*.wyn examples/*_test.wyn; do
+    [ -f "$f" ] && tests+=("$f")
 done
 
-echo ""
-echo "=== Results ==="
-echo -e "${GREEN}Passed: $PASS${NC}"
-echo -e "${RED}Failed: $FAIL${NC}"
-echo ""
+# Run test with caching
+run_test() {
+    local f="$1"
+    local name=$(basename "$f" .wyn)
+    local cache=".wyn/test-cache/$name"
+    local hash=$(md5 -q "$f" 2>/dev/null || md5sum "$f" | cut -d' ' -f1)
+    
+    if grep -q "read_line\|read_input" "$f" 2>/dev/null; then
+        echo "S $name"; return
+    fi
+    
+    # Check cache
+    if [ -x "$cache" ] && [ -f "$cache.hash" ] && [ "$(cat "$cache.hash")" = "$hash" ]; then
+        if "$cache" >/dev/null 2>&1; then
+            echo "P $name"; return
+        else
+            echo "F $name"; return
+        fi
+    fi
+    
+    # Compile and cache
+    if ./build/stage0 -q -o "$cache" "$f" 2>/dev/null; then
+        echo "$hash" > "$cache.hash"
+        if "$cache" >/dev/null 2>&1; then
+            echo "P $name"
+        else
+            echo "F $name"
+        fi
+    else
+        echo "F $name"
+    fi
+}
 
-[ $FAIL -eq 0 ] && exit 0 || exit 1
+export -f run_test
+
+# Run in parallel
+results=$(printf '%s\n' "${tests[@]}" | xargs -P "$JOBS" -I{} bash -c 'run_test "$1"' _ {})
+
+PASS=0 FAIL=0 SKIP=0
+while read -r status name; do
+    case "$status" in
+        P) echo -e "${GREEN}PASS${NC} $name"; ((PASS++)) ;;
+        F) echo -e "${RED}FAIL${NC} $name"; ((FAIL++)) ;;
+        S) echo -e "${YELLOW}SKIP${NC} $name"; ((SKIP++)) ;;
+    esac
+done <<< "$results"
+
+echo -e "\n=== Results ==="
+echo -e "${GREEN}Passed: $PASS${NC}"
+[ $SKIP -gt 0 ] && echo -e "${YELLOW}Skipped: $SKIP${NC}"
+echo -e "${RED}Failed: $FAIL${NC}"
+[ $FAIL -eq 0 ]

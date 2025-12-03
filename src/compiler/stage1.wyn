@@ -159,6 +159,21 @@ fn lexer_next(mut lex: Lexer) -> Token {
             lexer_advance(lex)
             return Token{kind: 31, text: "==", int_val: 0, line: start_line, col: start_col}
         }
+        if two == "!=" {
+            lexer_advance(lex)
+            lexer_advance(lex)
+            return Token{kind: 43, text: "!=", int_val: 0, line: start_line, col: start_col}
+        }
+        if two == ">=" {
+            lexer_advance(lex)
+            lexer_advance(lex)
+            return Token{kind: 44, text: ">=", int_val: 0, line: start_line, col: start_col}
+        }
+        if two == "<=" {
+            lexer_advance(lex)
+            lexer_advance(lex)
+            return Token{kind: 45, text: "<=", int_val: 0, line: start_line, col: start_col}
+        }
         if two == "->" {
             lexer_advance(lex)
             lexer_advance(lex)
@@ -196,7 +211,8 @@ fn lexer_next(mut lex: Lexer) -> Token {
     if c == "<" { return Token{kind: 29, text: "<", int_val: 0, line: start_line, col: start_col} }
     if c == ">" { return Token{kind: 30, text: ">", int_val: 0, line: start_line, col: start_col} }
     
-    return Token{kind: 0, text: "", int_val: 0, line: start_line, col: start_col}
+    // Unknown character - return as UNKNOWN token (kind 99) instead of EOF
+    return Token{kind: 99, text: c, int_val: 0, line: start_line, col: start_col}
 }
 
 fn token_name(kind: int) -> str {

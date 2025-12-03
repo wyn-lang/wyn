@@ -42,6 +42,11 @@ stage0-debug: $(BUILD_DIR)
 test: stage0
 	@./$(TESTS_DIR)/run_tests.sh
 
+# Fast test - suppress compiler output
+.PHONY: fast-test
+fast-test: stage0
+	@STAGE0_QUIET=1 ./$(TESTS_DIR)/run_tests.sh
+
 # Run demo
 .PHONY: demo
 demo: stage0
@@ -63,6 +68,16 @@ uninstall:
 .PHONY: clean
 clean:
 	rm -rf $(BUILD_DIR)
+
+# Clean test cache
+.PHONY: clean-cache
+clean-cache:
+	rm -rf .wyn/test-cache
+
+# Full clean
+.PHONY: distclean
+distclean: clean clean-cache
+	rm -rf .wyn
 
 # Full rebuild
 .PHONY: rebuild

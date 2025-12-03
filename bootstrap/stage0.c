@@ -2429,7 +2429,7 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     strcmp(e->ident, "powf") == 0 || strcmp(e->ident, "floorf") == 0 ||
                     strcmp(e->ident, "ceilf") == 0 || strcmp(e->ident, "getpid") == 0 ||
                     strcmp(e->ident, "rename_file") == 0 || strcmp(e->ident, "to_string") == 0 ||
-                    strcmp(e->ident, "substring") == 0) {
+                    strcmp(e->ident, "substring") == 0 || strcmp(e->ident, "args") == 0) {
                     return new_type(TYPE_FUNCTION);
                 }
                 tc_error(tc, e->line, e->column, "undefined variable '%s'", e->ident);
@@ -4842,6 +4842,34 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_emit(cg, "    bl %sgetenv", cg_sym_prefix(cg));
                 break;
             }
+            // Handle built-in args() - get command line arguments as [str]
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "args") == 0) {
+                // Allocate array on stack: [len, ptr0, ptr1, ...]
+                int arr_off = cg->stack_offset + 8;
+                cg->stack_offset += 8 + 8 * 64;  // max 64 args
+                // Load argc and argv from globals
+                cg_emit(cg, "    adrp x8, L_.wyn_argc@PAGE");
+                cg_emit(cg, "    add x8, x8, L_.wyn_argc@PAGEOFF");
+                cg_emit(cg, "    ldr x9, [x8]");  // x9 = argc
+                cg_emit(cg, "    adrp x8, L_.wyn_argv@PAGE");
+                cg_emit(cg, "    add x8, x8, L_.wyn_argv@PAGEOFF");
+                cg_emit(cg, "    ldr x10, [x8]");  // x10 = argv
+                cg_emit(cg, "    add x11, x29, #%d", 16 + arr_off);  // x11 = array base
+                cg_emit(cg, "    str x9, [x11]");  // store length
+                cg_emit(cg, "    mov x12, #0");  // i = 0
+                int loop_lbl = cg_new_label(cg), end_lbl = cg_new_label(cg);
+                cg_emit(cg, "L%d:", loop_lbl);
+                cg_emit(cg, "    cmp x12, x9");
+                cg_emit(cg, "    b.ge L%d", end_lbl);
+                cg_emit(cg, "    ldr x13, [x10, x12, lsl #3]");  // argv[i]
+                cg_emit(cg, "    add x14, x12, #1");
+                cg_emit(cg, "    str x13, [x11, x14, lsl #3]");  // arr[i+1] (after len)
+                cg_emit(cg, "    add x12, x12, #1");
+                cg_emit(cg, "    b L%d", loop_lbl);
+                cg_emit(cg, "L%d:", end_lbl);
+                cg_emit(cg, "    add x0, x29, #%d", 16 + arr_off);  // return array ptr
+                break;
+            }
             // Handle built-in system(cmd) - run shell command
             if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "system") == 0) {
                 cg_expr(cg, e->call.args[0]);
@@ -5109,16 +5137,28 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 
                 // .len() -> len(obj)
                 if (strcmp(method, "len") == 0 && e->call.arg_count == 0) {
+                    // Check if object is array type
+                    Type* obj_type = NULL;
+                    if (obj->kind == EXPR_IDENT) {
+                        obj_type = cg_local_type(cg, obj->ident);
+                    }
+                    bool is_array = (obj_type && obj_type->kind == TYPE_ARRAY);
                     cg_expr(cg, obj);
-                    int loop_lbl = cg_new_label(cg), end_lbl = cg_new_label(cg);
-                    cg_emit(cg, "    mov x1, x0");
-                    cg_emit(cg, "    mov x0, #0");
-                    cg_emit(cg, "L%d:", loop_lbl);
-                    cg_emit(cg, "    ldrb w2, [x1], #1");
-                    cg_emit(cg, "    cbz w2, L%d", end_lbl);
-                    cg_emit(cg, "    add x0, x0, #1");
-                    cg_emit(cg, "    b L%d", loop_lbl);
-                    cg_emit(cg, "L%d:", end_lbl);
+                    if (is_array) {
+                        // Array - read length from first element
+                        cg_emit(cg, "    ldr x0, [x0]");
+                    } else {
+                        // String - count chars until null terminator
+                        int loop_lbl = cg_new_label(cg), end_lbl = cg_new_label(cg);
+                        cg_emit(cg, "    mov x1, x0");
+                        cg_emit(cg, "    mov x0, #0");
+                        cg_emit(cg, "L%d:", loop_lbl);
+                        cg_emit(cg, "    ldrb w2, [x1], #1");
+                        cg_emit(cg, "    cbz w2, L%d", end_lbl);
+                        cg_emit(cg, "    add x0, x0, #1");
+                        cg_emit(cg, "    b L%d", loop_lbl);
+                        cg_emit(cg, "L%d:", end_lbl);
+                    }
                     break;
                 }
                 // .abs() -> abs(obj)
@@ -5222,7 +5262,20 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             }
             // Push all provided args to stack
             for (int i = e->call.arg_count - 1; i >= 0; i--) {
-                cg_expr(cg, e->call.args[i]);
+                Expr* arg = e->call.args[i];
+                // Check if argument is a struct variable - pass address instead of value
+                if (arg->kind == EXPR_IDENT) {
+                    Type* arg_type = cg_local_type(cg, arg->ident);
+                    int struct_size = cg_struct_size(cg, arg_type);
+                    if (struct_size > 0) {
+                        // Pass address of inline struct
+                        int off = cg_local_offset(cg, arg->ident);
+                        cg_emit(cg, "    add x0, x29, #%d", 16 + off);
+                        cg_emit(cg, "    str x0, [sp, #-16]!");
+                        continue;
+                    }
+                }
+                cg_expr(cg, arg);
                 cg_emit(cg, "    str x0, [sp, #-16]!");
             }
             // Pop into argument registers
@@ -5796,7 +5849,14 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                 }
             } else {
                 // Non-struct: just store the value
-                cg_add_local(cg, s->let.name, s->let.type);
+                // Infer type from args() call
+                Type* var_type = s->let.type;
+                if (!var_type && s->let.value && s->let.value->kind == EXPR_CALL &&
+                    s->let.value->call.func->kind == EXPR_IDENT &&
+                    strcmp(s->let.value->call.func->ident, "args") == 0) {
+                    var_type = new_type(TYPE_ARRAY);
+                }
+                cg_add_local(cg, s->let.name, var_type);
                 if (s->let.value) {
                     cg_expr(cg, s->let.value);
                 } else {
@@ -5864,7 +5924,8 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                 cg_emit_defers(cg);
                 cg_emit(cg, "    ldr x0, [sp], #16");    // Restore return value
             }
-            cg_emit(cg, "    ldp x29, x30, [sp], #256");
+            cg_emit(cg, "    ldp x29, x30, [sp]");
+            cg_emit(cg, "    add sp, sp, #2048");
             cg_emit(cg, "    ret");
             break;
         
@@ -6117,22 +6178,31 @@ static void cg_method(CodeGen* cg, const char* struct_name, FnDef* fn) {
         return;
     }
     
-    // ARM64
+    // ARM64 - use 2048 byte stack frame
     cg_emit(cg, "    .globl %s%s", pfx, mangled);
     cg_emit(cg, "    .p2align 2");
     cg_emit(cg, "%s%s:", pfx, mangled);
-    cg_emit(cg, "    stp x29, x30, [sp, #-256]!");
+    cg_emit(cg, "    sub sp, sp, #2048");
+    cg_emit(cg, "    stp x29, x30, [sp]");
     cg_emit(cg, "    mov x29, sp");
     
     for (int i = 0; i < fn->param_count && i < 8; i++) {
-        cg_add_local(cg, fn->params[i].name, fn->params[i].type);
+        // For struct parameters, store the pointer (not inline struct)
+        Type* param_type = fn->params[i].type;
+        int struct_size = cg_struct_size(cg, param_type);
+        if (struct_size > 0) {
+            cg_add_local(cg, fn->params[i].name, NULL);  // NULL type = pointer to struct
+        } else {
+            cg_add_local(cg, fn->params[i].name, param_type);
+        }
         cg_emit(cg, "    str x%d, [x29, #%d]", i, 16 + cg->locals[cg->local_count - 1].offset);
     }
     
     for (int i = 0; i < fn->body_count; i++) cg_stmt(cg, fn->body[i]);
     
     cg_emit(cg, "    mov x0, #0");
-    cg_emit(cg, "    ldp x29, x30, [sp], #256");
+    cg_emit(cg, "    ldp x29, x30, [sp]");
+    cg_emit(cg, "    add sp, sp, #2048");
     cg_emit(cg, "    ret");
 }
 
@@ -6166,15 +6236,33 @@ static void cg_function(CodeGen* cg, FnDef* fn) {
         return;
     }
     
-    // ARM64
+    // ARM64 - use 2048 byte stack frame for larger functions
     cg_emit(cg, "    .globl %s%s", pfx, fn->name);
     cg_emit(cg, "    .p2align 2");
     cg_emit(cg, "%s%s:", pfx, fn->name);
-    cg_emit(cg, "    stp x29, x30, [sp, #-256]!");
+    cg_emit(cg, "    sub sp, sp, #2048");
+    cg_emit(cg, "    stp x29, x30, [sp]");
     cg_emit(cg, "    mov x29, sp");
     
+    // Save argc/argv for main function
+    if (strcmp(fn->name, "main") == 0) {
+        cg_emit(cg, "    adrp x8, L_.wyn_argc@PAGE");
+        cg_emit(cg, "    add x8, x8, L_.wyn_argc@PAGEOFF");
+        cg_emit(cg, "    str x0, [x8]");
+        cg_emit(cg, "    adrp x8, L_.wyn_argv@PAGE");
+        cg_emit(cg, "    add x8, x8, L_.wyn_argv@PAGEOFF");
+        cg_emit(cg, "    str x1, [x8]");
+    }
+    
     for (int i = 0; i < fn->param_count && i < 8; i++) {
-        cg_add_local(cg, fn->params[i].name, fn->params[i].type);
+        // For struct parameters, store the pointer (not inline struct)
+        Type* param_type = fn->params[i].type;
+        int struct_size = cg_struct_size(cg, param_type);
+        if (struct_size > 0) {
+            cg_add_local(cg, fn->params[i].name, NULL);  // NULL type = pointer to struct
+        } else {
+            cg_add_local(cg, fn->params[i].name, param_type);
+        }
         cg_emit(cg, "    str x%d, [x29, #%d]", i, 16 + cg->locals[cg->local_count - 1].offset);
     }
     
@@ -6184,7 +6272,8 @@ static void cg_function(CodeGen* cg, FnDef* fn) {
     
     cg_emit_defers(cg);  // Execute defers at implicit return
     cg_emit(cg, "    mov x0, #0");
-    cg_emit(cg, "    ldp x29, x30, [sp], #256");
+    cg_emit(cg, "    ldp x29, x30, [sp]");
+    cg_emit(cg, "    add sp, sp, #2048");
     cg_emit(cg, "    ret");
 }
 
@@ -6228,7 +6317,8 @@ static void cg_emit_lambda_arm(CodeGen* cg, Expr* e) {
     const char* pfx = cg_sym_prefix(cg);
     cg_emit(cg, "    .p2align 2");
     cg_emit(cg, "%s_lambda%d:", pfx, e->lambda.id);
-    cg_emit(cg, "    stp x29, x30, [sp, #-256]!");
+    cg_emit(cg, "    sub sp, sp, #2048");
+    cg_emit(cg, "    stp x29, x30, [sp]");
     cg_emit(cg, "    mov x29, sp");
     
     // Save parameters to locals
@@ -6251,7 +6341,8 @@ static void cg_emit_lambda_arm(CodeGen* cg, Expr* e) {
     }
     
     cg_emit(cg, "    mov x0, #0");
-    cg_emit(cg, "    ldp x29, x30, [sp], #256");
+    cg_emit(cg, "    ldp x29, x30, [sp]");
+    cg_emit(cg, "    add sp, sp, #2048");
     cg_emit(cg, "    ret");
     
     cg->local_count = saved_local_count;
@@ -7241,6 +7332,10 @@ static void codegen_module(CodeGen* cg) {
     cg_emit(cg, "    .space 1024");
     cg_emit(cg, "L_.empty_str:");
     cg_emit(cg, "    .asciz \"\"");
+    cg_emit(cg, "L_.wyn_argc:");
+    cg_emit(cg, "    .quad 0");
+    cg_emit(cg, "L_.wyn_argv:");
+    cg_emit(cg, "    .quad 0");
     
     // Emit string literals
     for (int i = 0; i < cg->string_count; i++) {

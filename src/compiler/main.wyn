@@ -39,6 +39,26 @@ impl Compiler {
         }
     }
     
+    fn generate_code(mut self, ir: IR) -> str {
+        if self.options.target == "aarch64" {
+            let mut gen: AArch64Gen = AArch64Gen.new()
+            return gen.generate(ir)
+        }
+        if self.options.target == "x86_64" {
+            let mut gen: X86_64Gen = X86_64Gen.new()
+            return gen.generate(ir)
+        }
+        if self.options.target == "c" {
+            let mut gen: CGen = CGen.new()
+            return gen.generate(ir)
+        }
+        if self.options.target == "wasm" {
+            let mut gen: WasmGen = WasmGen.new()
+            return gen.generate(ir)
+        }
+        return ""
+    }
+    
     fn compile_source(mut self, source: str) -> Result[str, str] {
         if self.options.verbose {
             print_str("Compiling: " + self.options.input + "\n")
@@ -80,25 +100,7 @@ impl Compiler {
         }
         
         // Code generation
-        let code: str = match self.options.target {
-            "aarch64" => {
-                let mut gen: AArch64Gen = AArch64Gen.new()
-                gen.generate(ir)
-            }
-            "x86_64" => {
-                let mut gen: X86_64Gen = X86_64Gen.new()
-                gen.generate(ir)
-            }
-            "c" => {
-                let mut gen: CGen = CGen.new()
-                gen.generate(ir)
-            }
-            "wasm" => {
-                let mut gen: WasmGen = WasmGen.new()
-                gen.generate(ir)
-            }
-            _ => return err("Unknown target: " + self.options.target)
-        }
+        let code: str = self.generate_code(ir)
         
         // Write output
         if self.options.output != "" {
@@ -162,29 +164,29 @@ fn main() {
     while i < argc {
         let arg: str = get_arg(i) ?? ""
         
-        match arg {
-            "-h" => { print_usage(); exit(0) }
-            "--help" => { print_usage(); exit(0) }
-            "--version" => { print_version(); exit(0) }
-            "-v" => { options.verbose = true }
-            "--verbose" => { options.verbose = true }
-            "-S" => { options.emit_asm = true }
-            "--emit-ir" => { options.emit_ir = true }
-            "-o" => {
-                i = i + 1
-                options.output = get_arg(i) ?? ""
-            }
-            "-t" => {
-                i = i + 1
-                options.target = get_arg(i) ?? "aarch64"
-            }
-            _ => {
-                if starts_with(arg, "-") {
-                    print_str("Unknown option: " + arg + "\n")
-                    exit(1)
-                }
-                options.input = arg
-            }
+        if arg == "-h" or arg == "--help" {
+            print_usage()
+            exit(0)
+        } else if arg == "--version" {
+            print_version()
+            exit(0)
+        } else if arg == "-v" or arg == "--verbose" {
+            options.verbose = true
+        } else if arg == "-S" {
+            options.emit_asm = true
+        } else if arg == "--emit-ir" {
+            options.emit_ir = true
+        } else if arg == "-o" {
+            i = i + 1
+            options.output = get_arg(i) ?? ""
+        } else if arg == "-t" {
+            i = i + 1
+            options.target = get_arg(i) ?? "aarch64"
+        } else if str_starts_with(arg, "-") {
+            print_str("Unknown option: " + arg + "\n")
+            exit(1)
+        } else {
+            options.input = arg
         }
         
         i = i + 1
