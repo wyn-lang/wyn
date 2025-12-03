@@ -1,9 +1,10 @@
 import std/io
+
 fn main() {
     let arr: [int] = [1, 2, 3, 4, 5]
     
-    # Length
-    assert(len(arr) == 5)
+    # Length - using method
+    assert(arr.len() == 5)
     
     # Indexing
     assert(arr[0] == 1)
@@ -13,18 +14,18 @@ fn main() {
     
     # Slicing
     let slice: [int] = arr[1:3]
-    assert(len(slice) == 2)
+    assert(slice.len() == 2)
     assert(slice[0] == 2)
     assert(slice[1] == 3)
     
     # Slice from start
     let first: [int] = arr[:2]
-    assert(len(first) == 2)
+    assert(first.len() == 2)
     assert(first[0] == 1)
     
     # Slice to end
     let last: [int] = arr[3:]
-    assert(len(last) == 2)
+    assert(last.len() == 2)
     assert(last[0] == 4)
     
     # Iteration
@@ -34,5 +35,5 @@ fn main() {
     }
     assert(sum == 15)
     
-    print_str("array_test: PASS")
+    io.print_str("array_test: PASS")
 }

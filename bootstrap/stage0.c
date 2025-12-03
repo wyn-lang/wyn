@@ -836,6 +836,8 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "log") == 0) return "logf";
         if (strcmp(function, "log10") == 0) return "log10f";
         if (strcmp(function, "exp") == 0) return "expf";
+    } else if (strcmp(module, "test") == 0) {
+        if (strcmp(function, "assert") == 0) return "assert";
     }
     return NULL;
 }
