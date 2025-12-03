@@ -74,6 +74,36 @@ Wyn follows the principle: **"One obvious way to do things"**
 
 All functionality is organized into modules. No top-level functions except language keywords.
 
+#### Reserved Keywords (43 total)
+
+Wyn has 43 reserved keywords organized by category:
+
+**Declarations (8):**
+`fn`, `struct`, `enum`, `interface`, `impl`, `let`, `mut`, `pub`
+
+**Control Flow (9):**
+`if`, `else`, `then`, `match`, `for`, `while`, `in`, `break`, `continue`, `return`
+
+**Modules (3):**
+`import`, `from`, `as`
+
+**Literals (7):**
+`true`, `false`, `none`, `some`, `ok`, `err`, `self`, `Self`
+
+**Error Handling (3):**
+`try`, `catch`, `defer`
+
+**Concurrency (5):**
+`spawn`, `parallel`, `async`, `await`, `yield`
+
+**Operators (3):**
+`and`, `or`, `not`
+
+**Testing (3):**
+`test`, `bench`, `assert`
+
+**Note:** `assert` is a language keyword (like Python/Rust), not a stdlib function. It's used for runtime assertions and is always available without imports.
+
 #### Standard Library Modules
 
 ```wyn
