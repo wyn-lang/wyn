@@ -278,32 +278,45 @@ fn main() {
     print_str(" bytes")
     print_newline()
     
-    // Tokenize
+    // Single pass: tokenize and parse
     let mut lex: Lexer = lexer_new(source)
-    let mut count: int = 0
-    
-    print_str("Tokens (first 20):")
-    print_newline()
+    let mut token_count: int = 0
+    let mut fn_count: int = 0
+    let mut struct_count: int = 0
+    let mut prev_kind: int = 0
     
     while true {
         let tok: Token = lexer_next(lex)
-        if count < 20 {
-            print_str("  ")
-            print_str(token_name(tok.kind))
-            if tok.kind == 1 or tok.kind == 2 or tok.kind == 3 {
-                print_str(" ")
-                print_str(tok.text)
-            }
+        token_count = token_count + 1
+        
+        // Track fn definitions
+        if prev_kind == 4 and tok.kind == 1 {  // fn followed by IDENT
+            print_str("  fn ")
+            print_str(tok.text)
             print_newline()
+            fn_count = fn_count + 1
         }
-        count = count + 1
-        if tok.kind == 0 {
-            break
+        
+        // Track struct definitions  
+        if prev_kind == 13 and tok.kind == 1 {  // struct followed by IDENT
+            print_str("  struct ")
+            print_str(tok.text)
+            print_newline()
+            struct_count = struct_count + 1
         }
+        
+        prev_kind = tok.kind
+        if tok.kind == 0 { break }
     }
     
-    print_str("Total tokens: ")
-    print(count)
+    print_str("Tokens: ")
+    print(token_count)
+    print_newline()
+    print_str("Parsed: ")
+    print(fn_count)
+    print_str(" functions, ")
+    print(struct_count)
+    print_str(" structs")
     print_newline()
     
     print_str("Stage 1 compilation complete")
