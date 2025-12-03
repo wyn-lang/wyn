@@ -119,9 +119,9 @@ fn lexer_next(mut lex: Lexer) -> Token {
         while lex.pos < lex.len and is_alnum(lexer_peek(lex)) {
             lexer_advance(lex)
         }
-        let text: str = substring(lex.source, start, lex.pos - start)
-        let kind: int = keyword_kind(text)
-        return Token{kind: kind, text: text, int_val: 0, line: start_line, col: start_col}
+        let ident_text: str = substring(lex.source, start, lex.pos - start)
+        let kind: int = keyword_kind(ident_text)
+        return Token{kind: kind, text: ident_text, int_val: 0, line: start_line, col: start_col}
     }
     
     // Numbers
@@ -132,8 +132,8 @@ fn lexer_next(mut lex: Lexer) -> Token {
             val = val * 10 + (ord(lexer_peek(lex)) - ord("0"))
             lexer_advance(lex)
         }
-        let text: str = substring(lex.source, start, lex.pos - start)
-        return Token{kind: 2, text: text, int_val: val, line: start_line, col: start_col}
+        let num_text: str = substring(lex.source, start, lex.pos - start)
+        return Token{kind: 2, text: num_text, int_val: val, line: start_line, col: start_col}
     }
     
     // Strings
@@ -146,9 +146,9 @@ fn lexer_next(mut lex: Lexer) -> Token {
             }
             lexer_advance(lex)
         }
-        let text: str = substring(lex.source, start, lex.pos - start)
+        let str_text: str = substring(lex.source, start, lex.pos - start)
         lexer_advance(lex)  // consume closing quote
-        return Token{kind: 3, text: text, int_val: 0, line: start_line, col: start_col}
+        return Token{kind: 3, text: str_text, int_val: 0, line: start_line, col: start_col}
     }
     
     // Two-character operators
@@ -307,6 +307,27 @@ fn main() {
         let tok: Token = lexer_next(lex)
         token_count = token_count + 1
         
+        // Debug: print all tokens
+        if token_count <= 15 {
+            print_str("tok ")
+            print(token_count)
+            print_str(": kind=")
+            print(tok.kind)
+            print_str(" text=")
+            print_str(tok.text)
+            print_newline()
+        }
+        
+        // Detect print("string")
+        if prev2_kind == 1 and prev_text == "print" and prev_kind == 14 and tok.kind == 3 {
+            let lbl: str = int_to_str(str_count)
+            let txt: str = tok.text
+            // Generate code with fewer concatenations
+            asm = asm + "    adrp x0, L_.str" + lbl + "@PAGE\n    add x0, x0, L_.str" + lbl + "@PAGEOFF\n    bl _puts\n"
+            strings = strings + "L_.str" + lbl + ":\n    .asciz \"" + txt + "\"\n"
+            str_count = str_count + 1
+        }
+        
         // Track paren depth
         if tok.kind == 14 { paren_depth = paren_depth + 1 }  // (
         if tok.kind == 15 { paren_depth = paren_depth - 1 }  // )
@@ -417,10 +438,9 @@ fn main() {
         
         // Build assembly
         let header: str = "    .section __TEXT,__text\n    .globl _main\n    .p2align 2\n_main:\n    sub sp, sp, #32\n    stp x29, x30, [sp, #16]\n    add x29, sp, #16\n"
-        let footer: str = "    mov x0, #0\n    ldp x29, x30, [sp, #16]\n    add sp, sp, #32\n    ret\n"
+        let footer: str = "    mov x0, #0\n    ldp x29, x30, [sp, #16]\n    add sp, sp, #32\n    ret\n\n    .section __DATA,__data\n"
         
-        let mut code: str = header
-        code = code + footer
+        let mut code: str = header + asm + footer + strings
         
         write_file(output, code)
         print_str("Written: ")

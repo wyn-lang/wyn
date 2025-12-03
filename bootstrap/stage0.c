@@ -5654,7 +5654,7 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                 cg_add_local(cg, s->let.name, s->let.type);
                 if (s->let.value) cg_expr(cg, s->let.value);
                 else cg_emit(cg, "    xorq %%rax, %%rax");
-                cg_emit(cg, "    movq %%rax, -%d(%%rbp)", cg->locals[cg->local_count - 1].offset);
+                cg_emit(cg, "    movq %%rax, -%d(%%rbp)", cg_local_offset(cg, s->let.name));
                 break;
             case STMT_ASSIGN:
                 if (s->assign.op == TOK_EQ) {
@@ -5928,7 +5928,8 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                 } else {
                     cg_emit(cg, "    mov x0, #0");
                 }
-                cg_emit_str_offset(cg, "x0", 16 + cg->locals[cg->local_count - 1].offset);
+                // Use cg_local_offset to get correct offset (handles slot reuse)
+                cg_emit_str_offset(cg, "x0", 16 + cg_local_offset(cg, s->let.name));
             }
             break;
         }
