@@ -2992,6 +2992,13 @@ static int cg_struct_field_offset(StructDef* s, const char* field) {
     return -1;
 }
 
+static Type* cg_struct_field_type(StructDef* s, const char* field) {
+    for (int i = 0; i < s->field_count; i++) {
+        if (strcmp(s->fields[i].name, field) == 0) return s->fields[i].type;
+    }
+    return NULL;
+}
+
 static int64_t cg_lookup_enum_variant(CodeGen* cg, const char* name, bool* found) {
     *found = false;
     for (int i = 0; i < cg->module->enum_count; i++) {
@@ -5430,12 +5437,21 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 Type* obj_type = cg_local_type(cg, e->field.object->ident);
                 int struct_size = cg_struct_size(cg, obj_type);
                 if (struct_size > 0) {
-                    // Local struct stored inline - load field directly from stack
+                    // Local struct stored inline - check if field is also a struct
                     int base_off = cg_local_offset(cg, e->field.object->ident);
                     for (int i = 0; i < cg->module->struct_count; i++) {
                         int foff = cg_struct_field_offset(&cg->module->structs[i], e->field.field);
                         if (foff >= 0) {
-                            cg_emit(cg, "    ldr x0, [x29, #%d]", 16 + base_off + foff);
+                            // Check if this field is itself a struct type
+                            Type* field_type = cg_struct_field_type(&cg->module->structs[i], e->field.field);
+                            int field_struct_size = cg_struct_size(cg, field_type);
+                            if (field_struct_size > 0) {
+                                // Field is a struct - return address, not value
+                                cg_emit(cg, "    add x0, x29, #%d", 16 + base_off + foff);
+                            } else {
+                                // Field is a primitive - load value
+                                cg_emit(cg, "    ldr x0, [x29, #%d]", 16 + base_off + foff);
+                            }
                             break;
                         }
                     }
@@ -5447,7 +5463,16 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             for (int i = 0; i < cg->module->struct_count; i++) {
                 int off = cg_struct_field_offset(&cg->module->structs[i], e->field.field);
                 if (off >= 0) {
-                    cg_emit(cg, "    ldr x0, [x0, #%d]", off);
+                    // Check if this field is itself a struct type
+                    Type* field_type = cg_struct_field_type(&cg->module->structs[i], e->field.field);
+                    int field_struct_size = cg_struct_size(cg, field_type);
+                    if (field_struct_size > 0) {
+                        // Field is a struct - return address (add offset to pointer)
+                        cg_emit(cg, "    add x0, x0, #%d", off);
+                    } else {
+                        // Field is a primitive - load value
+                        cg_emit(cg, "    ldr x0, [x0, #%d]", off);
+                    }
                     break;
                 }
             }
