@@ -13,34 +13,105 @@ struct Response {
     body: str
 }
 
-# --- HTTP Client (requires runtime support) ---
+# --- HTTP Client (basic implementation using TCP) ---
+
+fn parse_url(url: str) -> Result[(str, int, str), str] {
+    # Simple URL parser: http://host:port/path
+    if not url.contains("http://") {
+        return err("Only http:// URLs supported")
+    }
+    
+    let without_proto: str = str_substr(url, 7, url.len() - 7)  # Skip "http://"
+    let slash_pos: int = without_proto.index_of("/")
+    
+    let host_port: str = ""
+    let path: str = "/"
+    
+    if slash_pos >= 0 {
+        host_port = str_substr(without_proto, 0, slash_pos)
+        path = str_substr(without_proto, slash_pos, without_proto.len() - slash_pos)
+    } else {
+        host_port = without_proto
+    }
+    
+    # Parse host:port
+    let colon_pos: int = host_port.index_of(":")
+    let host: str = host_port
+    let port: int = 80
+    
+    if colon_pos >= 0 {
+        host = str_substr(host_port, 0, colon_pos)
+        let port_str: str = str_substr(host_port, colon_pos + 1, host_port.len() - colon_pos - 1)
+        port = str_to_int(port_str)
+    }
+    
+    return ok((host, port, path))
+}
 
 pub fn get(url: str) -> Result[Response, str] {
-    return err("HTTP client not implemented in Stage 0")
+    let parse_result: Result[(str, int, str), str] = parse_url(url)
+    if parse_result.is_err() {
+        return err(parse_result.err_value())
+    }
+    
+    let parts: (str, int, str) = parse_result.ok_value()
+    let host: str = parts.0
+    let port: int = parts.1
+    let path: str = parts.2
+    
+    # Connect
+    let fd: int = tcp_connect(host, port)
+    if fd < 0 {
+        return err("Connection failed")
+    }
+    
+    # Send GET request
+    let request: str = str_concat("GET ", path)
+    request = str_concat(request, " HTTP/1.1\r\nHost: ")
+    request = str_concat(request, host)
+    request = str_concat(request, "\r\nConnection: close\r\n\r\n")
+    
+    tcp_send(fd, request)
+    
+    # Read response
+    let response_data: str = tcp_recv(fd, 8192)
+    tcp_close(fd)
+    
+    # Parse response (simple)
+    let lines: [str] = str_split(response_data, "\r\n")
+    let status: int = 200  # TODO: parse status line
+    
+    let resp: Response = Response {
+        status: status,
+        headers: [],
+        body: response_data
+    }
+    
+    return ok(resp)
 }
 
 pub fn post(url: str, body: str) -> Result[Response, str] {
-    return err("HTTP client not implemented in Stage 0")
+    return err("POST not implemented yet")
 }
 
 pub fn put(url: str, body: str) -> Result[Response, str] {
-    return err("HTTP client not implemented in Stage 0")
+    return err("PUT not implemented yet")
 }
 
 pub fn delete(url: str) -> Result[Response, str] {
-    return err("HTTP client not implemented in Stage 0")
+    return err("DELETE not implemented yet")
 }
 
 pub fn patch(url: str, body: str) -> Result[Response, str] {
-    return err("HTTP client not implemented in Stage 0")
+    return err("PATCH not implemented yet")
 }
 
 pub fn head(url: str) -> Result[Response, str] {
-    return err("HTTP client not implemented in Stage 0")
+    return err("HEAD not implemented yet")
 }
 
 pub fn options(url: str) -> Result[Response, str] {
-    return err("HTTP client not implemented in Stage 0")
+    return err("OPTIONS not implemented yet")
 }
 
 # --- HTTP Server (basic implementation using TCP) ---
