@@ -17,11 +17,8 @@ fn str_eq(a: str, b: str) -> bool {
 }
 
 # Split string by delimiter
-# Stage 1: Will support dynamic array building
 fn split(s: str, delimiter: str) -> [str] {
-    # Stage 0 limitation: cannot dynamically build arrays
-    # Stage 1 will support: find delimiters and build array of parts
-    return []
+    return str_split(s, delimiter)
 }
 
 # Join array of strings with separator between each element
@@ -91,11 +88,36 @@ fn trim_end(s: str) -> str {
 }
 
 # Replace all occurrences of old with new
-# Stage 1: Will support dynamic string building
 fn replace(s: str, old: str, new: str) -> str {
-    # Stage 0 limitation: requires dynamic string building
-    # Stage 1 will support: find and replace all occurrences
-    return ""
+    if old.len() == 0 { return s }
+    
+    let mut result: str = ""
+    let mut pos: int = 0
+    let mut idx: int = str_find(s, old)
+    
+    while idx != 0 - 1 {
+        # Add part before match
+        if idx > 0 {
+            result = str_concat(result, str_substr(s, pos, idx - pos))
+        }
+        # Add replacement
+        result = str_concat(result, new)
+        # Move past the match
+        pos = idx + old.len()
+        # Find next occurrence in remaining string
+        let remaining: str = str_substr(s, pos, s.len() - pos)
+        idx = str_find(remaining, old)
+        if idx != 0 - 1 {
+            idx = idx + pos
+        }
+    }
+    
+    # Add remaining part
+    if pos < s.len() {
+        result = str_concat(result, str_substr(s, pos, s.len() - pos))
+    }
+    
+    return result
 }
 
 # Check if string contains substring
