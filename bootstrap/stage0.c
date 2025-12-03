@@ -5254,7 +5254,6 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_emit(cg, "    ldr x0, [sp, #8]");
                 cg_emit(cg, "    bl %sstrlen", cg_sym_prefix(cg));
                 cg_emit(cg, "    add x19, x20, x0");
-                cg_emit(cg, "    add x19, x19, #1");
                 cg_emit(cg, "    b L%d", loop_lbl);
                 cg_emit(cg, "L%d:", end_lbl);
                 cg_emit(cg, "    ldr x1, [sp]");
