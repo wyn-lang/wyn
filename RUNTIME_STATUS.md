@@ -100,11 +100,11 @@
 ### Priority 3 - Nice to have
 | Builtin | Needed By | Implementation |
 |---------|-----------|----------------|
-| `asinf(float)` | math.wyn | libm |
-| `acosf(float)` | math.wyn | libm |
-| `atanf(float)` | math.wyn | libm |
-| `atan2f(y, x)` | math.wyn | libm |
-| `log10f(float)` | math.wyn | libm |
+| `asinf(float)` | math.wyn | ✅ libm |
+| `acosf(float)` | math.wyn | ✅ libm |
+| `atanf(float)` | math.wyn | ✅ libm |
+| `atan2f(y, x)` | math.wyn | ✅ libm |
+| `log10f(float)` | math.wyn | ✅ libm |
 
 ---
 

@@ -2415,6 +2415,7 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     strcmp(e->ident, "getenv") == 0 || strcmp(e->ident, "system") == 0 ||
                     strcmp(e->ident, "ord") == 0 || strcmp(e->ident, "chr") == 0 ||
                     strcmp(e->ident, "file_exists") == 0 || strcmp(e->ident, "delete_file") == 0 ||
+                    strcmp(e->ident, "file_size") == 0 || strcmp(e->ident, "is_dir") == 0 ||
                     strcmp(e->ident, "mkdir") == 0 || strcmp(e->ident, "rmdir") == 0 ||
                     strcmp(e->ident, "append_file") == 0 || strcmp(e->ident, "time_now") == 0 ||
                     strcmp(e->ident, "sleep_ms") == 0 || strcmp(e->ident, "tcp_connect") == 0 ||
@@ -3558,6 +3559,20 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_emit(cg, "    movq %%rax, %%rsi");
                     cg_emit(cg, "    popq %%rdi");
                     cg_emit(cg, "    callq %s_wyn_append_file", cg_sym_prefix(cg));
+                    break;
+                }
+                // Handle built-in file_size(path) -> int
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "file_size") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movq %%rax, %%rdi");
+                    cg_emit(cg, "    callq %s_wyn_file_size", cg_sym_prefix(cg));
+                    break;
+                }
+                // Handle built-in is_dir(path) -> bool
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "is_dir") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    movq %%rax, %%rdi");
+                    cg_emit(cg, "    callq %s_wyn_is_dir", cg_sym_prefix(cg));
                     break;
                 }
                 // Handle built-in time_now() - returns Unix timestamp
@@ -5022,6 +5037,18 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_emit(cg, "    bl %s_wyn_append_file", cg_sym_prefix(cg));
                 break;
             }
+            // Handle built-in file_size(path) -> int
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "file_size") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    bl %s_wyn_file_size", cg_sym_prefix(cg));
+                break;
+            }
+            // Handle built-in is_dir(path) -> bool
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "is_dir") == 0) {
+                cg_expr(cg, e->call.args[0]);
+                cg_emit(cg, "    bl %s_wyn_is_dir", cg_sym_prefix(cg));
+                break;
+            }
             // Handle built-in time_now() - returns Unix timestamp
             if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "time_now") == 0) {
                 cg_emit(cg, "    mov x0, #0");
@@ -5227,6 +5254,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_emit(cg, "    ldr x0, [sp, #8]");
                 cg_emit(cg, "    bl %sstrlen", cg_sym_prefix(cg));
                 cg_emit(cg, "    add x19, x20, x0");
+                cg_emit(cg, "    add x19, x19, #1");
                 cg_emit(cg, "    b L%d", loop_lbl);
                 cg_emit(cg, "L%d:", end_lbl);
                 cg_emit(cg, "    ldr x1, [sp]");
@@ -6997,6 +7025,44 @@ static void codegen_module(CodeGen* cg) {
         cg_emit(cg, "    popq %%rbp");
         cg_emit(cg, "    retq");
         
+        // __wyn_file_size: get file size, returns -1 on error
+        cg_emit(cg, "    .globl %s_wyn_file_size", pfx);
+        cg_emit(cg, "    .p2align 4");
+        cg_emit(cg, "%s_wyn_file_size:", pfx);
+        cg_emit(cg, "    pushq %%rbp");
+        cg_emit(cg, "    movq %%rsp, %%rbp");
+        cg_emit(cg, "    subq $160, %%rsp");
+        cg_emit(cg, "    leaq -160(%%rbp), %%rsi");    // stat buffer
+        cg_emit(cg, "    callq %sstat", pfx);
+        cg_emit(cg, "    testl %%eax, %%eax");
+        cg_emit(cg, "    jnz 1f");
+        cg_emit(cg, "    movq -112(%%rbp), %%rax");    // st_size at offset 48
+        cg_emit(cg, "    jmp 2f");
+        cg_emit(cg, "1:  movq $-1, %%rax");
+        cg_emit(cg, "2:  leave");
+        cg_emit(cg, "    retq");
+        
+        // __wyn_is_dir: check if path is directory, returns 1 if dir, 0 otherwise
+        cg_emit(cg, "    .globl %s_wyn_is_dir", pfx);
+        cg_emit(cg, "    .p2align 4");
+        cg_emit(cg, "%s_wyn_is_dir:", pfx);
+        cg_emit(cg, "    pushq %%rbp");
+        cg_emit(cg, "    movq %%rsp, %%rbp");
+        cg_emit(cg, "    subq $160, %%rsp");
+        cg_emit(cg, "    leaq -160(%%rbp), %%rsi");    // stat buffer
+        cg_emit(cg, "    callq %sstat", pfx);
+        cg_emit(cg, "    testl %%eax, %%eax");
+        cg_emit(cg, "    jnz 1f");
+        cg_emit(cg, "    movl -144(%%rbp), %%eax");    // st_mode at offset 16
+        cg_emit(cg, "    andl $0xF000, %%eax");        // S_IFMT mask
+        cg_emit(cg, "    cmpl $0x4000, %%eax");        // S_IFDIR
+        cg_emit(cg, "    sete %%al");
+        cg_emit(cg, "    movzbl %%al, %%eax");
+        cg_emit(cg, "    jmp 2f");
+        cg_emit(cg, "1:  xorl %%eax, %%eax");
+        cg_emit(cg, "2:  leave");
+        cg_emit(cg, "    retq");
+        
         // __wyn_tcp_connect: connect to TCP socket, returns fd or -1
         cg_emit(cg, "    .globl %s_wyn_tcp_connect", pfx);
         cg_emit(cg, "    .p2align 4");
@@ -7549,6 +7615,45 @@ static void codegen_module(CodeGen* cg) {
     cg_emit(cg, "    cset w0, eq");
     cg_emit(cg, "    ldp x29, x30, [sp, #16]");
     cg_emit(cg, "    add sp, sp, #32");
+    cg_emit(cg, "    ret");
+    
+    // __wyn_file_size: get file size in bytes, returns -1 on error
+    cg_emit(cg, "    .globl %s_wyn_file_size", pfx);
+    cg_emit(cg, "    .p2align 2");
+    cg_emit(cg, "%s_wyn_file_size:", pfx);
+    cg_emit(cg, "    sub sp, sp, #176");
+    cg_emit(cg, "    stp x29, x30, [sp, #160]");
+    cg_emit(cg, "    add x29, sp, #160");
+    cg_emit(cg, "    add x1, sp, #16");               // stat buffer
+    cg_emit(cg, "    bl %sstat", pfx);
+    cg_emit(cg, "    cmp w0, #0");
+    cg_emit(cg, "    b.ne 1f");
+    cg_emit(cg, "    ldr x0, [sp, #112]");            // st_size at offset 96
+    cg_emit(cg, "    b 2f");
+    cg_emit(cg, "1:  mov x0, #-1");
+    cg_emit(cg, "2:  ldp x29, x30, [sp, #160]");
+    cg_emit(cg, "    add sp, sp, #176");
+    cg_emit(cg, "    ret");
+    
+    // __wyn_is_dir: check if path is directory, returns 1 if dir, 0 otherwise
+    cg_emit(cg, "    .globl %s_wyn_is_dir", pfx);
+    cg_emit(cg, "    .p2align 2");
+    cg_emit(cg, "%s_wyn_is_dir:", pfx);
+    cg_emit(cg, "    sub sp, sp, #176");
+    cg_emit(cg, "    stp x29, x30, [sp, #160]");
+    cg_emit(cg, "    add x29, sp, #160");
+    cg_emit(cg, "    add x1, sp, #16");               // stat buffer
+    cg_emit(cg, "    bl %sstat", pfx);
+    cg_emit(cg, "    cmp w0, #0");
+    cg_emit(cg, "    b.ne 1f");
+    cg_emit(cg, "    ldr w0, [sp, #20]");             // st_mode at offset 4
+    cg_emit(cg, "    and w0, w0, #0xF000");           // S_IFMT mask
+    cg_emit(cg, "    cmp w0, #0x4000");               // S_IFDIR
+    cg_emit(cg, "    cset w0, eq");
+    cg_emit(cg, "    b 2f");
+    cg_emit(cg, "1:  mov w0, #0");
+    cg_emit(cg, "2:  ldp x29, x30, [sp, #160]");
+    cg_emit(cg, "    add sp, sp, #176");
     cg_emit(cg, "    ret");
     
     // __wyn_append_file: append string to file, returns 1 on success, 0 on failure
