@@ -5966,6 +5966,77 @@ static void cg_expr(CodeGen* cg, Expr* e) {
         }
         
         case EXPR_SLICE: {
+            // Check if slicing a string
+            Type* obj_type = NULL;
+            if (e->slice.object->kind == EXPR_IDENT) {
+                obj_type = cg_local_type(cg, e->slice.object->ident);
+            } else if (e->slice.object->kind == EXPR_STRING) {
+                obj_type = new_type(TYPE_STR);
+            }
+            
+            bool is_string = (obj_type && obj_type->kind == TYPE_STR) || 
+                            (e->slice.object->kind == EXPR_STRING);
+            
+            if (is_string) {
+                // String slicing - allocate buffer and copy bytes
+                int buf_off = cg->stack_offset + 8;
+                cg->stack_offset += 256;  // 256 byte buffer
+                
+                // Get string pointer
+                cg_expr(cg, e->slice.object);
+                cg_emit(cg, "    str x0, [sp, #-16]!");  // Save string ptr
+                
+                // Get string length
+                cg_expr(cg, e->slice.object);
+                int len_loop = cg_new_label(cg), len_end = cg_new_label(cg);
+                cg_emit(cg, "    mov x1, x0");
+                cg_emit(cg, "    mov x8, #0");
+                cg_emit(cg, "L%d:", len_loop);
+                cg_emit(cg, "    ldrb w2, [x1], #1");
+                cg_emit(cg, "    cbz w2, L%d", len_end);
+                cg_emit(cg, "    add x8, x8, #1");
+                cg_emit(cg, "    b L%d", len_loop);
+                cg_emit(cg, "L%d:", len_end);  // x8 = len
+                
+                // Compute start
+                if (e->slice.start) {
+                    cg_expr(cg, e->slice.start);
+                    cg_emit(cg, "    mov x9, x0");
+                    cg_emit(cg, "    cmp x9, #0");
+                    cg_emit(cg, "    b.ge 1f");
+                    cg_emit(cg, "    add x9, x9, x8");
+                    cg_emit(cg, "1:");
+                } else {
+                    cg_emit(cg, "    mov x9, #0");
+                }
+                
+                // Compute end
+                if (e->slice.end) {
+                    cg_expr(cg, e->slice.end);
+                    cg_emit(cg, "    mov x10, x0");
+                    cg_emit(cg, "    cmp x10, #0");
+                    cg_emit(cg, "    b.ge 2f");
+                    cg_emit(cg, "    add x10, x10, x8");
+                    cg_emit(cg, "2:");
+                } else {
+                    cg_emit(cg, "    mov x10, x8");
+                }
+                
+                // Copy bytes
+                cg_emit(cg, "    ldr x1, [sp], #16");  // Restore string ptr
+                cg_emit_add_offset(cg, "x0", 16 + buf_off);  // dest buffer
+                cg_emit(cg, "    add x1, x1, x9");  // src = str + start
+                cg_emit(cg, "    sub x2, x10, x9");  // len = end - start
+                cg_emit(cg, "    bl %smemcpy", cg_sym_prefix(cg));
+                // Null terminate
+                cg_emit(cg, "    sub x1, x10, x9");
+                cg_emit_add_offset(cg, "x0", 16 + buf_off);
+                cg_emit(cg, "    strb wzr, [x0, x1]");
+                cg_emit_add_offset(cg, "x0", 16 + buf_off);
+                break;
+            }
+            
+            // Array slicing
             // Evaluate object (array pointer)
             cg_expr(cg, e->slice.object);
             cg_emit(cg, "    str x0, [sp, #-16]!");  // Save array ptr
