@@ -19,9 +19,10 @@
 
 ## Minor Issues
 
-### 4. String slice syntax broken
-- `str[0:1]` returns wrong value
-- Workaround: use `substring(str, start, len)`
+### 4. ✅ FIXED: String slice syntax
+- ~~`str[0:1]` returns wrong value~~
+- Fixed: Added string slicing to ARM64 EXPR_SLICE codegen
+- Now works correctly: `"hello"[0:3]` returns `"hel"`
 
 ### 5. ✅ VERIFIED WORKING: Method calls in if conditions
 - ~~`if obj.method()` fails type check~~
