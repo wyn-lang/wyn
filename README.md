@@ -193,9 +193,12 @@ struct Stack[T] {
 **Goal:** Self-hosting compiler written in Wyn
 
 - [x] Complete Stage 0 bootstrap compiler (C)
-- [x] 40 passing tests
+- [x] 47 passing tests
 - [x] 500+ stdlib functions
-- [ ] Fix match binding in stdlib
+- [x] Module system (io, fs, math)
+- [x] Method syntax (.len(), .contains(), .index_of())
+- [x] 10+ new builtins (string ops, math, file system)
+- [ ] Fix str_split bug
 - [ ] String interpolation codegen
 - [ ] Write Stage 1 compiler in Wyn
 - [ ] Stage 1 compiles itself
