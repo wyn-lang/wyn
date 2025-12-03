@@ -307,13 +307,6 @@ fn main() {
         let tok: Token = lexer_next(lex)
         token_count = token_count + 1
         
-        // Code generation disabled for now
-        // if do_codegen and prev2_kind == 1 and prev_text == "print" and prev_kind == 14 {
-        //     if tok.kind == 3 {  // STRING
-        //         ...
-        //     }
-        // }
-        
         // Track paren depth
         if tok.kind == 14 { paren_depth = paren_depth + 1 }  // (
         if tok.kind == 15 { paren_depth = paren_depth - 1 }  // )
@@ -416,21 +409,18 @@ fn main() {
     print_newline()
     
     // Generate code if output specified
-    print_str("Checking codegen...")
-    print_newline()
     if do_codegen {
-        print_str("Codegen enabled")
-        print_newline()
         let output: str = argv[2]
+        print_str("Generating: ")
+        print_str(output)
+        print_newline()
         
-        // Build assembly with minimal concatenation
+        // Build assembly
         let header: str = "    .section __TEXT,__text\n    .globl _main\n    .p2align 2\n_main:\n    sub sp, sp, #32\n    stp x29, x30, [sp, #16]\n    add x29, sp, #16\n"
         let footer: str = "    mov x0, #0\n    ldp x29, x30, [sp, #16]\n    add sp, sp, #32\n    ret\n"
-        let data: str = "\n    .section __DATA,__data\nL_.fmt:\n    .asciz \"%lld\\n\"\n"
         
         let mut code: str = header
         code = code + footer
-        code = code + data
         
         write_file(output, code)
         print_str("Written: ")
