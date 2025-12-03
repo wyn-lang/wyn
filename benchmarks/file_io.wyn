@@ -1,0 +1,18 @@
+import std/io
+
+fn main() {
+    let content: str = "test data\n"
+    let mut i: int = 0
+    
+    while i < 1000 {
+        write_file("temp/bench.txt", content)
+        let data: str = read_file("temp/bench.txt")
+        i = i + 1
+    }
+    
+    delete_file("temp/bench.txt")
+    io.print_str("File I/O: ")
+    print(i)
+    io.print_str(" operations")
+    io.print_newline()
+}

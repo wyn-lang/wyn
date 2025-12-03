@@ -1,0 +1,15 @@
+import std/io
+
+fn main() {
+    let mut result: str = ""
+    let mut i: int = 0
+    
+    while i < 10000 {
+        result = str_concat(result, "x")
+        i = i + 1
+    }
+    
+    io.print_str("String concat: ")
+    print(result.len())
+    io.print_newline()
+}

@@ -1,0 +1,16 @@
+import std/io
+
+fn main() {
+    let mut sum: float = 0.0
+    let mut i: int = 0
+    
+    while i < 1000000 {
+        let x: float = int_to_float(i)
+        sum = sum + math.sin(x) + math.cos(x)
+        i = i + 1
+    }
+    
+    io.print_str("Math ops: ")
+    print_float(sum)
+    io.print_newline()
+}

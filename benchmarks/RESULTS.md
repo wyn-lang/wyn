@@ -1,40 +1,67 @@
 # Wyn Benchmark Results
 
-## Fibonacci(35) - Recursive
+## Test System
+- macOS ARM64
+- Stage 0 Bootstrap Compiler
 
-| Language | Time (real) | vs Wyn |
-|----------|-------------|--------|
-| **Wyn**  | **0.939s** | 1.0x |
-| Node.js  | 0.196s | 0.2x (faster) |
-| Go       | 1.114s | 1.2x (slower) |
-| Python   | 2.552s | 2.7x (slower) |
+## Results
+
+### 1. Fibonacci(35) - CPU Intensive
+| Language | Time | vs Wyn |
+|----------|------|--------|
+| **Wyn** | **0.55s** | 1.0x |
+| Node.js | 0.20s | 2.8x faster |
+| Python | 2.60s | 4.7x slower |
+
+### 2. Array Operations - Memory Access
+| Language | Time | vs Wyn |
+|----------|------|--------|
+| **Wyn** | **0.83s** | 1.0x |
+| Python | 0.16s | 5.2x faster |
+
+### 3. Math Operations - Float Computation
+| Language | Time | vs Wyn |
+|----------|------|--------|
+| **Wyn** | **1.13s** | 1.0x |
+| Python | 0.40s | 2.8x faster |
+
+### 4. File I/O - Disk Operations
+| Language | Time | vs Wyn |
+|----------|------|--------|
+| **Wyn** | **0.83s** | 1.0x |
+| Python | 0.10s | 8.3x faster |
 
 ## Analysis
 
-**Wyn Performance:**
-- ✅ **2.7x faster than Python**
-- ✅ **Comparable to Go** (within 20%)
-- ⚠️ **Slower than Node.js** (JIT optimization)
+**Strengths:**
+- ✅ CPU-bound tasks (Fibonacci) - competitive
+- ✅ Native compilation - no startup overhead
+- ✅ Predictable performance
 
-**Why Node is faster:**
-- V8 JIT compiler optimizes hot loops
-- Wyn uses ahead-of-time compilation (no JIT)
+**Weaknesses:**
+- ⚠️ Array operations - needs optimization
+- ⚠️ File I/O - Python's buffering is better
+- ⚠️ Math operations - libm calls not optimized
 
-**Why Wyn beats Python:**
-- Native code vs interpreted
-- No runtime overhead
-- Direct system calls
+## Why Python is Sometimes Faster
 
-## Optimization Opportunities
+1. **Highly optimized C libraries** - NumPy, built-in functions
+2. **Better buffering** - File I/O is heavily optimized
+3. **JIT for hot loops** - PyPy would be even faster
 
-1. **Function inlining** - Small functions like fib could be inlined
-2. **Tail call optimization** - Eliminate recursion overhead
-3. **Register allocation** - Better use of CPU registers
-4. **Dead code elimination** - Remove unused code paths
+## Optimization Opportunities for Stage 1
+
+1. **Inline small functions** - Eliminate call overhead
+2. **Buffer file I/O** - Batch reads/writes
+3. **SIMD for arrays** - Vectorize operations
+4. **Better register allocation** - Use all available registers
+5. **Tail call optimization** - Eliminate recursion overhead
 
 ## Conclusion
 
-Wyn delivers **near-C performance** for a bootstrap compiler. Competitive with Go, much faster than Python. Good foundation for Stage 1 optimizations.
+Wyn is a **solid bootstrap compiler** with room for optimization. Stage 1 will focus on performance improvements.
+
+**Current status:** Good enough for production CLI tools, needs optimization for high-performance computing.
 
 ## Running Benchmarks
 
@@ -42,5 +69,3 @@ Wyn delivers **near-C performance** for a bootstrap compiler. Competitive with G
 cd benchmarks
 ./run.sh
 ```
-
-Requires: Python 3, Node.js, Go (optional)
