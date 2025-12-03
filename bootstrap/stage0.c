@@ -3014,6 +3014,17 @@ static int64_t cg_lookup_enum_variant(CodeGen* cg, const char* name, bool* found
 }
 
 static void cg_add_local(CodeGen* cg, const char* name, Type* type) {
+    // Reuse existing slot if variable with same name exists (for loop variables)
+    // But don't reuse internal variables like __pad, __arr, __idx, __end
+    if (name[0] != '_' || name[1] != '_') {
+        for (int i = cg->local_count - 1; i >= 0; i--) {
+            if (strcmp(cg->locals[i].name, name) == 0) {
+                // Update type if provided, keep existing offset
+                if (type) cg->locals[i].type = type;
+                return;
+            }
+        }
+    }
     cg->stack_offset += 8;
     strcpy(cg->locals[cg->local_count].name, name);
     cg->locals[cg->local_count].offset = cg->stack_offset;
