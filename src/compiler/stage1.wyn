@@ -299,10 +299,16 @@ fn main() {
     let mut has_return: bool = false
     
     // Code generation state
-    let mut asm: str = ""
-    let mut strings: str = ""
     let mut str_count: int = 0
     let do_codegen: bool = argv.len() >= 3
+    let mut output: str = ""
+    let mut strings: str = ""
+    
+    // Write header if doing codegen
+    if do_codegen {
+        output = argv[2]
+        write_file(output, "    .section __TEXT,__text\n    .globl _main\n    .p2align 2\n_main:\n    sub sp, sp, #32\n    stp x29, x30, [sp, #16]\n    add x29, sp, #16\n")
+    }
     
     while true {
         let tok: Token = lexer_next(lex)
@@ -319,13 +325,13 @@ fn main() {
             print_newline()
         }
         
-        // Detect print("string")
-        if prev2_kind == 1 and prev_text == "print" and prev_kind == 14 and tok.kind == 3 {
+        // Detect print("string") - write code immediately
+        if do_codegen and prev2_kind == 1 and prev_text == "print" and prev_kind == 14 and tok.kind == 3 {
             let lbl: str = int_to_str(str_count)
-            let txt: str = tok.text
-            // Generate code with fewer concatenations
-            asm = asm + "    adrp x0, L_.str" + lbl + "@PAGE\n    add x0, x0, L_.str" + lbl + "@PAGEOFF\n    bl _puts\n"
-            strings = strings + "L_.str" + lbl + ":\n    .asciz \"" + txt + "\"\n"
+            append_file(output, "    adrp x0, L_.str" + lbl + "@PAGE\n")
+            append_file(output, "    add x0, x0, L_.str" + lbl + "@PAGEOFF\n")
+            append_file(output, "    bl _puts\n")
+            strings = strings + "L_.str" + lbl + ":\n    .asciz \"" + tok.text + "\"\n"
             str_count = str_count + 1
         }
         
@@ -436,20 +442,16 @@ fn main() {
     print(struct_count)
     print_newline()
     
-    // Generate code if output specified
+    // Write footer and string data if doing codegen
     if do_codegen {
-        let output: str = argv[2]
         print_str("Generating: ")
         print_str(output)
         print_newline()
         
-        // Build assembly
-        let header: str = "    .section __TEXT,__text\n    .globl _main\n    .p2align 2\n_main:\n    sub sp, sp, #32\n    stp x29, x30, [sp, #16]\n    add x29, sp, #16\n"
-        let footer: str = "    mov x0, #0\n    ldp x29, x30, [sp, #16]\n    add sp, sp, #32\n    ret\n\n    .section __DATA,__data\n"
+        // Write main epilogue and data section
+        append_file(output, "    mov x0, #0\n    ldp x29, x30, [sp, #16]\n    add sp, sp, #32\n    ret\n\n    .section __DATA,__data\n")
+        append_file(output, strings)
         
-        let mut code: str = header + asm + footer + strings
-        
-        write_file(output, code)
         print_str("Written: ")
         print_str(output)
         print_newline()
