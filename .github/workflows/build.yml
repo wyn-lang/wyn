@@ -1,0 +1,46 @@
+name: Build and Test
+
+on:
+  push:
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Build Stage 0 Compiler
+      run: make stage0
+    
+    - name: Run Tests
+      run: make test
+    
+    - name: Build Examples
+      run: |
+        ./build/stage0 -o build/calculator examples/calculator.wyn
+        ./build/stage0 -o build/fibonacci examples/fibonacci.wyn
+        ./build/stage0 -o build/prime_sieve examples/prime_sieve.wyn
+    
+    - name: Package Release
+      if: startsWith(github.ref, 'refs/tags/')
+      run: |
+        mkdir -p release
+        cp build/stage0 release/wyn-stage0-${{ matrix.os }}
+        cp README.md LICENSE release/
+        tar -czf wyn-${{ github.ref_name }}-${{ matrix.os }}.tar.gz release/
+    
+    - name: Upload Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: actions/upload-artifact@v3
+      with:
+        name: wyn-${{ github.ref_name }}-${{ matrix.os }}
+        path: wyn-${{ github.ref_name }}-${{ matrix.os }}.tar.gz
