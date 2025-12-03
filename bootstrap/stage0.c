@@ -5354,6 +5354,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             }
             // Handle built-in str_split(s, delim) -> [str]
             if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "str_split") == 0) {
+                cg_emit(cg, "    stp x19, x20, [sp, #-16]!");
                 cg_expr(cg, e->call.args[0]);
                 cg_emit(cg, "    bl %sstrlen", cg_sym_prefix(cg));
                 cg_emit(cg, "    add x0, x0, #1");
@@ -5372,7 +5373,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 int loop_lbl = cg_new_label(cg), end_lbl = cg_new_label(cg);
                 cg_emit(cg, "L%d:", loop_lbl);
                 cg_emit(cg, "    mov x0, x19");
-                cg_emit(cg, "    ldr x1, [sp, #8]");
+                cg_emit(cg, "    ldr x1, [sp, #16]");
                 cg_emit(cg, "    bl %sstrstr", cg_sym_prefix(cg));
                 cg_emit(cg, "    cbz x0, L%d", end_lbl);
                 cg_emit(cg, "    mov x20, x0");
@@ -5383,7 +5384,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_emit(cg, "    str x19, [x1, x3, lsl #3]");
                 cg_emit(cg, "    add x2, x2, #1");
                 cg_emit(cg, "    str x2, [x1]");
-                cg_emit(cg, "    ldr x0, [sp, #8]");
+                cg_emit(cg, "    ldr x0, [sp, #16]");
                 cg_emit(cg, "    bl %sstrlen", cg_sym_prefix(cg));
                 cg_emit(cg, "    add x19, x20, x0");
                 cg_emit(cg, "    b L%d", loop_lbl);
@@ -5396,6 +5397,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_emit(cg, "    str x2, [x1]");
                 cg_emit(cg, "    ldr x0, [sp], #16");
                 cg_emit(cg, "    add sp, sp, #16");
+                cg_emit(cg, "    ldp x19, x20, [sp], #16");
                 break;
             }
             // Handle built-in tcp_send(fd, data) - returns bytes sent

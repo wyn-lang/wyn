@@ -3,7 +3,10 @@ import std/io
 fn main() {
     # str_split
     let parts: [str] = str_split("a,b,c", ",")
-    assert(parts.len() == 1)  # Known bug: str_split only returns 1 element
+    assert(parts.len() == 3)
+    assert(parts[0] == "a")
+    assert(parts[1] == "b")
+    assert(parts[2] == "c")
     
     io.print_str("string_funcs_test passed")
     io.print_newline()
