@@ -29,9 +29,21 @@ Wyn is a fast, simple, universal programming language that rivals Go in performa
 
 ### Language
 - Complete syntax (structs, enums, generics, optionals, results, pattern matching)
-- 500+ stdlib functions
+- 1,100+ stdlib functions (92% complete)
 - Module system
 - 49/49 tests passing
+
+### Standard Library
+- ✅ **Core**: I/O, filesystem, OS, strings, arrays, math
+- ✅ **Data**: Collections, maps, sets, queues, stacks
+- ✅ **UI**: TUI (terminal), GUI, mobile
+- ✅ **Network**: TCP sockets, HTTP
+- ✅ **Utilities**: Time, random, logging, testing
+- ✅ **Encoding**: JSON, base64, compression, crypto
+- ⏳ **GPU**: Framework ready (needs hardware drivers)
+- ⏳ **Neural Networks**: API defined (needs GPU backend)
+
+See [STDLIB_STATUS.md](STDLIB_STATUS.md) for details.
 
 ### Stage 1 Compiler
 - Type inference
