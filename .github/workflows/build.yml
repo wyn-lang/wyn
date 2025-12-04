@@ -4,43 +4,140 @@ on:
   push:
     tags:
       - 'v*'
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
 jobs:
-  build:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-    
-    runs-on: ${{ matrix.os }}
+  build-macos:
+    runs-on: macos-latest
     
     steps:
     - uses: actions/checkout@v3
     
-    - name: Build Stage 0 Compiler
-      run: make stage0
+    - name: Install Vulkan SDK
+      run: brew install vulkan-headers vulkan-loader
     
-    - name: Run Tests
+    - name: Build All (Compiler + Runtimes)
+      run: make all
+    
+    - name: Run Test Suite
       run: make test
+    
+    - name: Test wyn CLI
+      run: |
+        ./wyn version
+        ./wyn new testapp
+        cd testapp && ../wyn build .
+        ./build/testapp
     
     - name: Build Examples
       run: |
-        ./build/stage0 -o build/calculator examples/calculator.wyn
-        ./build/stage0 -o build/fibonacci examples/fibonacci.wyn
-        ./build/stage0 -o build/prime_sieve examples/prime_sieve.wyn
+        ./build/stage0 --stage1-tc --stage1-opt -o build/calculator examples/calculator.wyn
+        ./build/stage0 --stage1-tc --stage1-opt -o build/gui_simple examples/gui_simple.wyn
+        ./build/calculator
+    
+    - name: Run Benchmarks
+      run: |
+        cd benchmarks/cpu
+        ../../build/stage0 --stage1-opt -o fib_wyn fib.wyn
+        ./fib_wyn
     
     - name: Package Release
       if: startsWith(github.ref, 'refs/tags/')
       run: |
         mkdir -p release
-        cp build/stage0 release/wyn-stage0-${{ matrix.os }}
-        cp README.md LICENSE release/
-        tar -czf wyn-${{ github.ref_name }}-${{ matrix.os }}.tar.gz release/
+        cp build/stage0 release/wyn
+        cp build/*.o release/
+        cp wyn release/wyn-cli
+        cp README.md CHANGELOG.md LICENSE release/
+        cp -r std docs examples release/
+        tar -czf wyn-${{ github.ref_name }}-macos-${{ runner.arch }}.tar.gz release/
     
     - name: Upload Release
       if: startsWith(github.ref, 'refs/tags/')
       uses: actions/upload-artifact@v3
       with:
-        name: wyn-${{ github.ref_name }}-${{ matrix.os }}
-        path: wyn-${{ github.ref_name }}-${{ matrix.os }}.tar.gz
+        name: wyn-${{ github.ref_name }}-macos
+        path: wyn-${{ github.ref_name }}-macos-*.tar.gz
+
+  build-linux:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install Vulkan SDK
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libvulkan-dev vulkan-tools
+    
+    - name: Build All
+      run: make all
+    
+    - name: Run Test Suite
+      run: make test
+    
+    - name: Test wyn CLI
+      run: |
+        ./wyn version
+        ./wyn new testapp
+        cd testapp && ../wyn build .
+    
+    - name: Package Release
+      if: startsWith(github.ref, 'refs/tags/')
+      run: |
+        mkdir -p release
+        cp build/stage0 release/wyn
+        cp build/*.o release/
+        cp wyn release/wyn-cli
+        cp README.md CHANGELOG.md LICENSE release/
+        cp -r std docs examples release/
+        tar -czf wyn-${{ github.ref_name }}-linux-${{ runner.arch }}.tar.gz release/
+    
+    - name: Upload Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: actions/upload-artifact@v3
+      with:
+        name: wyn-${{ github.ref_name }}-linux
+        path: wyn-${{ github.ref_name }}-linux-*.tar.gz
+
+  create-release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [build-macos, build-linux]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/download-artifact@v3
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          wyn-*/wyn-*.tar.gz
+        body: |
+          Wyn Programming Language ${{ github.ref_name }}
+          
+          ## Features
+          - Fast (20-30x faster than Python)
+          - Stage 1 compiler with optimizations
+          - Concurrency (goroutine-level)
+          - GUI support (macOS)
+          - GPU support (Vulkan + Metal)
+          - Cross-compilation
+          - 1,100+ stdlib functions
+          
+          ## Installation
+          ```bash
+          tar -xzf wyn-*.tar.gz
+          cd release
+          sudo cp wyn /usr/local/bin/
+          sudo cp wyn-cli /usr/local/bin/wyn-cli
+          ```
+          
+          ## Quick Start
+          ```bash
+          wyn new myapp
+          cd myapp
+          wyn run .
+          ```
