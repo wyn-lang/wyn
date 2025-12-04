@@ -879,11 +879,11 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "show_view") == 0) return "mobile_show_view";
         if (strcmp(function, "remove_view") == 0) return "mobile_remove_view";
     } else if (strcmp(module, "gpu") == 0) {
-        if (strcmp(function, "device_count") == 0) return "gpu_device_count";
-        if (strcmp(function, "device_name") == 0) return "gpu_device_name";
-        if (strcmp(function, "malloc") == 0) return "gpu_malloc";
-        if (strcmp(function, "free") == 0) return "gpu_free";
-        if (strcmp(function, "sync") == 0) return "gpu_sync";
+        if (strcmp(function, "device_count") == 0) return "__wyn_gpu_device_count";
+        if (strcmp(function, "device_name") == 0) return "__wyn_gpu_device_name";
+        if (strcmp(function, "malloc") == 0) return "__wyn_gpu_malloc";
+        if (strcmp(function, "free") == 0) return "__wyn_gpu_free";
+        if (strcmp(function, "sync") == 0) return "__wyn_gpu_sync";
     }
     return NULL;
 }
@@ -10107,6 +10107,7 @@ int main(int argc, char** argv) {
             char runtime_path[256];
             char gui_runtime_path[256];
             char gpu_runtime_path[256];
+            char vulkan_runtime_path[256];
             
             // Try multiple locations for spawn_runtime.o
             if (access("build/spawn_runtime.o", F_OK) == 0) {
@@ -10130,7 +10131,7 @@ int main(int argc, char** argv) {
                 gui_runtime_path[0] = '\0';
             }
             
-            // Try multiple locations for gpu_runtime.o (macOS only)
+            // Try multiple locations for gpu_runtime.o (Metal - macOS only)
             if (target_os == OS_MACOS) {
                 if (access("build/gpu_runtime.o", F_OK) == 0) {
                     snprintf(gpu_runtime_path, 256, "build/gpu_runtime.o");
@@ -10143,17 +10144,30 @@ int main(int argc, char** argv) {
                 gpu_runtime_path[0] = '\0';
             }
             
-            // Build link command with all runtimes
-            char frameworks[256] = "";
-            if (gui_runtime_path[0] || gpu_runtime_path[0]) {
-                snprintf(frameworks, 256, "-framework Cocoa -framework CoreGraphics -framework Metal -framework Foundation");
+            // Try multiple locations for Vulkan runtime (cross-platform, primary GPU backend)
+            if (access("build/gpu_vulkan.o", F_OK) == 0) {
+                snprintf(vulkan_runtime_path, 256, "build/gpu_vulkan.o");
+            } else if (access("../build/gpu_vulkan.o", F_OK) == 0) {
+                snprintf(vulkan_runtime_path, 256, "../build/gpu_vulkan.o");
+            } else {
+                vulkan_runtime_path[0] = '\0';
             }
             
-            // Combine all runtime objects
+            // Build link command with all runtimes
+            char frameworks[512] = "";
+            if (gui_runtime_path[0]) {
+                snprintf(frameworks, 512, "-framework Cocoa -framework CoreGraphics");
+            }
+            if (vulkan_runtime_path[0]) {
+                if (frameworks[0]) strcat(frameworks, " ");
+                strcat(frameworks, "-L/opt/homebrew/lib -lvulkan");
+            }
+            
+            // Combine all runtime objects (use Vulkan instead of Metal for GPU)
             char runtimes[512] = "";
             if (runtime_path[0]) strcat(runtimes, runtime_path);
             if (gui_runtime_path[0]) { if (runtimes[0]) strcat(runtimes, " "); strcat(runtimes, gui_runtime_path); }
-            if (gpu_runtime_path[0]) { if (runtimes[0]) strcat(runtimes, " "); strcat(runtimes, gpu_runtime_path); }
+            if (vulkan_runtime_path[0]) { if (runtimes[0]) strcat(runtimes, " "); strcat(runtimes, vulkan_runtime_path); }
             
             if (runtimes[0]) {
                 snprintf(cmd, 512, "cc -o %s %s %s %s", output_file, asm_file, runtimes, frameworks);
