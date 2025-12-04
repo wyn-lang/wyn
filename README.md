@@ -15,7 +15,7 @@ cd wyn
 Or build manually:
 ```bash
 make all
-sudo cp build/stage0 /usr/local/bin/wyn
+sudo cp build/stage0 /usr/local/bin/wyn  # Installs Stage 1 compiler as 'wyn'
 ```
 
 ## Quick Start
@@ -73,18 +73,20 @@ See [benchmarks/FINAL_RESULTS.md](benchmarks/FINAL_RESULTS.md) for details.
 
 ## Stage 1 Compiler
 
-Enhanced compiler with better developer experience:
+The `wyn` compiler includes Stage 1 features (built into the binary):
 
 ```bash
 # Type inference + better errors
-./build/stage0 --stage1-tc -o output input.wyn
+wyn --stage1-tc -o output input.wyn
 
-# Optimizations (constant folding, dead code elimination)
-./build/stage0 --stage1-opt -o output input.wyn
+# Optimizations (constant folding, dead code elimination, inlining)
+wyn --stage1-opt -o output input.wyn
 
-# Both (recommended)
-./build/stage0 --stage1-tc --stage1-opt -o output input.wyn
+# Both (recommended for production)
+wyn --stage1-tc --stage1-opt -o output input.wyn
 ```
+
+Stage 1 provides 28-42% performance improvements and enhanced developer experience.
 
 ## What Works
 
