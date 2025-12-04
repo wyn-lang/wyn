@@ -1,14 +1,20 @@
 #!/bin/bash
-# Wyn Package Manager
+# Wyn CLI - Comprehensive package manager and developer tool
 
 set -e
 
 CMD="${1:-help}"
-ARG="${2:-.}"
+shift || true
 
-# Find project root (directory with wyn.toml)
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Find project root
 find_project_root() {
-    local dir="$1"
+    local dir="$(pwd)"
     while [ "$dir" != "/" ]; do
         if [ -f "$dir/wyn.toml" ]; then
             echo "$dir"
@@ -19,7 +25,7 @@ find_project_root() {
     return 1
 }
 
-# Get entry point from wyn.toml or use default
+# Get entry point from wyn.toml
 get_entry_point() {
     if [ -f "wyn.toml" ]; then
         grep "entry" wyn.toml | cut -d'"' -f2 || echo "src/main.wyn"
@@ -28,48 +34,156 @@ get_entry_point() {
     fi
 }
 
+# Get project name
+get_project_name() {
+    if [ -f "wyn.toml" ]; then
+        grep "name" wyn.toml | head -1 | cut -d'"' -f2 || echo "main"
+    else
+        echo "main"
+    fi
+}
+
 case "$CMD" in
     run)
+        ARG="${1:-.}"
         if [ "$ARG" = "." ]; then
-            # Run current directory
             PROJECT_ROOT=$(find_project_root "$(pwd)")
             if [ -z "$PROJECT_ROOT" ]; then
-                echo "Error: Not in a Wyn project (no wyn.toml found)"
+                echo -e "${RED}Error: Not in a Wyn project${NC}"
                 exit 1
             fi
             cd "$PROJECT_ROOT"
             ENTRY=$(get_entry_point)
             echo "Running $ENTRY..."
-            ./build/stage0 --stage1-tc --stage1-opt -o build/main "$ENTRY"
+            ./build/stage0 --stage1-tc --stage1-opt -q -o build/main "$ENTRY"
             ./build/main
         else
-            # Run specific file
-            ./build/stage0 --stage1-tc --stage1-opt -o /tmp/wyn_run "$ARG"
+            ./build/stage0 --stage1-tc --stage1-opt -q -o /tmp/wyn_run "$ARG"
             /tmp/wyn_run
         fi
         ;;
         
     build)
+        ARG="${1:-.}"
         if [ "$ARG" = "." ]; then
-            # Build current directory
             PROJECT_ROOT=$(find_project_root "$(pwd)")
             if [ -z "$PROJECT_ROOT" ]; then
-                echo "Error: Not in a Wyn project (no wyn.toml found)"
+                echo -e "${RED}Error: Not in a Wyn project${NC}"
                 exit 1
             fi
             cd "$PROJECT_ROOT"
             ENTRY=$(get_entry_point)
-            NAME=$(grep "name" wyn.toml | head -1 | cut -d'"' -f2 || echo "main")
+            NAME=$(get_project_name)
             echo "Building $NAME from $ENTRY..."
             ./build/stage0 --stage1-tc --stage1-opt -o "build/$NAME" "$ENTRY"
-            echo "✓ Built: build/$NAME"
+            echo -e "${GREEN}✓ Built: build/$NAME${NC}"
         else
-            # Build specific file
             OUTPUT=$(basename "$ARG" .wyn)
             ./build/stage0 --stage1-tc --stage1-opt -o "$OUTPUT" "$ARG"
-            echo "✓ Built: $OUTPUT"
+            echo -e "${GREEN}✓ Built: $OUTPUT${NC}"
         fi
         ;;
+        
+    clean)
+        echo "Cleaning build artifacts..."
+        rm -rf build/*.o build/main build/test_* .wyn/test-cache/*
+        if [ -f "wyn.toml" ]; then
+            NAME=$(get_project_name)
+            rm -f "build/$NAME"
+        fi
+        echo -e "${GREEN}✓ Clean complete${NC}"
+        ;;
+        
+    test)
+        if [ -f "wyn.toml" ]; then
+            echo "Running project tests..."
+            if [ -d "tests" ]; then
+                for test in tests/*.wyn; do
+                    echo "Testing $(basename $test)..."
+                    ./build/stage0 -q -o ".wyn/test-cache/$(basename $test .wyn)" "$test"
+                    ".wyn/test-cache/$(basename $test .wyn)" && echo -e "${GREEN}✓ PASS${NC}" || echo -e "${RED}✗ FAIL${NC}"
+                done
+            else
+                echo "No tests/ directory found"
+            fi
+        else
+            echo "Running Wyn test suite..."
+            make test
+        fi
+        ;;
+        
+    inline)
+        CODE="$*"
+        if [ -z "$CODE" ]; then
+            echo "Usage: wyn inline \"code here\""
+            echo "Example: wyn inline \"print(42)\""
+            exit 1
+        fi
+        
+        # Create temporary file with proper escaping
+        cat > /tmp/wyn_inline.wyn << EOF
+fn main() {
+    $CODE
+}
+EOF
+        ./build/stage0 -q -o /tmp/wyn_inline /tmp/wyn_inline.wyn 2>&1
+        if [ $? -eq 0 ]; then
+            /tmp/wyn_inline
+        fi
+        rm -f /tmp/wyn_inline.wyn /tmp/wyn_inline
+        ;;
+        
+    exec)
+        # Execute Wyn code from stdin
+        CODE=$(cat)
+        cat > /tmp/wyn_exec.wyn << EOF
+fn main() {
+    $CODE
+}
+EOF
+        ./build/stage0 -q -o /tmp/wyn_exec /tmp/wyn_exec.wyn
+        /tmp/wyn_exec
+        rm -f /tmp/wyn_exec.wyn /tmp/wyn_exec
+        ;;
+        
+    fmt)
+        echo "Code formatting not yet implemented"
+        echo "Planned for v1.1"
+        ;;
+        
+    doc)
+        ARG="${1:-.}"
+        if [ "$ARG" = "." ]; then
+            echo "Opening documentation..."
+            open docs/README.md 2>/dev/null || cat docs/README.md
+        else
+            echo "Opening $ARG documentation..."
+            open "docs/$ARG.md" 2>/dev/null || cat "docs/$ARG.md"
+        fi
+        ;;
+        
+    bench)
+        echo "Running benchmarks..."
+        cd benchmarks && ./run.sh
+        ;;
+        
+    install)
+        echo "Installing Wyn to /usr/local/bin..."
+        sudo cp build/stage0 /usr/local/bin/wyn
+        echo -e "${GREEN}✓ Installed: /usr/local/bin/wyn${NC}"
+        ;;
+        
+    uninstall)
+        echo "Uninstalling Wyn..."
+        sudo rm -f /usr/local/bin/wyn
+        echo -e "${GREEN}✓ Uninstalled${NC}"
+        ;;
+        
+    version)
+        echo "Wyn v1.0.0"
+        echo "Stage 1 compiler with optimizations"
+        ;;
+        
     init)
         echo "Initializing Wyn project..."
         cat > wyn.toml << 'EOF'
@@ -82,14 +196,13 @@ entry = "src/main.wyn"
 EOF
         mkdir -p src build .wyn
         cat > src/main.wyn << 'EOF'
-import std/io
-
 fn main() {
     io.print_str("Hello, Wyn!")
     io.print_newline()
 }
 EOF
-        echo "✓ Initialized Wyn project"
+        echo -e "${GREEN}✓ Initialized Wyn project${NC}"
+        echo "Run: wyn run ."
         ;;
         
     new)
@@ -109,56 +222,64 @@ version = "0.1.0"
 entry = "src/main.wyn"
 EOF
         cat > "$NAME/src/main.wyn" << 'EOF'
-import std/io
-
 fn main() {
     io.print_str("Hello from $NAME!")
     io.print_newline()
 }
 EOF
-        echo "✓ Created project: $NAME"
+        echo -e "${GREEN}✓ Created project: $NAME${NC}"
+        echo "cd $NAME && wyn run ."
         ;;
         
-    build)
-        if [ ! -f wyn.toml ]; then
-            echo "Error: Not a Wyn project (no wyn.toml)"
-            exit 1
-        fi
-        echo "Building project..."
-        ./build/stage0 -o build/app src/main.wyn
-        echo "✓ Build successful: build/app"
-        ;;
-        
-    run)
-        $0 build
-        echo "Running..."
-        ./build/app
-        ;;
-        
-    test)
-        echo "Running tests..."
-        ./tests/run_tests.sh
-        ;;
-        
-    help|*)
+    help|--help|-h)
         cat << 'EOF'
-Wyn Package Manager
+Wyn CLI - Fast, simple, universal programming language
 
-Usage: wyn <command> [arguments]
+USAGE:
+    wyn <command> [arguments]
 
-Commands:
-  init           Initialize a new project in current directory
-  new <name>     Create a new project
-  build          Build the project
-  run            Build and run the project
-  test           Run tests
-  help           Show this help
+COMMANDS:
+    run [file|.]        Run a Wyn program or current project
+    build [file|.]      Build a Wyn program or current project
+    init                Initialize a new project in current directory
+    new <name>          Create a new project
+    test                Run tests
+    clean               Clean build artifacts
+    
+    inline "code"       Execute inline Wyn code
+    exec                Execute Wyn code from stdin
+    
+    bench               Run performance benchmarks
+    doc [topic]         Open documentation
+    fmt                 Format code (planned)
+    
+    install             Install wyn to /usr/local/bin
+    uninstall           Remove wyn from /usr/local/bin
+    version             Show version
+    help                Show this help
 
-Examples:
-  wyn new myapp
-  cd myapp
-  wyn build
-  wyn run
+EXAMPLES:
+    wyn init                    # Create new project
+    wyn run .                   # Run current project
+    wyn build .                 # Build current project
+    wyn run hello.wyn           # Run specific file
+    wyn inline "print_str('Hi')"  # Execute inline code
+    echo "print(42)" | wyn exec   # Execute from stdin
+    wyn clean                   # Clean build artifacts
+    wyn test                    # Run tests
+    wyn bench                   # Run benchmarks
+
+COMPILER OPTIONS:
+    wyn -o output input.wyn                    # Basic compile
+    wyn --stage1-tc --stage1-opt -o out in.wyn # With optimizations
+
+For more: https://github.com/wyn-lang/wyn
 EOF
+        ;;
+        
+    *)
+        echo -e "${RED}Unknown command: $CMD${NC}"
+        echo "Run 'wyn help' for usage"
+        exit 1
         ;;
 esac
