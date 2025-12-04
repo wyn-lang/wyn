@@ -18,6 +18,19 @@ make all
 sudo cp build/stage0 /usr/local/bin/wyn  # Installs Stage 1 compiler as 'wyn'
 ```
 
+### Platform Support
+
+**Tier 1 (Fully Supported):**
+- ✅ macOS ARM64 (Apple Silicon)
+- ✅ macOS x86_64 (Intel)
+- ✅ Linux x86_64
+
+**Tier 2 (Supported):**
+- ✅ Linux ARM64
+- ✅ Windows x86_64
+
+All platforms include Vulkan GPU support.
+
 ## Quick Start
 
 ```wyn
