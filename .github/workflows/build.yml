@@ -167,17 +167,44 @@ jobs:
           name: wyn-${{ github.ref_name }}-linux-arm64
           path: wyn-${{ github.ref_name }}-linux-arm64.tar.gz
 
-  # Windows build disabled - requires POSIX compatibility layer
-  # build-windows-x86:
-  #   runs-on: windows-latest
-  #   steps:
-  #     - uses: actions/checkout@v6
-  #     - name: Note
-  #       run: echo "Windows support requires WSL or native POSIX port"
+  build-windows-x86:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Build Compiler
+        run: |
+          mkdir build
+          cl /O2 /Febuild\wyn-compiler.exe bootstrap\stage0.c
+        shell: cmd
+
+      - name: Package Release
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          mkdir release
+          copy build\wyn-compiler.exe release\
+          copy README.md release\
+          copy CHANGELOG.md release\
+          xcopy /E /I std release\std
+          xcopy /E /I docs release\docs
+          xcopy /E /I examples release\examples
+          tar -czf wyn-${{ github.ref_name }}-windows-x86_64.tar.gz release
+        shell: cmd
+
+      - name: Upload Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-artifact@v4
+        with:
+          name: wyn-${{ github.ref_name }}-windows-x86_64
+          path: wyn-${{ github.ref_name }}-windows-x86_64.tar.gz
 
   create-release:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [build-macos-arm64, build-macos-x86, build-linux-x86, build-linux-arm64]
+    needs: [build-macos-arm64, build-macos-x86, build-linux-x86, build-linux-arm64, build-windows-x86]
     runs-on: ubuntu-latest
 
     steps:

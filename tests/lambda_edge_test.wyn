@@ -1,0 +1,48 @@
+# Edge case tests for lambda/function pointer calls
+
+fn apply(f: fn(int) -> int, x: int) -> int {
+    return f(x)
+}
+
+fn apply2(f: fn(int, int) -> int, x: int, y: int) -> int {
+    return f(x, y)
+}
+
+fn triple(x: int) -> int {
+    return x * 3
+}
+
+fn main() {
+    # Lambda assigned to variable
+    let double: fn(int) -> int = fn(x: int) -> int { return x * 2 }
+    assert(double(5) == 10)
+    assert(double(10) == 20)
+    
+    # Multiple lambdas
+    let add: fn(int, int) -> int = fn(a: int, b: int) -> int { return a + b }
+    let sub: fn(int, int) -> int = fn(a: int, b: int) -> int { return a - b }
+    assert(add(10, 5) == 15)
+    assert(sub(10, 5) == 5)
+    
+    # Passing lambda to function
+    assert(apply(double, 7) == 14)
+    assert(apply2(add, 3, 4) == 7)
+    
+    # Function pointer to regular function
+    let fn_ptr: fn(int) -> int = triple
+    assert(fn_ptr(4) == 12)
+    assert(apply(fn_ptr, 5) == 15)
+    
+    # Reassigning function pointer
+    let mut dynamic: fn(int) -> int = double
+    assert(dynamic(6) == 12)
+    dynamic = triple
+    assert(dynamic(6) == 18)
+    
+    # Lambda with no parameters
+    let get_42: fn() -> int = fn() -> int { return 42 }
+    assert(get_42() == 42)
+    
+    print_str("Lambda edge cases: OK")
+    print_newline()
+}

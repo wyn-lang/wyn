@@ -22,8 +22,7 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include <stdarg.h>
-#include <unistd.h>
-#include <pthread.h>
+#include "windows_compat.h"
 
 #define MAX_TOKEN_LEN 256
 #define MAX_IDENT_LEN 128
@@ -7240,11 +7239,19 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             FnDef* fn = NULL;
             int total_args = e->call.arg_count;
             const char* func_name = NULL;
+            bool is_fn_ptr = false;
             
             if (e->call.func->kind == EXPR_IDENT) {
                 func_name = e->call.func->ident;
-                fn = cg_lookup_fn(cg, func_name);
-                if (fn) total_args = fn->param_count;
+                // Check if it's a local variable (function pointer) first
+                int off = cg_local_offset(cg, func_name);
+                if (off > 0) {
+                    is_fn_ptr = true;
+                    fn = NULL;
+                } else {
+                    fn = cg_lookup_fn(cg, func_name);
+                    if (fn) total_args = fn->param_count;
+                }
             } else if (e->call.func->kind == EXPR_FIELD && 
                        e->call.func->field.object->kind == EXPR_IDENT) {
                 // Check if this is a module.function() call
@@ -7291,7 +7298,12 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             for (int i = 0; i < total_args && i < 8; i++) {
                 cg_emit(cg, "    ldr x%d, [sp], #16", i);
             }
-            if (func_name) {
+            if (is_fn_ptr) {
+                // Indirect call through function pointer variable
+                int off = cg_local_offset(cg, e->call.func->ident);
+                cg_emit(cg, "    ldr x9, [x29, #%d]", 16 + off);
+                cg_emit(cg, "    blr x9");
+            } else if (func_name) {
                 cg_emit(cg, "    bl %s%s", cg_sym_prefix(cg), func_name);
             } else if (e->call.func->kind == EXPR_IDENT) {
                 // Check if it's a local variable (function pointer) or global function
@@ -7523,8 +7535,8 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                             Type* field_type = cg_struct_field_type(&cg->module->structs[i], e->field.field);
                             int field_struct_size = cg_struct_size(cg, field_type);
                             if (field_struct_size > 0) {
-                                // Field is a struct - return address, not value
-                                cg_emit_add_offset(cg, "x0", 16 + base_off + foff);
+                                // Field is a struct - load the pointer stored at this offset
+                                cg_emit_ldr_offset(cg, "x0", 16 + base_off + foff);
                             } else {
                                 // Field is a primitive - load value
                                 cg_emit_ldr_offset(cg, "x0", 16 + base_off + foff);
@@ -7544,8 +7556,8 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     Type* field_type = cg_struct_field_type(&cg->module->structs[i], e->field.field);
                     int field_struct_size = cg_struct_size(cg, field_type);
                     if (field_struct_size > 0) {
-                        // Field is a struct - return address (add offset to pointer)
-                        cg_emit(cg, "    add x0, x0, #%d", off);
+                        // Field is a struct - load the pointer, then add offset
+                        cg_emit(cg, "    ldr x0, [x0, #%d]", off);
                     } else {
                         // Field is a primitive - load value
                         cg_emit(cg, "    ldr x0, [x0, #%d]", off);
@@ -8188,6 +8200,7 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
             int cont_lbl = cg_new_label(cg);
             int end_lbl = cg_new_label(cg);
             int saved_start = cg->loop_start_label, saved_end = cg->loop_end_label;
+            int saved_local_count = cg->local_count;
             cg->loop_start_label = cont_lbl;
             cg->loop_end_label = end_lbl;
             
@@ -8271,6 +8284,7 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
             cg_emit(cg, "L%d:", end_lbl);
             cg->loop_start_label = saved_start;
             cg->loop_end_label = saved_end;
+            cg->local_count = saved_local_count;
             break;
         }
         

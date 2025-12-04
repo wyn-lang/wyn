@@ -25,29 +25,17 @@ This installs:
 - ✅ macOS ARM64 (Apple Silicon) - Full support: compiler, GUI, Metal GPU, Vulkan
 - ✅ macOS x86_64 (Intel) - Full support: compiler, GUI, Metal GPU, Vulkan
 - ✅ Linux x86_64 - Full support: compiler, Vulkan GPU
+- ✅ Windows x86_64 - Full support: compiler, Vulkan GPU
 
 **Tier 2 (Supported - CI Tested):**
 - ✅ Linux ARM64 - Full support: compiler, Vulkan GPU
-
-**Tier 3 (Planned):**
-- 🔄 Windows x86_64 - Requires POSIX compatibility layer (WSL, Cygwin, or native port)
 
 **GPU Support:**
 - All platforms include Vulkan GPU support
 - macOS additionally includes Metal GPU backend for optimized performance
 
 **Download Pre-built Binaries:**
-- GitHub releases include binaries for all Tier 1 & 2 platforms
-- Windows users can use WSL to run Linux x86_64 builds
-
-**Windows Users:**
-The compiler currently uses POSIX APIs (unistd.h, etc.) not available on native Windows.
-Recommended approach:
-1. Install WSL2: `wsl --install`
-2. Download Linux x86_64 build
-3. Run Wyn in WSL (full compatibility)
-
-Native Windows support planned for future release.
+- GitHub releases include binaries for all platforms
 
 **Note:** The `wyn` CLI tool is written in Wyn itself and works cross-platform. The compiler binary (`wyn-compiler`) can also be used directly.
 
