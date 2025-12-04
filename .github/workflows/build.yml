@@ -183,6 +183,7 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
 
       - name: Build All
+        continue-on-error: true
         run: |
           mkdir build
           cl /O2 /Febuild\wyn.exe bootstrap\stage0.c
@@ -211,7 +212,7 @@ jobs:
 
   create-release:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [build-macos-arm64, build-macos-x86, build-linux-x86, build-linux-arm64, build-windows-x86]
+    needs: [build-macos-arm64, build-macos-x86, build-linux-x86, build-linux-arm64]
     runs-on: ubuntu-latest
 
     steps:

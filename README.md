@@ -27,7 +27,9 @@ sudo cp build/stage0 /usr/local/bin/wyn  # Installs Stage 1 compiler as 'wyn'
 
 **Tier 2 (Supported):**
 - ✅ Linux ARM64
-- ✅ Windows x86_64
+
+**Tier 3 (Planned):**
+- 🔄 Windows x86_64 (requires POSIX compatibility layer)
 
 All platforms include Vulkan GPU support.
 
