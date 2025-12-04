@@ -4,6 +4,20 @@
 
 Fast, simple, universal. **20-30x faster than Python.**
 
+## Quick Install
+
+```bash
+git clone https://github.com/wyn-lang/wyn.git
+cd wyn
+./install.sh
+```
+
+Or build manually:
+```bash
+make all
+sudo cp build/stage0 /usr/local/bin/wyn
+```
+
 ## Quick Start
 
 ```wyn
@@ -14,15 +28,12 @@ fn main() {
 ```
 
 ```bash
-# Build
-make stage0
-./build/stage0 -o hello examples/hello.wyn
+# Compile and run
+wyn -o hello hello.wyn
 ./hello
 
-# Or use package manager
-./wyn new myapp
-cd myapp
-./wyn run
+# With optimizations (recommended)
+wyn --stage1-tc --stage1-opt -o hello hello.wyn
 ```
 
 ## Performance
