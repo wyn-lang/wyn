@@ -1,0 +1,22 @@
+fn worker(id: int) {
+    print_str("Worker ")
+    print(id)
+    print_newline()
+}
+
+fn main() {
+    spawn {
+        worker(1)
+    }
+    
+    spawn {
+        worker(2)
+    }
+    
+    spawn {
+        worker(3)
+    }
+    
+    print_str("Main done")
+    print_newline()
+}

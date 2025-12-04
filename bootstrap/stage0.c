@@ -8167,6 +8167,11 @@ static void cg_function(CodeGen* cg, FnDef* fn) {
         
         for (int i = 0; i < fn->body_count; i++) cg_stmt(cg, fn->body[i]);
         
+        // Join all spawned threads before function exit
+        if (cg->spawn_count > 0) {
+            cg_emit(cg, "    call ___wyn_join_all");
+        }
+        
         cg_emit_defers(cg);  // Execute defers at implicit return
         cg_emit(cg, "    xorl %%eax, %%eax");
         cg_emit(cg, "    movq %%rbp, %%rsp");
@@ -8207,6 +8212,11 @@ static void cg_function(CodeGen* cg, FnDef* fn) {
     
     for (int i = 0; i < fn->body_count; i++) {
         cg_stmt(cg, fn->body[i]);
+    }
+    
+    // Join all spawned threads before function exit
+    if (cg->spawn_count > 0) {
+        cg_emit(cg, "    bl ___wyn_join_all");
     }
     
     cg_emit_defers(cg);  // Execute defers at implicit return
@@ -9672,7 +9682,10 @@ int main(int argc, char** argv) {
         // Assemble and link in one step using cc
         char cmd[512];
         if (!compile_only) {
-            snprintf(cmd, 512, "cc -o %s %s", output_file, asm_file);
+            // Get directory of stage0 binary for runtime path
+            char runtime_path[256];
+            snprintf(runtime_path, 256, "%s/spawn_runtime.o", "build");
+            snprintf(cmd, 512, "cc -o %s %s %s", output_file, asm_file, runtime_path);
             if (system(cmd) != 0) {
                 fprintf(stderr, "Compilation failed.\n");
                 return 1;
