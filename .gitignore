@@ -9,6 +9,7 @@ a.out.s
 # Package manager
 .wyn/
 wyn.lock
+wyn
 
 # Test binaries (root level)
 demo

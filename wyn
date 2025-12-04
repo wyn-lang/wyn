@@ -3,8 +3,62 @@
 
 set -e
 
+# Default target (auto-detect)
+TARGET="${WYN_TARGET:-$(uname -s | tr '[:upper:]' '[:lower:]')}"
+TARGET_ARCH="${WYN_ARCH:-$(uname -m)}"
+
+# Parse flags before command
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --target)
+            TARGET="$2"
+            shift 2
+            ;;
+        --arch)
+            TARGET_ARCH="$2"
+            shift 2
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
 CMD="${1:-help}"
 shift || true
+
+# Build flags based on target
+get_build_flags() {
+    local flags="--stage1-tc --stage1-opt"
+    case "$TARGET" in
+        darwin|macos)
+            flags="$flags --target-os macos"
+            ;;
+        linux)
+            flags="$flags --target-os linux"
+            ;;
+        windows)
+            flags="$flags --target-os windows"
+            ;;
+        ios)
+            flags="$flags --target-os macos" # iOS uses macOS backend
+            ;;
+        android)
+            flags="$flags --target-os linux" # Android uses Linux backend
+            ;;
+    esac
+    
+    case "$TARGET_ARCH" in
+        arm64|aarch64)
+            flags="$flags --target arm64"
+            ;;
+        x86_64|amd64)
+            flags="$flags --target x86_64"
+            ;;
+    esac
+    
+    echo "$flags"
+}
 
 # Colors
 RED='\033[0;31m'
@@ -65,6 +119,12 @@ case "$CMD" in
         
     build)
         ARG="${1:-.}"
+        FLAGS=$(get_build_flags)
+        
+        if [ "$TARGET" != "$(uname -s | tr '[:upper:]' '[:lower:]')" ]; then
+            echo "Cross-compiling for: $TARGET ($TARGET_ARCH)"
+        fi
+        
         if [ "$ARG" = "." ]; then
             PROJECT_ROOT=$(find_project_root "$(pwd)")
             if [ -z "$PROJECT_ROOT" ]; then
@@ -74,12 +134,12 @@ case "$CMD" in
             cd "$PROJECT_ROOT"
             ENTRY=$(get_entry_point)
             NAME=$(get_project_name)
-            echo "Building $NAME from $ENTRY..."
-            ./build/stage0 --stage1-tc --stage1-opt -o "build/$NAME" "$ENTRY"
+            echo "Building $NAME from $ENTRY for $TARGET..."
+            ./build/stage0 $FLAGS -o "build/$NAME" "$ENTRY"
             echo -e "${GREEN}✓ Built: build/$NAME${NC}"
         else
             OUTPUT=$(basename "$ARG" .wyn)
-            ./build/stage0 --stage1-tc --stage1-opt -o "$OUTPUT" "$ARG"
+            ./build/stage0 $FLAGS -o "$OUTPUT" "$ARG"
             echo -e "${GREEN}✓ Built: $OUTPUT${NC}"
         fi
         ;;
@@ -291,7 +351,15 @@ EOF
 Wyn CLI - Fast, simple, universal programming language
 
 USAGE:
-    wyn <command> [arguments]
+    wyn [--target OS] [--arch ARCH] <command> [arguments]
+
+TARGETS:
+    --target darwin|linux|windows|ios|android
+    --arch arm64|x86_64
+    
+    Or set environment variables:
+    export WYN_TARGET=linux
+    export WYN_ARCH=x86_64
 
 COMMANDS:
     run [file|.]        Run a Wyn program or current project
@@ -307,6 +375,8 @@ COMMANDS:
     bench               Run performance benchmarks
     doc [topic]         Show documentation (like manpages)
                         Topics: start, lang, stdlib, gui, mobile, cli, perf
+                        Modules: wyn doc fs, wyn doc io, wyn doc math
+                        Functions: wyn doc fs.read, wyn doc io.print
     fmt                 Format code (planned)
     
     install             Install wyn to /usr/local/bin
@@ -315,14 +385,22 @@ COMMANDS:
     help                Show this help
 
 EXAMPLES:
+    # Basic usage
     wyn init                    # Create project in current dir
     wyn new myapp               # Create myapp/ directory
     wyn run .                   # Run current project
     wyn build .                 # Build current project
+    
+    # Cross-compilation
+    wyn --target linux build .          # Build for Linux
+    wyn --target windows build .        # Build for Windows
+    wyn --target ios build .            # Build for iOS
+    wyn --target android build .        # Build for Android
+    
+    # Quick commands
     wyn inline "print(42)"      # Execute inline code
     echo "print(42)" | wyn exec # Execute from stdin
-    wyn doc start               # Show quick start guide
-    wyn doc gui                 # Show GUI documentation
+    wyn doc fs.read             # Show function docs
     wyn clean                   # Clean build artifacts
 
 COMPILER OPTIONS:
