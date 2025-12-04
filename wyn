@@ -154,6 +154,40 @@ EOF
     doc)
         ARG="${1:-index}"
         
+        # Check if it's a module.function lookup
+        if [[ "$ARG" == *.* ]]; then
+            MODULE="${ARG%%.*}"
+            FUNC="${ARG#*.}"
+            
+            # Find the module file
+            if [ -f "std/${MODULE}.wyn" ]; then
+                echo -e "${GREEN}=== $MODULE.$FUNC ===${NC}"
+                echo ""
+                # Extract function documentation
+                awk "/^fn $FUNC/,/^}/" "std/${MODULE}.wyn" | head -20
+                echo ""
+                echo "Module: std/${MODULE}.wyn"
+            else
+                echo -e "${RED}Module not found: $MODULE${NC}"
+                exit 1
+            fi
+            exit 0
+        fi
+        
+        # Check if it's a module lookup
+        if [ -f "std/${ARG}.wyn" ]; then
+            echo -e "${GREEN}=== Module: $ARG ===${NC}"
+            echo ""
+            # Show module header and function list
+            head -20 "std/${ARG}.wyn"
+            echo ""
+            echo "Functions:"
+            grep "^fn " "std/${ARG}.wyn" | sed 's/fn /  /' | head -20
+            echo ""
+            echo "Full docs: std/${ARG}.wyn"
+            exit 0
+        fi
+        
         # Map common names to doc files
         case "$ARG" in
             .|index|main) DOC="docs/README.md" ;;
@@ -169,20 +203,16 @@ EOF
         
         if [ ! -f "$DOC" ]; then
             echo -e "${RED}Documentation not found: $ARG${NC}"
-            echo "Available topics:"
-            echo "  start, lang, stdlib, gui, mobile, cli, perf"
+            echo "Try: wyn doc start, wyn doc fs, or wyn doc fs.read_file"
             exit 1
         fi
         
         # Format like manpage using less with color
         if command -v bat > /dev/null 2>&1; then
-            # Use bat if available (better formatting)
             bat --style=plain --paging=always "$DOC"
         elif command -v less > /dev/null 2>&1; then
-            # Use less with color support
             less -R "$DOC"
         else
-            # Fallback to cat
             cat "$DOC"
         fi
         ;;

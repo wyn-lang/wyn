@@ -112,13 +112,32 @@ wyn bench
 Compares Wyn against C, Go, Java, Node.js, and Python.
 
 #### `wyn doc [topic]`
-Open documentation.
+Show documentation (like manpages).
 
 ```bash
-wyn doc              # Open main docs
-wyn doc gui          # Open GUI docs
-wyn doc mobile-ios   # Open iOS docs
+wyn doc              # Main documentation
+wyn doc start        # Quick start guide
+wyn doc lang         # Language specification
+wyn doc stdlib       # Standard library reference
+wyn doc gui          # GUI documentation
+wyn doc cli          # CLI reference
+
+# Module documentation
+wyn doc fs           # Show fs module docs and function list
+wyn doc io           # Show io module docs
+wyn doc math         # Show math module docs
+
+# Function documentation
+wyn doc fs.read      # Show fs.read function
+wyn doc io.print     # Show io.print function
+wyn doc math.sin     # Show math.sin function
 ```
+
+**Features**:
+- Uses `bat` or `less` for paging (like `man`)
+- Color-coded output
+- Quick module and function lookup
+- No need to open files manually
 
 #### `wyn install`
 Install wyn to system.
