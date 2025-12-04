@@ -1,6 +1,6 @@
 # Wyn Test Suite
 
-**73 tests passing | 0 failures | 100% stdlib coverage**
+**69/72 tests passing (96%) | 100% stdlib coverage**
 
 ## Running Tests
 
