@@ -41,8 +41,3 @@ fn test_multiple_spawns() {
     sleep_ms(100)
     assert(sum == 30)
 }
-
-fn sleep_ms(ms: int) {
-    let start: int = time_now_ms()
-    while time_now_ms() - start < ms {}
-}

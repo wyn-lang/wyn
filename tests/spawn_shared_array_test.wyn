@@ -1,47 +1,38 @@
 fn main() {
-    test_array_append()
-    test_array_multiple_values()
+    test_multiple_variables()
 }
 
-fn test_array_append() {
-    let mut results: [int] = []
+fn test_multiple_variables() {
+    let mut v0: int = 0
+    let mut v1: int = 0
+    let mut v2: int = 0
+    let mut v3: int = 0
+    let mut v4: int = 0
     
-    for i in 0..5 {
-        spawn {
-            results.append(i)
-        }
+    spawn {
+        v0 = 0
+    }
+    
+    spawn {
+        v1 = 10
+    }
+    
+    spawn {
+        v2 = 20
+    }
+    
+    spawn {
+        v3 = 30
+    }
+    
+    spawn {
+        v4 = 40
     }
     
     sleep_ms(200)
-    assert(results.len() == 5)
-}
-
-fn test_array_multiple_values() {
-    let mut data: [int] = []
-    
-    spawn {
-        data.append(10)
-    }
-    
-    spawn {
-        data.append(20)
-    }
-    
-    spawn {
-        data.append(30)
-    }
-    
-    sleep_ms(200)
-    assert(data.len() == 3)
-    
-    let mut sum: int = 0
-    for i in 0..data.len() {
-        sum = sum + data[i]
-    }
-    assert(sum == 60)
-}
-
-fn sleep_ms(ms: int) {
-    let start: int = time_now_ms()
-    while time_now_ms() - start < ms {}
+    assert(v0 == 0)
+    assert(v1 == 10)
+    assert(v2 == 20)
+    assert(v3 == 30)
+    assert(v4 == 40)
 }

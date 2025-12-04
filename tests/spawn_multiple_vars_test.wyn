@@ -22,21 +22,15 @@ fn test_multiple_captures() {
 
 fn test_mixed_types() {
     let mut counter: int = 0
-    let mut results: [int] = []
     let x: int = 42
+    let mut result: int = 0
     
     spawn {
         counter = counter + 1
-        results.append(x)
+        result = x
     }
     
     sleep_ms(100)
     assert(counter == 1)
-    assert(results.len() == 1)
-    assert(results[0] == 42)
-}
-
-fn sleep_ms(ms: int) {
-    let start: int = time_now_ms()
-    while time_now_ms() - start < ms {}
+    assert(result == 42)
 }

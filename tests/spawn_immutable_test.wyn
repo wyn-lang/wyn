@@ -1,0 +1,24 @@
+fn main() {
+    let x: int = 42
+    let mut result: int = 0
+    
+    print_str("Before spawn: x=")
+    print(x)
+    print_str(", result=")
+    print(result)
+    print_newline()
+    
+    spawn {
+        result = x
+    }
+    
+    sleep_ms(100)
+    
+    print_str("After spawn: x=")
+    print(x)
+    print_str(", result=")
+    print(result)
+    print_newline()
+    
+    assert(result == 42)
+}

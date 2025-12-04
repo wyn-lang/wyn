@@ -20,7 +20,13 @@ fn main() {
     } else if cmd == "build" {
         build_project()
     } else if cmd == "run" {
-        build_and_run()
+        if argv.len() >= 3 {
+            # Run specific file
+            exec_file(argv[2])
+        } else {
+            # Run current project
+            build_and_run()
+        }
     } else if cmd == "exec" {
         if argv.len() < 3 {
             # Read from stdin
@@ -59,7 +65,7 @@ fn print_help() {
     print_str("  new <name>           Create new project\n")
     print_str("  init <name>          Alias for 'new'\n")
     print_str("  build                Build current project\n")
-    print_str("  run                  Build and run project\n")
+    print_str("  run [file]           Build and run project or file\n")
     print_str("  exec <file>          Compile and run a file\n")
     print_str("  inline <code>        Execute Wyn code inline\n")
     print_str("  test                 Run test suite\n")
@@ -95,11 +101,17 @@ fn create_project(name: str) {
 fn build_project() {
     print_str("Building project...\n")
     
-    let compiler: str = find_compiler()
-    let cmd: str = compiler + " --stage1-tc --stage1-opt -o build/app src/main.wyn"
-    let result: int = system(cmd)
+    if not file_exists("src/main.wyn") {
+        print_str("✗ No src/main.wyn found\n")
+        exit(1)
+    }
     
-    if result == 0 {
+    let compiler: str = find_compiler()
+    let exe: str = "build/app"
+    let compile_cmd: str = compiler + " -q --stage1-tc --stage1-opt -o " + exe + " src/main.wyn"
+    let compile_result: int = system(compile_cmd)
+    
+    if compile_result == 0 {
         print_str("✓ Built: build/app\n")
     } else {
         print_str("✗ Build failed\n")
@@ -178,11 +190,18 @@ fn clean_project() {
 }
 
 fn find_compiler() -> str {
+    # Check local build
     if file_exists("./build/stage0") {
         return "./build/stage0"
     }
+    # Check parent build
+    if file_exists("../build/stage0") {
+        return "../build/stage0"
+    }
+    # Check installed
     if file_exists("/usr/local/bin/wyn-compiler") {
         return "/usr/local/bin/wyn-compiler"
     }
+    # Try PATH
     return "wyn-compiler"
 }

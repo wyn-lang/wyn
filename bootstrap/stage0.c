@@ -7909,7 +7909,12 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                     int saved_offset = cg->stack_offset;
                     int saved_count = cg->local_count;
                     bool saved_in_thread = cg->in_thread_context;
+                    // Save locals array (same type as cg->locals)
+                    struct { char name[MAX_IDENT_LEN]; int offset; Type* type; bool is_shared; } saved_locals[256];
+                    memcpy(saved_locals, cg->locals, sizeof(saved_locals));
                     cg->in_thread_context = true;  // Mark that we're in a thread
+                    cg->stack_offset = 8;  // Reset for thread function
+                    cg->local_count = 0;   // Reset locals for thread function
                     
                     // Store var addresses as locals (they'll be dereferenced on access)
                     for (int i = 0; i < cap_count; i++) {
@@ -7933,6 +7938,7 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                     // Restore state
                     cg->stack_offset = saved_offset;
                     cg->local_count = saved_count;
+                    memcpy(cg->locals, saved_locals, sizeof(saved_locals));
                     cg->in_thread_context = saved_in_thread;
                     
                     // Back to main code - allocate context and store var addresses
@@ -8319,7 +8325,12 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                 int saved_offset = cg->stack_offset;
                 int saved_count = cg->local_count;
                 bool saved_in_thread = cg->in_thread_context;
+                // Save locals array (same type as cg->locals)
+                struct { char name[MAX_IDENT_LEN]; int offset; Type* type; bool is_shared; } saved_locals[256];
+                memcpy(saved_locals, cg->locals, sizeof(saved_locals));
                 cg->in_thread_context = true;
+                cg->stack_offset = 8;  // Reset for thread function (start after saved fp/lr)
+                cg->local_count = 0;   // Reset locals for thread function
                 
                 // Load captured var addresses from context into locals
                 for (int i = 0; i < cap_count; i++) {
@@ -8342,6 +8353,7 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                 // Restore state
                 cg->stack_offset = saved_offset;
                 cg->local_count = saved_count;
+                memcpy(cg->locals, saved_locals, sizeof(saved_locals));
                 cg->in_thread_context = saved_in_thread;
                 
                 // Back to main code - allocate context and copy vars

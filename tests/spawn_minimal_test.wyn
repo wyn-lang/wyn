@@ -1,0 +1,10 @@
+fn main() {
+    let mut x: int = 0
+    
+    spawn {
+        x = 42
+    }
+    
+    sleep_ms(100)
+    assert(x == 42)
+}

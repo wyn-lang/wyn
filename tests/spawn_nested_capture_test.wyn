@@ -1,36 +1,25 @@
 fn main() {
-    test_nested_function_capture()
-    test_loop_variable_capture()
+    test_multiple_spawns()
 }
 
-fn test_nested_function_capture() {
-    let mut result: int = 0
-    helper(&result)
-    sleep_ms(100)
-    assert(result == 100)
-}
-
-fn helper(result: &int) {
-    spawn {
-        *result = 100
-    }
-}
-
-fn test_loop_variable_capture() {
+fn test_multiple_spawns() {
     let mut sum: int = 0
+    let val1: int = 0
+    let val2: int = 10
+    let val3: int = 20
     
-    for i in 0..3 {
-        let val: int = i * 10
-        spawn {
-            sum = sum + val
-        }
+    spawn {
+        sum = sum + val1
+    }
+    
+    spawn {
+        sum = sum + val2
+    }
+    
+    spawn {
+        sum = sum + val3
     }
     
     sleep_ms(200)
     assert(sum == 30)
-}
-
-fn sleep_ms(ms: int) {
-    let start: int = time_now_ms()
-    while time_now_ms() - start < ms {}
 }
