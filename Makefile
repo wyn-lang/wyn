@@ -94,6 +94,26 @@ stage0-debug: $(BUILD_DIR)
 wyn-cli: stage0
 	./$(STAGE0_BIN) --stage1-tc --stage1-opt -o $(BUILD_DIR)/wyn src/wyn_cli.wyn
 
+# Install to system
+.PHONY: install
+install: all
+	@echo "Installing Wyn to $(PREFIX)/bin..."
+	install -m 755 $(BUILD_DIR)/stage0 $(PREFIX)/bin/wyn-compiler
+	install -m 755 $(BUILD_DIR)/wyn $(PREFIX)/bin/wyn
+	@echo "✓ Installation complete!"
+	@echo ""
+	@echo "Try it:"
+	@echo "  wyn version"
+	@echo "  wyn new myapp"
+	@echo "  cd myapp && wyn run ."
+
+# Uninstall from system
+.PHONY: uninstall
+uninstall:
+	rm -f $(PREFIX)/bin/wyn-compiler
+	rm -f $(PREFIX)/bin/wyn
+	@echo "✓ Uninstalled"
+
 # Run all tests
 .PHONY: test
 test: stage0

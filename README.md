@@ -9,14 +9,13 @@ Fast, simple, universal. **20-30x faster than Python.**
 ```bash
 git clone https://github.com/wyn-lang/wyn.git
 cd wyn
-./install.sh
+make all
+sudo make install
 ```
 
-Or build manually:
-```bash
-make all
-sudo cp build/stage0 /usr/local/bin/wyn  # Installs Stage 1 compiler as 'wyn'
-```
+This installs:
+- `wyn-compiler` - The Stage 1 compiler
+- `wyn` - The CLI tool (written in Wyn)
 
 ### Platform Support
 
