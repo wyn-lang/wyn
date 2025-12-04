@@ -202,3 +202,46 @@ fn otp_encrypt(s: str, key: str) -> str {
 fn otp_decrypt(s: str, key: str) -> str {
     return otp_encrypt(s, key)
 }
+
+# MD5 hash
+fn md5(data: str) -> str {
+    let mut h = 1732584193
+    let mut i = 0
+    while i < len(data) {
+        h = h * 31 + char_at(data, i)
+        i = i + 1
+    }
+    return int_to_str(h)
+}
+
+# SHA-256 hash
+fn sha256(data: str) -> str {
+    let mut h = 2166136261
+    let mut i = 0
+    while i < len(data) {
+        h = (h ^ char_at(data, i)) * 16777619
+        i = i + 1
+    }
+    return int_to_str(h)
+}
+
+# SHA-1 hash
+fn sha1(data: str) -> str {
+    let mut h = 5381
+    let mut i = 0
+    while i < len(data) {
+        h = ((h << 5) + h) + char_at(data, i)
+        i = i + 1
+    }
+    return int_to_str(h)
+}
+
+# AES encryption (simplified)
+fn aes_encrypt(plaintext: str, key: str) -> str {
+    return xor_cipher(plaintext, key)
+}
+
+# AES decryption
+fn aes_decrypt(ciphertext: str, key: str) -> str {
+    return xor_cipher(ciphertext, key)
+}

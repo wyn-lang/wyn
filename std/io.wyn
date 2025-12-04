@@ -37,8 +37,7 @@ fn get_file_size(path: str) -> Result[int, str] {
 # Read a line from standard input
 # Requires: Runtime support (stdin syscall)
 fn read_line() -> str {
-    # Will be implemented via syscall or FFI
-    return ""
+    return read_stdin_line()
 }
 
 # Read entire file contents as a string (low-level)

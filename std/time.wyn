@@ -10,44 +10,48 @@ struct Duration {
 # Returns the number of seconds since January 1, 1970 UTC
 # Requires: Runtime support for system time (syscall)
 fn now() -> int {
-    return syscall(96, 0, 0, 0, 0, 0, 0)
+    return time_now()
 }
 
 # Get the current Unix timestamp in milliseconds
 # Returns the number of milliseconds since January 1, 1970 UTC
 # Requires: Runtime support for high-resolution time (syscall)
 fn now_millis() -> int {
-    let secs: int = syscall(96, 0, 0, 0, 0, 0, 0)
-    return secs * 1000
+    return time_now() * 1000
 }
 
 # Get the current Unix timestamp in nanoseconds
 # Returns the number of nanoseconds since January 1, 1970 UTC
 # Requires: Runtime support for high-resolution time (syscall)
 fn now_nanos() -> int {
-    let secs: int = syscall(96, 0, 0, 0, 0, 0, 0)
-    return secs * 1000000000
+    return time_now() * 1000000000
 }
 
 # Sleep for the specified duration
 # Blocks execution for the given time period
 # Requires: Runtime support for sleep (syscall)
 fn sleep(duration: Duration) {
-    syscall(35, duration.seconds, duration.nanos, 0, 0, 0, 0)
+    sleep_ms(duration_to_millis(duration))
 }
 
 # Format a Unix timestamp according to the given format string
 # Returns a formatted time string
-# Requires: Runtime support for time formatting
+# Supports basic ISO 8601 format only
 fn format(timestamp: int, fmt: str) -> str {
-    return ""
+    return timestamp_to_iso8601(timestamp)
 }
 
 # Parse a time string according to the given format
 # Returns ok(timestamp) on success, or err(message) if parsing fails
-# Requires: Runtime support for time parsing
+# Supports basic YYYY-MM-DD format only
 fn parse(time_str: str, fmt: str) -> Result[int, str] {
-    return ok(())
+    let date_result: Result[[int], str] = parse_date(time_str)
+    if date_result.is_err {
+        return err("invalid date format")
+    }
+    let date: [int] = date_result.value
+    return ok(date_to_timestamp(date[0], date[1], date[2]))
+}
 }
 
 # Create a duration from a number of seconds

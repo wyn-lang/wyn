@@ -307,3 +307,43 @@ fn rolling_hash(s: str, base: int, mod: int) -> int {
 fn rabin_karp_hash(s: str) -> int {
     return rolling_hash(s, 31, 1000000007)
 }
+
+# CRC-32 checksum
+fn crc32(data: [int]) -> int {
+    let mut crc = 0xFFFFFFFF
+    let mut i = 0
+    while i < len(data) {
+        crc = crc ^ data[i]
+        let mut j = 0
+        while j < 8 {
+            if (crc & 1) == 1 {
+                crc = (crc >> 1) ^ 0xEDB88320
+            } else {
+                crc = crc >> 1
+            }
+            j = j + 1
+        }
+        i = i + 1
+    }
+    return crc ^ 0xFFFFFFFF
+}
+
+# CRC-16 checksum
+fn crc16(data: [int]) -> int {
+    let mut crc = 0xFFFF
+    let mut i = 0
+    while i < len(data) {
+        crc = crc ^ data[i]
+        let mut j = 0
+        while j < 8 {
+            if (crc & 1) == 1 {
+                crc = (crc >> 1) ^ 0xA001
+            } else {
+                crc = crc >> 1
+            }
+            j = j + 1
+        }
+        i = i + 1
+    }
+    return crc
+}

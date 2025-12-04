@@ -26,8 +26,7 @@ fn platform() -> str {
 }
 
 fn os_version() -> str {
-    # Requires: Native platform API
-    return ""
+    return mobile_os_version()
 }
 
 # ============================================================================
@@ -241,20 +240,17 @@ fn on_notification(handler: fn(Notification)) {
 
 # Get app documents directory
 fn documents_dir() -> str {
-    # Requires: Native file system
-    return ""
+    return mobile_documents_dir()
 }
 
 # Get app cache directory
 fn cache_dir() -> str {
-    # Requires: Native file system
-    return ""
+    return mobile_cache_dir()
 }
 
 # Get app temp directory
 fn temp_dir() -> str {
-    # Requires: Native file system
-    return ""
+    return mobile_temp_dir()
 }
 
 # Simple key-value storage (UserDefaults/SharedPreferences)

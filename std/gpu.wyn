@@ -34,22 +34,22 @@ fn list_devices() -> [Device] {
 
 # Get current device
 fn current_device() -> int {
-    return 0
+    return gpu_current_device()
 }
 
 # Set active device
 fn set_device(device_id: int) {
-    # Metal uses default device
+    gpu_set_device(device_id)
 }
 
 # Get free memory in bytes
 fn memory_free() -> int {
-    return 0
+    return gpu_memory_free()
 }
 
 # Get total memory in bytes
 fn memory_total() -> int {
-    return 0
+    return gpu_memory_total()
 }
 
 # Synchronize - wait for all GPU operations to complete
@@ -130,26 +130,22 @@ struct Tensor {
     
     # Sum all elements
     fn sum(self) -> float {
-        # Implemented via Metal backend
-        return 0.0
+        return gpu_tensor_sum(self.data_ptr)
     }
     
     # Mean of all elements
     fn mean(self) -> float {
-        # Implemented via Metal backend
-        return 0.0
+        return gpu_tensor_mean(self.data_ptr)
     }
     
     # Max element
     fn max(self) -> float {
-        # Implemented via Metal backend
-        return 0.0
+        return gpu_tensor_max(self.data_ptr)
     }
     
     # Min element
     fn min(self) -> float {
-        # Implemented via Metal backend
-        return 0.0
+        return gpu_tensor_min(self.data_ptr)
     }
     
     # Sum along axis
