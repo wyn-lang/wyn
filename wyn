@@ -152,13 +152,38 @@ EOF
         ;;
         
     doc)
-        ARG="${1:-.}"
-        if [ "$ARG" = "." ]; then
-            echo "Opening documentation..."
-            open docs/README.md 2>/dev/null || cat docs/README.md
+        ARG="${1:-index}"
+        
+        # Map common names to doc files
+        case "$ARG" in
+            .|index|main) DOC="docs/README.md" ;;
+            start|quickstart) DOC="docs/QUICK_START.md" ;;
+            lang|language|spec) DOC="docs/2-language-spec.md" ;;
+            stdlib|lib|std) DOC="docs/4-stdlib-reference.md" ;;
+            gui) DOC="docs/gui-support.md" ;;
+            mobile|ios) DOC="docs/mobile-ios.md" ;;
+            cli|commands) DOC="docs/CLI.md" ;;
+            perf|performance|bench) DOC="benchmarks/FINAL_RESULTS.md" ;;
+            *) DOC="docs/$ARG.md" ;;
+        esac
+        
+        if [ ! -f "$DOC" ]; then
+            echo -e "${RED}Documentation not found: $ARG${NC}"
+            echo "Available topics:"
+            echo "  start, lang, stdlib, gui, mobile, cli, perf"
+            exit 1
+        fi
+        
+        # Format like manpage using less with color
+        if command -v bat > /dev/null 2>&1; then
+            # Use bat if available (better formatting)
+            bat --style=plain --paging=always "$DOC"
+        elif command -v less > /dev/null 2>&1; then
+            # Use less with color support
+            less -R "$DOC"
         else
-            echo "Opening $ARG documentation..."
-            open "docs/$ARG.md" 2>/dev/null || cat "docs/$ARG.md"
+            # Fallback to cat
+            cat "$DOC"
         fi
         ;;
         
@@ -242,7 +267,7 @@ COMMANDS:
     run [file|.]        Run a Wyn program or current project
     build [file|.]      Build a Wyn program or current project
     init                Initialize a new project in current directory
-    new <name>          Create a new project
+    new <name>          Create a new directory with project
     test                Run tests
     clean               Clean build artifacts
     
@@ -250,7 +275,8 @@ COMMANDS:
     exec                Execute Wyn code from stdin
     
     bench               Run performance benchmarks
-    doc [topic]         Open documentation
+    doc [topic]         Show documentation (like manpages)
+                        Topics: start, lang, stdlib, gui, mobile, cli, perf
     fmt                 Format code (planned)
     
     install             Install wyn to /usr/local/bin
@@ -259,21 +285,21 @@ COMMANDS:
     help                Show this help
 
 EXAMPLES:
-    wyn init                    # Create new project
+    wyn init                    # Create project in current dir
+    wyn new myapp               # Create myapp/ directory
     wyn run .                   # Run current project
     wyn build .                 # Build current project
-    wyn run hello.wyn           # Run specific file
-    wyn inline "print_str('Hi')"  # Execute inline code
-    echo "print(42)" | wyn exec   # Execute from stdin
+    wyn inline "print(42)"      # Execute inline code
+    echo "print(42)" | wyn exec # Execute from stdin
+    wyn doc start               # Show quick start guide
+    wyn doc gui                 # Show GUI documentation
     wyn clean                   # Clean build artifacts
-    wyn test                    # Run tests
-    wyn bench                   # Run benchmarks
 
 COMPILER OPTIONS:
     wyn -o output input.wyn                    # Basic compile
     wyn --stage1-tc --stage1-opt -o out in.wyn # With optimizations
 
-For more: https://github.com/wyn-lang/wyn
+For more: wyn doc start
 EOF
         ;;
         
