@@ -35,7 +35,10 @@ See [FINAL_RESULTS.md](FINAL_RESULTS.md) for complete analysis.
 ## Running Benchmarks
 
 ```bash
-# Run specific benchmarks manually
+# Run main benchmarks
+make bench
+
+# Or run specific benchmarks manually
 cd benchmarks/cpu
 ../../build/stage0 --stage1-opt -o fib_wyn fib.wyn
 time ./fib_wyn
@@ -44,8 +47,6 @@ cd ../memory
 ../../build/stage0 --stage1-opt -o array_wyn array.wyn
 time ./array_wyn
 ```
-
-**Note:** Benchmark automation coming soon in Wyn.
 
 ## Test Environment
 
