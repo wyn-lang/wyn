@@ -4470,24 +4470,18 @@ static bool cg_is_shared(CodeGen* cg, const char* name) {
 // Atomic load for shared variables
 static void cg_atomic_load(CodeGen* cg, const char* name, int offset) {
     if (cg->arch == ARCH_ARM64) {
-        int lbl = cg_new_label(cg);
-        cg_emit(cg, "L_retry_%d:", lbl);
         if (cg->in_thread_context) {
-            // In thread: local contains pointer, load through it
             cg_emit_ldr_offset(cg, "x9", 16 + offset);
-            cg_emit(cg, "    ldxr x0, [x9]");
+            cg_emit(cg, "    ldar x0, [x9]");
         } else {
-            // In main: local IS the variable
             cg_emit_add_offset(cg, "x9", 16 + offset);
-            cg_emit(cg, "    ldxr x0, [x9]");
+            cg_emit(cg, "    ldar x0, [x9]");
         }
     } else {
         if (cg->in_thread_context) {
-            // In thread: local contains pointer, dereference it
             cg_emit(cg, "    movq -%d(%%rbp), %%rax", offset);
             cg_emit(cg, "    movq (%%rax), %%rax");
         } else {
-            // In main: regular load
             cg_emit(cg, "    movq -%d(%%rbp), %%rax", offset);
         }
     }
@@ -4496,27 +4490,72 @@ static void cg_atomic_load(CodeGen* cg, const char* name, int offset) {
 // Atomic store for shared variables
 static void cg_atomic_store(CodeGen* cg, const char* name, int offset) {
     if (cg->arch == ARCH_ARM64) {
-        int lbl = cg_new_label(cg);
         if (cg->in_thread_context) {
-            // In thread: local contains pointer
             cg_emit_ldr_offset(cg, "x9", 16 + offset);
+            cg_emit(cg, "    stlr x0, [x9]");
         } else {
-            // In main: local IS the variable
             cg_emit_add_offset(cg, "x9", 16 + offset);
+            cg_emit(cg, "    stlr x0, [x9]");
         }
-        cg_emit(cg, "L_store_%d:", lbl);
-        cg_emit(cg, "    ldxr x10, [x9]");
-        cg_emit(cg, "    stxr w11, x0, [x9]");
-        cg_emit(cg, "    cbnz w11, L_store_%d", lbl);
     } else {
         if (cg->in_thread_context) {
-            // In thread: load pointer, store through it
             cg_emit(cg, "    movq -%d(%%rbp), %%rcx", offset);
             cg_emit(cg, "    lock xchgq %%rax, (%%rcx)");
         } else {
-            // In main: direct atomic store
             cg_emit(cg, "    lock xchgq %%rax, -%d(%%rbp)", offset);
         }
+    }
+}
+
+// Atomic compare-and-swap for read-modify-write operations
+static void cg_atomic_rmw_start(CodeGen* cg, const char* name, int offset) {
+    // Load address into a register for CAS loop
+    if (cg->arch == ARCH_ARM64) {
+        if (cg->in_thread_context) {
+            cg_emit_ldr_offset(cg, "x19", 16 + offset);  // x19 = address
+        } else {
+            cg_emit_add_offset(cg, "x19", 16 + offset);
+        }
+        cg_emit(cg, "    ldar x0, [x19]");  // Load current value
+    } else {
+        if (cg->in_thread_context) {
+            cg_emit(cg, "    movq -%d(%%rbp), %%r12", offset);  // r12 = address
+            cg_emit(cg, "    movq (%%r12), %%rax");  // Load current value
+        } else {
+            cg_emit(cg, "    leaq -%d(%%rbp), %%r12", offset);  // r12 = address
+            cg_emit(cg, "    movq (%%r12), %%rax");
+        }
+    }
+}
+
+static void cg_atomic_rmw_end(CodeGen* cg, const char* name, int offset) {
+    // Complete CAS loop: retry if value changed
+    int retry_lbl = cg_new_label(cg);
+    int done_lbl = cg_new_label(cg);
+    
+    if (cg->arch == ARCH_ARM64) {
+        cg_emit(cg, "L_cas_%d:", retry_lbl);
+        cg_emit(cg, "    mov x1, x0");  // x1 = old value
+        cg_emit(cg, "    mov x2, x20");  // x20 = new value (computed)
+        cg_emit(cg, "    ldxr x3, [x19]");
+        cg_emit(cg, "    cmp x3, x1");
+        cg_emit(cg, "    b.ne L_cas_fail_%d", retry_lbl);
+        cg_emit(cg, "    stxr w4, x2, [x19]");
+        cg_emit(cg, "    cbnz w4, L_cas_%d", retry_lbl);
+        cg_emit(cg, "    b L_cas_done_%d", done_lbl);
+        cg_emit(cg, "L_cas_fail_%d:", retry_lbl);
+        cg_emit(cg, "    clrex");
+        cg_emit(cg, "    mov x0, x3");  // Reload and retry
+        cg_emit(cg, "    b L_cas_%d", retry_lbl);
+        cg_emit(cg, "L_cas_done_%d:", done_lbl);
+        cg_emit(cg, "    mov x0, x2");  // Result in x0
+    } else {
+        cg_emit(cg, "L_cas_%d:", retry_lbl);
+        cg_emit(cg, "    movq %%rax, %%rcx");  // rcx = old value
+        cg_emit(cg, "    movq %%r13, %%rdx");  // r13 = new value (computed)
+        cg_emit(cg, "    lock cmpxchgq %%rdx, (%%r12)");
+        cg_emit(cg, "    jne L_cas_%d", retry_lbl);
+        cg_emit(cg, "    movq %%rdx, %%rax");  // Result in rax
     }
 }
 
@@ -7726,13 +7765,61 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                 if (s->assign.op == TOK_EQ) {
                     cg_expr(cg, s->assign.value);
                 } else {
-                    // Compound assignment: load current value, apply op, store
+                    // Compound assignment
                     if (s->assign.target->kind == EXPR_IDENT) {
                         int off = cg_local_offset(cg, s->assign.target->ident);
-                        if (off) {
-                            if (cg_is_shared(cg, s->assign.target->ident)) {
-                                cg_atomic_load(cg, s->assign.target->ident, off);
+                        bool is_shared = cg_is_shared(cg, s->assign.target->ident);
+                        
+                        if (is_shared && (s->assign.op == TOK_PLUSEQ || s->assign.op == TOK_MINUSEQ)) {
+                            // Use atomic RMW for += and -= on shared variables
+                            cg_expr(cg, s->assign.value);
+                            cg_emit(cg, "    movq %%rax, %%rcx");
+                            if (cg->in_thread_context) {
+                                cg_emit(cg, "    movq -%d(%%rbp), %%r12", off);
+                                if (s->assign.op == TOK_PLUSEQ) {
+                                    cg_emit(cg, "    lock addq %%rcx, (%%r12)");
+                                } else {
+                                    cg_emit(cg, "    lock subq %%rcx, (%%r12)");
+                                }
+                                cg_emit(cg, "    movq (%%r12), %%rax");
                             } else {
+                                if (s->assign.op == TOK_PLUSEQ) {
+                                    cg_emit(cg, "    lock addq %%rcx, -%d(%%rbp)", off);
+                                } else {
+                                    cg_emit(cg, "    lock subq %%rcx, -%d(%%rbp)", off);
+                                }
+                                cg_emit(cg, "    movq -%d(%%rbp), %%rax", off);
+                            }
+                            break;  // Skip normal store
+                        } else if (is_shared) {
+                            // For other ops on shared vars, use CAS loop
+                            int retry_lbl = cg_new_label(cg);
+                            if (cg->in_thread_context) {
+                                cg_emit(cg, "    movq -%d(%%rbp), %%r12", off);
+                            } else {
+                                cg_emit(cg, "    leaq -%d(%%rbp), %%r12", off);
+                            }
+                            cg_emit(cg, "L_cas_%d:", retry_lbl);
+                            cg_emit(cg, "    movq (%%r12), %%rax");
+                            cg_emit(cg, "    pushq %%rax");
+                            cg_expr(cg, s->assign.value);
+                            cg_emit(cg, "    movq %%rax, %%rcx");
+                            cg_emit(cg, "    popq %%rax");
+                            switch (s->assign.op) {
+                                case TOK_STAREQ: cg_emit(cg, "    imulq %%rcx, %%rax"); break;
+                                case TOK_SLASHEQ: cg_emit(cg, "    cqo"); cg_emit(cg, "    idivq %%rcx"); break;
+                                case TOK_PERCENTEQ: cg_emit(cg, "    cqo"); cg_emit(cg, "    idivq %%rcx"); cg_emit(cg, "    movq %%rdx, %%rax"); break;
+                                default: break;
+                            }
+                            cg_emit(cg, "    movq %%rax, %%rdx");
+                            cg_emit(cg, "    movq (%%r12), %%rax");
+                            cg_emit(cg, "    lock cmpxchgq %%rdx, (%%r12)");
+                            cg_emit(cg, "    jne L_cas_%d", retry_lbl);
+                            cg_emit(cg, "    movq %%rdx, %%rax");
+                            break;  // Skip normal store
+                        } else {
+                            // Non-shared: normal operation
+                            if (off) {
                                 cg_emit(cg, "    movq -%d(%%rbp), %%rax", off);
                             }
                         }
@@ -8100,13 +8187,40 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
             if (s->assign.op == TOK_EQ) {
                 cg_expr(cg, s->assign.value);
             } else {
-                // Compound assignment: load current value, apply op, store
+                // Compound assignment
                 if (s->assign.target->kind == EXPR_IDENT) {
                     int off = cg_local_offset(cg, s->assign.target->ident);
-                    if (off) {
-                        if (cg_is_shared(cg, s->assign.target->ident)) {
-                            cg_atomic_load(cg, s->assign.target->ident, off);
+                    bool is_shared = cg_is_shared(cg, s->assign.target->ident);
+                    
+                    if (is_shared) {
+                        // Use CAS loop for atomic RMW on shared variables
+                        int retry_lbl = cg_new_label(cg);
+                        if (cg->in_thread_context) {
+                            cg_emit_ldr_offset(cg, "x19", 16 + off);  // x19 = address
                         } else {
+                            cg_emit_add_offset(cg, "x19", 16 + off);
+                        }
+                        cg_emit(cg, "L_cas_%d:", retry_lbl);
+                        cg_emit(cg, "    ldxr x0, [x19]");  // Load current
+                        cg_emit(cg, "    str x0, [sp, #-16]!");
+                        cg_expr(cg, s->assign.value);
+                        cg_emit(cg, "    mov x1, x0");
+                        cg_emit(cg, "    ldr x0, [sp], #16");
+                        switch (s->assign.op) {
+                            case TOK_PLUSEQ: cg_emit(cg, "    add x2, x0, x1"); break;
+                            case TOK_MINUSEQ: cg_emit(cg, "    sub x2, x0, x1"); break;
+                            case TOK_STAREQ: cg_emit(cg, "    mul x2, x0, x1"); break;
+                            case TOK_SLASHEQ: cg_emit(cg, "    sdiv x2, x0, x1"); break;
+                            case TOK_PERCENTEQ: cg_emit(cg, "    sdiv x3, x0, x1"); cg_emit(cg, "    msub x2, x3, x1, x0"); break;
+                            default: break;
+                        }
+                        cg_emit(cg, "    stxr w3, x2, [x19]");
+                        cg_emit(cg, "    cbnz w3, L_cas_%d", retry_lbl);
+                        cg_emit(cg, "    mov x0, x2");
+                        break;  // Skip normal store
+                    } else {
+                        // Non-shared: normal operation
+                        if (off) {
                             cg_emit_ldr_offset(cg, "x0", 16 + off);
                         }
                     }

@@ -1,0 +1,26 @@
+fn main() {
+    test_multiple_operations()
+}
+
+fn test_multiple_operations() {
+    let mut add_counter: int = 0
+    let mut sub_counter: int = 100
+    let mut mul_counter: int = 1
+    
+    spawn { add_counter = add_counter + 5 }
+    spawn { add_counter = add_counter + 10 }
+    spawn { add_counter = add_counter + 15 }
+    
+    spawn { sub_counter = sub_counter - 5 }
+    spawn { sub_counter = sub_counter - 10 }
+    spawn { sub_counter = sub_counter - 15 }
+    
+    spawn { mul_counter = mul_counter * 2 }
+    spawn { mul_counter = mul_counter * 3 }
+    
+    sleep_ms(200)
+    
+    assert(add_counter == 30)
+    assert(sub_counter == 70)
+    assert(mul_counter == 6)
+}

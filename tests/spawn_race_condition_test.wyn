@@ -1,0 +1,61 @@
+fn main() {
+    test_50_spawns()
+}
+
+fn test_50_spawns() {
+    let mut counter: int = 0
+    
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    spawn { counter = counter + 1 }
+    
+    sleep_ms(500)
+    assert(counter == 50)
+}
