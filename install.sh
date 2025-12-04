@@ -38,7 +38,9 @@ echo ""
 
 # Install
 echo "Installing to /usr/local/bin..."
-sudo cp build/stage0 /usr/local/bin/wyn
+sudo cp build/stage0 /usr/local/bin/wyn-compiler
+sudo cp wyn /usr/local/bin/wyn
+sudo chmod +x /usr/local/bin/wyn
 
 echo ""
 echo "================================================"
@@ -46,8 +48,12 @@ echo "  Installation Complete!"
 echo "================================================"
 echo ""
 echo "Try it:"
-echo "  wyn --help"
-echo "  wyn -o hello examples/hello.wyn"
+echo "  wyn version"
+echo "  wyn new myapp"
+echo "  cd myapp && wyn run ."
+echo ""
+echo "Or compile directly:"
+echo "  wyn-compiler -o hello examples/hello.wyn"
 echo "  ./hello"
 echo ""
 echo "Documentation: docs/"

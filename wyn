@@ -139,10 +139,10 @@ case "$CMD" in
             # Use installed wyn or local build
             if [ -f "./build/stage0" ]; then
                 COMPILER="./build/stage0"
-            elif [ -f "/usr/local/bin/wyn" ]; then
-                COMPILER="/usr/local/bin/wyn"
-            elif command -v wyn &> /dev/null; then
-                COMPILER="wyn"
+            elif [ -f "/usr/local/bin/wyn-compiler" ]; then
+                COMPILER="/usr/local/bin/wyn-compiler"
+            elif command -v wyn-compiler &> /dev/null; then
+                COMPILER="wyn-compiler"
             else
                 # In CI, use relative path to stage0
                 COMPILER="$(dirname "$0")/build/stage0"
@@ -156,10 +156,10 @@ case "$CMD" in
             # Use installed wyn or local build
             if [ -f "./build/stage0" ]; then
                 COMPILER="./build/stage0"
-            elif [ -f "/usr/local/bin/wyn" ]; then
-                COMPILER="/usr/local/bin/wyn"
-            elif command -v wyn &> /dev/null; then
-                COMPILER="wyn"
+            elif [ -f "/usr/local/bin/wyn-compiler" ]; then
+                COMPILER="/usr/local/bin/wyn-compiler"
+            elif command -v wyn-compiler &> /dev/null; then
+                COMPILER="wyn-compiler"
             else
                 # In CI, use relative path to stage0
                 COMPILER="$(dirname "$0")/build/stage0"
@@ -310,13 +310,13 @@ EOF
         
     install)
         echo "Installing Wyn to /usr/local/bin..."
-        sudo cp build/stage0 /usr/local/bin/wyn
-        echo -e "${GREEN}✓ Installed: /usr/local/bin/wyn${NC}"
+        sudo cp build/stage0 /usr/local/bin/wyn-compiler
+        echo -e "${GREEN}✓ Installed: /usr/local/bin/wyn-compiler${NC}"
         ;;
         
     uninstall)
         echo "Uninstalling Wyn..."
-        sudo rm -f /usr/local/bin/wyn
+        sudo rm -f /usr/local/bin/wyn-compiler
         echo -e "${GREEN}✓ Uninstalled${NC}"
         ;;
         
