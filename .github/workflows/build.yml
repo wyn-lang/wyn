@@ -167,48 +167,13 @@ jobs:
           name: wyn-${{ github.ref_name }}-linux-arm64
           path: wyn-${{ github.ref_name }}-linux-arm64.tar.gz
 
-  build-windows-x86:
-    runs-on: windows-latest
-
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Install Vulkan SDK
-        continue-on-error: true
-        run: |
-          # Try to install Vulkan SDK (optional for Windows)
-          choco install vulkan-sdk -y
-
-      - name: Setup MSVC
-        uses: ilammy/msvc-dev-cmd@v1
-
-      - name: Build All
-        continue-on-error: true
-        run: |
-          mkdir build
-          cl /O2 /Febuild\wyn.exe bootstrap\stage0.c
-        shell: cmd
-
-      - name: Package Release
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          mkdir release
-          copy build\wyn.exe release\
-          copy README.md release\
-          copy CHANGELOG.md release\
-          copy LICENSE release\
-          xcopy /E /I std release\std
-          xcopy /E /I docs release\docs
-          xcopy /E /I examples release\examples
-          tar -czf wyn-${{ github.ref_name }}-windows-x86_64.tar.gz release
-        shell: cmd
-
-      - name: Upload Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: actions/upload-artifact@v4
-        with:
-          name: wyn-${{ github.ref_name }}-windows-x86_64
-          path: wyn-${{ github.ref_name }}-windows-x86_64.tar.gz
+  # Windows build disabled - requires POSIX compatibility layer
+  # build-windows-x86:
+  #   runs-on: windows-latest
+  #   steps:
+  #     - uses: actions/checkout@v6
+  #     - name: Note
+  #       run: echo "Windows support requires WSL or native POSIX port"
 
   create-release:
     if: startsWith(github.ref, 'refs/tags/')
