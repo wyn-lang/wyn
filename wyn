@@ -135,11 +135,27 @@ case "$CMD" in
             ENTRY=$(get_entry_point)
             NAME=$(get_project_name)
             echo "Building $NAME from $ENTRY for $TARGET..."
-            ./build/stage0 $FLAGS -o "build/$NAME" "$ENTRY"
+            
+            # Use installed wyn or local build
+            if [ -f "./build/stage0" ]; then
+                COMPILER="./build/stage0"
+            else
+                COMPILER="wyn"
+            fi
+            
+            $COMPILER $FLAGS -o "build/$NAME" "$ENTRY"
             echo -e "${GREEN}✓ Built: build/$NAME${NC}"
         else
             OUTPUT=$(basename "$ARG" .wyn)
-            ./build/stage0 $FLAGS -o "$OUTPUT" "$ARG"
+            
+            # Use installed wyn or local build
+            if [ -f "./build/stage0" ]; then
+                COMPILER="./build/stage0"
+            else
+                COMPILER="wyn"
+            fi
+            
+            $COMPILER $FLAGS -o "$OUTPUT" "$ARG"
             echo -e "${GREEN}✓ Built: $OUTPUT${NC}"
         fi
         ;;
