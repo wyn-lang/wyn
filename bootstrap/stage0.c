@@ -2527,7 +2527,8 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     strcmp(e->ident, "read_file") == 0 || strcmp(e->ident, "write_file") == 0 ||
                     strcmp(e->ident, "read_line") == 0 || strcmp(e->ident, "clock") == 0 ||
                     strcmp(e->ident, "random") == 0 || strcmp(e->ident, "sleep") == 0 ||
-                    strcmp(e->ident, "getenv") == 0 || strcmp(e->ident, "system") == 0 ||
+                    strcmp(e->ident, "getenv") == 0 || strcmp(e->ident, "setenv") == 0 ||
+                    strcmp(e->ident, "environ") == 0 || strcmp(e->ident, "system") == 0 ||
                     strcmp(e->ident, "ord") == 0 || strcmp(e->ident, "chr") == 0 ||
                     strcmp(e->ident, "file_exists") == 0 || strcmp(e->ident, "delete_file") == 0 ||
                     strcmp(e->ident, "file_size") == 0 || strcmp(e->ident, "is_dir") == 0 ||
@@ -3103,7 +3104,8 @@ static bool tc1_is_builtin(const char* name) {
            strcmp(name, "read_file") == 0 || strcmp(name, "write_file") == 0 ||
            strcmp(name, "read_line") == 0 || strcmp(name, "clock") == 0 ||
            strcmp(name, "random") == 0 || strcmp(name, "sleep") == 0 ||
-           strcmp(name, "getenv") == 0 || strcmp(name, "system") == 0 ||
+           strcmp(name, "getenv") == 0 || strcmp(name, "setenv") == 0 ||
+           strcmp(name, "environ") == 0 || strcmp(name, "system") == 0 ||
            strcmp(name, "ord") == 0 || strcmp(name, "chr") == 0 ||
            strcmp(name, "file_exists") == 0 || strcmp(name, "delete_file") == 0 ||
            strcmp(name, "file_size") == 0 || strcmp(name, "is_dir") == 0 ||
@@ -5103,6 +5105,22 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_expr(cg, e->call.args[0]);
                     cg_emit(cg, "    movq %%rax, %%rdi");
                     cg_emit(cg, "    callq %sgetenv", cg_sym_prefix(cg));
+                    break;
+                }
+                // Handle built-in setenv(name, value) - set environment variable
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "setenv") == 0) {
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    pushq %%rax");
+                    cg_expr(cg, e->call.args[1]);
+                    cg_emit(cg, "    movq %%rax, %%rsi");
+                    cg_emit(cg, "    popq %%rdi");
+                    cg_emit(cg, "    xorq %%rdx, %%rdx");  // overwrite=0
+                    cg_emit(cg, "    callq %ssetenv", cg_sym_prefix(cg));
+                    break;
+                }
+                // Handle built-in environ() - get all environment variables
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "environ") == 0) {
+                    cg_emit(cg, "    leaq environ(%%rip), %%rax");
                     break;
                 }
                 // Handle built-in system(cmd) - run shell command

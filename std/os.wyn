@@ -162,17 +162,21 @@ pub fn getenv(key: str) -> ?str {
 }
 
 # Get all environment variables
-# Note: Not implemented - no builtin available
+# Note: Stage 0 limitation - cannot iterate pointer arrays
 # Use getenv(key) for specific variables
+# Full implementation coming in Stage 2
 fn env() -> [str] {
     return []
 }
 
 # Set environment variable
-# Note: Not implemented - no builtin available
-# Environment is read-only in current version
-fn setenv(key: str, value: str) -> Result[(), str] {
-    return err("setenv not implemented - no builtin available")
+# Returns ok(()) on success, err(message) on failure
+pub fn setenv(key: str, value: str) -> Result[(), str] {
+    let result: int = setenv(key, value)
+    if result == 0 {
+        return ok(())
+    }
+    return err("Failed to set environment variable")
 }
 
 # Get current working directory
