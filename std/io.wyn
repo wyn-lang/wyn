@@ -44,39 +44,50 @@ fn read_line() -> str {
 # Returns ok(content) on success, or err(message) on failure
 # Requires: Runtime support (file I/O syscalls)
 fn read_file(path: str) -> Result[str, str] {
-    # Will be implemented via syscall or FFI
-    return ok("")
+    let content: str = read_file(path)
+    if content.len() >= 0 {
+        return ok(content)
+    }
+    return err("Failed to read file")
 }
 
 # Write content to a file, overwriting if it exists (low-level)
 # Returns ok(true) on success, or err(message) on failure
 # Requires: Runtime support (file I/O syscalls)
 fn write_file(path: str, content: str) -> Result[bool, str] {
-    # Will be implemented via syscall or FFI
-    return ok(false)
+    let result: bool = write_file(path, content)
+    if result {
+        return ok(true)
+    }
+    return err("Failed to write file")
 }
 
 # Append content to the end of a file
 # Returns ok(true) on success, or err(message) on failure
 # Requires: Runtime support (file I/O syscalls)
 fn append_file(path: str, content: str) -> Result[bool, str] {
-    # Will be implemented via syscall or FFI
-    return ok(false)
+    let result: bool = append_file(path, content)
+    if result {
+        return ok(true)
+    }
+    return err("Failed to append to file")
 }
 
 # Check if a file exists at the given path (low-level)
 # Requires: Runtime support (file stat syscall)
 fn file_exists(path: str) -> bool {
-    # Will be implemented via syscall or FFI
-    return false
+    return file_exists(path)
 }
 
 # Delete a file at the given path
 # Returns ok(true) on success, or err(message) on failure
 # Requires: Runtime support (file I/O syscalls)
 fn delete_file(path: str) -> Result[bool, str] {
-    # Will be implemented via syscall or FFI
-    return ok(false)
+    let result: bool = delete_file(path)
+    if result {
+        return ok(true)
+    }
+    return err("Failed to delete file")
 }
 
 # Read file contents as an array of bytes
@@ -99,33 +110,43 @@ fn write_bytes(path: str, data: [byte]) -> Result[bool, str] {
 # Returns ok(lines) on success, or err(message) on failure
 fn read_lines(path: str) -> Result[[str], str] {
     let content_result: Result[str, str] = read_file(path)
-    # Stage 0: Can't pattern match on Result, so return empty for now
-    # Stage 1 will properly split content by newlines
-    return ok([])
+    if content_result.is_err {
+        return err("Failed to read file")
+    }
+    let content: str = content_result.value
+    let lines: [str] = str_split(content, "\n")
+    return ok(lines)
+}
 }
 
 # Create a directory at the given path
 # Returns ok(true) on success, or err(message) on failure
 # Requires: Runtime support (directory syscalls)
 fn create_dir(path: str) -> Result[bool, str] {
-    # Will be implemented via syscall or FFI
-    return ok(false)
+    let result: bool = mkdir(path)
+    if result {
+        return ok(true)
+    }
+    return err("Failed to create directory")
 }
 
 # Remove a directory at the given path
 # Returns ok(true) on success, or err(message) on failure
 # Requires: Runtime support (directory syscalls)
 fn remove_dir(path: str) -> Result[bool, str] {
-    # Will be implemented via syscall or FFI
-    return ok(false)
+    let result: bool = rmdir(path)
+    if result {
+        return ok(true)
+    }
+    return err("Failed to remove directory")
 }
 
 # List all files and directories in the given path
 # Returns ok(entries) on success, or err(message) on failure
 # Requires: Runtime support (directory syscalls)
 fn list_dir(path: str) -> Result[[str], str] {
-    # Will be implemented via syscall or FFI
-    return ok([])
+    let entries: [str] = list_dir(path)
+    return ok(entries)
 }
 
 # Copy a file from src to dst
@@ -141,8 +162,11 @@ fn copy_file(src: str, dst: str) -> Result[bool, str] {
 # Returns ok(true) on success, or err(message) on failure
 # Requires: Runtime support (file I/O syscalls)
 fn move_file(src: str, dst: str) -> Result[bool, str] {
-    # Will be implemented via syscall or FFI
-    return ok(false)
+    let result: bool = rename_file(src, dst)
+    if result {
+        return ok(true)
+    }
+    return err("Failed to move file")
 }
 
 # Format an integer with zero-padding to the specified width

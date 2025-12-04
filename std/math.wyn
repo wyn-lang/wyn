@@ -97,49 +97,37 @@ fn tan(x: float) -> float {
 # Arcsine function
 # Requires: Runtime support for transcendental functions
 fn asin(x: float) -> float {
-    # Requires hardware/library support for inverse trig functions
-    # Will be implemented via FFI or compiler builtin
-    return 0.0
+    return asinf(x)
 }
 
 # Arccosine function
 # Requires: Runtime support for transcendental functions
 fn acos(x: float) -> float {
-    # Requires hardware/library support for inverse trig functions
-    # Will be implemented via FFI or compiler builtin
-    return 0.0
+    return acosf(x)
 }
 
 # Arctangent function
 # Requires: Runtime support for transcendental functions
 fn atan(x: float) -> float {
-    # Requires hardware/library support for inverse trig functions
-    # Will be implemented via FFI or compiler builtin
-    return 0.0
+    return atanf(x)
 }
 
 # Two-argument arctangent function
 # Requires: Runtime support for transcendental functions
 fn atan2(y: float, x: float) -> float {
-    # Requires hardware/library support for inverse trig functions
-    # Will be implemented via FFI or compiler builtin
-    return 0.0
+    return atan2f(y, x)
 }
 
 # Natural logarithm
 # Requires: Runtime support for transcendental functions
 fn log(x: float) -> float {
-    # Requires hardware/library support for logarithms
-    # Will be implemented via FFI or compiler builtin
-    return 0.0
+    return logf(x)
 }
 
 # Base-10 logarithm
 # Requires: Runtime support for transcendental functions
 fn log10(x: float) -> float {
-    # Requires hardware/library support for logarithms
-    # Will be implemented via FFI or compiler builtin
-    return 0.0
+    return log10f(x)
 }
 
 # Exponential function (e^x)

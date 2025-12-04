@@ -24,13 +24,15 @@ GUI_RUNTIME_SRC = $(RUNTIME_DIR)/gui_macos.c
 GUI_RUNTIME_OBJ = $(BUILD_DIR)/gui_runtime.o
 GPU_RUNTIME_SRC = $(RUNTIME_DIR)/gpu_metal.m
 GPU_RUNTIME_OBJ = $(BUILD_DIR)/gpu_runtime.o
+VULKAN_RUNTIME_SRC = $(RUNTIME_DIR)/gpu_vulkan.c
+VULKAN_RUNTIME_OBJ = $(BUILD_DIR)/gpu_vulkan.o
 
 MOBILE_RUNTIME_SRC = $(RUNTIME_DIR)/mobile_ios.m
 MOBILE_RUNTIME_OBJ = $(BUILD_DIR)/mobile_runtime.o
 
 # Default target
 .PHONY: all
-all: stage0 gui-runtime gpu-runtime
+all: stage0 gui-runtime gpu-runtime vulkan-runtime
 
 # Create build directory
 $(BUILD_DIR):
@@ -56,6 +58,13 @@ gpu-runtime: $(BUILD_DIR) $(GPU_RUNTIME_OBJ)
 
 $(GPU_RUNTIME_OBJ): $(GPU_RUNTIME_SRC)
 	$(CC) $(CFLAGS) -c -o $@ $<
+
+# Build Vulkan runtime
+.PHONY: vulkan-runtime
+vulkan-runtime: $(BUILD_DIR) $(VULKAN_RUNTIME_OBJ)
+
+$(VULKAN_RUNTIME_OBJ): $(VULKAN_RUNTIME_SRC)
+	$(CC) $(CFLAGS) -I/opt/homebrew/include -c -o $@ $<
 
 # Build Mobile runtime (iOS simulator only)
 .PHONY: mobile-runtime

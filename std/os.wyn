@@ -147,8 +147,7 @@ fn run_ok(cmd: str) -> bool {
 # Get all command-line arguments
 # Requires: Runtime support (process arguments)
 fn args() -> [str] {
-    # Will be implemented via runtime or FFI
-    return []
+    return args()
 }
 
 # Get all environment variables
