@@ -39,6 +39,15 @@ sudo cp build/stage0 /usr/local/bin/wyn  # Installs Stage 1 compiler as 'wyn'
 - GitHub releases include binaries for all Tier 1 & 2 platforms
 - Windows users can use WSL to run Linux x86_64 builds
 
+**Windows Users:**
+The compiler currently uses POSIX APIs (unistd.h, etc.) not available on native Windows.
+Recommended approach:
+1. Install WSL2: `wsl --install`
+2. Download Linux x86_64 build
+3. Run Wyn in WSL (full compatibility)
+
+Native Windows support planned for future release.
+
 ## Quick Start
 
 ```wyn
