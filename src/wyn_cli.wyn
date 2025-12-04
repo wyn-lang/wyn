@@ -65,13 +65,19 @@ fn print_help() {
     print_str("  new <name>           Create new project\n")
     print_str("  init <name>          Alias for 'new'\n")
     print_str("  build                Build current project\n")
-    print_str("  run [file]           Build and run project or file\n")
-    print_str("  exec <file>          Compile and run a file\n")
+    print_str("  run [file]           Run file or current project\n")
+    print_str("  exec [file]          Execute file or stdin\n")
     print_str("  inline <code>        Execute Wyn code inline\n")
     print_str("  test                 Run test suite\n")
     print_str("  bench                Run benchmarks\n")
     print_str("  clean                Clean build artifacts\n")
-    print_str("  help                 Show this help\n")
+    print_str("  help                 Show this help\n\n")
+    print_str("Examples:\n")
+    print_str("  wyn run script.wyn           # Run a file\n")
+    print_str("  wyn run                      # Run current project\n")
+    print_str("  echo 'print(42)' | wyn exec  # Execute from stdin\n")
+    print_str("  wyn exec script.wyn          # Execute a file\n")
+    print_str("  wyn inline 'print(123)'      # Execute inline code\n")
 }
 
 fn create_project(name: str) {
