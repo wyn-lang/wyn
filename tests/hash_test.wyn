@@ -1,0 +1,24 @@
+import ./std/hash
+
+fn main() {
+    print_str("Testing hash module...\n")
+    
+    let text: str = "hello"
+    
+    let h1: int = hash.fnv1a(text)
+    assert(h1 != 0, "fnv1a produces hash")
+    
+    let h2: int = hash.djb2(text)
+    assert(h2 != 0, "djb2 produces hash")
+    
+    let h3: int = hash.sdbm(text)
+    assert(h3 != 0, "sdbm produces hash")
+    
+    let h4: int = hash.murmur3(text, 0)
+    assert(h4 != 0, "murmur3 produces hash")
+    
+    assert(hash.fnv1a("hello") == hash.fnv1a("hello"), "hash is deterministic")
+    assert(hash.fnv1a("hello") != hash.fnv1a("world"), "different inputs produce different hashes")
+    
+    print_str("✓ All hash tests passed\n")
+}

@@ -1,0 +1,28 @@
+import ./std/os
+
+fn main() {
+    print_str("Testing os module...\n")
+    
+    let cwd_result: Result[str, str] = os.cwd()
+    assert(cwd_result.is_ok, "cwd() returns ok")
+    
+    let cwd: str = cwd_result.value
+    assert(cwd.len() > 0, "cwd is not empty")
+    
+    let args: [str] = os.args()
+    assert(args.len() >= 1, "args has at least program name")
+    
+    let home: ?str = os.home_dir()
+    assert(home != none, "home_dir returns value")
+    
+    let tmp: str = os.temp_dir()
+    assert(tmp.len() > 0, "temp_dir returns path")
+    
+    let pid: int = os.pid()
+    assert(pid > 0, "pid is positive")
+    
+    let path_val: ?str = os.getenv("PATH")
+    assert(path_val != none, "PATH env var exists")
+    
+    print_str("✓ All os tests passed\n")
+}

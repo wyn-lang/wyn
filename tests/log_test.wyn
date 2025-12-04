@@ -1,0 +1,14 @@
+import ./std/log
+
+fn main() {
+    print_str("Testing log module...\n")
+    
+    log.info("Info message")
+    log.warn("Warning message")
+    log.error("Error message")
+    log.debug("Debug message")
+    
+    log.info_with_context("Context message", "test_context")
+    
+    print_str("✓ All log tests passed (output above)\n")
+}

@@ -1,0 +1,26 @@
+import ./std/regex
+
+fn main() {
+    print_str("Testing regex module...\n")
+    
+    let text: str = "hello world"
+    
+    assert(regex.contains(text, "world"), "contains finds substring")
+    assert(not regex.contains(text, "xyz"), "contains returns false")
+    
+    assert(regex.index_of(text, "world") == 6, "index_of finds position")
+    assert(regex.index_of(text, "xyz") == -1, "index_of returns -1")
+    
+    assert(regex.count_occurrences("aaa", "a") == 3, "count_occurrences works")
+    
+    assert(regex.starts_with(text, "hello"), "starts_with works")
+    assert(regex.ends_with(text, "world"), "ends_with works")
+    
+    let replaced: str = regex.replace_first(text, "world", "wyn")
+    assert(replaced == "hello wyn", "replace_first works")
+    
+    let replaced_all: str = regex.replace_all("aaa", "a", "b")
+    assert(replaced_all == "bbb", "replace_all works")
+    
+    print_str("✓ All regex tests passed\n")
+}

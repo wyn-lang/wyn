@@ -1,0 +1,30 @@
+import ./std/bits
+
+fn main() {
+    print_str("Testing bits module...\n")
+    
+    assert(bits.popcount(7) == 3, "popcount(7) = 3")
+    assert(bits.popcount(15) == 4, "popcount(15) = 4")
+    
+    assert(bits.clz(1) == 31, "clz(1) = 31")
+    assert(bits.ctz(8) == 3, "ctz(8) = 3")
+    
+    assert(bits.reverse_bits(1, 8) == 128, "reverse_bits works")
+    
+    assert(bits.is_power_of_two(8), "8 is power of 2")
+    assert(not bits.is_power_of_two(7), "7 is not power of 2")
+    
+    assert(bits.next_power_of_two(7) == 8, "next_power_of_two(7) = 8")
+    
+    assert(bits.rotate_left(1, 1, 32) == 2, "rotate_left works")
+    assert(bits.rotate_right(2, 1, 32) == 1, "rotate_right works")
+    
+    assert(bits.get_bit(5, 0), "bit 0 of 5 is set")
+    assert(not bits.get_bit(4, 0), "bit 0 of 4 is not set")
+    
+    assert(bits.set_bit(4, 0) == 5, "set_bit works")
+    assert(bits.clear_bit(5, 0) == 4, "clear_bit works")
+    assert(bits.toggle_bit(4, 0) == 5, "toggle_bit works")
+    
+    print_str("✓ All bits tests passed\n")
+}

@@ -1,0 +1,26 @@
+import ./std/crypto
+
+fn main() {
+    print_str("Testing crypto module...\n")
+    
+    let text: str = "secret"
+    let key: str = "mykey!"
+    
+    let encrypted: str = crypto.xor_cipher(text, key)
+    assert(encrypted != text, "xor_cipher encrypts")
+    
+    let decrypted: str = crypto.xor_cipher(encrypted, key)
+    assert(decrypted == text, "xor_cipher decrypts")
+    
+    let rot13: str = crypto.rot13("hello")
+    assert(rot13 == "uryyb", "rot13 works")
+    assert(crypto.rot13(rot13) == "hello", "rot13 is reversible")
+    
+    let caesar: str = crypto.caesar_encrypt("abc", 3)
+    assert(caesar == "def", "caesar_encrypt works")
+    
+    let caesar_dec: str = crypto.caesar_decrypt(caesar, 3)
+    assert(caesar_dec == "abc", "caesar_decrypt works")
+    
+    print_str("✓ All crypto tests passed\n")
+}

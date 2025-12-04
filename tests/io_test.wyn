@@ -1,0 +1,37 @@
+import ./std/io
+
+fn main() {
+    print_str("Testing io module...\n")
+    
+    let test_file: str = "test_io_temp.txt"
+    let content: str = "Hello Wyn!"
+    
+    let write_result: Result[bool, str] = io.write_file(test_file, content)
+    assert(write_result.is_ok, "write_file succeeds")
+    
+    assert(io.file_exists(test_file), "file exists after write")
+    
+    let read_result: Result[str, str] = io.read_file(test_file)
+    assert(read_result.is_ok, "read_file succeeds")
+    assert(read_result.value == content, "read content matches")
+    
+    let append_result: Result[bool, str] = io.append_file(test_file, " More text")
+    assert(append_result.is_ok, "append_file succeeds")
+    
+    let size_result: Result[int, str] = io.get_file_size(test_file)
+    assert(size_result.is_ok, "get_file_size succeeds")
+    assert(size_result.value > content.len(), "size increased after append")
+    
+    let delete_result: Result[bool, str] = io.delete_file(test_file)
+    assert(delete_result.is_ok, "delete_file succeeds")
+    assert(not io.file_exists(test_file), "file deleted")
+    
+    let test_dir: str = "test_io_dir"
+    let mkdir_result: Result[bool, str] = io.create_dir(test_dir)
+    assert(mkdir_result.is_ok, "create_dir succeeds")
+    
+    let rmdir_result: Result[bool, str] = io.remove_dir(test_dir)
+    assert(rmdir_result.is_ok, "remove_dir succeeds")
+    
+    print_str("✓ All io tests passed\n")
+}

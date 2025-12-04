@@ -1,0 +1,27 @@
+import ./std/utils
+
+fn main() {
+    print_str("Testing utils module...\n")
+    
+    assert(utils.clamp(5, 0, 10) == 5, "clamp in range")
+    assert(utils.clamp(-5, 0, 10) == 0, "clamp min")
+    assert(utils.clamp(15, 0, 10) == 10, "clamp max")
+    
+    assert(utils.min3(3, 1, 2) == 1, "min3 works")
+    assert(utils.max3(3, 1, 2) == 3, "max3 works")
+    
+    assert(utils.sign(5) == 1, "sign positive")
+    assert(utils.sign(-5) == -1, "sign negative")
+    assert(utils.sign(0) == 0, "sign zero")
+    
+    assert(utils.is_even(4), "4 is even")
+    assert(not utils.is_even(5), "5 is odd")
+    
+    assert(utils.is_odd(5), "5 is odd")
+    assert(not utils.is_odd(4), "4 is even")
+    
+    let swapped: [int] = utils.swap(1, 2)
+    assert(swapped[0] == 2 and swapped[1] == 1, "swap works")
+    
+    print_str("✓ All utils tests passed\n")
+}

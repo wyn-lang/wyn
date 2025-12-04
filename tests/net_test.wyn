@@ -1,0 +1,30 @@
+import ./std/net
+
+fn main() {
+    print_str("Testing net module...\n")
+    
+    let url: str = "https://example.com:8080/path?key=value"
+    
+    let scheme: str = net.url_scheme(url)
+    assert(scheme == "https", "url_scheme extracts scheme")
+    
+    let host: str = net.url_hostname(url)
+    assert(host == "example.com", "url_hostname extracts host")
+    
+    let port: int = net.url_port(url)
+    assert(port == 8080, "url_port extracts port")
+    
+    let path: str = net.url_path(url)
+    assert(path == "/path", "url_path extracts path")
+    
+    let query: str = net.url_query(url)
+    assert(query == "key=value", "url_query extracts query")
+    
+    let parsed: ?[str] = net.parse_query_string("a=1&b=2")
+    assert(parsed != none, "parse_query_string works")
+    
+    assert(net.is_valid_ipv4("192.168.1.1"), "valid ipv4")
+    assert(not net.is_valid_ipv4("999.999.999.999"), "invalid ipv4")
+    
+    print_str("✓ All net tests passed\n")
+}

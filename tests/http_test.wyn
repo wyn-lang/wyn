@@ -1,0 +1,29 @@
+import ./std/http
+
+fn main() {
+    print_str("Testing http module...\n")
+    
+    assert(http.status_ok() == 200, "status_ok is 200")
+    assert(http.status_not_found() == 404, "status_not_found is 404")
+    assert(http.status_internal_error() == 500, "status_internal_error is 500")
+    
+    assert(http.is_success(200), "200 is success")
+    assert(not http.is_success(404), "404 is not success")
+    
+    assert(http.is_error(404), "404 is error")
+    assert(not http.is_error(200), "200 is not error")
+    
+    assert(http.is_redirect(301), "301 is redirect")
+    assert(not http.is_redirect(200), "200 is not redirect")
+    
+    let status_text: str = http.status_text(200)
+    assert(status_text == "OK", "status_text for 200")
+    
+    let method: str = http.method_get()
+    assert(method == "GET", "method_get returns GET")
+    
+    let header: str = http.header_content_type("application/json")
+    assert(header.len() > 0, "header_content_type creates header")
+    
+    print_str("✓ All http tests passed\n")
+}
