@@ -6,6 +6,28 @@
 
 Like Python's threading/multiprocessing, but faster and safer.
 
+## Variable Sharing - YES, It Works!
+
+### Read Variables
+```wyn
+let config: str = "production"
+spawn { print(config) }  // Reads config
+```
+
+### Write Variables
+```wyn
+let mut counter: int = 0
+spawn { counter = counter + 1 }  // Writes counter (atomic)
+```
+
+### Share Collections
+```wyn
+let mut results: [int] = []
+spawn { results.append(42) }  // Appends to shared list (thread-safe)
+```
+
+**All variables are automatically shared. No special syntax needed.**
+
 ## Core Concept: Just `spawn`
 
 ### Basic Spawn (What Works Today)
