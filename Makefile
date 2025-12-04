@@ -123,19 +123,8 @@ test: stage0
 # Run benchmarks
 .PHONY: bench
 bench: stage0
-	@echo "=== Wyn Benchmarks ==="
-	@echo ""
-	@echo "Fibonacci:"
-	@./$(STAGE0_BIN) --stage1-opt -o $(BUILD_DIR)/fib benchmarks/cpu/fib.wyn
-	@time ./$(BUILD_DIR)/fib
-	@echo ""
-	@echo "Arrays:"
-	@./$(STAGE0_BIN) --stage1-opt -o $(BUILD_DIR)/array benchmarks/memory/array.wyn
-	@time ./$(BUILD_DIR)/array
-	@echo ""
-	@echo "Math:"
-	@./$(STAGE0_BIN) --stage1-opt -o $(BUILD_DIR)/math benchmarks/cpu/math.wyn
-	@time ./$(BUILD_DIR)/math
+	@./$(STAGE0_BIN) --stage1-opt -o $(BUILD_DIR)/run_bench benchmarks/_run_bench.wyn
+	@./$(BUILD_DIR)/run_bench
 
 # Fast test - suppress compiler output
 .PHONY: fast-test

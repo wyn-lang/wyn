@@ -35,18 +35,16 @@ See [FINAL_RESULTS.md](FINAL_RESULTS.md) for complete analysis.
 ## Running Benchmarks
 
 ```bash
-# Run main benchmarks
+# Run all benchmarks (benchmark runner written in Wyn)
 make bench
 
 # Or run specific benchmarks manually
 cd benchmarks/cpu
 ../../build/stage0 --stage1-opt -o fib_wyn fib.wyn
 time ./fib_wyn
-
-cd ../memory
-../../build/stage0 --stage1-opt -o array_wyn array.wyn
-time ./array_wyn
 ```
+
+**100% cross-platform** - Benchmark runner written in Wyn (`_run_bench.wyn`).
 
 ## Test Environment
 
