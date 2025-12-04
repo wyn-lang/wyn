@@ -9,7 +9,11 @@ struct Socket {
 # Returns a Socket on success, or an error message on failure
 # Requires: Runtime support for socket syscalls
 fn tcp_connect(host: str, port: int) -> Result[Socket, str] {
-    return err("not implemented")
+    let fd = tcp_connect(host, port)
+    if fd < 0 {
+        return err("Connection failed")
+    }
+    return ok(Socket { fd: fd })
 }
 
 # Start a TCP server listening on the given host and port

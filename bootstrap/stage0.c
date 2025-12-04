@@ -8262,13 +8262,18 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                 cg_emit(cg, "    stp x29, x30, [sp]");
                 cg_emit(cg, "    mov x29, sp");
                 
-                // Load captured vars from context into locals
+                // Save state and mark thread context
                 int saved_offset = cg->stack_offset;
                 int saved_count = cg->local_count;
+                bool saved_in_thread = cg->in_thread_context;
+                cg->in_thread_context = true;
+                
+                // Load captured var addresses from context into locals
                 for (int i = 0; i < cap_count; i++) {
                     cg_add_local(cg, s->spawn.captured_vars[i], NULL);
                     cg_emit(cg, "    ldr x1, [x0, #%d]", i * 8);
                     cg_emit_str_offset(cg, "x1", 16 + cg->locals[cg->local_count - 1].offset);
+                    cg->locals[cg->local_count - 1].is_shared = true;
                 }
                 
                 // Execute spawn body
@@ -8284,6 +8289,7 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                 // Restore state
                 cg->stack_offset = saved_offset;
                 cg->local_count = saved_count;
+                cg->in_thread_context = saved_in_thread;
                 
                 // Back to main code - allocate context and copy vars
                 cg_emit(cg, "L%d:", skip_label);
@@ -8293,11 +8299,11 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                     cg_emit(cg, "    bl _malloc");
                     cg_emit(cg, "    mov x19, x0");  // Save context ptr
                     
-                    // Copy captured vars to context
+                    // Copy captured var addresses to context
                     for (int i = 0; i < cap_count; i++) {
                         int off = cg_local_offset(cg, s->spawn.captured_vars[i]);
                         if (off) {
-                            cg_emit_ldr_offset(cg, "x1", 16 + off);
+                            cg_emit_add_offset(cg, "x1", 16 + off);  // Get address
                             cg_emit(cg, "    str x1, [x19, #%d]", i * 8);
                         }
                     }
@@ -9988,8 +9994,20 @@ int main(int argc, char** argv) {
         if (!compile_only) {
             // Get directory of stage0 binary for runtime path
             char runtime_path[256];
-            snprintf(runtime_path, 256, "%s/spawn_runtime.o", "build");
-            snprintf(cmd, 512, "cc -o %s %s %s", output_file, asm_file, runtime_path);
+            // Try multiple locations for spawn_runtime.o
+            if (access("build/spawn_runtime.o", F_OK) == 0) {
+                snprintf(runtime_path, 256, "build/spawn_runtime.o");
+            } else if (access("../build/spawn_runtime.o", F_OK) == 0) {
+                snprintf(runtime_path, 256, "../build/spawn_runtime.o");
+            } else {
+                runtime_path[0] = '\0';  // Not found, link without it
+            }
+            
+            if (runtime_path[0]) {
+                snprintf(cmd, 512, "cc -o %s %s %s", output_file, asm_file, runtime_path);
+            } else {
+                snprintf(cmd, 512, "cc -o %s %s", output_file, asm_file);
+            }
             if (system(cmd) != 0) {
                 fprintf(stderr, "Compilation failed.\n");
                 return 1;
