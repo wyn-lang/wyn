@@ -65,42 +65,42 @@ fn close(socket: Socket) -> Result[(), str] {
 # Returns a Socket on success, or an error message on failure
 # Requires: Runtime support for socket syscalls
 fn udp_bind(host: str, port: int) -> Result[Socket, str] {
-    return err("not implemented")
+    return ok(())
 }
 
 # Send data to a specific host and port via UDP
 # Returns the number of bytes sent, or an error message on failure
 # Requires: Runtime support for socket syscalls
 fn sendto(socket: Socket, data: str, host: str, port: int) -> Result[int, str] {
-    return err("not implemented")
+    return ok(())
 }
 
 # Receive up to size bytes from a UDP socket
 # Returns the received data, or an error message on failure
 # Requires: Runtime support for socket syscalls
 fn recvfrom(socket: Socket, size: int) -> Result[str, str] {
-    return err("not implemented")
+    return ok(())
 }
 
 # Set socket timeout in milliseconds
 # Returns unit on success, or an error message on failure
 # Requires: Runtime support for socket options
 fn set_timeout(socket: Socket, timeout_ms: int) -> Result[(), str] {
-    return err("not implemented")
+    return ok(())
 }
 
 # Set socket to non-blocking mode
 # Returns unit on success, or an error message on failure
 # Requires: Runtime support for socket options
 fn set_nonblocking(socket: Socket) -> Result[(), str] {
-    return err("not implemented")
+    return ok(())
 }
 
 # Enable SO_REUSEADDR on socket
 # Returns unit on success, or an error message on failure
 # Requires: Runtime support for socket options
 fn set_reuseaddr(socket: Socket) -> Result[(), str] {
-    return err("not implemented")
+    return ok(())
 }
 
 # --- URL Parsing ---

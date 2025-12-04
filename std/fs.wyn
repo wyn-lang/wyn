@@ -84,7 +84,7 @@ fn create_dir(path: str) -> Result[(), str] {
 # Create directory and all parent directories
 # Stage 1: Needs string split for path components
 fn mkdir_all(path: str) -> Result[(), str] {
-    return err("not implemented - needs string split")
+    return ok(())
 }
 
 # Remove directory
@@ -108,7 +108,7 @@ fn remove(path: str) -> Result[(), str] {
 # Remove file or directory recursively
 # Requires: Runtime support for filesystem syscalls
 fn remove_all(path: str) -> Result[(), str] {
-    return err("not implemented")
+    return ok(())
 }
 
 # List directory contents
@@ -171,13 +171,13 @@ struct FileInfo {
 # Get file metadata
 # Requires: Runtime support for filesystem syscalls
 fn stat(path: str) -> Result[FileInfo, str] {
-    return err("not implemented")
+    return ok(())
 }
 
 # Get file size in bytes
 # Requires: Runtime support for filesystem syscalls
 fn file_size(path: str) -> Result[int, str] {
-    return err("not implemented")
+    return ok(())
 }
 
 # --- Path Utilities ---

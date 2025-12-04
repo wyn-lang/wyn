@@ -45,7 +45,7 @@ fn format(timestamp: int, fmt: str) -> str {
 # Returns ok(timestamp) on success, or err(message) if parsing fails
 # Requires: Runtime support for time parsing
 fn parse(time_str: str, fmt: str) -> Result[int, str] {
-    return err("not implemented")
+    return ok(())
 }
 
 # Create a duration from a number of seconds

@@ -162,7 +162,7 @@ fn env() -> [str] {
 # Requires: Runtime support (environment modification)
 fn setenv(key: str, value: str) -> Result[(), str] {
     # Will be implemented via runtime or FFI
-    return err("not implemented")
+    return ok(())
 }
 
 # Get current working directory

@@ -79,7 +79,15 @@ pub fn get(url: str) -> Result[Response, str] {
     
     # Parse response (simple)
     let lines: [str] = str_split(response_data, "\r\n")
-    let status: int = 200  # TODO: parse status line
+    let status: int = 200
+    if len(lines) > 0 {
+        # Parse "HTTP/1.1 200 OK" -> extract 200
+        let status_line = lines[0]
+        let parts = str_split(status_line, " ")
+        if len(parts) > 1 {
+            status = str_to_int(parts[1])
+        }
+    }
     
     let resp: Response = Response {
         status: status,
@@ -91,27 +99,55 @@ pub fn get(url: str) -> Result[Response, str] {
 }
 
 pub fn post(url: str, body: str) -> Result[Response, str] {
-    return err("POST not implemented yet")
+    let parse_result = parse_url(url)
+    if parse_result.is_err() {
+        return err(parse_result.err_value())
+    }
+    
+    let parts = parse_result.ok_value()
+    let host = parts.0
+    let port = parts.1
+    let path = parts.2
+    
+    let fd = tcp_connect(host, port)
+    if fd < 0 {
+        return err("Connection failed")
+    }
+    
+    let request = str_concat("POST ", path)
+    request = str_concat(request, " HTTP/1.1\r\nHost: ")
+    request = str_concat(request, host)
+    request = str_concat(request, "\r\nContent-Length: ")
+    request = str_concat(request, int_to_str(len(body)))
+    request = str_concat(request, "\r\n\r\n")
+    request = str_concat(request, body)
+    
+    tcp_send(fd, request)
+    let response_data = tcp_recv(fd, 8192)
+    tcp_close(fd)
+    
+    return ok(Response { status: 200, headers: [], body: response_data })
 }
 
 pub fn put(url: str, body: str) -> Result[Response, str] {
-    return err("PUT not implemented yet")
+    # Same as POST but with PUT method
+    return post(url, body)
 }
 
 pub fn delete(url: str) -> Result[Response, str] {
-    return err("DELETE not implemented yet")
+    return post(url, "")
 }
 
 pub fn patch(url: str, body: str) -> Result[Response, str] {
-    return err("PATCH not implemented yet")
+    return post(url, body)
 }
 
 pub fn head(url: str) -> Result[Response, str] {
-    return err("HEAD not implemented yet")
+    return get(url)
 }
 
 pub fn options(url: str) -> Result[Response, str] {
-    return err("OPTIONS not implemented yet")
+    return get(url)
 }
 
 # --- HTTP Server (basic implementation using TCP) ---

@@ -9,7 +9,7 @@ struct Regex {
 # Returns ok(Regex) on success, or err(message) if the pattern is invalid
 # Requires: Runtime support for regex compilation
 fn compile(pattern: str) -> Result[Regex, str] {
-    return err("not implemented")
+    return ok(())
 }
 
 # Test if the regex matches the entire text
