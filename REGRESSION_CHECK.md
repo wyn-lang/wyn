@@ -102,4 +102,14 @@ wyn version
 
 ## Status
 
-**Overall**: Good, but test runner needs fixing to run all tests.
+**Current**: 70/70 runnable tests passing (100%)
+
+**Fixed**:
+- ✅ spawn_simple - Fixed by adding spawn runtime to build
+
+**Remaining compiler bugs** (delegated to agent):
+- ⚠️ lambda_test - Function pointer linker issues
+- ⚠️ nested_struct_test - Nested struct initialization bug (wrong values)
+- ⚠️ full_test - Edge cases
+
+These require fixes in bootstrap/stage0.c compiler code.
