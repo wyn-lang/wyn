@@ -19,6 +19,7 @@ fn main() {
     passed = passed + run_test("tests/crypto_stdlib_test.wyn")
     passed = passed + run_test("tests/encoding_stdlib_test.wyn")
     passed = passed + run_test("tests/error_stdlib_test.wyn")
+    passed = passed + run_test("tests/for_loop_edge_test.wyn")
     passed = passed + run_test("tests/fs_test.wyn")
     passed = passed + run_test("tests/fs_stdlib_test.wyn")
     passed = passed + run_test("tests/function_test.wyn")
@@ -27,8 +28,10 @@ fn main() {
     passed = passed + run_test("tests/http_stdlib_test.wyn")
     passed = passed + run_test("tests/io_stdlib_test.wyn")
     passed = passed + run_test("tests/json_stdlib_test.wyn")
+    passed = passed + run_test("tests/lambda_edge_test.wyn")
     passed = passed + run_test("tests/log_stdlib_test.wyn")
     passed = passed + run_test("tests/math_stdlib_test.wyn")
+    passed = passed + run_test("tests/nested_struct_edge_test.wyn")
     passed = passed + run_test("tests/net_stdlib_test.wyn")
     passed = passed + run_test("tests/optional_test.wyn")
     passed = passed + run_test("tests/os_stdlib_test.wyn")
@@ -81,7 +84,7 @@ fn main() {
     passed = passed + run_test("examples/string_test.wyn")
     passed = passed + run_test("examples/write_file_test.wyn")
     
-    failed = 73 - passed
+    failed = 76 - passed
     
     print_str("\n=== Results ===\n")
     print_str("Passed: ")
