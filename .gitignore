@@ -5,6 +5,7 @@ build/
 *.s.s
 a.out
 a.out.s
+stage0
 
 # Package manager
 .wyn/
