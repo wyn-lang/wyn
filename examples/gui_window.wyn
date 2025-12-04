@@ -1,0 +1,27 @@
+fn main() {
+    io.print_str("Creating GUI window...")
+    io.print_newline()
+    
+    let win: int = gui.create_window("Wyn GUI Demo", 800, 600)
+    
+    gui.show_window(win)
+    
+    # Draw red rectangle
+    gui.draw_rect(win, 50, 50, 200, 100, 16711680)
+    
+    # Draw green rectangle
+    gui.draw_rect(win, 300, 50, 200, 100, 65280)
+    
+    # Draw blue rectangle
+    gui.draw_rect(win, 550, 50, 200, 100, 255)
+    
+    # Draw text
+    gui.draw_text(win, 50, 200, "Red")
+    gui.draw_text(win, 300, 200, "Green")
+    gui.draw_text(win, 550, 200, "Blue")
+    
+    io.print_str("Window created. Running event loop...")
+    io.print_newline()
+    
+    gui.run()
+}

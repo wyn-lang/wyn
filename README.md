@@ -43,9 +43,10 @@ See [benchmarks/FINAL_RESULTS.md](benchmarks/FINAL_RESULTS.md) for details.
 - **Fast** - Compiles to native code, 20-30x faster than Python
 - **Simple** - Python-like syntax
 - **Universal** - One language for everything
-- **Module system** - Clean organization (io, fs, math, http)
+- **Module system** - Clean organization (io, fs, math, http, gui)
 - **Type safe** - Explicit types, no surprises
 - **Stage 1** - Enhanced type checking & optimizations
+- **Native GUI** - Built-in GUI support using platform APIs (macOS: Cocoa)
 
 ## Stage 1 Compiler
 
@@ -67,6 +68,7 @@ Enhanced compiler with better developer experience:
 - ✅ CLI tools
 - ✅ HTTP servers
 - ✅ TUI applications
+- ✅ GUI applications (macOS)
 - ✅ File processing
 - ✅ Math/science programs
 
@@ -84,6 +86,7 @@ Enhanced compiler with better developer experience:
 - [Language Spec](docs/2-language-spec.md)
 - [Package Manager](docs/3-package-manager.md)
 - [Stdlib Reference](docs/4-stdlib-reference.md)
+- [GUI Support](docs/gui-support.md)
 - [Stage 1 Type Checker](docs/stage1-type-checker.md)
 - [Stage 1 Optimizations](docs/stage1-optimizations.md)
 - [Stage 1 Inlining](docs/stage1-inlining.md)
@@ -100,6 +103,9 @@ Enhanced compiler with better developer experience:
 
 # TUI demo
 ./build/stage0 -o tui temp/tui_demo.wyn
+
+# GUI window (macOS)
+./build/stage0 -o gui examples/gui_window.wyn
 ```
 
 ## License

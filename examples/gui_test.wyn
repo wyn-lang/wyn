@@ -1,0 +1,7 @@
+fn main() {
+    let win: int = gui.create_window("Hello Wyn GUI", 800, 600)
+    gui.show_window(win)
+    gui.draw_rect(win, 100, 100, 200, 150, 16711680)
+    gui.draw_text(win, 120, 180, "Hello, GUI!")
+    gui.run()
+}

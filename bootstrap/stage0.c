@@ -848,6 +848,15 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "exp") == 0) return "expf";
     } else if (strcmp(module, "test") == 0) {
         if (strcmp(function, "assert") == 0) return "assert";
+    } else if (strcmp(module, "gui") == 0) {
+        if (strcmp(function, "create_window") == 0) return "gui_create_window";
+        if (strcmp(function, "show_window") == 0) return "gui_show_window";
+        if (strcmp(function, "set_title") == 0) return "gui_set_title";
+        if (strcmp(function, "run") == 0) return "gui_run";
+        if (strcmp(function, "poll_events") == 0) return "gui_poll_events";
+        if (strcmp(function, "close_window") == 0) return "gui_close_window";
+        if (strcmp(function, "draw_rect") == 0) return "gui_draw_rect";
+        if (strcmp(function, "draw_text") == 0) return "gui_draw_text";
     }
     return NULL;
 }
@@ -2504,6 +2513,9 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     strcmp(e->ident, "str_concat") == 0 || strcmp(e->ident, "str_substr") == 0 ||
                     strcmp(e->ident, "str_split") == 0 ||
                     strcmp(e->ident, "tcp_send") == 0 || strcmp(e->ident, "tcp_recv") == 0 ||
+                    strcmp(e->ident, "gpu_init") == 0 || strcmp(e->ident, "gpu_device_count") == 0 ||
+                    strcmp(e->ident, "gpu_malloc") == 0 || strcmp(e->ident, "gpu_free") == 0 ||
+                    strcmp(e->ident, "gpu_sync") == 0 ||
                     strcmp(e->ident, "tcp_listen") == 0 || strcmp(e->ident, "tcp_accept") == 0 ||
                     strcmp(e->ident, "getcwd") == 0 || strcmp(e->ident, "chdir") == 0 ||
                     strcmp(e->ident, "sqrtf") == 0 || strcmp(e->ident, "sinf") == 0 ||
@@ -9083,6 +9095,18 @@ static void codegen_module(CodeGen* cg) {
         cg_emit(cg, "    popq %%rbp");
         cg_emit(cg, "    retq");
         
+        // GUI functions (external, defined in runtime/gui_macos.c)
+        if (cg->os == OS_MACOS) {
+            cg_emit(cg, "    .globl %sgui_create_window", pfx);
+            cg_emit(cg, "    .globl %sgui_show_window", pfx);
+            cg_emit(cg, "    .globl %sgui_set_title", pfx);
+            cg_emit(cg, "    .globl %sgui_run", pfx);
+            cg_emit(cg, "    .globl %sgui_poll_events", pfx);
+            cg_emit(cg, "    .globl %sgui_close_window", pfx);
+            cg_emit(cg, "    .globl %sgui_draw_rect", pfx);
+            cg_emit(cg, "    .globl %sgui_draw_text", pfx);
+        }
+        
         if (cg->os == OS_MACOS) {
             cg_emit(cg, "    .section __DATA,__data");
         } else {
@@ -9635,6 +9659,18 @@ static void codegen_module(CodeGen* cg) {
     cg_emit(cg, "    ldp x29, x30, [sp], #32");
     cg_emit(cg, "    ret");
     
+    // GUI functions (external, defined in runtime/gui_macos.c)
+    if (cg->os == OS_MACOS) {
+        cg_emit(cg, "    .globl %sgui_create_window", pfx);
+        cg_emit(cg, "    .globl %sgui_show_window", pfx);
+        cg_emit(cg, "    .globl %sgui_set_title", pfx);
+        cg_emit(cg, "    .globl %sgui_run", pfx);
+        cg_emit(cg, "    .globl %sgui_poll_events", pfx);
+        cg_emit(cg, "    .globl %sgui_close_window", pfx);
+        cg_emit(cg, "    .globl %sgui_draw_rect", pfx);
+        cg_emit(cg, "    .globl %sgui_draw_text", pfx);
+    }
+    
     if (cg->os == OS_MACOS) {
         cg_emit(cg, "    .section __DATA,__data");
     } else {
@@ -9994,6 +10030,8 @@ int main(int argc, char** argv) {
         if (!compile_only) {
             // Get directory of stage0 binary for runtime path
             char runtime_path[256];
+            char gui_runtime_path[256];
+            
             // Try multiple locations for spawn_runtime.o
             if (access("build/spawn_runtime.o", F_OK) == 0) {
                 snprintf(runtime_path, 256, "build/spawn_runtime.o");
@@ -10003,7 +10041,27 @@ int main(int argc, char** argv) {
                 runtime_path[0] = '\0';  // Not found, link without it
             }
             
-            if (runtime_path[0]) {
+            // Try multiple locations for gui_runtime.o (macOS only)
+            if (target_os == OS_MACOS) {
+                if (access("build/gui_runtime.o", F_OK) == 0) {
+                    snprintf(gui_runtime_path, 256, "build/gui_runtime.o");
+                } else if (access("../build/gui_runtime.o", F_OK) == 0) {
+                    snprintf(gui_runtime_path, 256, "../build/gui_runtime.o");
+                } else {
+                    gui_runtime_path[0] = '\0';
+                }
+            } else {
+                gui_runtime_path[0] = '\0';
+            }
+            
+            // Build link command
+            if (runtime_path[0] && gui_runtime_path[0]) {
+                snprintf(cmd, 512, "cc -o %s %s %s %s -framework Cocoa -framework CoreGraphics", 
+                         output_file, asm_file, runtime_path, gui_runtime_path);
+            } else if (gui_runtime_path[0]) {
+                snprintf(cmd, 512, "cc -o %s %s %s -framework Cocoa -framework CoreGraphics", 
+                         output_file, asm_file, gui_runtime_path);
+            } else if (runtime_path[0]) {
                 snprintf(cmd, 512, "cc -o %s %s %s", output_file, asm_file, runtime_path);
             } else {
                 snprintf(cmd, 512, "cc -o %s %s", output_file, asm_file);

@@ -4,10 +4,12 @@ VERSION = 0.1.0
 CC = cc
 CFLAGS = -Wall -Wextra -std=c11 -O2
 DEBUG_FLAGS = -g -O0 -DDEBUG
+GUI_CFLAGS = -framework Cocoa -framework CoreGraphics
 
 # Directories
 BOOTSTRAP_DIR = bootstrap
 BUILD_DIR = build
+RUNTIME_DIR = runtime
 SRC_DIR = src
 TESTS_DIR = tests
 EXAMPLES_DIR = examples
@@ -17,9 +19,13 @@ PREFIX ?= /usr/local
 STAGE0_SRC = $(BOOTSTRAP_DIR)/stage0.c
 STAGE0_BIN = $(BUILD_DIR)/stage0
 
+# Runtime libraries
+GUI_RUNTIME_SRC = $(RUNTIME_DIR)/gui_macos.c
+GUI_RUNTIME_OBJ = $(BUILD_DIR)/gui_runtime.o
+
 # Default target
 .PHONY: all
-all: stage0
+all: stage0 gui-runtime
 
 # Create build directory
 $(BUILD_DIR):
@@ -31,6 +37,13 @@ stage0: $(BUILD_DIR) $(STAGE0_BIN)
 
 $(STAGE0_BIN): $(STAGE0_SRC)
 	$(CC) $(CFLAGS) -o $@ $<
+
+# Build GUI runtime
+.PHONY: gui-runtime
+gui-runtime: $(BUILD_DIR) $(GUI_RUNTIME_OBJ)
+
+$(GUI_RUNTIME_OBJ): $(GUI_RUNTIME_SRC)
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 # Debug build of Stage 0
 .PHONY: stage0-debug
