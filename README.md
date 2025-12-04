@@ -126,7 +126,7 @@ Stage 1 provides 28-42% performance improvements and enhanced developer experien
 
 ## Status
 
-- **47/48 tests passing**
+- **76/76 tests passing**
 - **500+ stdlib functions**
 - **Production ready**
 - **Stage 1 complete**
