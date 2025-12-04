@@ -17,9 +17,11 @@ This installs `wyn` to `/usr/local/bin`.
 ### Project Management
 
 #### `wyn init`
-Initialize a new project in the current directory.
+#### `wyn init`
+Initialize a new project **in the current directory** (like `git init`).
 
 ```bash
+mkdir myapp && cd myapp
 wyn init
 ```
 
@@ -30,12 +32,16 @@ Creates:
 - `.wyn/` - Cache directory
 
 #### `wyn new <name>`
-Create a new project with the given name.
+Create a **new directory** with a project (like `cargo new`).
 
 ```bash
 wyn new myapp
 cd myapp
 ```
+
+Creates `myapp/` directory with the same structure as `wyn init`.
+
+**Difference**: `init` uses current directory, `new` creates a new directory.
 
 #### `wyn run [file|.]`
 Run a Wyn program.
