@@ -117,7 +117,7 @@ uninstall:
 # Run all tests
 .PHONY: test
 test: stage0
-	@./$(STAGE0_BIN) --stage1-opt -o $(BUILD_DIR)/run_tests $(TESTS_DIR)/run_tests.wyn
+	@./$(STAGE0_BIN) --stage1-opt -o $(BUILD_DIR)/run_tests $(TESTS_DIR)/_run_tests.wyn
 	@./$(BUILD_DIR)/run_tests || true
 
 # Fast test - suppress compiler output
