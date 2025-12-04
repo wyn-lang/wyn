@@ -49,6 +49,11 @@ Native Windows support planned for future release.
 
 **Note:** The `wyn` CLI tool is written in Wyn itself and works cross-platform. The compiler binary (`wyn-compiler`) can also be used directly.
 
+**Going forward:**
+- Development: `./build/wyn version` (use local build)
+- Installed: `wyn version` (use installed binary)
+- All features work on Windows, macOS, and Linux
+
 ## Quick Start
 
 ```wyn
