@@ -1,13 +1,75 @@
 #!/bin/bash
 # Wyn Package Manager
-# Simple package management inspired by Go
 
 set -e
 
 CMD="${1:-help}"
-shift || true
+ARG="${2:-.}"
+
+# Find project root (directory with wyn.toml)
+find_project_root() {
+    local dir="$1"
+    while [ "$dir" != "/" ]; do
+        if [ -f "$dir/wyn.toml" ]; then
+            echo "$dir"
+            return 0
+        fi
+        dir=$(dirname "$dir")
+    done
+    return 1
+}
+
+# Get entry point from wyn.toml or use default
+get_entry_point() {
+    if [ -f "wyn.toml" ]; then
+        grep "entry" wyn.toml | cut -d'"' -f2 || echo "src/main.wyn"
+    else
+        echo "src/main.wyn"
+    fi
+}
 
 case "$CMD" in
+    run)
+        if [ "$ARG" = "." ]; then
+            # Run current directory
+            PROJECT_ROOT=$(find_project_root "$(pwd)")
+            if [ -z "$PROJECT_ROOT" ]; then
+                echo "Error: Not in a Wyn project (no wyn.toml found)"
+                exit 1
+            fi
+            cd "$PROJECT_ROOT"
+            ENTRY=$(get_entry_point)
+            echo "Running $ENTRY..."
+            ./build/stage0 --stage1-tc --stage1-opt -o build/main "$ENTRY"
+            ./build/main
+        else
+            # Run specific file
+            ./build/stage0 --stage1-tc --stage1-opt -o /tmp/wyn_run "$ARG"
+            /tmp/wyn_run
+        fi
+        ;;
+        
+    build)
+        if [ "$ARG" = "." ]; then
+            # Build current directory
+            PROJECT_ROOT=$(find_project_root "$(pwd)")
+            if [ -z "$PROJECT_ROOT" ]; then
+                echo "Error: Not in a Wyn project (no wyn.toml found)"
+                exit 1
+            fi
+            cd "$PROJECT_ROOT"
+            ENTRY=$(get_entry_point)
+            NAME=$(grep "name" wyn.toml | head -1 | cut -d'"' -f2 || echo "main")
+            echo "Building $NAME from $ENTRY..."
+            ./build/stage0 --stage1-tc --stage1-opt -o "build/$NAME" "$ENTRY"
+            echo "✓ Built: build/$NAME"
+        else
+            # Build specific file
+            OUTPUT=$(basename "$ARG" .wyn)
+            ./build/stage0 --stage1-tc --stage1-opt -o "$OUTPUT" "$ARG"
+            echo "✓ Built: $OUTPUT"
+        fi
+        ;;
     init)
         echo "Initializing Wyn project..."
         cat > wyn.toml << 'EOF'

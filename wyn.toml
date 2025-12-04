@@ -1,16 +1,6 @@
 [package]
-name = "wyn"
+name = "myproject"
 version = "0.1.0"
-description = "The Wyn programming language compiler"
-authors = ["Wyn Contributors"]
-license = "MIT"
 
 [build]
-target = "executable"
 entry = "src/main.wyn"
-
-# Bootstrap: Initially we write the compiler in a subset of Wyn
-# that can be compiled by a minimal C bootstrap compiler
-[bootstrap]
-stage0 = "bootstrap/stage0.c"  # Minimal C compiler
-stage1 = "src/main.wyn"        # Wyn compiler in Wyn
