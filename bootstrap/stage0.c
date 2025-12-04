@@ -4250,6 +4250,7 @@ typedef struct {
     Expr* lambdas[64];     // Collected lambdas to emit
     int lambda_count;
     int spawn_count;       // Track spawned threads
+    bool in_thread_context;  // True when generating code inside a thread function
 } CodeGen;
 
 static CodeGen* codegen_new(FILE* out, Module* m, Arch arch, TargetOS os, TypeChecker* tc) {
@@ -4431,11 +4432,24 @@ static void cg_atomic_load(CodeGen* cg, const char* name, int offset) {
     if (cg->arch == ARCH_ARM64) {
         int lbl = cg_new_label(cg);
         cg_emit(cg, "L_retry_%d:", lbl);
-        cg_emit_add_offset(cg, "x9", 16 + offset);
-        cg_emit(cg, "    ldxr x0, [x9]");  // Load-exclusive
+        if (cg->in_thread_context) {
+            // In thread: local contains pointer, load through it
+            cg_emit_ldr_offset(cg, "x9", 16 + offset);
+            cg_emit(cg, "    ldxr x0, [x9]");
+        } else {
+            // In main: local IS the variable
+            cg_emit_add_offset(cg, "x9", 16 + offset);
+            cg_emit(cg, "    ldxr x0, [x9]");
+        }
     } else {
-        // x86_64: regular load is atomic for aligned 64-bit
-        cg_emit(cg, "    movq -%d(%%rbp), %%rax", offset);
+        if (cg->in_thread_context) {
+            // In thread: local contains pointer, dereference it
+            cg_emit(cg, "    movq -%d(%%rbp), %%rax", offset);
+            cg_emit(cg, "    movq (%%rax), %%rax");
+        } else {
+            // In main: regular load
+            cg_emit(cg, "    movq -%d(%%rbp), %%rax", offset);
+        }
     }
 }
 
@@ -4443,14 +4457,26 @@ static void cg_atomic_load(CodeGen* cg, const char* name, int offset) {
 static void cg_atomic_store(CodeGen* cg, const char* name, int offset) {
     if (cg->arch == ARCH_ARM64) {
         int lbl = cg_new_label(cg);
-        cg_emit_add_offset(cg, "x9", 16 + offset);
+        if (cg->in_thread_context) {
+            // In thread: local contains pointer
+            cg_emit_ldr_offset(cg, "x9", 16 + offset);
+        } else {
+            // In main: local IS the variable
+            cg_emit_add_offset(cg, "x9", 16 + offset);
+        }
         cg_emit(cg, "L_store_%d:", lbl);
-        cg_emit(cg, "    ldxr x10, [x9]");  // Load-exclusive
-        cg_emit(cg, "    stxr w11, x0, [x9]");  // Store-exclusive
-        cg_emit(cg, "    cbnz w11, L_store_%d", lbl);  // Retry if failed
+        cg_emit(cg, "    ldxr x10, [x9]");
+        cg_emit(cg, "    stxr w11, x0, [x9]");
+        cg_emit(cg, "    cbnz w11, L_store_%d", lbl);
     } else {
-        // x86_64: use lock prefix for atomic store
-        cg_emit(cg, "    lock xchgq %%rax, -%d(%%rbp)", offset);
+        if (cg->in_thread_context) {
+            // In thread: load pointer, store through it
+            cg_emit(cg, "    movq -%d(%%rbp), %%rcx", offset);
+            cg_emit(cg, "    lock xchgq %%rax, (%%rcx)");
+        } else {
+            // In main: direct atomic store
+            cg_emit(cg, "    lock xchgq %%rax, -%d(%%rbp)", offset);
+        }
     }
 }
 
@@ -7827,16 +7853,20 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                     cg_emit(cg, "    pushq %%rbp");
                     cg_emit(cg, "    movq %%rsp, %%rbp");
                     cg_emit(cg, "    subq $256, %%rsp");
-                    cg_emit(cg, "    movq %%rdi, -8(%%rbp)");  // Save context ptr
                     
-                    // Load captured var pointers from context into locals
+                    // Save context and setup locals with var addresses
                     int saved_offset = cg->stack_offset;
                     int saved_count = cg->local_count;
+                    bool saved_in_thread = cg->in_thread_context;
+                    cg->in_thread_context = true;  // Mark that we're in a thread
+                    
+                    // Store var addresses as locals (they'll be dereferenced on access)
                     for (int i = 0; i < cap_count; i++) {
                         cg_add_local(cg, s->spawn.captured_vars[i], NULL);
-                        cg_emit(cg, "    movq -8(%%rbp), %%rax");  // Load context ptr
-                        cg_emit(cg, "    movq %d(%%rax), %%rax", i * 8);  // Load var pointer
+                        cg_emit(cg, "    movq %d(%%rdi), %%rax", i * 8);  // Load var address from context
                         cg_emit(cg, "    movq %%rax, -%d(%%rbp)", cg->locals[cg->local_count - 1].offset);
+                        // Mark as shared so we use atomic ops
+                        cg->locals[cg->local_count - 1].is_shared = true;
                     }
                     
                     // Execute spawn body
@@ -7852,8 +7882,9 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                     // Restore state
                     cg->stack_offset = saved_offset;
                     cg->local_count = saved_count;
+                    cg->in_thread_context = saved_in_thread;
                     
-                    // Back to main code - allocate context and store var pointers
+                    // Back to main code - allocate context and store var addresses
                     cg_emit(cg, "L%d:", skip_label);
                     if (cap_count > 0) {
                         // malloc(cap_count * 8)
@@ -7861,11 +7892,11 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                         cg_emit(cg, "    call _malloc");
                         cg_emit(cg, "    movq %%rax, %%r12");  // Save context ptr
                         
-                        // Store pointers to captured vars in context
+                        // Store addresses of captured vars in context
                         for (int i = 0; i < cap_count; i++) {
                             int off = cg_local_offset(cg, s->spawn.captured_vars[i]);
                             if (off) {
-                                cg_emit(cg, "    leaq -%d(%%rbp), %%rax", off);  // Get address of var
+                                cg_emit(cg, "    leaq -%d(%%rbp), %%rax", off);  // Get address
                                 cg_emit(cg, "    movq %%rax, %d(%%r12)", i * 8);
                             }
                         }

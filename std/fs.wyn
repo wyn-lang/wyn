@@ -38,13 +38,31 @@ fn append(path: str, content: str) -> Result[(), str] {
 # Stage 1: Will support array building for return value
 # Requires: Runtime support for file I/O syscalls
 fn read_lines(path: str) -> Result[[str], str] {
-    return err("not implemented")
+    let content_result = read_file(path)
+    match content_result {
+        ok(content) => {
+            let lines = str_split(content, "\n")
+            return ok(lines)
+        }
+        err(e) => return err(e)
+    }
 }
 
 # Write lines to file with newline separators
 # Requires: Runtime support for file I/O syscalls
 fn write_lines(path: str, lines: [str]) -> Result[(), str] {
-    return err("not implemented")
+    let mut content = ""
+    let mut i = 0
+    while i < len(lines) {
+        content = str_concat(content, lines[i])
+        content = str_concat(content, "\n")
+        i = i + 1
+    }
+    let result = write_file(path, content)
+    match result {
+        ok(_) => return ok(())
+        err(e) => return err(e)
+    }
 }
 
 # --- Directory Operations ---
@@ -97,13 +115,27 @@ fn remove_all(path: str) -> Result[(), str] {
 # Stage 1: Will support array building for return value
 # Requires: Runtime support for filesystem syscalls
 fn list(path: str) -> Result[[str], str] {
-    return err("not implemented")
+    let result = list_dir(path)
+    match result {
+        ok(entries) => return ok(entries)
+        err(e) => return err(e)
+    }
 }
 
 # Copy file from src to dst
 # Requires: Runtime support for filesystem syscalls
 fn copy(src: str, dst: str) -> Result[(), str] {
-    return err("not implemented")
+    let content_result = read_file(src)
+    match content_result {
+        ok(content) => {
+            let write_result = write_file(dst, content)
+            match write_result {
+                ok(_) => return ok(())
+                err(e) => return err(e)
+            }
+        }
+        err(e) => return err(e)
+    }
 }
 
 # Move/rename file from src to dst
