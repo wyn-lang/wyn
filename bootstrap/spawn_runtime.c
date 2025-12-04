@@ -1,4 +1,4 @@
-// Wyn spawn runtime - link this with compiled programs
+// Wyn spawn runtime
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,18 +9,27 @@ static pthread_t threads[MAX_THREADS];
 static int thread_count = 0;
 static pthread_mutex_t spawn_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-typedef void (*thread_func_t)(void);
+typedef void (*thread_func_t)(long);
+
+struct thread_arg {
+    thread_func_t func;
+    long arg;
+};
 
 static void* thread_wrapper(void* arg) {
-    thread_func_t func = (thread_func_t)arg;
-    func();
+    struct thread_arg* ta = (struct thread_arg*)arg;
+    ta->func(ta->arg);
+    free(ta);
     return NULL;
 }
 
-void __wyn_spawn(thread_func_t func) {
+void __wyn_spawn(thread_func_t func, long arg) {
     pthread_mutex_lock(&spawn_mutex);
     if (thread_count < MAX_THREADS) {
-        pthread_create(&threads[thread_count++], NULL, thread_wrapper, (void*)func);
+        struct thread_arg* ta = malloc(sizeof(struct thread_arg));
+        ta->func = func;
+        ta->arg = arg;
+        pthread_create(&threads[thread_count++], NULL, thread_wrapper, ta);
     } else {
         fprintf(stderr, "Error: Maximum thread limit reached (%d)\n", MAX_THREADS);
     }

@@ -27,9 +27,11 @@ fn path_exists(path: str) -> bool {
 # Get the size of a file in bytes
 # Returns ok(size) on success, or err(message) on failure
 fn get_file_size(path: str) -> Result[int, str] {
-    # Stage 0: Result type matching not fully supported
-    # Will be properly implemented in Stage 1
-    return err("not implemented")
+    let size = file_size(path)
+    if size >= 0 {
+        return ok(size)
+    }
+    return err("File not found or error")
 }
 
 # Read a line from standard input

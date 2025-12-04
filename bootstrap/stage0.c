@@ -4133,6 +4133,96 @@ static void optimize_loop_unrolling(Module* m) {
 }
 
 // ============================================================================
+// Variable Capture Analysis for spawn
+// ============================================================================
+
+static void find_used_vars_expr(Expr* e, char vars[][MAX_IDENT_LEN], int* count, int max) {
+    if (!e || *count >= max) return;
+    
+    if (e->kind == EXPR_IDENT) {
+        // Check if already in list
+        for (int i = 0; i < *count; i++) {
+            if (strcmp(vars[i], e->ident) == 0) return;
+        }
+        strcpy(vars[(*count)++], e->ident);
+        return;
+    }
+    
+    switch (e->kind) {
+        case EXPR_BINARY:
+            find_used_vars_expr(e->binary.left, vars, count, max);
+            find_used_vars_expr(e->binary.right, vars, count, max);
+            break;
+        case EXPR_UNARY:
+            find_used_vars_expr(e->unary.operand, vars, count, max);
+            break;
+        case EXPR_CALL:
+            for (int i = 0; i < e->call.arg_count; i++)
+                find_used_vars_expr(e->call.args[i], vars, count, max);
+            break;
+        case EXPR_INDEX:
+            find_used_vars_expr(e->index.object, vars, count, max);
+            find_used_vars_expr(e->index.index, vars, count, max);
+            break;
+        default: break;
+    }
+}
+
+static void find_used_vars_stmt(Stmt* s, char vars[][MAX_IDENT_LEN], int* count, int max) {
+    if (!s || *count >= max) return;
+    
+    switch (s->kind) {
+        case STMT_LET:
+            find_used_vars_expr(s->let.value, vars, count, max);
+            break;
+        case STMT_ASSIGN:
+            find_used_vars_expr(s->assign.target, vars, count, max);
+            find_used_vars_expr(s->assign.value, vars, count, max);
+            break;
+        case STMT_EXPR:
+            find_used_vars_expr(s->expr.expr, vars, count, max);
+            break;
+        case STMT_RETURN:
+            find_used_vars_expr(s->ret.value, vars, count, max);
+            break;
+        case STMT_WHILE:
+            find_used_vars_expr(s->while_stmt.cond, vars, count, max);
+            for (int i = 0; i < s->while_stmt.body_count; i++)
+                find_used_vars_stmt(s->while_stmt.body[i], vars, count, max);
+            break;
+        default: break;
+    }
+}
+
+static void analyze_spawn_captures(Module* m) {
+    // Analyze each function for spawn statements
+    for (int i = 0; i < m->function_count; i++) {
+        FnDef* fn = &m->functions[i];
+        for (int j = 0; j < fn->body_count; j++) {
+            Stmt* s = fn->body[j];
+            if (s->kind == STMT_SPAWN) {
+                // Find variables used in spawn body
+                char used_vars[64][MAX_IDENT_LEN];
+                int used_count = 0;
+                
+                for (int k = 0; k < s->spawn.body_count; k++) {
+                    find_used_vars_stmt(s->spawn.body[k], used_vars, &used_count, 64);
+                }
+                
+                // Store captured variables
+                if (used_count > 0) {
+                    s->spawn.captured_vars = malloc(sizeof(char*) * used_count);
+                    s->spawn.captured_count = used_count;
+                    for (int k = 0; k < used_count; k++) {
+                        s->spawn.captured_vars[k] = strdup(used_vars[k]);
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ============================================================================
 // Code Generator (ARM64 for Apple Silicon)
 // ============================================================================
 
@@ -4146,7 +4236,7 @@ typedef struct {
     TargetOS os;
     int label_count;
     int stack_offset;
-    struct { char name[MAX_IDENT_LEN]; int offset; Type* type; } locals[256];
+    struct { char name[MAX_IDENT_LEN]; int offset; Type* type; bool is_shared; } locals[256];
     int local_count;
     struct { char* str; int label; } strings[256];
     int string_count;
@@ -4325,7 +4415,43 @@ static void cg_add_local(CodeGen* cg, const char* name, Type* type) {
     strcpy(cg->locals[cg->local_count].name, name);
     cg->locals[cg->local_count].offset = cg->stack_offset;
     cg->locals[cg->local_count].type = type;
+    cg->locals[cg->local_count].is_shared = false;
     cg->local_count++;
+}
+
+static bool cg_is_shared(CodeGen* cg, const char* name) {
+    for (int i = cg->local_count - 1; i >= 0; i--) {
+        if (strcmp(cg->locals[i].name, name) == 0) return cg->locals[i].is_shared;
+    }
+    return false;
+}
+
+// Atomic load for shared variables
+static void cg_atomic_load(CodeGen* cg, const char* name, int offset) {
+    if (cg->arch == ARCH_ARM64) {
+        int lbl = cg_new_label(cg);
+        cg_emit(cg, "L_retry_%d:", lbl);
+        cg_emit_add_offset(cg, "x9", 16 + offset);
+        cg_emit(cg, "    ldxr x0, [x9]");  // Load-exclusive
+    } else {
+        // x86_64: regular load is atomic for aligned 64-bit
+        cg_emit(cg, "    movq -%d(%%rbp), %%rax", offset);
+    }
+}
+
+// Atomic store for shared variables
+static void cg_atomic_store(CodeGen* cg, const char* name, int offset) {
+    if (cg->arch == ARCH_ARM64) {
+        int lbl = cg_new_label(cg);
+        cg_emit_add_offset(cg, "x9", 16 + offset);
+        cg_emit(cg, "L_store_%d:", lbl);
+        cg_emit(cg, "    ldxr x10, [x9]");  // Load-exclusive
+        cg_emit(cg, "    stxr w11, x0, [x9]");  // Store-exclusive
+        cg_emit(cg, "    cbnz w11, L_store_%d", lbl);  // Retry if failed
+    } else {
+        // x86_64: use lock prefix for atomic store
+        cg_emit(cg, "    lock xchgq %%rax, -%d(%%rbp)", offset);
+    }
 }
 
 static Type* cg_local_type(CodeGen* cg, const char* name) {
@@ -4340,6 +4466,29 @@ static FnDef* cg_lookup_fn(CodeGen* cg, const char* name) {
         if (strcmp(cg->module->functions[i].name, name) == 0) return &cg->module->functions[i];
     }
     return NULL;
+}
+
+// Forward declarations for variable capture
+static void find_used_vars_stmt(Stmt* s, char vars[][MAX_IDENT_LEN], int* count, int max);
+
+// Mark variables as shared if used in spawn blocks
+static void mark_shared_vars(CodeGen* cg, Stmt** body, int body_count) {
+    char used_vars[64][MAX_IDENT_LEN];
+    int used_count = 0;
+    
+    // Find all variables used in spawn body
+    for (int i = 0; i < body_count; i++) {
+        find_used_vars_stmt(body[i], used_vars, &used_count, 64);
+    }
+    
+    // Mark them as shared in locals
+    for (int i = 0; i < used_count; i++) {
+        for (int j = 0; j < cg->local_count; j++) {
+            if (strcmp(cg->locals[j].name, used_vars[i]) == 0) {
+                cg->locals[j].is_shared = true;
+            }
+        }
+    }
 }
 
 // Infer expression type for codegen (simplified)
@@ -4399,7 +4548,13 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_emit(cg, "    movq $%lld, %%rax", (long long)enum_val);
                 } else {
                     int off = cg_local_offset(cg, e->ident);
-                    if (off) cg_emit(cg, "    movq -%d(%%rbp), %%rax", off);
+                    if (off) {
+                        if (cg_is_shared(cg, e->ident)) {
+                            cg_atomic_load(cg, e->ident, off);
+                        } else {
+                            cg_emit(cg, "    movq -%d(%%rbp), %%rax", off);
+                        }
+                    }
                 }
                 break;
             }
@@ -5826,7 +5981,11 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             } else {
                 int off = cg_local_offset(cg, e->ident);
                 if (off) {
-                    cg_emit_ldr_offset(cg, "x0", 16 + off);  // +16 for saved x29/x30
+                    if (cg_is_shared(cg, e->ident)) {
+                        cg_atomic_load(cg, e->ident, off);
+                    } else {
+                        cg_emit_ldr_offset(cg, "x0", 16 + off);  // +16 for saved x29/x30
+                    }
                 }
             }
             break;
@@ -7475,7 +7634,13 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                     // Compound assignment: load current value, apply op, store
                     if (s->assign.target->kind == EXPR_IDENT) {
                         int off = cg_local_offset(cg, s->assign.target->ident);
-                        if (off) cg_emit(cg, "    movq -%d(%%rbp), %%rax", off);
+                        if (off) {
+                            if (cg_is_shared(cg, s->assign.target->ident)) {
+                                cg_atomic_load(cg, s->assign.target->ident, off);
+                            } else {
+                                cg_emit(cg, "    movq -%d(%%rbp), %%rax", off);
+                            }
+                        }
                     }
                     cg_emit(cg, "    pushq %%rax");
                     cg_expr(cg, s->assign.value);
@@ -7492,7 +7657,13 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                 }
                 if (s->assign.target->kind == EXPR_IDENT) {
                     int off = cg_local_offset(cg, s->assign.target->ident);
-                    if (off) cg_emit(cg, "    movq %%rax, -%d(%%rbp)", off);
+                    if (off) {
+                        if (cg_is_shared(cg, s->assign.target->ident)) {
+                            cg_atomic_store(cg, s->assign.target->ident, off);
+                        } else {
+                            cg_emit(cg, "    movq %%rax, -%d(%%rbp)", off);
+                        }
+                    }
                 } else if (s->assign.target->kind == EXPR_DEREF) {
                     // *ptr = value: store through pointer
                     cg_emit(cg, "    pushq %%rax");  // save value
@@ -7639,18 +7810,34 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                 cg_emit(cg, "    jmp L%d", cg->loop_start_label);
                 break;
             case STMT_SPAWN:
+                // Mark shared variables before generating thread function
+                mark_shared_vars(cg, s->spawn.body, s->spawn.body_count);
+                
                 // Generate thread function and call __wyn_spawn
                 {
                     int thread_fn_label = cg_new_label(cg);
                     int skip_label = cg_new_label(cg);
+                    int cap_count = s->spawn.captured_count;
                     
                     // Skip thread function definition
                     cg_emit(cg, "    jmp L%d", skip_label);
                     
-                    // Thread function
+                    // Thread function - receives context in %rdi
                     cg_emit(cg, "L%d:", thread_fn_label);
                     cg_emit(cg, "    pushq %%rbp");
                     cg_emit(cg, "    movq %%rsp, %%rbp");
+                    cg_emit(cg, "    subq $256, %%rsp");
+                    cg_emit(cg, "    movq %%rdi, -8(%%rbp)");  // Save context ptr
+                    
+                    // Load captured var pointers from context into locals
+                    int saved_offset = cg->stack_offset;
+                    int saved_count = cg->local_count;
+                    for (int i = 0; i < cap_count; i++) {
+                        cg_add_local(cg, s->spawn.captured_vars[i], NULL);
+                        cg_emit(cg, "    movq -8(%%rbp), %%rax");  // Load context ptr
+                        cg_emit(cg, "    movq %d(%%rax), %%rax", i * 8);  // Load var pointer
+                        cg_emit(cg, "    movq %%rax, -%d(%%rbp)", cg->locals[cg->local_count - 1].offset);
+                    }
                     
                     // Execute spawn body
                     for (int i = 0; i < s->spawn.body_count; i++) {
@@ -7658,13 +7845,40 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                     }
                     
                     cg_emit(cg, "    xorq %%rax, %%rax");
+                    cg_emit(cg, "    movq %%rbp, %%rsp");
                     cg_emit(cg, "    popq %%rbp");
                     cg_emit(cg, "    retq");
                     
-                    // Back to main code - call __wyn_spawn
+                    // Restore state
+                    cg->stack_offset = saved_offset;
+                    cg->local_count = saved_count;
+                    
+                    // Back to main code - allocate context and store var pointers
                     cg_emit(cg, "L%d:", skip_label);
-                    cg_emit(cg, "    leaq L%d(%%rip), %%rdi", thread_fn_label);
-                    cg_emit(cg, "    call ___wyn_spawn");
+                    if (cap_count > 0) {
+                        // malloc(cap_count * 8)
+                        cg_emit(cg, "    movq $%d, %%rdi", cap_count * 8);
+                        cg_emit(cg, "    call _malloc");
+                        cg_emit(cg, "    movq %%rax, %%r12");  // Save context ptr
+                        
+                        // Store pointers to captured vars in context
+                        for (int i = 0; i < cap_count; i++) {
+                            int off = cg_local_offset(cg, s->spawn.captured_vars[i]);
+                            if (off) {
+                                cg_emit(cg, "    leaq -%d(%%rbp), %%rax", off);  // Get address of var
+                                cg_emit(cg, "    movq %%rax, %d(%%r12)", i * 8);
+                            }
+                        }
+                        
+                        // Call __wyn_spawn with function and context
+                        cg_emit(cg, "    leaq L%d(%%rip), %%rdi", thread_fn_label);
+                        cg_emit(cg, "    movq %%r12, %%rsi");  // Context ptr
+                        cg_emit(cg, "    call ___wyn_spawn");
+                    } else {
+                        cg_emit(cg, "    leaq L%d(%%rip), %%rdi", thread_fn_label);
+                        cg_emit(cg, "    xorq %%rsi, %%rsi");
+                        cg_emit(cg, "    call ___wyn_spawn");
+                    }
                     cg->spawn_count++;
                 }
                 break;
@@ -7783,7 +7997,13 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                 // Compound assignment: load current value, apply op, store
                 if (s->assign.target->kind == EXPR_IDENT) {
                     int off = cg_local_offset(cg, s->assign.target->ident);
-                    if (off) cg_emit_ldr_offset(cg, "x0", 16 + off);
+                    if (off) {
+                        if (cg_is_shared(cg, s->assign.target->ident)) {
+                            cg_atomic_load(cg, s->assign.target->ident, off);
+                        } else {
+                            cg_emit_ldr_offset(cg, "x0", 16 + off);
+                        }
+                    }
                 }
                 cg_emit(cg, "    str x0, [sp, #-16]!");
                 cg_expr(cg, s->assign.value);
@@ -7800,7 +8020,13 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
             }
             if (s->assign.target->kind == EXPR_IDENT) {
                 int off = cg_local_offset(cg, s->assign.target->ident);
-                if (off) cg_emit_str_offset(cg, "x0", 16 + off);
+                if (off) {
+                    if (cg_is_shared(cg, s->assign.target->ident)) {
+                        cg_atomic_store(cg, s->assign.target->ident, off);
+                    } else {
+                        cg_emit_str_offset(cg, "x0", 16 + off);
+                    }
+                }
             } else if (s->assign.target->kind == EXPR_DEREF) {
                 // *ptr = value: store through pointer
                 cg_emit(cg, "    str x0, [sp, #-16]!");  // save value
@@ -7987,18 +8213,32 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
             break;
         
         case STMT_SPAWN:
+            // Mark shared variables before generating thread function
+            mark_shared_vars(cg, s->spawn.body, s->spawn.body_count);
+            
             // Generate thread function and call __wyn_spawn
             {
                 int thread_fn_label = cg_new_label(cg);
                 int skip_label = cg_new_label(cg);
+                int cap_count = s->spawn.captured_count;
                 
                 // Skip thread function definition
                 cg_emit(cg, "    b L%d", skip_label);
                 
-                // Thread function
+                // Thread function - receives context in x0
                 cg_emit(cg, "L%d:", thread_fn_label);
-                cg_emit(cg, "    stp x29, x30, [sp, #-16]!");
+                cg_emit(cg, "    sub sp, sp, #4096");
+                cg_emit(cg, "    stp x29, x30, [sp]");
                 cg_emit(cg, "    mov x29, sp");
+                
+                // Load captured vars from context into locals
+                int saved_offset = cg->stack_offset;
+                int saved_count = cg->local_count;
+                for (int i = 0; i < cap_count; i++) {
+                    cg_add_local(cg, s->spawn.captured_vars[i], NULL);
+                    cg_emit(cg, "    ldr x1, [x0, #%d]", i * 8);
+                    cg_emit_str_offset(cg, "x1", 16 + cg->locals[cg->local_count - 1].offset);
+                }
                 
                 // Execute spawn body
                 for (int i = 0; i < s->spawn.body_count; i++) {
@@ -8006,14 +8246,42 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                 }
                 
                 cg_emit(cg, "    mov x0, #0");
-                cg_emit(cg, "    ldp x29, x30, [sp], #16");
+                cg_emit(cg, "    ldp x29, x30, [sp]");
+                cg_emit(cg, "    add sp, sp, #4096");
                 cg_emit(cg, "    ret");
                 
-                // Back to main code - call __wyn_spawn
+                // Restore state
+                cg->stack_offset = saved_offset;
+                cg->local_count = saved_count;
+                
+                // Back to main code - allocate context and copy vars
                 cg_emit(cg, "L%d:", skip_label);
-                cg_emit(cg, "    adrp x0, L%d@PAGE", thread_fn_label);
-                cg_emit(cg, "    add x0, x0, L%d@PAGEOFF", thread_fn_label);
-                cg_emit(cg, "    bl ___wyn_spawn");
+                if (cap_count > 0) {
+                    // malloc(cap_count * 8)
+                    cg_emit(cg, "    mov x0, #%d", cap_count * 8);
+                    cg_emit(cg, "    bl _malloc");
+                    cg_emit(cg, "    mov x19, x0");  // Save context ptr
+                    
+                    // Copy captured vars to context
+                    for (int i = 0; i < cap_count; i++) {
+                        int off = cg_local_offset(cg, s->spawn.captured_vars[i]);
+                        if (off) {
+                            cg_emit_ldr_offset(cg, "x1", 16 + off);
+                            cg_emit(cg, "    str x1, [x19, #%d]", i * 8);
+                        }
+                    }
+                    
+                    // Call __wyn_spawn with function and context
+                    cg_emit(cg, "    adrp x0, L%d@PAGE", thread_fn_label);
+                    cg_emit(cg, "    add x0, x0, L%d@PAGEOFF", thread_fn_label);
+                    cg_emit(cg, "    mov x1, x19");  // Context ptr
+                    cg_emit(cg, "    bl ___wyn_spawn");
+                } else {
+                    cg_emit(cg, "    adrp x0, L%d@PAGE", thread_fn_label);
+                    cg_emit(cg, "    add x0, x0, L%d@PAGEOFF", thread_fn_label);
+                    cg_emit(cg, "    mov x1, #0");
+                    cg_emit(cg, "    bl ___wyn_spawn");
+                }
                 cg->spawn_count++;
             }
             break;
@@ -9655,6 +9923,9 @@ int main(int argc, char** argv) {
             optimize_bounds_checks(module, true);
         }
     }
+    
+    // Analyze spawn variable captures
+    analyze_spawn_captures(module);
     
     // Code generation
     if (emit_asm) {
