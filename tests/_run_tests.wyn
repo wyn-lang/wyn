@@ -37,6 +37,11 @@ fn main() {
     passed = passed + run_test("tests/random_stdlib_test.wyn")
     passed = passed + run_test("tests/regex_stdlib_test.wyn")
     passed = passed + run_test("tests/spawn_simple.wyn")
+    passed = passed + run_test("tests/spawn_capture_test.wyn")
+    passed = passed + run_test("tests/spawn_shared_counter_test.wyn")
+    passed = passed + run_test("tests/spawn_shared_array_test.wyn")
+    passed = passed + run_test("tests/spawn_multiple_vars_test.wyn")
+    passed = passed + run_test("tests/spawn_nested_capture_test.wyn")
     passed = passed + run_test("tests/stage1_test.wyn")
     passed = passed + run_test("tests/str_find_test.wyn")
     passed = passed + run_test("tests/string_funcs_test.wyn")
@@ -83,7 +88,7 @@ fn main() {
     passed = passed + run_test("examples/string_test.wyn")
     passed = passed + run_test("examples/write_file_test.wyn")
     
-    let failed: int = 76 - passed
+    let failed: int = 81 - passed
     
     print_str("\n=== Results ===\n")
     print_str("Passed: ")

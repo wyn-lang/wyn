@@ -1,0 +1,35 @@
+fn main() {
+    test_shared_counter()
+    test_counter_with_loop()
+}
+
+fn test_shared_counter() {
+    let mut counter: int = 0
+    
+    for i in 0..10 {
+        spawn {
+            counter = counter + 1
+        }
+    }
+    
+    sleep_ms(200)
+    assert(counter == 10)
+}
+
+fn test_counter_with_loop() {
+    let mut total: int = 0
+    
+    for i in 0..5 {
+        spawn {
+            total = total + i
+        }
+    }
+    
+    sleep_ms(200)
+    assert(total == 10)
+}
+
+fn sleep_ms(ms: int) {
+    let start: int = time_now_ms()
+    while time_now_ms() - start < ms {}
+}

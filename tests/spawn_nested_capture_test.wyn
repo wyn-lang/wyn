@@ -1,0 +1,36 @@
+fn main() {
+    test_nested_function_capture()
+    test_loop_variable_capture()
+}
+
+fn test_nested_function_capture() {
+    let mut result: int = 0
+    helper(&result)
+    sleep_ms(100)
+    assert(result == 100)
+}
+
+fn helper(result: &int) {
+    spawn {
+        *result = 100
+    }
+}
+
+fn test_loop_variable_capture() {
+    let mut sum: int = 0
+    
+    for i in 0..3 {
+        let val: int = i * 10
+        spawn {
+            sum = sum + val
+        }
+    }
+    
+    sleep_ms(200)
+    assert(sum == 30)
+}
+
+fn sleep_ms(ms: int) {
+    let start: int = time_now_ms()
+    while time_now_ms() - start < ms {}
+}

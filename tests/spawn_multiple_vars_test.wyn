@@ -1,0 +1,42 @@
+fn main() {
+    test_multiple_captures()
+    test_mixed_types()
+}
+
+fn test_multiple_captures() {
+    let mut a: int = 0
+    let mut b: int = 0
+    let mut c: int = 0
+    
+    spawn {
+        a = a + 1
+        b = b + 2
+        c = c + 3
+    }
+    
+    sleep_ms(100)
+    assert(a == 1)
+    assert(b == 2)
+    assert(c == 3)
+}
+
+fn test_mixed_types() {
+    let mut counter: int = 0
+    let mut results: [int] = []
+    let x: int = 42
+    
+    spawn {
+        counter = counter + 1
+        results.append(x)
+    }
+    
+    sleep_ms(100)
+    assert(counter == 1)
+    assert(results.len() == 1)
+    assert(results[0] == 42)
+}
+
+fn sleep_ms(ms: int) {
+    let start: int = time_now_ms()
+    while time_now_ms() - start < ms {}
+}
