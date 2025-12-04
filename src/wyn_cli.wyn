@@ -115,7 +115,7 @@ fn build_and_run() {
 fn exec_file(file: str) {
     let compiler: str = find_compiler()
     let exe: str = "/tmp/wyn_exec"
-    let compile_cmd: str = compiler + " --stage1-opt -o " + exe + " " + file
+    let compile_cmd: str = compiler + " -q --stage1-opt -o " + exe + " " + file + " 2>/dev/null"
     let compile_result: int = system(compile_cmd)
     
     if compile_result == 0 {
@@ -153,7 +153,11 @@ fn exec_stdin() {
 
 fn exec_inline(code: str) {
     let temp_file: str = "/tmp/wyn_inline.wyn"
-    write_file(temp_file, code)
+    let nl: str = chr(10)
+    let prefix: str = "fn main() {" + nl
+    let suffix: str = nl + "}" + nl
+    let wrapped: str = prefix + code + suffix
+    write_file(temp_file, wrapped)
     exec_file(temp_file)
 }
 
