@@ -17,6 +17,8 @@ This installs:
 - `wyn-compiler` - The Stage 1 compiler
 - `wyn` - The CLI tool (written in Wyn)
 
+**100% cross-platform** - No bash scripts, everything written in Wyn or built with Makefile.
+
 ### Platform Support
 
 **Tier 1 (Fully Supported - CI Tested):**

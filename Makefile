@@ -117,7 +117,8 @@ uninstall:
 # Run all tests
 .PHONY: test
 test: stage0
-	@./$(TESTS_DIR)/run_tests.sh || true
+	@./$(STAGE0_BIN) --stage1-opt -o $(BUILD_DIR)/run_tests $(TESTS_DIR)/run_tests.wyn
+	@./$(BUILD_DIR)/run_tests || true
 
 # Fast test - suppress compiler output
 .PHONY: fast-test
@@ -129,17 +130,6 @@ fast-test: stage0
 demo: stage0
 	$(STAGE0_BIN) -o $(BUILD_DIR)/demo $(EXAMPLES_DIR)/demo.wyn
 	./$(BUILD_DIR)/demo
-
-# Install
-.PHONY: install
-install: stage0
-	install -d $(PREFIX)/bin
-	install -m 755 $(STAGE0_BIN) $(PREFIX)/bin/wyn
-
-# Uninstall
-.PHONY: uninstall
-uninstall:
-	rm -f $(PREFIX)/bin/wyn
 
 # Clean build artifacts
 .PHONY: clean

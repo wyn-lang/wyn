@@ -1,0 +1,88 @@
+fn main() {
+    print_str("=== Wyn Test Suite ===\n")
+    
+    let mut passed: int = 0
+    let mut failed: int = 0
+    
+    # Hardcoded test list for now (Stage 0 limitation)
+    passed = passed + run_test("tests/arithmetic_test.wyn")
+    passed = passed + run_test("tests/array_test.wyn")
+    passed = passed + run_test("tests/array_stdlib_test.wyn")
+    passed = passed + run_test("tests/bits_stdlib_test.wyn")
+    passed = passed + run_test("tests/bitwise_test.wyn")
+    passed = passed + run_test("tests/builtins_test.wyn")
+    passed = passed + run_test("tests/collections_stdlib_test.wyn")
+    passed = passed + run_test("tests/comparison_test.wyn")
+    passed = passed + run_test("tests/compress_stdlib_test.wyn")
+    passed = passed + run_test("tests/control_flow_test.wyn")
+    passed = passed + run_test("tests/crypto_stdlib_test.wyn")
+    passed = passed + run_test("tests/encoding_stdlib_test.wyn")
+    passed = passed + run_test("tests/error_stdlib_test.wyn")
+    passed = passed + run_test("tests/fs_test.wyn")
+    passed = passed + run_test("tests/fs_stdlib_test.wyn")
+    passed = passed + run_test("tests/function_test.wyn")
+    passed = passed + run_test("tests/gpu_stdlib_test.wyn")
+    passed = passed + run_test("tests/hash_stdlib_test.wyn")
+    passed = passed + run_test("tests/http_stdlib_test.wyn")
+    passed = passed + run_test("tests/io_stdlib_test.wyn")
+    passed = passed + run_test("tests/json_stdlib_test.wyn")
+    passed = passed + run_test("tests/log_stdlib_test.wyn")
+    passed = passed + run_test("tests/math_stdlib_test.wyn")
+    passed = passed + run_test("tests/net_stdlib_test.wyn")
+    passed = passed + run_test("tests/optional_test.wyn")
+    passed = passed + run_test("tests/os_stdlib_test.wyn")
+    passed = passed + run_test("tests/random_stdlib_test.wyn")
+    passed = passed + run_test("tests/regex_stdlib_test.wyn")
+    passed = passed + run_test("tests/stage1_test.wyn")
+    passed = passed + run_test("tests/str_find_test.wyn")
+    passed = passed + run_test("tests/string_funcs_test.wyn")
+    passed = passed + run_test("tests/string_stdlib_test.wyn")
+    passed = passed + run_test("tests/string_test.wyn")
+    passed = passed + run_test("tests/struct_test.wyn")
+    passed = passed + run_test("tests/time_stdlib_test.wyn")
+    passed = passed + run_test("tests/utils_stdlib_test.wyn")
+    passed = passed + run_test("tests/validate_stdlib_test.wyn")
+    
+    failed = 37 - passed
+    
+    print_str("\n=== Results ===\n")
+    print_str("Passed: ")
+    print(passed)
+    print_newline()
+    if failed > 0 {
+        print_str("Failed: ")
+        print(failed)
+        print_newline()
+    }
+}
+
+fn run_test(path: str) -> int {
+    let parts: [str] = str_split(path, "/")
+    let name: str = parts[parts.len() - 1]
+    
+    let exe: str = "/tmp/wyn_test"
+    let compile_cmd: str = "./build/stage0 -q -o " + exe + " " + path + " 2>/dev/null"
+    let compile_result: int = system(compile_cmd)
+    
+    if compile_result != 0 {
+        print_str("FAIL ")
+        print_str(name)
+        print_newline()
+        return 0
+    }
+    
+    let run_cmd: str = exe + " >/dev/null 2>&1"
+    let run_result: int = system(run_cmd)
+    
+    if run_result == 0 {
+        print_str("PASS ")
+        print_str(name)
+        print_newline()
+        return 1
+    } else {
+        print_str("FAIL ")
+        print_str(name)
+        print_newline()
+        return 0
+    }
+}
