@@ -1,0 +1,26 @@
+fn worker(id: int, iterations: int) -> int {
+    let mut sum = 0
+    let mut i = 0
+    while i < iterations {
+        sum = sum + id
+        i = i + 1
+    }
+    return sum
+}
+
+fn main() {
+    let num_workers = 100
+    let iterations = 100000
+    let mut total = 0
+    
+    let mut i = 0
+    while i < num_workers {
+        let result = worker(i, iterations)
+        total = total + result
+        i = i + 1
+    }
+    
+    print_str("Total: ")
+    print(total)
+    print_newline()
+}

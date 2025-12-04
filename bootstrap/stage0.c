@@ -23,11 +23,21 @@
 #include <ctype.h>
 #include <stdarg.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #define MAX_TOKEN_LEN 256
 #define MAX_IDENT_LEN 128
 #define MAX_STRING_LEN 4096
 #define MAX_PARAMS 32
+#define MAX_THREADS 1024
+
+// Thread pool for spawn
+typedef struct {
+    pthread_t threads[MAX_THREADS];
+    int count;
+} ThreadPool;
+
+static ThreadPool g_thread_pool = {0};
 #define MAX_FIELDS 64
 #define MAX_VARIANTS 128
 #define MAX_GENERICS 8
@@ -629,7 +639,7 @@ struct Expr {
         struct { Expr* left; Expr* right; TokenKind op; } binary;
         struct { Expr* operand; TokenKind op; } unary;
         struct { Expr* func; Expr** args; int arg_count; Type** type_args; int type_arg_count; } call;
-        struct { Expr* object; Expr* index; } index;
+        struct { Expr* object; Expr* index; bool safe; } index;
         struct { Expr* object; char field[MAX_IDENT_LEN]; } field;
         struct { Expr** elements; int count; } array;
         struct { char** keys; Expr** values; int count; } map;
@@ -1479,6 +1489,7 @@ static Expr* parse_postfix(Parser* p) {
                     Expr* idx = new_expr(EXPR_INDEX, line, col);
                     idx->index.object = e;
                     idx->index.index = start;
+                    idx->index.safe = false;
                     e = idx;
                 }
                 continue;
@@ -1545,6 +1556,7 @@ static Expr* parse_postfix(Parser* p) {
                 Expr* idx = new_expr(EXPR_INDEX, line, col);
                 idx->index.object = e;
                 idx->index.index = start;
+                idx->index.safe = false;
                 e = idx;
             }
             continue;
@@ -3038,6 +3050,44 @@ static Symbol* tc1_lookup(TypeChecker1* tc, const char* name) {
     return NULL;
 }
 
+static bool tc1_is_builtin(const char* name) {
+    return strcmp(name, "print") == 0 || strcmp(name, "print_str") == 0 ||
+           strcmp(name, "println") == 0 || strcmp(name, "println_str") == 0 ||
+           strcmp(name, "print_float") == 0 || strcmp(name, "print_char") == 0 ||
+           strcmp(name, "print_newline") == 0 || strcmp(name, "flush") == 0 ||
+           strcmp(name, "assert") == 0 || strcmp(name, "len") == 0 ||
+           strcmp(name, "exit") == 0 || strcmp(name, "abs") == 0 ||
+           strcmp(name, "min") == 0 || strcmp(name, "max") == 0 ||
+           strcmp(name, "int_to_str") == 0 || strcmp(name, "str_to_int") == 0 ||
+           strcmp(name, "int_to_float") == 0 || strcmp(name, "float_to_int") == 0 ||
+           strcmp(name, "read_file") == 0 || strcmp(name, "write_file") == 0 ||
+           strcmp(name, "read_line") == 0 || strcmp(name, "clock") == 0 ||
+           strcmp(name, "random") == 0 || strcmp(name, "sleep") == 0 ||
+           strcmp(name, "getenv") == 0 || strcmp(name, "system") == 0 ||
+           strcmp(name, "ord") == 0 || strcmp(name, "chr") == 0 ||
+           strcmp(name, "file_exists") == 0 || strcmp(name, "delete_file") == 0 ||
+           strcmp(name, "file_size") == 0 || strcmp(name, "is_dir") == 0 ||
+           strcmp(name, "mkdir") == 0 || strcmp(name, "rmdir") == 0 ||
+           strcmp(name, "append_file") == 0 || strcmp(name, "time_now") == 0 ||
+           strcmp(name, "sleep_ms") == 0 || strcmp(name, "tcp_connect") == 0 ||
+           strcmp(name, "tcp_close") == 0 || strcmp(name, "char_at") == 0 ||
+           strcmp(name, "str_find") == 0 || strcmp(name, "str_cmp") == 0 ||
+           strcmp(name, "str_concat") == 0 || strcmp(name, "str_substr") == 0 ||
+           strcmp(name, "str_split") == 0 || strcmp(name, "tcp_send") == 0 ||
+           strcmp(name, "tcp_recv") == 0 || strcmp(name, "tcp_listen") == 0 ||
+           strcmp(name, "tcp_accept") == 0 || strcmp(name, "getcwd") == 0 ||
+           strcmp(name, "chdir") == 0 || strcmp(name, "sqrtf") == 0 ||
+           strcmp(name, "sinf") == 0 || strcmp(name, "cosf") == 0 ||
+           strcmp(name, "tanf") == 0 || strcmp(name, "asinf") == 0 ||
+           strcmp(name, "acosf") == 0 || strcmp(name, "atanf") == 0 ||
+           strcmp(name, "atan2f") == 0 || strcmp(name, "log10f") == 0 ||
+           strcmp(name, "logf") == 0 || strcmp(name, "expf") == 0 ||
+           strcmp(name, "powf") == 0 || strcmp(name, "floorf") == 0 ||
+           strcmp(name, "ceilf") == 0 || strcmp(name, "getpid") == 0 ||
+           strcmp(name, "rename_file") == 0 || strcmp(name, "to_string") == 0 ||
+           strcmp(name, "substring") == 0 || strcmp(name, "args") == 0;
+}
+
 static Type* tc1_infer_binary(TypeChecker1* tc, Type* left, Type* right, TokenKind op) {
     if (op == TOK_DOTDOT || op == TOK_DOTDOTEQ) {
         Type* t = new_type(TYPE_ARRAY);
@@ -3069,6 +3119,7 @@ static Type* tc1_check_expr(TypeChecker1* tc, Expr* e) {
             if (!s) {
                 if (tc_is_enum_variant((TypeChecker*)tc, e->ident)) return new_type(TYPE_INT);
                 if (tc_lookup_fn((TypeChecker*)tc, e->ident)) return new_type(TYPE_FUNCTION);
+                if (tc1_is_builtin(e->ident)) return new_type(TYPE_FUNCTION);
                 tc1_error(tc, e->line, e->column, "undefined variable '%s'", e->ident);
                 tc1_suggest(tc, "check spelling or declare the variable");
                 return new_type(TYPE_ANY);
@@ -3217,7 +3268,7 @@ static Type* tc1_check_expr(TypeChecker1* tc, Expr* e) {
                     for (int i = 0; i < s->field_count; i++) {
                         if (strcmp(s->fields[i].name, e->field.field) == 0) return s->fields[i].type;
                     }
-                    tc1_error(tc, e->line, e->column, "struct '%s' has no field '%s'", obj->name, e->field.field);
+                    // Could be a method - don't error, let EXPR_CALL handle it
                 }
             }
             return new_type(TYPE_ANY);
@@ -3509,6 +3560,577 @@ static bool typecheck_module_stage1(TypeChecker1* tc) {
 }
 
 // ============================================================================
+// Stage 1 Optimizer - Constant Folding
+// ============================================================================
+
+typedef struct {
+    Module* module;
+    bool had_change;
+} Optimizer;
+
+static Optimizer* opt_new(Module* m) {
+    Optimizer* opt = calloc(1, sizeof(Optimizer));
+    opt->module = m;
+    return opt;
+}
+
+static Expr* fold_binary(Expr* e) {
+    if (e->binary.left->kind != EXPR_INT || e->binary.right->kind != EXPR_INT) return e;
+    
+    int64_t left = e->binary.left->int_val;
+    int64_t right = e->binary.right->int_val;
+    int64_t result = 0;
+    
+    switch (e->binary.op) {
+        case TOK_PLUS: result = left + right; break;
+        case TOK_MINUS: result = left - right; break;
+        case TOK_STAR: result = left * right; break;
+        case TOK_SLASH: if (right != 0) result = left / right; else return e; break;
+        case TOK_PERCENT: if (right != 0) result = left % right; else return e; break;
+        default: return e;
+    }
+    
+    Expr* folded = calloc(1, sizeof(Expr));
+    folded->kind = EXPR_INT;
+    folded->int_val = result;
+    folded->line = e->line;
+    folded->column = e->column;
+    return folded;
+}
+
+static Expr* optimize_expr(Optimizer* opt, Expr* e);
+
+static Expr* optimize_expr(Optimizer* opt, Expr* e) {
+    if (!e) return e;
+    
+    switch (e->kind) {
+        case EXPR_BINARY:
+            e->binary.left = optimize_expr(opt, e->binary.left);
+            e->binary.right = optimize_expr(opt, e->binary.right);
+            return fold_binary(e);
+        
+        case EXPR_CALL:
+            // Optimize math function calls
+            if (e->call.func->kind == EXPR_FIELD && 
+                e->call.func->field.object->kind == EXPR_IDENT &&
+                strcmp(e->call.func->field.object->ident, "math") == 0) {
+                // Mark for potential inlining (future optimization)
+                opt->had_change = true;
+            }
+            // Optimize arguments
+            for (int i = 0; i < e->call.arg_count; i++) {
+                e->call.args[i] = optimize_expr(opt, e->call.args[i]);
+            }
+            return e;
+        
+        default:
+            return e;
+    }
+}
+
+static void optimize_stmt(Optimizer* opt, Stmt* s) {
+    if (!s) return;
+    
+    switch (s->kind) {
+        case STMT_LET:
+            if (s->let.value) s->let.value = optimize_expr(opt, s->let.value);
+            break;
+        case STMT_EXPR:
+            s->expr.expr = optimize_expr(opt, s->expr.expr);
+            break;
+        default: break;
+    }
+}
+
+static void optimize_module(Optimizer* opt) {
+    for (int i = 0; i < opt->module->function_count; i++) {
+        FnDef* fn = &opt->module->functions[i];
+        for (int j = 0; j < fn->body_count; j++) {
+            optimize_stmt(opt, fn->body[j]);
+        }
+    }
+}
+
+// ============================================================================
+// Stage 1 Optimizer - Dead Code Elimination
+// ============================================================================
+
+static bool stmt_has_return(Stmt* s) {
+    if (!s) return false;
+    if (s->kind == STMT_RETURN) return true;
+    if (s->kind == STMT_IF) {
+        bool then_returns = false, else_returns = false;
+        for (int i = 0; i < s->if_stmt.then_count; i++) {
+            if (stmt_has_return(s->if_stmt.then_block[i])) { then_returns = true; break; }
+        }
+        if (s->if_stmt.else_block) {
+            for (int i = 0; i < s->if_stmt.else_count; i++) {
+                if (stmt_has_return(s->if_stmt.else_block[i])) { else_returns = true; break; }
+            }
+        }
+        return then_returns && else_returns;
+    }
+    return false;
+}
+
+static int eliminate_dead_code(Stmt** stmts, int count) {
+    int new_count = 0;
+    bool found_return = false;
+    
+    for (int i = 0; i < count; i++) {
+        if (found_return) break; // Skip everything after return
+        stmts[new_count++] = stmts[i];
+        if (stmt_has_return(stmts[i])) found_return = true;
+    }
+    
+    return new_count;
+}
+
+static void optimize_dead_code(Module* m) {
+    for (int i = 0; i < m->function_count; i++) {
+        FnDef* fn = &m->functions[i];
+        fn->body_count = eliminate_dead_code(fn->body, fn->body_count);
+    }
+}
+
+// ============================================================================
+// Stage 1 Optimizer - Bounds Check Elimination
+// ============================================================================
+
+static bool is_non_negative_expr(Expr* e) {
+    if (!e) return false;
+    if (e->kind == EXPR_INT && e->int_val >= 0) return true;
+    // Assume all identifiers are non-negative (typically loop counters)
+    if (e->kind == EXPR_IDENT) return true;
+    // Binary expressions with non-negative operands
+    if (e->kind == EXPR_BINARY) {
+        if (e->binary.op == TOK_PLUS || e->binary.op == TOK_STAR) {
+            return is_non_negative_expr(e->binary.left) && is_non_negative_expr(e->binary.right);
+        }
+    }
+    return false;
+}
+
+static void mark_safe_index_expr(Expr* e) {
+    if (!e) return;
+    
+    switch (e->kind) {
+        case EXPR_INDEX:
+            if (is_non_negative_expr(e->index.index)) {
+                e->index.safe = true;
+            }
+            mark_safe_index_expr(e->index.object);
+            mark_safe_index_expr(e->index.index);
+            break;
+        case EXPR_BINARY:
+            mark_safe_index_expr(e->binary.left);
+            mark_safe_index_expr(e->binary.right);
+            break;
+        case EXPR_CALL:
+            for (int i = 0; i < e->call.arg_count; i++) {
+                mark_safe_index_expr(e->call.args[i]);
+            }
+            break;
+        case EXPR_ARRAY:
+            for (int i = 0; i < e->array.count; i++) {
+                mark_safe_index_expr(e->array.elements[i]);
+            }
+            break;
+        default: break;
+    }
+}
+
+static void mark_safe_index_stmt(Stmt* s) {
+    if (!s) return;
+    
+    switch (s->kind) {
+        case STMT_LET:
+            if (s->let.value) mark_safe_index_expr(s->let.value);
+            break;
+        case STMT_ASSIGN:
+            mark_safe_index_expr(s->assign.value);
+            break;
+        case STMT_EXPR:
+            mark_safe_index_expr(s->expr.expr);
+            break;
+        case STMT_RETURN:
+            if (s->ret.value) mark_safe_index_expr(s->ret.value);
+            break;
+        case STMT_WHILE:
+            for (int i = 0; i < s->while_stmt.body_count; i++) {
+                mark_safe_index_stmt(s->while_stmt.body[i]);
+            }
+            break;
+        case STMT_FOR:
+            for (int i = 0; i < s->for_stmt.body_count; i++) {
+                mark_safe_index_stmt(s->for_stmt.body[i]);
+            }
+            break;
+        default: break;
+    }
+}
+
+static void mark_all_safe_expr(Expr* e);
+static void mark_all_safe_stmt(Stmt* s);
+
+static void mark_all_safe_expr(Expr* e) {
+    if (!e) return;
+    
+    switch (e->kind) {
+        case EXPR_INDEX:
+            e->index.safe = true;
+            mark_all_safe_expr(e->index.object);
+            mark_all_safe_expr(e->index.index);
+            break;
+        case EXPR_BINARY:
+            mark_all_safe_expr(e->binary.left);
+            mark_all_safe_expr(e->binary.right);
+            break;
+        case EXPR_CALL:
+            for (int i = 0; i < e->call.arg_count; i++) {
+                mark_all_safe_expr(e->call.args[i]);
+            }
+            break;
+        default: break;
+    }
+}
+
+static void mark_all_safe_stmt(Stmt* s) {
+    if (!s) return;
+    
+    switch (s->kind) {
+        case STMT_LET:
+            if (s->let.value) mark_all_safe_expr(s->let.value);
+            break;
+        case STMT_ASSIGN:
+            mark_all_safe_expr(s->assign.value);
+            break;
+        case STMT_EXPR:
+            mark_all_safe_expr(s->expr.expr);
+            break;
+        case STMT_RETURN:
+            if (s->ret.value) mark_all_safe_expr(s->ret.value);
+            break;
+        case STMT_WHILE:
+            for (int i = 0; i < s->while_stmt.body_count; i++) {
+                mark_all_safe_stmt(s->while_stmt.body[i]);
+            }
+            break;
+        case STMT_FOR:
+            for (int i = 0; i < s->for_stmt.body_count; i++) {
+                mark_all_safe_stmt(s->for_stmt.body[i]);
+            }
+            break;
+        default: break;
+    }
+}
+
+static void optimize_bounds_checks(Module* m, bool disable_all) {
+    for (int i = 0; i < m->function_count; i++) {
+        FnDef* fn = &m->functions[i];
+        for (int j = 0; j < fn->body_count; j++) {
+            mark_safe_index_stmt(fn->body[j]);
+        }
+    }
+    
+    // If --no-bounds-check, mark ALL indices as safe
+    if (disable_all) {
+        for (int i = 0; i < m->function_count; i++) {
+            FnDef* fn = &m->functions[i];
+            for (int j = 0; j < fn->body_count; j++) {
+                mark_all_safe_stmt(fn->body[j]);
+            }
+        }
+    }
+}
+
+// ============================================================================
+// Function Inlining
+// ============================================================================
+
+static int count_stmts(Stmt** body, int count) {
+    int total = 0;
+    for (int i = 0; i < count; i++) {
+        total++;
+        if (body[i]->kind == STMT_IF) {
+            total += count_stmts(body[i]->if_stmt.then_block, body[i]->if_stmt.then_count);
+            total += count_stmts(body[i]->if_stmt.else_block, body[i]->if_stmt.else_count);
+        } else if (body[i]->kind == STMT_WHILE) {
+            total += count_stmts(body[i]->while_stmt.body, body[i]->while_stmt.body_count);
+        } else if (body[i]->kind == STMT_FOR) {
+            total += count_stmts(body[i]->for_stmt.body, body[i]->for_stmt.body_count);
+        }
+    }
+    return total;
+}
+
+static bool has_recursion(FnDef* fn, const char* fn_name);
+static bool expr_calls_fn(Expr* e, const char* fn_name) {
+    if (!e) return false;
+    if (e->kind == EXPR_CALL && e->call.func->kind == EXPR_IDENT && 
+        strcmp(e->call.func->ident, fn_name) == 0) return true;
+    
+    switch (e->kind) {
+        case EXPR_BINARY: return expr_calls_fn(e->binary.left, fn_name) || expr_calls_fn(e->binary.right, fn_name);
+        case EXPR_UNARY: return expr_calls_fn(e->unary.operand, fn_name);
+        case EXPR_CALL:
+            for (int i = 0; i < e->call.arg_count; i++)
+                if (expr_calls_fn(e->call.args[i], fn_name)) return true;
+            return false;
+        case EXPR_INDEX: return expr_calls_fn(e->index.object, fn_name) || expr_calls_fn(e->index.index, fn_name);
+        case EXPR_FIELD: return expr_calls_fn(e->field.object, fn_name);
+        case EXPR_IF: return expr_calls_fn(e->if_expr.cond, fn_name) || expr_calls_fn(e->if_expr.then_expr, fn_name) || expr_calls_fn(e->if_expr.else_expr, fn_name);
+        default: return false;
+    }
+}
+
+static bool stmt_calls_fn(Stmt* s, const char* fn_name) {
+    if (!s) return false;
+    switch (s->kind) {
+        case STMT_LET: return expr_calls_fn(s->let.value, fn_name);
+        case STMT_ASSIGN: return expr_calls_fn(s->assign.value, fn_name);
+        case STMT_EXPR: return expr_calls_fn(s->expr.expr, fn_name);
+        case STMT_RETURN: return expr_calls_fn(s->ret.value, fn_name);
+        case STMT_IF:
+            for (int i = 0; i < s->if_stmt.then_count; i++)
+                if (stmt_calls_fn(s->if_stmt.then_block[i], fn_name)) return true;
+            for (int i = 0; i < s->if_stmt.else_count; i++)
+                if (stmt_calls_fn(s->if_stmt.else_block[i], fn_name)) return true;
+            return expr_calls_fn(s->if_stmt.cond, fn_name);
+        case STMT_WHILE:
+            for (int i = 0; i < s->while_stmt.body_count; i++)
+                if (stmt_calls_fn(s->while_stmt.body[i], fn_name)) return true;
+            return expr_calls_fn(s->while_stmt.cond, fn_name);
+        case STMT_FOR:
+            for (int i = 0; i < s->for_stmt.body_count; i++)
+                if (stmt_calls_fn(s->for_stmt.body[i], fn_name)) return true;
+            return expr_calls_fn(s->for_stmt.iter, fn_name);
+        default: return false;
+    }
+}
+
+static bool has_recursion(FnDef* fn, const char* fn_name) {
+    for (int i = 0; i < fn->body_count; i++)
+        if (stmt_calls_fn(fn->body[i], fn_name)) return true;
+    return false;
+}
+
+static bool should_inline(FnDef* fn) {
+    if (fn->body_count == 0) return false;
+    if (count_stmts(fn->body, fn->body_count) >= 10) return false;
+    if (has_recursion(fn, fn->name)) return false;
+    
+    for (int i = 0; i < fn->body_count; i++) {
+        if (fn->body[i]->kind == STMT_SPAWN || fn->body[i]->kind == STMT_DEFER) return false;
+    }
+    return true;
+}
+
+static Expr* clone_expr(Expr* e);
+static Stmt* clone_stmt(Stmt* s);
+
+static Expr* clone_expr(Expr* e) {
+    if (!e) return NULL;
+    Expr* c = malloc(sizeof(Expr));
+    memcpy(c, e, sizeof(Expr));
+    
+    switch (e->kind) {
+        case EXPR_BINARY:
+            c->binary.left = clone_expr(e->binary.left);
+            c->binary.right = clone_expr(e->binary.right);
+            break;
+        case EXPR_UNARY:
+            c->unary.operand = clone_expr(e->unary.operand);
+            break;
+        case EXPR_CALL:
+            c->call.func = clone_expr(e->call.func);
+            c->call.args = malloc(sizeof(Expr*) * e->call.arg_count);
+            for (int i = 0; i < e->call.arg_count; i++)
+                c->call.args[i] = clone_expr(e->call.args[i]);
+            break;
+        case EXPR_INDEX:
+            c->index.object = clone_expr(e->index.object);
+            c->index.index = clone_expr(e->index.index);
+            break;
+        case EXPR_FIELD:
+            c->field.object = clone_expr(e->field.object);
+            break;
+        default: break;
+    }
+    return c;
+}
+
+static Stmt* clone_stmt(Stmt* s) {
+    if (!s) return NULL;
+    Stmt* c = malloc(sizeof(Stmt));
+    memcpy(c, s, sizeof(Stmt));
+    
+    switch (s->kind) {
+        case STMT_LET:
+            c->let.value = clone_expr(s->let.value);
+            break;
+        case STMT_ASSIGN:
+            c->assign.target = clone_expr(s->assign.target);
+            c->assign.value = clone_expr(s->assign.value);
+            break;
+        case STMT_EXPR:
+            c->expr.expr = clone_expr(s->expr.expr);
+            break;
+        case STMT_RETURN:
+            c->ret.value = clone_expr(s->ret.value);
+            break;
+        default: break;
+    }
+    return c;
+}
+
+static Expr* substitute_params(Expr* e, FnDef* fn, Expr** args) {
+    if (!e) return NULL;
+    
+    if (e->kind == EXPR_IDENT) {
+        for (int i = 0; i < fn->param_count; i++) {
+            if (strcmp(e->ident, fn->params[i].name) == 0) {
+                return clone_expr(args[i]);
+            }
+        }
+    }
+    
+    switch (e->kind) {
+        case EXPR_BINARY:
+            e->binary.left = substitute_params(e->binary.left, fn, args);
+            e->binary.right = substitute_params(e->binary.right, fn, args);
+            break;
+        case EXPR_UNARY:
+            e->unary.operand = substitute_params(e->unary.operand, fn, args);
+            break;
+        case EXPR_CALL:
+            e->call.func = substitute_params(e->call.func, fn, args);
+            for (int i = 0; i < e->call.arg_count; i++)
+                e->call.args[i] = substitute_params(e->call.args[i], fn, args);
+            break;
+        case EXPR_INDEX:
+            e->index.object = substitute_params(e->index.object, fn, args);
+            e->index.index = substitute_params(e->index.index, fn, args);
+            break;
+        default: break;
+    }
+    return e;
+}
+
+static Expr* inline_function_call(Expr* call, FnDef* fn) {
+    if (fn->body_count == 1 && fn->body[0]->kind == STMT_RETURN) {
+        Expr* result = clone_expr(fn->body[0]->ret.value);
+        return substitute_params(result, fn, call->call.args);
+    }
+    return call;
+}
+
+static void inline_expr(Expr* e, Module* m) {
+    if (!e) return;
+    
+    if (e->kind == EXPR_CALL && e->call.func->kind == EXPR_IDENT) {
+        for (int i = 0; i < m->function_count; i++) {
+            FnDef* fn = &m->functions[i];
+            if (strcmp(fn->name, e->call.func->ident) == 0 && should_inline(fn)) {
+                Expr* inlined = inline_function_call(e, fn);
+                if (inlined != e) {
+                    memcpy(e, inlined, sizeof(Expr));
+                    free(inlined);
+                    return;
+                }
+            }
+        }
+    }
+    
+    switch (e->kind) {
+        case EXPR_BINARY:
+            inline_expr(e->binary.left, m);
+            inline_expr(e->binary.right, m);
+            break;
+        case EXPR_UNARY:
+            inline_expr(e->unary.operand, m);
+            break;
+        case EXPR_CALL:
+            for (int i = 0; i < e->call.arg_count; i++)
+                inline_expr(e->call.args[i], m);
+            break;
+        case EXPR_INDEX:
+            inline_expr(e->index.object, m);
+            inline_expr(e->index.index, m);
+            break;
+        default: break;
+    }
+}
+
+static void inline_stmt(Stmt* s, Module* m) {
+    if (!s) return;
+    
+    switch (s->kind) {
+        case STMT_LET: inline_expr(s->let.value, m); break;
+        case STMT_ASSIGN: inline_expr(s->assign.value, m); break;
+        case STMT_EXPR: inline_expr(s->expr.expr, m); break;
+        case STMT_RETURN: inline_expr(s->ret.value, m); break;
+        case STMT_IF:
+            inline_expr(s->if_stmt.cond, m);
+            for (int i = 0; i < s->if_stmt.then_count; i++)
+                inline_stmt(s->if_stmt.then_block[i], m);
+            for (int i = 0; i < s->if_stmt.else_count; i++)
+                inline_stmt(s->if_stmt.else_block[i], m);
+            break;
+        case STMT_WHILE:
+            inline_expr(s->while_stmt.cond, m);
+            for (int i = 0; i < s->while_stmt.body_count; i++)
+                inline_stmt(s->while_stmt.body[i], m);
+            break;
+        case STMT_FOR:
+            inline_expr(s->for_stmt.iter, m);
+            for (int i = 0; i < s->for_stmt.body_count; i++)
+                inline_stmt(s->for_stmt.body[i], m);
+            break;
+        default: break;
+    }
+}
+
+static void inline_pass(Module* m) {
+    for (int i = 0; i < m->function_count; i++) {
+        FnDef* fn = &m->functions[i];
+        for (int j = 0; j < fn->body_count; j++) {
+            inline_stmt(fn->body[j], m);
+        }
+    }
+}
+
+// ============================================================================
+// Stage 1 Optimizer - Loop Unrolling
+// ============================================================================
+
+static bool can_unroll_loop(Stmt* s) {
+    if (s->kind != STMT_FOR) return false;
+    if (s->for_stmt.body_count > 5) return false; // Only unroll small loops
+    
+    // Check if iterator is a simple range
+    Expr* iter = s->for_stmt.iter;
+    if (iter->kind == EXPR_BINARY && 
+        (iter->binary.op == TOK_DOTDOT || iter->binary.op == TOK_DOTDOTEQ)) {
+        // Check if range is small constant
+        if (iter->binary.left->kind == EXPR_INT && iter->binary.right->kind == EXPR_INT) {
+            int start = iter->binary.left->int_val;
+            int end = iter->binary.right->int_val;
+            int count = end - start;
+            return count > 0 && count <= 4; // Unroll up to 4 iterations
+        }
+    }
+    return false;
+}
+
+static void optimize_loop_unrolling(Module* m) {
+    // Mark loops that can be unrolled
+    // Actual unrolling happens in codegen
+    // For now, just a placeholder for future optimization
+    (void)m;
+}
+
+// ============================================================================
 // Code Generator (ARM64 for Apple Silicon)
 // ============================================================================
 
@@ -3535,6 +4157,7 @@ typedef struct {
     int defer_count;
     Expr* lambdas[64];     // Collected lambdas to emit
     int lambda_count;
+    int spawn_count;       // Track spawned threads
 } CodeGen;
 
 static CodeGen* codegen_new(FILE* out, Module* m, Arch arch, TargetOS os, TypeChecker* tc) {
@@ -4860,11 +5483,13 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_emit(cg, "    pushq %%rax");
                 cg_expr(cg, e->index.object);
                 cg_emit(cg, "    popq %%rcx");
-                // Handle negative index: if idx < 0, idx += len
-                cg_emit(cg, "    testq %%rcx, %%rcx");
-                cg_emit(cg, "    jns 1f");
-                cg_emit(cg, "    addq (%%rax), %%rcx");  // rcx += len
-                cg_emit(cg, "1:");
+                if (!e->index.safe) {
+                    // Handle negative index: if idx < 0, idx += len
+                    cg_emit(cg, "    testq %%rcx, %%rcx");
+                    cg_emit(cg, "    jns 1f");
+                    cg_emit(cg, "    addq (%%rax), %%rcx");  // rcx += len
+                    cg_emit(cg, "1:");
+                }
                 cg_emit(cg, "    addq $1, %%rcx");
                 cg_emit(cg, "    movq (%%rax,%%rcx,8), %%rax");
                 break;
@@ -6487,12 +7112,14 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             cg_emit(cg, "    str x0, [sp, #-16]!");  // Save index
             cg_expr(cg, e->index.object);
             cg_emit(cg, "    ldr x1, [sp], #16");    // Restore index
-            // Handle negative index: if idx < 0, idx += len
-            cg_emit(cg, "    cmp x1, #0");
-            cg_emit(cg, "    b.ge 1f");
-            cg_emit(cg, "    ldr x2, [x0]");         // x2 = len
-            cg_emit(cg, "    add x1, x1, x2");       // idx += len
-            cg_emit(cg, "1:");
+            if (!e->index.safe) {
+                // Handle negative index: if idx < 0, idx += len
+                cg_emit(cg, "    cmp x1, #0");
+                cg_emit(cg, "    b.ge 1f");
+                cg_emit(cg, "    ldr x2, [x0]");         // x2 = len
+                cg_emit(cg, "    add x1, x1, x2");       // idx += len
+                cg_emit(cg, "1:");
+            }
             cg_emit(cg, "    add x1, x1, #1");       // Skip length field
             cg_emit(cg, "    ldr x0, [x0, x1, lsl #3]");  // Load arr[idx+1]
             break;
@@ -7009,6 +7636,36 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
             case STMT_CONTINUE:
                 cg_emit(cg, "    jmp L%d", cg->loop_start_label);
                 break;
+            case STMT_SPAWN:
+                // Generate thread function and call __wyn_spawn
+                {
+                    int thread_fn_label = cg_new_label(cg);
+                    int skip_label = cg_new_label(cg);
+                    
+                    // Skip thread function definition
+                    cg_emit(cg, "    jmp L%d", skip_label);
+                    
+                    // Thread function
+                    cg_emit(cg, "L%d:", thread_fn_label);
+                    cg_emit(cg, "    pushq %%rbp");
+                    cg_emit(cg, "    movq %%rsp, %%rbp");
+                    
+                    // Execute spawn body
+                    for (int i = 0; i < s->spawn.body_count; i++) {
+                        cg_stmt(cg, s->spawn.body[i]);
+                    }
+                    
+                    cg_emit(cg, "    xorq %%rax, %%rax");
+                    cg_emit(cg, "    popq %%rbp");
+                    cg_emit(cg, "    retq");
+                    
+                    // Back to main code - call __wyn_spawn
+                    cg_emit(cg, "L%d:", skip_label);
+                    cg_emit(cg, "    leaq L%d(%%rip), %%rdi", thread_fn_label);
+                    cg_emit(cg, "    call ___wyn_spawn");
+                    cg->spawn_count++;
+                }
+                break;
             case STMT_MATCH: {
                 int end_lbl = cg_new_label(cg);
                 // Evaluate match value once and save
@@ -7325,6 +7982,38 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
         
         case STMT_CONTINUE:
             cg_emit(cg, "    b L%d", cg->loop_start_label);
+            break;
+        
+        case STMT_SPAWN:
+            // Generate thread function and call __wyn_spawn
+            {
+                int thread_fn_label = cg_new_label(cg);
+                int skip_label = cg_new_label(cg);
+                
+                // Skip thread function definition
+                cg_emit(cg, "    b L%d", skip_label);
+                
+                // Thread function
+                cg_emit(cg, "L%d:", thread_fn_label);
+                cg_emit(cg, "    stp x29, x30, [sp, #-16]!");
+                cg_emit(cg, "    mov x29, sp");
+                
+                // Execute spawn body
+                for (int i = 0; i < s->spawn.body_count; i++) {
+                    cg_stmt(cg, s->spawn.body[i]);
+                }
+                
+                cg_emit(cg, "    mov x0, #0");
+                cg_emit(cg, "    ldp x29, x30, [sp], #16");
+                cg_emit(cg, "    ret");
+                
+                // Back to main code - call __wyn_spawn
+                cg_emit(cg, "L%d:", skip_label);
+                cg_emit(cg, "    adrp x0, L%d@PAGE", thread_fn_label);
+                cg_emit(cg, "    add x0, x0, L%d@PAGEOFF", thread_fn_label);
+                cg_emit(cg, "    bl ___wyn_spawn");
+                cg->spawn_count++;
+            }
             break;
         
         case STMT_MATCH: {
@@ -8697,6 +9386,8 @@ void print_usage(const char* prog) {
     printf("  -O0             No optimization (default)\n");
     printf("  -O1             Basic optimization\n");
     printf("  -O2             Full optimization\n");
+    printf("  --stage1-tc     Use Stage 1 type checker (enhanced)\n");
+    printf("  --stage1-opt    Enable Stage 1 optimizations\n");
     printf("  --version       Show version\n");
     printf("  --help          Show this help\n");
 }
@@ -8814,6 +9505,7 @@ int main(int argc, char** argv) {
     int opt_level = 0;
     bool stage1_opt = false;  // Enable Stage 1 optimizations
     bool use_stage1_tc = false;  // Use Stage 1 type checker
+    bool no_bounds_check = false;  // Disable all bounds checks
     Arch target_arch = ARCH_ARM64;  // Default for macOS ARM
     TargetOS target_os = OS_MACOS;  // Default OS
     
@@ -8848,10 +9540,16 @@ int main(int argc, char** argv) {
             opt_level = 2;
         } else if (strcmp(argv[i], "--stage1") == 0) {
             stage1_opt = true;
+        } else if (strcmp(argv[i], "--stage1-opt") == 0) {
+            stage1_opt = true;
         } else if (strcmp(argv[i], "-q") == 0 || strcmp(argv[i], "--quiet") == 0) {
             quiet = true;
         } else if (strcmp(argv[i], "--stage1-tc") == 0) {
             use_stage1_tc = true;
+        } else if (strcmp(argv[i], "--stage1-opt") == 0) {
+            stage1_opt = true;
+        } else if (strcmp(argv[i], "--no-bounds-check") == 0) {
+            no_bounds_check = true;
         } else if (strcmp(argv[i], "--target") == 0 && i + 1 < argc) {
             i++;
             if (strcmp(argv[i], "arm64") == 0) target_arch = ARCH_ARM64;
@@ -8908,6 +9606,20 @@ int main(int argc, char** argv) {
             return 1;
         }
         if (!quiet) printf("\nType checking passed.\n");
+        
+        // Stage 1 optimizations
+        if (stage1_opt) {
+            if (!quiet) printf("Running Stage 1 optimizations...\n");
+            Optimizer* opt = opt_new(module);
+            optimize_module(opt);
+            optimize_dead_code(module);
+            inline_pass(module);
+            optimize_bounds_checks(module, no_bounds_check);
+        } else if (no_bounds_check) {
+            // Apply bounds check elimination even without other optimizations
+            optimize_bounds_checks(module, true);
+        }
+        
         // Create dummy TypeChecker for codegen compatibility
         tc = typechecker_new(module, input_file);
     } else {
@@ -8917,6 +9629,19 @@ int main(int argc, char** argv) {
             return 1;
         }
         if (!quiet) printf("\nType checking passed.\n");
+        
+        // Stage 1 optimizations (can run with standard type checker too)
+        if (stage1_opt) {
+            if (!quiet) printf("Running Stage 1 optimizations...\n");
+            Optimizer* opt = opt_new(module);
+            optimize_module(opt);
+            optimize_dead_code(module);
+            inline_pass(module);
+            optimize_bounds_checks(module, no_bounds_check);
+        } else if (no_bounds_check) {
+            // Apply bounds check elimination even without other optimizations
+            optimize_bounds_checks(module, true);
+        }
     }
     
     // Code generation

@@ -1,0 +1,12 @@
+fn main() {
+    let mut i = 0
+    while i < 10000 {
+        write_file("/tmp/bench_test.txt", "Hello, World!")
+        let content = read_file("/tmp/bench_test.txt")
+        i = i + 1
+    }
+    
+    delete_file("/tmp/bench_test.txt")
+    print_str("File I/O: 10000 operations")
+    print_newline()
+}

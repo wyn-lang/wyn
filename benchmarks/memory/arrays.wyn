@@ -1,0 +1,18 @@
+fn main() {
+    let arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    let mut s = 0
+    let mut i = 0
+    
+    while i < 10000000 {
+        let mut j = 0
+        while j < len(arr) {
+            s = s + arr[j]
+            j = j + 1
+        }
+        i = i + 1
+    }
+    
+    print_str("Array sum: ")
+    print(s)
+    print_newline()
+}
