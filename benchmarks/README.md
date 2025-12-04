@@ -39,10 +39,11 @@ See [FINAL_RESULTS.md](FINAL_RESULTS.md) for complete analysis.
 make bench
 
 # Or run specific benchmarks manually
-cd benchmarks/cpu
-../../build/stage0 --stage1-opt -o fib_wyn fib.wyn
-time ./fib_wyn
+./build/stage0 --stage1-opt -o /tmp/fib benchmarks/cpu/fib.wyn
+time /tmp/fib
 ```
+
+**100% cross-platform** - Benchmark runner written in Wyn (`_run_bench.wyn`).
 
 **100% cross-platform** - Benchmark runner written in Wyn (`_run_bench.wyn`).
 

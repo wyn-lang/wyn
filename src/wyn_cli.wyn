@@ -70,7 +70,9 @@ fn create_project(name: str) {
 fn build_project() {
     print_str("Building project...\n")
     
-    let result: int = system("wyn-compiler --stage1-tc --stage1-opt -o build/app src/main.wyn")
+    let compiler: str = find_compiler()
+    let cmd: str = compiler + " --stage1-tc --stage1-opt -o build/app src/main.wyn"
+    let result: int = system(cmd)
     
     if result == 0 {
         print_str("✓ Built: build/app\n")
@@ -83,4 +85,14 @@ fn build_project() {
 fn build_and_run() {
     build_project()
     system("./build/app")
+}
+
+fn find_compiler() -> str {
+    if file_exists("./build/stage0") {
+        return "./build/stage0"
+    }
+    if file_exists("/usr/local/bin/wyn-compiler") {
+        return "/usr/local/bin/wyn-compiler"
+    }
+    return "wyn-compiler"
 }
