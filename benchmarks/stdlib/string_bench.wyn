@@ -1,0 +1,17 @@
+fn main() {
+    let iterations: int = 1000000
+    let mut i: int = 0
+    
+    # String operations
+    while i < iterations {
+        let s: str = "hello world"
+        let len: int = s.len()
+        let sub: str = s[0:5]
+        let found: int = str_find(s, "world")
+        let parts: [str] = str_split(s, " ")
+        let concat: str = s + " test"
+        i = i + 1
+    }
+    
+    print_str("String benchmark complete\n")
+}

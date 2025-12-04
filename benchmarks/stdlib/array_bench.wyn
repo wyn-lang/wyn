@@ -1,0 +1,16 @@
+fn main() {
+    let iterations: int = 100000
+    let mut i: int = 0
+    
+    # Array operations
+    while i < iterations {
+        let arr: [int] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        let len: int = arr.len()
+        let first: int = arr[0]
+        let last: int = arr[9]
+        let slice: [int] = arr[2:7]
+        i = i + 1
+    }
+    
+    print_str("Array benchmark complete\n")
+}
