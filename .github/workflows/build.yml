@@ -215,8 +215,9 @@ jobs:
         with:
           files: |
             wyn-*/wyn-*.tar.gz
+          generate_release_notes: true
           body: |
-            Wyn Programming Language ${{ github.ref_name }}
+            # Wyn Programming Language ${{ github.ref_name }}
 
             **One language to rule them all.**
 
@@ -227,7 +228,14 @@ jobs:
             - **Faster than Node.js** on math (8.4x) and startup (25.6x)
             - **Matches C** on array operations
 
-            ## Versatility
+            ## Platforms
+            - ✅ macOS ARM64 (Apple Silicon)
+            - ✅ macOS x86_64 (Intel)
+            - ✅ Linux x86_64
+            - ✅ Linux ARM64
+            - ✅ Windows x86_64
+
+            ## Features
             - ✅ **Compile to binary** - Native executables, no runtime
             - ✅ **Run as script** - Instant execution like Python
             - ✅ **CLI tools** - Near-instant startup (1.29ms)
@@ -236,9 +244,9 @@ jobs:
             - ✅ **GUI apps** - Native macOS/iOS support
             - ✅ **GPU compute** - Vulkan/Metal acceleration
 
-            ## Complete Standard Library
+            ## Standard Library
             - 500+ functions across 29 modules
-            - 100% test coverage (73 comprehensive tests)
+            - 100% test coverage (76 comprehensive tests)
             - Production-ready: io, fs, http, crypto, json, time, math
             - Advanced: gpu, mobile, gui, nn, concurrency
 
@@ -254,8 +262,7 @@ jobs:
             ```bash
             tar -xzf wyn-*.tar.gz
             cd release
-            sudo cp wyn /usr/local/bin/
-            sudo cp wyn-cli /usr/local/bin/wyn-cli
+            sudo make install
             ```
 
             ## Quick Start
