@@ -4,10 +4,11 @@ fn main() {
     let mut passed: int = 0
     let mut failed: int = 0
     
-    # Hardcoded test list for now (Stage 0 limitation)
+    # Tests in tests/
     passed = passed + run_test("tests/arithmetic_test.wyn")
     passed = passed + run_test("tests/array_test.wyn")
     passed = passed + run_test("tests/array_stdlib_test.wyn")
+    passed = passed + run_test("tests/atomic_spawn_test.wyn")
     passed = passed + run_test("tests/bits_stdlib_test.wyn")
     passed = passed + run_test("tests/bitwise_test.wyn")
     passed = passed + run_test("tests/builtins_test.wyn")
@@ -33,6 +34,7 @@ fn main() {
     passed = passed + run_test("tests/os_stdlib_test.wyn")
     passed = passed + run_test("tests/random_stdlib_test.wyn")
     passed = passed + run_test("tests/regex_stdlib_test.wyn")
+    passed = passed + run_test("tests/spawn_simple.wyn")
     passed = passed + run_test("tests/stage1_test.wyn")
     passed = passed + run_test("tests/str_find_test.wyn")
     passed = passed + run_test("tests/string_funcs_test.wyn")
@@ -43,7 +45,43 @@ fn main() {
     passed = passed + run_test("tests/utils_stdlib_test.wyn")
     passed = passed + run_test("tests/validate_stdlib_test.wyn")
     
-    failed = 37 - passed
+    # Tests in examples/
+    passed = passed + run_test("examples/array_iter_test.wyn")
+    passed = passed + run_test("examples/assert_test.wyn")
+    passed = passed + run_test("examples/bitwise_test.wyn")
+    passed = passed + run_test("examples/break_continue_test.wyn")
+    passed = passed + run_test("examples/char_test.wyn")
+    passed = passed + run_test("examples/clock_test.wyn")
+    passed = passed + run_test("examples/compound_test.wyn")
+    passed = passed + run_test("examples/conversion_test.wyn")
+    passed = passed + run_test("examples/default_params_test.wyn")
+    passed = passed + run_test("examples/defer_test.wyn")
+    passed = passed + run_test("examples/enum_test.wyn")
+    passed = passed + run_test("examples/env_test.wyn")
+    passed = passed + run_test("examples/file_test.wyn")
+    passed = passed + run_test("examples/float_test.wyn")
+    passed = passed + run_test("examples/full_test.wyn")
+    passed = passed + run_test("examples/generic_test.wyn")
+    passed = passed + run_test("examples/gui_test.wyn")
+    passed = passed + run_test("examples/in_operator_test.wyn")
+    passed = passed + run_test("examples/input_test.wyn")
+    passed = passed + run_test("examples/lambda_test.wyn")
+    passed = passed + run_test("examples/match_binding_test.wyn")
+    passed = passed + run_test("examples/match_test.wyn")
+    passed = passed + run_test("examples/math_test.wyn")
+    passed = passed + run_test("examples/method_syntax_test.wyn")
+    passed = passed + run_test("examples/mobile_test.wyn")
+    passed = passed + run_test("examples/nested_struct_test.wyn")
+    passed = passed + run_test("examples/optional_test.wyn")
+    passed = passed + run_test("examples/random_test.wyn")
+    passed = passed + run_test("examples/range_test.wyn")
+    passed = passed + run_test("examples/result_test.wyn")
+    passed = passed + run_test("examples/slice_test.wyn")
+    passed = passed + run_test("examples/string_interp_test.wyn")
+    passed = passed + run_test("examples/string_test.wyn")
+    passed = passed + run_test("examples/write_file_test.wyn")
+    
+    failed = 72 - passed
     
     print_str("\n=== Results ===\n")
     print_str("Passed: ")
