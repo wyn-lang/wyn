@@ -28,12 +28,8 @@ fn main() {
             build_and_run()
         }
     } else if cmd == "exec" {
-        if argv.len() < 3 {
-            # Read from stdin
-            exec_stdin()
-        } else {
-            exec_file(argv[2])
-        }
+        # Always read from stdin
+        exec_stdin()
     } else if cmd == "inline" {
         if argv.len() < 3 {
             print_str("Usage: wyn inline <code>\n")
@@ -65,9 +61,8 @@ fn print_help() {
     print_str("  new <name>           Create new project\n")
     print_str("  init <name>          Alias for 'new'\n")
     print_str("  build                Build current project\n")
-    print_str("  run [file]           Run file or current project\n")
-    print_str("  exec [file]          Execute file or stdin\n")
-    print_str("  inline <code>        Execute Wyn code inline\n")
+    print_str("  run [file]           Run file, project, or stdin\n")
+    print_str("  inline <code>        Execute inline code\n")
     print_str("  test                 Run test suite\n")
     print_str("  bench                Run benchmarks\n")
     print_str("  clean                Clean build artifacts\n")
@@ -75,9 +70,8 @@ fn print_help() {
     print_str("Examples:\n")
     print_str("  wyn run script.wyn           # Run a file\n")
     print_str("  wyn run                      # Run current project\n")
-    print_str("  echo 'print(42)' | wyn exec  # Execute from stdin\n")
-    print_str("  wyn exec script.wyn          # Execute a file\n")
-    print_str("  wyn inline 'print(123)'      # Execute inline code\n")
+    print_str("  echo 'print(42)' | wyn run   # Run from stdin\n")
+    print_str("  wyn inline 'print(123)'      # Run inline code\n")
 }
 
 fn create_project(name: str) {

@@ -150,18 +150,29 @@ fn args() -> [str] {
     return args()
 }
 
+# Get environment variable value
+# Returns some(value) if set, none if not set
+# Example: let path: ?str = getenv("PATH")
+pub fn getenv(key: str) -> ?str {
+    let val: str = getenv(key)
+    if val.len() > 0 {
+        return some(val)
+    }
+    return none
+}
+
 # Get all environment variables
-# Requires: Runtime support (environment access)
+# Note: Not implemented - no builtin available
+# Use getenv(key) for specific variables
 fn env() -> [str] {
-    # Will be implemented via runtime or FFI
     return []
 }
 
 # Set environment variable
-# Requires: Runtime support (environment modification)
+# Note: Not implemented - no builtin available
+# Environment is read-only in current version
 fn setenv(key: str, value: str) -> Result[(), str] {
-    # Will be implemented via runtime or FFI
-    return ok(())
+    return err("setenv not implemented - no builtin available")
 }
 
 # Get current working directory
