@@ -35,14 +35,17 @@ See [FINAL_RESULTS.md](FINAL_RESULTS.md) for complete analysis.
 ## Running Benchmarks
 
 ```bash
-# Run all benchmarks
-./benchmarks/run.sh
+# Run specific benchmarks manually
+cd benchmarks/cpu
+../../build/stage0 --stage1-opt -o fib_wyn fib.wyn
+time ./fib_wyn
 
-# Run specific category
-cd benchmarks/cpu && ./run.sh
-cd benchmarks/memory && ./run.sh
-cd benchmarks/io && ./run.sh
+cd ../memory
+../../build/stage0 --stage1-opt -o array_wyn array.wyn
+time ./array_wyn
 ```
+
+**Note:** Benchmark automation coming soon in Wyn.
 
 ## Test Environment
 

@@ -5,12 +5,14 @@
 ## Running Tests
 
 ```bash
-# Run all tests
-bash tests/run_tests.sh
+# Run all tests (test runner written in Wyn)
+make test
 
 # Run specific test
 ./build/stage0 -o /tmp/test tests/math_stdlib_test.wyn && /tmp/test
 ```
+
+**100% cross-platform** - Test runner written in Wyn, no bash scripts.
 
 ## Test Organization
 
