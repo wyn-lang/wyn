@@ -1,0 +1,43 @@
+// Test mobile API compilation
+
+fn test_callback() {
+    // Empty callback for testing
+}
+
+fn main() {
+    // Test app lifecycle
+    mobile.init()
+    
+    // Test view creation
+    let view: i64 = mobile.create_view(0, 0, 100, 100)
+    let label: i64 = mobile.create_label("Test", 0, 0, 100, 50)
+    let button: i64 = mobile.create_button("OK", 0, 50, 100, 50)
+    let textfield: i64 = mobile.create_textfield(0, 100, 100, 50)
+    
+    // Test layout
+    mobile.set_frame(view, 10, 10, 200, 200)
+    mobile.set_background_color(view, 255, 255, 255)
+    mobile.set_text_color(label, 0, 0, 0)
+    mobile.set_font_size(label, 16)
+    
+    // Test hierarchy
+    mobile.add_subview(view, label)
+    mobile.add_subview(view, button)
+    mobile.add_to_root(view)
+    
+    // Test text operations
+    mobile.set_text(label, "Updated")
+    let text: str = mobile.get_text(textfield)
+    
+    // Test events
+    mobile.on_tap(button, test_callback)
+    mobile.on_text_change(textfield, test_callback)
+    
+    // Test utilities
+    mobile.show_alert("Title", "Message")
+    mobile.hide_view(label)
+    mobile.show_view(label)
+    
+    io.print_str("Mobile API test compiled successfully")
+    io.print_newline()
+}

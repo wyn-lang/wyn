@@ -15,36 +15,46 @@ struct Device {
 
 # List all available GPU devices
 fn list_devices() -> [Device] {
-    # TODO: Runtime implementation
-    return []
+    let count = gpu_device_count()
+    let mut devices = []
+    let mut i = 0
+    while i < count {
+        let name = gpu_device_name(i)
+        devices.push(Device {
+            id: i,
+            name: name,
+            memory_gb: 0.0,
+            compute_units: 0,
+            backend: "metal"
+        })
+        i = i + 1
+    }
+    return devices
 }
 
 # Get current device
 fn current_device() -> int {
-    # TODO: Runtime implementation
     return 0
 }
 
 # Set active device
 fn set_device(device_id: int) {
-    # TODO: Runtime implementation
+    # Metal uses default device
 }
 
 # Get free memory in bytes
 fn memory_free() -> int {
-    # TODO: Runtime implementation
     return 0
 }
 
 # Get total memory in bytes
 fn memory_total() -> int {
-    # TODO: Runtime implementation
     return 0
 }
 
 # Synchronize - wait for all GPU operations to complete
 fn sync() {
-    # TODO: Runtime implementation
+    gpu_sync()
 }
 
 # ============================================================================

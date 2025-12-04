@@ -22,10 +22,15 @@ STAGE0_BIN = $(BUILD_DIR)/stage0
 # Runtime libraries
 GUI_RUNTIME_SRC = $(RUNTIME_DIR)/gui_macos.c
 GUI_RUNTIME_OBJ = $(BUILD_DIR)/gui_runtime.o
+GPU_RUNTIME_SRC = $(RUNTIME_DIR)/gpu_metal.m
+GPU_RUNTIME_OBJ = $(BUILD_DIR)/gpu_runtime.o
+
+MOBILE_RUNTIME_SRC = $(RUNTIME_DIR)/mobile_ios.m
+MOBILE_RUNTIME_OBJ = $(BUILD_DIR)/mobile_runtime.o
 
 # Default target
 .PHONY: all
-all: stage0 gui-runtime
+all: stage0 gui-runtime gpu-runtime
 
 # Create build directory
 $(BUILD_DIR):
@@ -44,6 +49,24 @@ gui-runtime: $(BUILD_DIR) $(GUI_RUNTIME_OBJ)
 
 $(GUI_RUNTIME_OBJ): $(GUI_RUNTIME_SRC)
 	$(CC) $(CFLAGS) -c -o $@ $<
+
+# Build GPU runtime
+.PHONY: gpu-runtime
+gpu-runtime: $(BUILD_DIR) $(GPU_RUNTIME_OBJ)
+
+$(GPU_RUNTIME_OBJ): $(GPU_RUNTIME_SRC)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+# Build Mobile runtime (iOS simulator only)
+.PHONY: mobile-runtime
+mobile-runtime: $(BUILD_DIR)
+	@echo "Note: Mobile runtime requires iOS SDK. Use 'make mobile-runtime-ios' with iOS toolchain."
+
+.PHONY: mobile-runtime-ios
+mobile-runtime-ios: $(BUILD_DIR) $(MOBILE_RUNTIME_OBJ)
+
+$(MOBILE_RUNTIME_OBJ): $(MOBILE_RUNTIME_SRC)
+	xcrun -sdk iphonesimulator clang $(CFLAGS) -fobjc-arc -c -o $@ $@ -framework UIKit -framework Foundation
 
 # Debug build of Stage 0
 .PHONY: stage0-debug

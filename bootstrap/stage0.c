@@ -857,6 +857,33 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "close_window") == 0) return "gui_close_window";
         if (strcmp(function, "draw_rect") == 0) return "gui_draw_rect";
         if (strcmp(function, "draw_text") == 0) return "gui_draw_text";
+    } else if (strcmp(module, "mobile") == 0) {
+        if (strcmp(function, "init") == 0) return "mobile_init";
+        if (strcmp(function, "run") == 0) return "mobile_run";
+        if (strcmp(function, "create_view") == 0) return "mobile_create_view";
+        if (strcmp(function, "add_subview") == 0) return "mobile_add_subview";
+        if (strcmp(function, "add_to_root") == 0) return "mobile_add_to_root";
+        if (strcmp(function, "create_button") == 0) return "mobile_create_button";
+        if (strcmp(function, "create_label") == 0) return "mobile_create_label";
+        if (strcmp(function, "create_textfield") == 0) return "mobile_create_textfield";
+        if (strcmp(function, "set_text") == 0) return "mobile_set_text";
+        if (strcmp(function, "get_text") == 0) return "mobile_get_text";
+        if (strcmp(function, "set_frame") == 0) return "mobile_set_frame";
+        if (strcmp(function, "set_background_color") == 0) return "mobile_set_background_color";
+        if (strcmp(function, "set_text_color") == 0) return "mobile_set_text_color";
+        if (strcmp(function, "set_font_size") == 0) return "mobile_set_font_size";
+        if (strcmp(function, "on_tap") == 0) return "mobile_on_tap";
+        if (strcmp(function, "on_text_change") == 0) return "mobile_on_text_change";
+        if (strcmp(function, "show_alert") == 0) return "mobile_show_alert";
+        if (strcmp(function, "hide_view") == 0) return "mobile_hide_view";
+        if (strcmp(function, "show_view") == 0) return "mobile_show_view";
+        if (strcmp(function, "remove_view") == 0) return "mobile_remove_view";
+    } else if (strcmp(module, "gpu") == 0) {
+        if (strcmp(function, "device_count") == 0) return "gpu_device_count";
+        if (strcmp(function, "device_name") == 0) return "gpu_device_name";
+        if (strcmp(function, "malloc") == 0) return "gpu_malloc";
+        if (strcmp(function, "free") == 0) return "gpu_free";
+        if (strcmp(function, "sync") == 0) return "gpu_sync";
     }
     return NULL;
 }
@@ -9107,6 +9134,30 @@ static void codegen_module(CodeGen* cg) {
             cg_emit(cg, "    .globl %sgui_draw_text", pfx);
         }
         
+        // Mobile functions (external, defined in runtime/mobile_ios.m)
+        if (cg->os == OS_MACOS) {
+            cg_emit(cg, "    .globl %smobile_init", pfx);
+            cg_emit(cg, "    .globl %smobile_run", pfx);
+            cg_emit(cg, "    .globl %smobile_create_view", pfx);
+            cg_emit(cg, "    .globl %smobile_add_subview", pfx);
+            cg_emit(cg, "    .globl %smobile_add_to_root", pfx);
+            cg_emit(cg, "    .globl %smobile_create_button", pfx);
+            cg_emit(cg, "    .globl %smobile_create_label", pfx);
+            cg_emit(cg, "    .globl %smobile_create_textfield", pfx);
+            cg_emit(cg, "    .globl %smobile_set_text", pfx);
+            cg_emit(cg, "    .globl %smobile_get_text", pfx);
+            cg_emit(cg, "    .globl %smobile_set_frame", pfx);
+            cg_emit(cg, "    .globl %smobile_set_background_color", pfx);
+            cg_emit(cg, "    .globl %smobile_set_text_color", pfx);
+            cg_emit(cg, "    .globl %smobile_set_font_size", pfx);
+            cg_emit(cg, "    .globl %smobile_on_tap", pfx);
+            cg_emit(cg, "    .globl %smobile_on_text_change", pfx);
+            cg_emit(cg, "    .globl %smobile_show_alert", pfx);
+            cg_emit(cg, "    .globl %smobile_hide_view", pfx);
+            cg_emit(cg, "    .globl %smobile_show_view", pfx);
+            cg_emit(cg, "    .globl %smobile_remove_view", pfx);
+        }
+        
         if (cg->os == OS_MACOS) {
             cg_emit(cg, "    .section __DATA,__data");
         } else {
@@ -9671,6 +9722,30 @@ static void codegen_module(CodeGen* cg) {
         cg_emit(cg, "    .globl %sgui_draw_text", pfx);
     }
     
+    // Mobile functions (external, defined in runtime/mobile_ios.m)
+    if (cg->os == OS_MACOS) {
+        cg_emit(cg, "    .globl %smobile_init", pfx);
+        cg_emit(cg, "    .globl %smobile_run", pfx);
+        cg_emit(cg, "    .globl %smobile_create_view", pfx);
+        cg_emit(cg, "    .globl %smobile_add_subview", pfx);
+        cg_emit(cg, "    .globl %smobile_add_to_root", pfx);
+        cg_emit(cg, "    .globl %smobile_create_button", pfx);
+        cg_emit(cg, "    .globl %smobile_create_label", pfx);
+        cg_emit(cg, "    .globl %smobile_create_textfield", pfx);
+        cg_emit(cg, "    .globl %smobile_set_text", pfx);
+        cg_emit(cg, "    .globl %smobile_get_text", pfx);
+        cg_emit(cg, "    .globl %smobile_set_frame", pfx);
+        cg_emit(cg, "    .globl %smobile_set_background_color", pfx);
+        cg_emit(cg, "    .globl %smobile_set_text_color", pfx);
+        cg_emit(cg, "    .globl %smobile_set_font_size", pfx);
+        cg_emit(cg, "    .globl %smobile_on_tap", pfx);
+        cg_emit(cg, "    .globl %smobile_on_text_change", pfx);
+        cg_emit(cg, "    .globl %smobile_show_alert", pfx);
+        cg_emit(cg, "    .globl %smobile_hide_view", pfx);
+        cg_emit(cg, "    .globl %smobile_show_view", pfx);
+        cg_emit(cg, "    .globl %smobile_remove_view", pfx);
+    }
+    
     if (cg->os == OS_MACOS) {
         cg_emit(cg, "    .section __DATA,__data");
     } else {
@@ -10031,6 +10106,7 @@ int main(int argc, char** argv) {
             // Get directory of stage0 binary for runtime path
             char runtime_path[256];
             char gui_runtime_path[256];
+            char gpu_runtime_path[256];
             
             // Try multiple locations for spawn_runtime.o
             if (access("build/spawn_runtime.o", F_OK) == 0) {
@@ -10054,15 +10130,33 @@ int main(int argc, char** argv) {
                 gui_runtime_path[0] = '\0';
             }
             
-            // Build link command
-            if (runtime_path[0] && gui_runtime_path[0]) {
-                snprintf(cmd, 512, "cc -o %s %s %s %s -framework Cocoa -framework CoreGraphics", 
-                         output_file, asm_file, runtime_path, gui_runtime_path);
-            } else if (gui_runtime_path[0]) {
-                snprintf(cmd, 512, "cc -o %s %s %s -framework Cocoa -framework CoreGraphics", 
-                         output_file, asm_file, gui_runtime_path);
-            } else if (runtime_path[0]) {
-                snprintf(cmd, 512, "cc -o %s %s %s", output_file, asm_file, runtime_path);
+            // Try multiple locations for gpu_runtime.o (macOS only)
+            if (target_os == OS_MACOS) {
+                if (access("build/gpu_runtime.o", F_OK) == 0) {
+                    snprintf(gpu_runtime_path, 256, "build/gpu_runtime.o");
+                } else if (access("../build/gpu_runtime.o", F_OK) == 0) {
+                    snprintf(gpu_runtime_path, 256, "../build/gpu_runtime.o");
+                } else {
+                    gpu_runtime_path[0] = '\0';
+                }
+            } else {
+                gpu_runtime_path[0] = '\0';
+            }
+            
+            // Build link command with all runtimes
+            char frameworks[256] = "";
+            if (gui_runtime_path[0] || gpu_runtime_path[0]) {
+                snprintf(frameworks, 256, "-framework Cocoa -framework CoreGraphics -framework Metal -framework Foundation");
+            }
+            
+            // Combine all runtime objects
+            char runtimes[512] = "";
+            if (runtime_path[0]) strcat(runtimes, runtime_path);
+            if (gui_runtime_path[0]) { if (runtimes[0]) strcat(runtimes, " "); strcat(runtimes, gui_runtime_path); }
+            if (gpu_runtime_path[0]) { if (runtimes[0]) strcat(runtimes, " "); strcat(runtimes, gpu_runtime_path); }
+            
+            if (runtimes[0]) {
+                snprintf(cmd, 512, "cc -o %s %s %s %s", output_file, asm_file, runtimes, frameworks);
             } else {
                 snprintf(cmd, 512, "cc -o %s %s", output_file, asm_file);
             }

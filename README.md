@@ -43,10 +43,11 @@ See [benchmarks/FINAL_RESULTS.md](benchmarks/FINAL_RESULTS.md) for details.
 - **Fast** - Compiles to native code, 20-30x faster than Python
 - **Simple** - Python-like syntax
 - **Universal** - One language for everything
-- **Module system** - Clean organization (io, fs, math, http, gui)
+- **Module system** - Clean organization (io, fs, math, http, gui, mobile)
 - **Type safe** - Explicit types, no surprises
 - **Stage 1** - Enhanced type checking & optimizations
 - **Native GUI** - Built-in GUI support using platform APIs (macOS: Cocoa)
+- **iOS Mobile** - Native iOS apps with UIKit bindings
 
 ## Stage 1 Compiler
 
@@ -69,6 +70,7 @@ Enhanced compiler with better developer experience:
 - ✅ HTTP servers
 - ✅ TUI applications
 - ✅ GUI applications (macOS)
+- ✅ iOS mobile apps
 - ✅ File processing
 - ✅ Math/science programs
 
@@ -87,6 +89,7 @@ Enhanced compiler with better developer experience:
 - [Package Manager](docs/3-package-manager.md)
 - [Stdlib Reference](docs/4-stdlib-reference.md)
 - [GUI Support](docs/gui-support.md)
+- [iOS Mobile](docs/mobile-ios.md)
 - [Stage 1 Type Checker](docs/stage1-type-checker.md)
 - [Stage 1 Optimizations](docs/stage1-optimizations.md)
 - [Stage 1 Inlining](docs/stage1-inlining.md)
@@ -106,6 +109,9 @@ Enhanced compiler with better developer experience:
 
 # GUI window (macOS)
 ./build/stage0 -o gui examples/gui_window.wyn
+
+# iOS mobile app (requires iOS SDK)
+./scripts/build_ios.sh examples/mobile_ios_app.wyn MyApp
 ```
 
 ## License
