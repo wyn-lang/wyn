@@ -139,8 +139,13 @@ case "$CMD" in
             # Use installed wyn or local build
             if [ -f "./build/stage0" ]; then
                 COMPILER="./build/stage0"
-            else
+            elif [ -f "/usr/local/bin/wyn" ]; then
+                COMPILER="/usr/local/bin/wyn"
+            elif command -v wyn &> /dev/null; then
                 COMPILER="wyn"
+            else
+                # In CI, use relative path to stage0
+                COMPILER="$(dirname "$0")/build/stage0"
             fi
             
             $COMPILER $FLAGS -o "build/$NAME" "$ENTRY"
@@ -151,8 +156,13 @@ case "$CMD" in
             # Use installed wyn or local build
             if [ -f "./build/stage0" ]; then
                 COMPILER="./build/stage0"
-            else
+            elif [ -f "/usr/local/bin/wyn" ]; then
+                COMPILER="/usr/local/bin/wyn"
+            elif command -v wyn &> /dev/null; then
                 COMPILER="wyn"
+            else
+                # In CI, use relative path to stage0
+                COMPILER="$(dirname "$0")/build/stage0"
             fi
             
             $COMPILER $FLAGS -o "$OUTPUT" "$ARG"

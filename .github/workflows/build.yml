@@ -29,7 +29,8 @@ jobs:
         run: |
           ./wyn version
           ./wyn new testapp
-          cd testapp && ../wyn build .
+          cd testapp
+          ../build/stage0 --stage1-tc --stage1-opt -o build/testapp src/main.wyn
           ./build/testapp
 
       - name: Build Examples
@@ -179,12 +180,12 @@ jobs:
           choco install vulkan-sdk -y
 
       - name: Setup MSVC
-        uses: microsoft/setup-msbuild@v2
+        uses: ilammy/msvc-dev-cmd@v1
 
       - name: Build All
         run: |
-          # Windows build using MSVC
-          cl /O2 /Fe:build\wyn.exe bootstrap\stage0.c
+          mkdir build
+          cl /O2 /Febuild\wyn.exe bootstrap\stage0.c
         shell: cmd
 
       - name: Package Release
