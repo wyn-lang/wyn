@@ -39,8 +39,9 @@ echo ""
 # Install
 echo "Installing to /usr/local/bin..."
 sudo cp build/stage0 /usr/local/bin/wyn-compiler
-sudo cp build/wyn /usr/local/bin/wyn
-sudo chmod +x /usr/local/bin/wyn
+sudo cp build/wyn /usr/local/bin/wyn-cli
+sudo ln -sf /usr/local/bin/wyn-cli /usr/local/bin/wyn
+sudo chmod +x /usr/local/bin/wyn-compiler /usr/local/bin/wyn-cli
 
 echo ""
 echo "================================================"
