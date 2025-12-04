@@ -23,10 +23,11 @@ fn main() {
         build_and_run()
     } else if cmd == "exec" {
         if argv.len() < 3 {
-            print_str("Usage: wyn exec <file.wyn>\n")
-            exit(1)
+            # Read from stdin
+            exec_stdin()
+        } else {
+            exec_file(argv[2])
         }
-        exec_file(argv[2])
     } else if cmd == "inline" {
         if argv.len() < 3 {
             print_str("Usage: wyn inline <code>\n")
@@ -123,6 +124,31 @@ fn exec_file(file: str) {
         print_str("✗ Compilation failed\n")
         exit(1)
     }
+}
+
+fn exec_stdin() {
+    let temp_file: str = "/tmp/wyn_stdin.wyn"
+    let nl: str = chr(10)
+    
+    # Read all stdin
+    let mut code: str = ""
+    let mut line: str = read_line()
+    while line.len() > 0 {
+        code = code + line + nl
+        line = read_line()
+    }
+    
+    # Wrap in main if not present
+    if str_find(code, "fn main") == -1 {
+        let prefix: str = "fn main() {" + nl
+        let suffix: str = nl + "}" + nl
+        let wrapped: str = prefix + code + suffix
+        write_file(temp_file, wrapped)
+    } else {
+        write_file(temp_file, code)
+    }
+    
+    exec_file(temp_file)
 }
 
 fn exec_inline(code: str) {
