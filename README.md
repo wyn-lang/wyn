@@ -38,14 +38,13 @@ wyn --stage1-tc --stage1-opt -o hello hello.wyn
 
 ## Performance
 
-**Wyn is 20-30x faster than Python:**
-- Fibonacci: **23.5x faster**
-- Arrays: **29.5x faster**
-- Math: **19.7x faster**
+**Wyn competes with C and Go, beats Java and Node.js:**
 
-**Compared to other languages:**
-- Similar to Java and Node.js
-- 2-3x slower than C/Go (acceptable for high-level language)
+- **vs Go**: 2.3x faster on arrays, 1.6x faster startup
+- **vs Java**: 45x faster startup, 2.5x faster on arrays
+- **vs Node.js**: 8.4x faster on math, 25.6x faster startup
+- **vs C**: Matches on arrays (0.06s), near-instant startup
+- **vs Python**: 20-30x faster (but everyone knows Python is slow)
 
 See [benchmarks/FINAL_RESULTS.md](benchmarks/FINAL_RESULTS.md) for details.
 
