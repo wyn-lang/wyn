@@ -672,7 +672,7 @@ struct Stmt {
         struct { Expr* value; Expr** patterns; Stmt*** arms; int* arm_counts; int arm_count; char bindings[64][MAX_IDENT_LEN]; Type** binding_types; } match_stmt;
         struct { Stmt** stmts; int count; } block;
         struct { Expr* expr; } defer;
-        struct { Stmt** body; int body_count; } spawn;
+        struct { Stmt** body; int body_count; char** captured_vars; int captured_count; } spawn;
     };
 };
 
@@ -1762,6 +1762,8 @@ static Stmt* parse_stmt(Parser* p) {
     if (parser_match(p, TOK_SPAWN)) {
         Stmt* s = new_stmt(STMT_SPAWN, line, col);
         s->spawn.body = parse_block(p, &s->spawn.body_count);
+        s->spawn.captured_vars = NULL;
+        s->spawn.captured_count = 0;
         return s;
     }
     

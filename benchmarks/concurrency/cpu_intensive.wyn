@@ -1,0 +1,24 @@
+fn heavy_compute() {
+    let mut sum = 0
+    let mut i = 0
+    while i < 1000000 {
+        sum = sum + i * i
+        i = i + 1
+    }
+}
+
+fn main() {
+    spawn { heavy_compute() }
+    spawn { heavy_compute() }
+    spawn { heavy_compute() }
+    spawn { heavy_compute() }
+    spawn { heavy_compute() }
+    spawn { heavy_compute() }
+    spawn { heavy_compute() }
+    spawn { heavy_compute() }
+    spawn { heavy_compute() }
+    spawn { heavy_compute() }
+    
+    print_str("Complete")
+    print_newline()
+}
