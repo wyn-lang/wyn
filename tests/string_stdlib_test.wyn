@@ -1,90 +1,63 @@
-import std/io
-# String stdlib tests
-# NOTE: These compile but have runtime issues in Stage 0
-# Tests will be fully functional in Stage 1
-
 fn main() {
-    print_str("String tests compiled successfully")
-}
-
-fn test_contains() {
-    let result1: bool = contains("hello world", "world")
-    let result2: bool = contains("hello", "ell")
-    let result3: bool = contains("hello", "xyz")
-}
-
-fn test_starts_with() {
-    let result1: bool = starts_with("hello", "hel")
-    let result2: bool = starts_with("hello", "hello")
-    let result3: bool = starts_with("hello", "ell")
-}
-
-fn test_ends_with() {
-    let result1: bool = ends_with("hello", "llo")
-    let result2: bool = ends_with("hello", "hello")
-    let result3: bool = ends_with("hello", "hel")
-}
-
-fn test_repeat() {
-    let result1: str = repeat("ab", 3)
-    let result2: str = repeat("x", 5)
-    let result3: str = repeat("hi", 0)
-}
-
-fn test_reverse() {
-    let result1: str = reverse("hello")
-    let result2: str = reverse("abc")
-    let result3: str = reverse("")
-}
-
-fn contains(s: str, substr: str) -> bool {
-    if substr.len() == 0 {
-        return true
-    }
-    if substr.len() > s.len() {
-        return false
-    }
+    print_str("Testing string stdlib...\n")
     
-    let mut i: int = 0
-    while i <= s.len() - substr.len() {
-        if s[i:i+substr.len()] == substr {
-            return true
-        }
-        i = i + 1
-    }
-    return false
-}
-
-fn starts_with(s: str, prefix: str) -> bool {
-    if prefix.len() > s.len() {
-        return false
-    }
-    return s[0:prefix.len()] == prefix
-}
-
-fn ends_with(s: str, suffix: str) -> bool {
-    if suffix.len() > s.len() {
-        return false
-    }
-    return s[s.len()-suffix.len():s.len()] == suffix
-}
-
-fn repeat(s: str, n: int) -> str {
-    let mut result: str = ""
-    let mut i: int = 0
-    while i < n {
-        result = result + s
-        i = i + 1
-    }
-    return result
-}
-
-fn reverse(s: str) -> str {
-    let mut result: str = ""
-    let mut i: int = s.len() - 1
-    while i >= 0 {
-        result = result + s[i:i+1]
-        i = i - 1
-    }
-    return result
+    # Test string length
+    assert("hello".len() == 5, "string length")
+    assert("".len() == 0, "empty string length")
+    
+    # Test string concatenation
+    let s1: str = "hello"
+    let s2: str = " world"
+    let s3: str = s1 + s2
+    assert(s3 == "hello world", "concatenation")
+    assert(s3.len() == 11, "concat length")
+    
+    # Test string slicing
+    let text: str = "hello world"
+    assert(text[0:5] == "hello", "slice 0:5")
+    assert(text[6:11] == "world", "slice 6:11")
+    assert(text[0:1] == "h", "single char slice")
+    
+    # Test char_at
+    assert(char_at(text, 0) == "h", "char_at 0")
+    assert(char_at(text, 6) == "w", "char_at 6")
+    
+    # Test str_find
+    assert(str_find(text, "world") == 6, "find world")
+    assert(str_find(text, "hello") == 0, "find hello")
+    assert(str_find(text, "xyz") == -1, "find missing")
+    assert(str_find(text, "o") == 4, "find char")
+    
+    # Test str_split
+    let parts: [str] = str_split("a,b,c", ",")
+    assert(parts.len() == 3, "split length")
+    
+    let parts2: [str] = str_split("one two three", " ")
+    assert(parts2.len() == 3, "split by space")
+    
+    # Test str_concat
+    let joined: str = str_concat("hello", " world")
+    assert(joined == "hello world", "str_concat")
+    
+    # Test str_cmp
+    assert(str_cmp("abc", "abc") == 0, "equal strings")
+    assert(str_cmp("abc", "def") < 0, "less than")
+    assert(str_cmp("def", "abc") > 0, "greater than")
+    
+    # Test substring
+    let sub: str = substring(text, 0, 5)
+    assert(sub == "hello", "substring")
+    
+    # Test chr and ord
+    assert(chr(65) == "A", "chr 65")
+    assert(chr(97) == "a", "chr 97")
+    assert(ord("A") == 65, "ord A")
+    assert(ord("a") == 97, "ord a")
+    
+    # Test int_to_str
+    assert(int_to_str(42) == "42", "int_to_str")
+    assert(int_to_str(0) == "0", "int_to_str 0")
+    assert(int_to_str(-5) == "-5", "int_to_str negative")
+    
+    print_str("✓ All string stdlib tests passed\n")
 }

@@ -1,0 +1,23 @@
+fn main() {
+    print_str("Testing regex stdlib...\n")
+    
+    let text: str = "hello world"
+    
+    # Test substring
+    let sub1: str = text[0:5]
+    assert(sub1 == "hello", "substring 0:5")
+    
+    let sub2: str = text[6:11]
+    assert(sub2 == "world", "substring 6:11")
+    
+    # Test char_at
+    assert(char_at(text, 0) == "h", "char at 0")
+    assert(char_at(text, 6) == "w", "char at 6")
+    
+    # Test str_find
+    assert(str_find(text, "world") == 6, "find world")
+    assert(str_find(text, "hello") == 0, "find hello")
+    assert(str_find(text, "xyz") == -1, "find missing")
+    
+    print_str("✓ All regex stdlib tests passed\n")
+}

@@ -1,0 +1,39 @@
+fn main() {
+    print_str("Testing io stdlib...\n")
+    
+    let test_file: str = "io_test_temp.txt"
+    let content: str = "test content"
+    
+    # Test write
+    write_file(test_file, content)
+    
+    # Test exists
+    let exists: bool = file_exists(test_file)
+    if exists {
+        # Test read
+        let r: str = read_file(test_file)
+        assert(r == content, "read matches write")
+        
+        # Test file_size
+        let size: int = file_size(test_file)
+        assert(size > 0, "file has size")
+        
+        # Test append
+        append_file(test_file, " more")
+        let r2: str = read_file(test_file)
+        assert(r2.len() > content.len(), "append works")
+        
+        # Test delete
+        delete_file(test_file)
+    }
+    
+    # Test directory operations
+    let test_dir: str = "io_test_dir"
+    mkdir(test_dir)
+    let is_directory: bool = is_dir(test_dir)
+    if is_directory {
+        rmdir(test_dir)
+    }
+    
+    print_str("✓ All io stdlib tests passed\n")
+}

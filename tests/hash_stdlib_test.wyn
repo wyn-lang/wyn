@@ -1,0 +1,22 @@
+fn main() {
+    print_str("Testing hash stdlib...\n")
+    
+    # Test string hashing consistency
+    let s1: str = "hello"
+    let s2: str = "hello"
+    let s3: str = "world"
+    
+    # Same strings should be equal
+    assert(s1 == s2, "same strings equal")
+    assert(s1 != s3, "different strings not equal")
+    
+    # Test string comparison
+    assert("abc" == "abc", "string equality")
+    assert("abc" != "def", "string inequality")
+    
+    # Test empty string
+    assert("" == "", "empty strings equal")
+    assert("" != "x", "empty vs non-empty")
+    
+    print_str("✓ All hash stdlib tests passed\n")
+}

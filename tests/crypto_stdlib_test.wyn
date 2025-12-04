@@ -1,0 +1,21 @@
+fn main() {
+    print_str("Testing crypto stdlib...\n")
+    
+    # Test XOR properties
+    let a: int = 42
+    let b: int = 17
+    let xor1: int = a ^ b
+    let xor2: int = xor1 ^ b
+    assert(xor2 == a, "XOR is reversible")
+    
+    # Test XOR with zero
+    assert((a ^ 0) == a, "XOR with 0")
+    
+    # Test XOR with self
+    assert((a ^ a) == 0, "XOR with self is 0")
+    
+    # Test XOR commutativity
+    assert((a ^ b) == (b ^ a), "XOR is commutative")
+    
+    print_str("✓ All crypto stdlib tests passed\n")
+}

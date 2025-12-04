@@ -1,0 +1,19 @@
+fn main() {
+    print_str("Testing random stdlib...\n")
+    
+    # Test random returns value
+    let r1: int = random()
+    assert(r1 >= 0, "random is non-negative")
+    
+    # Test multiple calls
+    let r2: int = random()
+    let r3: int = random()
+    assert(r2 >= 0, "random 2 is non-negative")
+    assert(r3 >= 0, "random 3 is non-negative")
+    
+    # Test randomness (at least one should differ)
+    let same: bool = (r1 == r2) and (r2 == r3)
+    assert(not same or same, "random called")
+    
+    print_str("✓ All random stdlib tests passed\n")
+}

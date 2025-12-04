@@ -28,9 +28,7 @@ run_test() {
     local cache=".wyn/test-cache/$name"
     local hash=$(md5 -q "$f" 2>/dev/null || md5sum "$f" | cut -d' ' -f1)
     
-    if grep -q "read_line\|read_input\|gui\.\|mobile\." "$f" 2>/dev/null; then
-        echo "S $name"; return
-    fi
+    # All tests should be non-blocking now
     
     # Check cache
     if [ -x "$cache" ] && [ -f "$cache.hash" ] && [ "$(cat "$cache.hash")" = "$hash" ]; then

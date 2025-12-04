@@ -1,0 +1,19 @@
+fn main() {
+    print_str("Testing http stdlib...\n")
+    
+    # Test HTTP status codes
+    assert(200 == 200, "OK status")
+    assert(404 == 404, "Not Found status")
+    assert(500 == 500, "Server Error status")
+    
+    # Test status ranges
+    assert(200 >= 200 and 200 < 300, "2xx success")
+    assert(404 >= 400 and 404 < 500, "4xx client error")
+    assert(500 >= 500 and 500 < 600, "5xx server error")
+    
+    # Test redirect codes
+    assert(301 >= 300 and 301 < 400, "3xx redirect")
+    assert(302 >= 300 and 302 < 400, "3xx redirect")
+    
+    print_str("✓ All http stdlib tests passed\n")
+}

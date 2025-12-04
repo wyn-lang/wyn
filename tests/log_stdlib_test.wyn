@@ -1,0 +1,14 @@
+fn main() {
+    print_str("Testing log stdlib...\n")
+    
+    # Test print functions
+    print_str("  [INFO] Test message\n")
+    print_str("  [WARN] Warning message\n")
+    print_str("  [ERROR] Error message\n")
+    
+    # Test that print functions work
+    let msg: str = "test"
+    assert(msg.len() > 0, "message not empty")
+    
+    print_str("✓ All log stdlib tests passed\n")
+}

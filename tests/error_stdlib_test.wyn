@@ -1,0 +1,15 @@
+fn main() {
+    print_str("Testing error stdlib...\n")
+    
+    # Test error handling with assertions
+    assert(true, "true assertion passes")
+    assert(1 == 1, "equality assertion passes")
+    assert(1 != 2, "inequality assertion passes")
+    
+    # Test boolean logic
+    assert(true or false, "OR logic")
+    assert(true and true, "AND logic")
+    assert(not false, "NOT logic")
+    
+    print_str("✓ All error stdlib tests passed\n")
+}

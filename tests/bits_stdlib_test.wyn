@@ -1,0 +1,32 @@
+fn main() {
+    print_str("Testing bits stdlib...\n")
+    
+    # Test bitwise AND
+    assert((5 & 3) == 1, "AND works")
+    assert((12 & 10) == 8, "AND works")
+    
+    # Test bitwise OR
+    assert((5 | 3) == 7, "OR works")
+    assert((12 | 10) == 14, "OR works")
+    
+    # Test bitwise XOR
+    assert((5 ^ 3) == 6, "XOR works")
+    assert((12 ^ 10) == 6, "XOR works")
+    
+    # Test left shift
+    assert((1 << 0) == 1, "shift 0")
+    assert((1 << 1) == 2, "shift 1")
+    assert((1 << 2) == 4, "shift 2")
+    assert((1 << 3) == 8, "shift 3")
+    
+    # Test right shift
+    assert((8 >> 0) == 8, "shift 0")
+    assert((8 >> 1) == 4, "shift 1")
+    assert((8 >> 2) == 2, "shift 2")
+    assert((8 >> 3) == 1, "shift 3")
+    
+    # Test NOT
+    assert((~0) == -1, "NOT works")
+    
+    print_str("✓ All bits stdlib tests passed\n")
+}

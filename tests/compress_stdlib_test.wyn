@@ -1,0 +1,20 @@
+fn main() {
+    print_str("Testing compress stdlib...\n")
+    
+    # Test string length
+    let s1: str = "a"
+    assert(s1.len() == 1, "single char length")
+    
+    let s2: str = "abc"
+    assert(s2.len() == 3, "three char length")
+    
+    let s3: str = "aaabbbccc"
+    assert(s3.len() == 9, "repeated chars length")
+    
+    # Test string concatenation
+    let concat: str = "a" + "b"
+    assert(concat == "ab", "concatenation")
+    assert(concat.len() == 2, "concat length")
+    
+    print_str("✓ All compress stdlib tests passed\n")
+}

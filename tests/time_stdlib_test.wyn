@@ -1,0 +1,20 @@
+fn main() {
+    print_str("Testing time stdlib...\n")
+    
+    # Test time_now builtin
+    let now: int = time_now()
+    assert(now > 0, "time_now returns positive")
+    
+    # Test sleep
+    let start: int = time_now()
+    sleep_ms(10)
+    let end: int = time_now()
+    assert(end >= start, "time advances")
+    
+    # Test clock
+    let c1: int = clock()
+    let c2: int = clock()
+    assert(c2 >= c1, "clock advances")
+    
+    print_str("✓ All time stdlib tests passed\n")
+}
