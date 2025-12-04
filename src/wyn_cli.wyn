@@ -11,7 +11,7 @@ fn main() {
     if cmd == "version" {
         print_str("Wyn v1.0.0\n")
         print_str("Stage 1 compiler with optimizations\n")
-    } else if cmd == "new" {
+    } else if cmd == "new" or cmd == "init" {
         if argv.len() < 3 {
             print_str("Usage: wyn new <project-name>\n")
             exit(1)
@@ -21,7 +21,25 @@ fn main() {
         build_project()
     } else if cmd == "run" {
         build_and_run()
-    } else if cmd == "help" {
+    } else if cmd == "exec" {
+        if argv.len() < 3 {
+            print_str("Usage: wyn exec <file.wyn>\n")
+            exit(1)
+        }
+        exec_file(argv[2])
+    } else if cmd == "inline" {
+        if argv.len() < 3 {
+            print_str("Usage: wyn inline <code>\n")
+            exit(1)
+        }
+        exec_inline(argv[2])
+    } else if cmd == "test" {
+        run_tests()
+    } else if cmd == "bench" {
+        run_benchmarks()
+    } else if cmd == "clean" {
+        clean_project()
+    } else if cmd == "help" or cmd == "--help" or cmd == "-h" {
         print_help()
     } else {
         print_str("Unknown command: ")
@@ -38,8 +56,14 @@ fn print_help() {
     print_str("Commands:\n")
     print_str("  version              Show version\n")
     print_str("  new <name>           Create new project\n")
+    print_str("  init <name>          Alias for 'new'\n")
     print_str("  build                Build current project\n")
     print_str("  run                  Build and run project\n")
+    print_str("  exec <file>          Compile and run a file\n")
+    print_str("  inline <code>        Execute Wyn code inline\n")
+    print_str("  test                 Run test suite\n")
+    print_str("  bench                Run benchmarks\n")
+    print_str("  clean                Clean build artifacts\n")
     print_str("  help                 Show this help\n")
 }
 
@@ -85,6 +109,42 @@ fn build_project() {
 fn build_and_run() {
     build_project()
     system("./build/app")
+}
+
+fn exec_file(file: str) {
+    let compiler: str = find_compiler()
+    let exe: str = "/tmp/wyn_exec"
+    let compile_cmd: str = compiler + " --stage1-opt -o " + exe + " " + file
+    let compile_result: int = system(compile_cmd)
+    
+    if compile_result == 0 {
+        system(exe)
+    } else {
+        print_str("✗ Compilation failed\n")
+        exit(1)
+    }
+}
+
+fn exec_inline(code: str) {
+    let temp_file: str = "/tmp/wyn_inline.wyn"
+    write_file(temp_file, code)
+    exec_file(temp_file)
+}
+
+fn run_tests() {
+    print_str("Running tests...\n")
+    system("make test")
+}
+
+fn run_benchmarks() {
+    print_str("Running benchmarks...\n")
+    system("make bench")
+}
+
+fn clean_project() {
+    print_str("Cleaning build artifacts...\n")
+    system("rm -rf build/*")
+    print_str("✓ Clean complete\n")
 }
 
 fn find_compiler() -> str {
