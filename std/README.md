@@ -1,52 +1,55 @@
 # Wyn Standard Library
 
-## Modules
+**500+ functions across 29 modules**
 
-| Module | Description | Status |
-|--------|-------------|--------|
-| `math` | Math functions (abs, sqrt, pow, gcd, lcm, etc.) | ✅ Working |
-| `string` | String utilities (trim, split, pad, case conversion) | ✅ Working |
-| `collections` | Array helpers (sum, max, min, contains, slice) | ✅ Working |
-| `bits` | Bitwise operations | ✅ Working |
-| `hash` | Hash functions (djb2, fnv1a) | ✅ Working |
-| `fs` | Path utilities (join, dirname, basename, extension) | ✅ Working |
-| `io` | Formatting (format_int, format_hex, format_bin) | ⚠️ Partial |
-| `os` | CLI parsing (get_arg, has_flag, getenv) | ⚠️ Partial |
-| `time` | Duration helpers, date utilities | ⚠️ Partial |
-| `net` | URL parsing, IP utilities | ⚠️ Stubs |
-| `http` | HTTP helpers (status codes, headers) | ⚠️ Stubs |
-| `json` | JSON utilities | ⚠️ Stubs |
-| `crypto` | Hash functions | ⚠️ Stubs |
-| `regex` | Character class helpers | ⚠️ Stubs |
-| `log` | Logging utilities | ✅ Working |
-| `test` | Test assertions | ✅ Working |
-| `gui` | GUI framework | ❌ Stubs |
-| `tui` | Terminal UI | ⚠️ Stubs |
-| `gpu` | GPU computing, tensors | ❌ Stubs |
-| `nn` | Neural network primitives | ❌ Stubs |
+## Core Modules
 
-## Status Legend
+- **io** - File I/O, stdin/stdout
+- **fs** - Filesystem operations
+- **os** - OS functions (env, args, cwd)
+- **time** - Time and date operations
+- **math** - Mathematical functions
+- **string** - String manipulation
+- **array** - Array operations
+- **collections** - Advanced collections
 
-- ✅ Working - Pure Wyn implementations, fully functional
-- ⚠️ Partial/Stubs - Some functions work, I/O operations need runtime
-- ❌ Stubs - API defined, awaiting implementation
+## Data & Encoding
 
-## Usage
+- **json** - JSON parsing/generation
+- **encoding** - Base64, hex, URL encoding
+- **compress** - Compression algorithms
+- **crypto** - Cryptographic functions
+- **hash** - Hash functions
 
-```wyn
-import math
-import string
+## Networking
 
-fn main() {
-    let x: int = abs(-5)
-    let s: str = trim("  hello  ")
-    println(x)
-    print_str(s)
-}
-```
+- **http** - HTTP utilities
+- **net** - Network operations
+- **tls** - TLS/SSL support
 
-## Notes
+## Advanced
 
-- All modules use only Stage 0 compiler features
-- I/O operations (file, network) are stubs pending syscall support
-- GPU/NN modules require backend implementation
+- **gpu** - GPU/Vulkan compute
+- **nn** - Neural network operations
+- **bits** - Bitwise operations
+- **random** - Random number generation
+- **regex** - Pattern matching
+- **validate** - Input validation
+- **utils** - Utility functions
+- **log** - Logging
+- **error** - Error handling
+- **test** - Testing framework
+
+## GUI & Mobile
+
+- **gui** - Native GUI (macOS Cocoa)
+- **mobile** - iOS UIKit bindings
+- **tui** - Terminal UI
+
+## Documentation
+
+See [stdlib reference](../docs/4-stdlib-reference.md) for complete API documentation.
+
+## Testing
+
+All modules have comprehensive tests in `../tests/*_stdlib_test.wyn`.
