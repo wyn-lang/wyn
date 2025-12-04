@@ -1,6 +1,0 @@
-import std/io
-
-fn main() {
-    io.print_str("Hello, Wyn!")
-    io.print_newline()
-}
