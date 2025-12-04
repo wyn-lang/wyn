@@ -10,28 +10,30 @@ struct Duration {
 # Returns the number of seconds since January 1, 1970 UTC
 # Requires: Runtime support for system time (syscall)
 fn now() -> int {
-    return 0
+    return syscall(96, 0, 0, 0, 0, 0, 0)
 }
 
 # Get the current Unix timestamp in milliseconds
 # Returns the number of milliseconds since January 1, 1970 UTC
 # Requires: Runtime support for high-resolution time (syscall)
 fn now_millis() -> int {
-    return 0
+    let secs: int = syscall(96, 0, 0, 0, 0, 0, 0)
+    return secs * 1000
 }
 
 # Get the current Unix timestamp in nanoseconds
 # Returns the number of nanoseconds since January 1, 1970 UTC
 # Requires: Runtime support for high-resolution time (syscall)
 fn now_nanos() -> int {
-    return 0
+    let secs: int = syscall(96, 0, 0, 0, 0, 0, 0)
+    return secs * 1000000000
 }
 
 # Sleep for the specified duration
 # Blocks execution for the given time period
 # Requires: Runtime support for sleep (syscall)
 fn sleep(duration: Duration) {
-    # No-op placeholder
+    syscall(35, duration.seconds, duration.nanos, 0, 0, 0, 0)
 }
 
 # Format a Unix timestamp according to the given format string
@@ -412,37 +414,45 @@ fn epoch_days_to_date(days: int) -> [int] {
 # Get the current year
 # Requires: Runtime support for system time
 fn current_year() -> int {
-    return 1970
+    let date: [int] = timestamp_to_date(now())
+    return date[0]
 }
 
 # Get the current month (1-12)
 # Requires: Runtime support for system time
 fn current_month() -> int {
-    return 1
+    let date: [int] = timestamp_to_date(now())
+    return date[1]
 }
 
 # Get the current day of month (1-31)
 # Requires: Runtime support for system time
 fn current_day() -> int {
-    return 1
+    let date: [int] = timestamp_to_date(now())
+    return date[2]
 }
 
 # Get the current hour (0-23)
 # Requires: Runtime support for system time
 fn current_hour() -> int {
-    return 0
+    let timestamp: int = now()
+    let time_of_day: int = timestamp % 86400
+    return time_of_day / 3600
 }
 
 # Get the current minute (0-59)
 # Requires: Runtime support for system time
 fn current_minute() -> int {
-    return 0
+    let timestamp: int = now()
+    let time_of_day: int = timestamp % 86400
+    return (time_of_day % 3600) / 60
 }
 
 # Get the current second (0-59)
 # Requires: Runtime support for system time
 fn current_second() -> int {
-    return 0
+    let timestamp: int = now()
+    return timestamp % 60
 }
 
 # Convert timestamp to ISO 8601 format (YYYY-MM-DDTHH:MM:SSZ)

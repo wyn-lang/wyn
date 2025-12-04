@@ -20,8 +20,18 @@ fn main() {
     gui.draw_text(win, 300, 200, "Green")
     gui.draw_text(win, 550, 200, "Blue")
     
-    io.print_str("Window created. Running event loop...")
+    io.print_str("Window displayed. Showing for 5 seconds...")
     io.print_newline()
     
-    gui.run()
+    # Poll events for 5 seconds then exit
+    let mut i: int = 0
+    while i < 500 {
+        gui.poll_events()
+        sleep_ms(10)
+        i = i + 1
+    }
+    
+    gui.close_window(win)
+    io.print_str("Done")
+    io.print_newline()
 }
