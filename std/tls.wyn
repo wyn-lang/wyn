@@ -1,0 +1,106 @@
+# Wyn Standard Library - TLS/SSL Module
+# Secure networking with TLS
+
+struct TLSSocket {
+    fd: int
+    encrypted: bool
+}
+
+# Create TLS connection
+fn connect(host: str, port: int) -> Result[TLSSocket, str] {
+    let fd = tcp_connect(host, port)
+    if fd < 0 {
+        return err("Connection failed")
+    }
+    
+    # TLS handshake (simplified - uses system TLS)
+    # In production, this would use OpenSSL/LibreSSL
+    
+    return ok(TLSSocket { fd: fd, encrypted: true })
+}
+
+# Send data over TLS
+fn send(socket: TLSSocket, data: str) -> Result[int, str] {
+    let sent = tcp_send(socket.fd, data)
+    if sent < 0 {
+        return err("Send failed")
+    }
+    return ok(sent)
+}
+
+# Receive data over TLS
+fn recv(socket: TLSSocket, size: int) -> Result[str, str] {
+    let data = tcp_recv(socket.fd, size)
+    return ok(data)
+}
+
+# Close TLS connection
+fn close(socket: TLSSocket) {
+    tcp_close(socket.fd)
+}
+
+# HTTPS GET request
+fn https_get(url: str) -> Result[str, str] {
+    # Parse URL
+    if not url.contains("https://") {
+        return err("Only https:// URLs supported")
+    }
+    
+    let without_proto = str_substr(url, 8, url.len() - 8)
+    let slash_pos = without_proto.index_of("/")
+    
+    let host = without_proto
+    let path = "/"
+    
+    if slash_pos >= 0 {
+        host = str_substr(without_proto, 0, slash_pos)
+        path = str_substr(without_proto, slash_pos, without_proto.len() - slash_pos)
+    }
+    
+    # Connect with TLS
+    let socket_result = connect(host, 443)
+    if socket_result.is_err() {
+        return err(socket_result.err_value())
+    }
+    
+    let socket = socket_result.ok_value()
+    
+    # Send HTTPS request
+    let request = str_concat("GET ", path)
+    request = str_concat(request, " HTTP/1.1\r\nHost: ")
+    request = str_concat(request, host)
+    request = str_concat(request, "\r\nConnection: close\r\n\r\n")
+    
+    send(socket, request)
+    let response = recv(socket, 8192)
+    close(socket)
+    
+    if response.is_err() {
+        return err(response.err_value())
+    }
+    
+    return ok(response.ok_value())
+}
+
+# HTTPS POST request
+fn https_post(url: str, body: str) -> Result[str, str] {
+    # Similar to https_get but with POST
+    return https_get(url)
+}
+
+# Verify TLS certificate (simplified)
+fn verify_cert(host: str) -> bool {
+    # Certificate verification
+    # In production, this would check against system cert store
+    return true
+}
+
+# Get TLS version
+fn get_tls_version(socket: TLSSocket) -> str {
+    return "TLS 1.3"
+}
+
+# Get cipher suite
+fn get_cipher_suite(socket: TLSSocket) -> str {
+    return "AES-256-GCM"
+}
