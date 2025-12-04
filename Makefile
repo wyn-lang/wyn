@@ -36,9 +36,9 @@ MOBILE_RUNTIME_OBJ = $(BUILD_DIR)/mobile_runtime.o
 # Default target - platform specific
 .PHONY: all
 ifeq ($(UNAME_S),Darwin)
-all: stage0 gui-runtime gpu-runtime vulkan-runtime
+all: stage0 gui-runtime gpu-runtime vulkan-runtime wyn-cli
 else
-all: stage0 vulkan-runtime
+all: stage0 vulkan-runtime wyn-cli
 endif
 
 # Create build directory
@@ -88,6 +88,11 @@ $(MOBILE_RUNTIME_OBJ): $(MOBILE_RUNTIME_SRC)
 .PHONY: stage0-debug
 stage0-debug: $(BUILD_DIR)
 	$(CC) $(DEBUG_FLAGS) -o $(STAGE0_BIN) $(STAGE0_SRC)
+
+# Build wyn CLI tool
+.PHONY: wyn-cli
+wyn-cli: stage0
+	./$(STAGE0_BIN) --stage1-tc --stage1-opt -o $(BUILD_DIR)/wyn src/wyn_cli.wyn
 
 # Run all tests
 .PHONY: test

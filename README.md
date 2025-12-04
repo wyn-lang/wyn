@@ -48,7 +48,7 @@ Recommended approach:
 
 Native Windows support planned for future release.
 
-**Note:** The `wyn` CLI tool is a bash script and requires a Unix shell (works on macOS/Linux, or WSL on Windows). The compiler binary (`wyn-compiler`) can be used directly on any platform.
+**Note:** The `wyn` CLI tool is written in Wyn itself and works cross-platform. The compiler binary (`wyn-compiler`) can also be used directly.
 
 ## Quick Start
 

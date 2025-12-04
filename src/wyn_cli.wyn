@@ -1,0 +1,86 @@
+fn main() {
+    let argv: [str] = args()
+    
+    if argv.len() < 2 {
+        print_help()
+        return
+    }
+    
+    let cmd: str = argv[1]
+    
+    if cmd == "version" {
+        print_str("Wyn v1.0.0\n")
+        print_str("Stage 1 compiler with optimizations\n")
+    } else if cmd == "new" {
+        if argv.len() < 3 {
+            print_str("Usage: wyn new <project-name>\n")
+            exit(1)
+        }
+        create_project(argv[2])
+    } else if cmd == "build" {
+        build_project()
+    } else if cmd == "run" {
+        build_and_run()
+    } else if cmd == "help" {
+        print_help()
+    } else {
+        print_str("Unknown command: ")
+        print_str(cmd)
+        print_newline()
+        print_help()
+        exit(1)
+    }
+}
+
+fn print_help() {
+    print_str("Wyn CLI - One language to rule them all\n\n")
+    print_str("Usage: wyn <command> [args]\n\n")
+    print_str("Commands:\n")
+    print_str("  version              Show version\n")
+    print_str("  new <name>           Create new project\n")
+    print_str("  build                Build current project\n")
+    print_str("  run                  Build and run project\n")
+    print_str("  help                 Show this help\n")
+}
+
+fn create_project(name: str) {
+    print_str("Creating project: ")
+    print_str(name)
+    print_newline()
+    
+    mkdir(name)
+    chdir(name)
+    mkdir("src")
+    mkdir("build")
+    
+    let line1: str = "fn main() {"
+    let line2: str = "    print_str(\"Hello World!\\n\")"
+    let line3: str = "}"
+    let main_content: str = line1 + "\n" + line2 + "\n" + line3 + "\n"
+    write_file("src/main.wyn", main_content)
+    
+    let toml_content: str = "[package]\nname = \"app\"\nversion = \"0.1.0\"\n"
+    write_file("wyn.toml", toml_content)
+    
+    print_str("✓ Created project: ")
+    print_str(name)
+    print_newline()
+}
+
+fn build_project() {
+    print_str("Building project...\n")
+    
+    let result: int = system("wyn-compiler --stage1-tc --stage1-opt -o build/app src/main.wyn")
+    
+    if result == 0 {
+        print_str("✓ Built: build/app\n")
+    } else {
+        print_str("✗ Build failed\n")
+        exit(1)
+    }
+}
+
+fn build_and_run() {
+    build_project()
+    system("./build/app")
+}
