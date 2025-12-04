@@ -1,0 +1,21 @@
+fn main() {
+    print_str("Creating window...")
+    print_newline()
+    
+    let win = gui.create_window("Wyn GUI", 400, 300)
+    gui.show_window(win)
+    gui.draw_rect(win, 50, 50, 100, 80, 16711680)
+    gui.draw_text(win, 60, 150, "Hello GUI!")
+    
+    # Poll events for 2 seconds then exit
+    let mut i = 0
+    while i < 200 {
+        gui.poll_events()
+        sleep_ms(10)
+        i = i + 1
+    }
+    
+    gui.close_window(win)
+    print_str("Done")
+    print_newline()
+}
