@@ -20,18 +20,24 @@ sudo cp build/stage0 /usr/local/bin/wyn  # Installs Stage 1 compiler as 'wyn'
 
 ### Platform Support
 
-**Tier 1 (Fully Supported):**
-- ✅ macOS ARM64 (Apple Silicon)
-- ✅ macOS x86_64 (Intel)
-- ✅ Linux x86_64
+**Tier 1 (Fully Supported - CI Tested):**
+- ✅ macOS ARM64 (Apple Silicon) - Full support: compiler, GUI, Metal GPU, Vulkan
+- ✅ macOS x86_64 (Intel) - Full support: compiler, GUI, Metal GPU, Vulkan
+- ✅ Linux x86_64 - Full support: compiler, Vulkan GPU
 
-**Tier 2 (Supported):**
-- ✅ Linux ARM64
+**Tier 2 (Supported - CI Tested):**
+- ✅ Linux ARM64 - Full support: compiler, Vulkan GPU
 
 **Tier 3 (Planned):**
-- 🔄 Windows x86_64 (requires POSIX compatibility layer)
+- 🔄 Windows x86_64 - Requires POSIX compatibility layer (WSL, Cygwin, or native port)
 
-All platforms include Vulkan GPU support.
+**GPU Support:**
+- All platforms include Vulkan GPU support
+- macOS additionally includes Metal GPU backend for optimized performance
+
+**Download Pre-built Binaries:**
+- GitHub releases include binaries for all Tier 1 & 2 platforms
+- Windows users can use WSL to run Linux x86_64 builds
 
 ## Quick Start
 
