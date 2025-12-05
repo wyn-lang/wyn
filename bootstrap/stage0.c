@@ -10458,9 +10458,17 @@ int main(int argc, char** argv) {
             if (vulkan_runtime_path[0]) { if (runtimes[0]) strcat(runtimes, " "); strcat(runtimes, vulkan_runtime_path); }
             
             if (runtimes[0]) {
-                snprintf(cmd, 512, "cc -o %s %s %s %s -Wl,-dead_strip", output_file, asm_file, runtimes, frameworks);
+                if (target_os == OS_MACOS) {
+                    snprintf(cmd, 512, "cc -o %s %s %s %s -Wl,-dead_strip", output_file, asm_file, runtimes, frameworks);
+                } else {
+                    snprintf(cmd, 512, "cc -o %s %s %s %s", output_file, asm_file, runtimes, frameworks);
+                }
             } else {
-                snprintf(cmd, 512, "cc -o %s %s -Wl,-dead_strip", output_file, asm_file);
+                if (target_os == OS_MACOS) {
+                    snprintf(cmd, 512, "cc -o %s %s -Wl,-dead_strip", output_file, asm_file);
+                } else {
+                    snprintf(cmd, 512, "cc -o %s %s", output_file, asm_file);
+                }
             }
             if (system(cmd) != 0) {
                 fprintf(stderr, "Compilation failed.\n");
