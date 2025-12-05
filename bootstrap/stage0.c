@@ -7850,27 +7850,19 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                         bool is_shared = cg_is_shared(cg, s->assign.target->ident);
                         
                         if (is_shared && (s->assign.op == TOK_PLUSEQ || s->assign.op == TOK_MINUSEQ)) {
-                            // Use atomic RMW for += and -= on shared variables
+                            // Use mutex-based atomic for 100% reliability
                             cg_expr(cg, s->assign.value);
-                            cg_emit(cg, "    movq %%rax, %%rcx");
-                            if (cg->in_thread_context) {
-                                cg_emit(cg, "    movq -%d(%%rbp), %%r12", off);
-                                if (s->assign.op == TOK_PLUSEQ) {
-                                    cg_emit(cg, "    lock addq %%rcx, (%%r12)");
-                                } else {
-                                    cg_emit(cg, "    lock subq %%rcx, (%%r12)");
-                                }
-                                cg_emit(cg, "    movq (%%r12), %%rax");
-                            } else {
-                                if (s->assign.op == TOK_PLUSEQ) {
-                                    cg_emit(cg, "    lock addq %%rcx, -%d(%%rbp)", off);
-                                } else {
-                                    cg_emit(cg, "    lock subq %%rcx, -%d(%%rbp)", off);
-                                }
-                                cg_emit(cg, "    mfence");  // Memory fence
-                                cg_emit(cg, "    movq -%d(%%rbp), %%rax", off);
+                            cg_emit(cg, "    movq %%rax, %%rsi");  // value
+                            if (s->assign.op == TOK_MINUSEQ) {
+                                cg_emit(cg, "    negq %%rsi");
                             }
-                            break;  // Skip normal store
+                            if (cg->in_thread_context) {
+                                cg_emit(cg, "    movq -%d(%%rbp), %%rdi", off);  // ptr
+                            } else {
+                                cg_emit(cg, "    leaq -%d(%%rbp), %%rdi", off);  // ptr
+                            }
+                            cg_emit(cg, "    call ___wyn_atomic_add");
+                            break;
                         } else if (is_shared) {
                             // For other ops on shared vars, use CAS loop
                             int retry_lbl = cg_new_label(cg);
