@@ -123,10 +123,14 @@ install: all
 	@echo "Installing Wyn to $(PREFIX)/bin..."
 	install -m 755 $(BUILD_DIR)/stage0 $(PREFIX)/bin/wyn-compiler
 	install -m 755 $(BUILD_DIR)/wyn $(PREFIX)/bin/wyn
+	@echo "Installing stdlib to $(PREFIX)/share/wyn/std..."
+	mkdir -p $(PREFIX)/share/wyn
+	cp -r std $(PREFIX)/share/wyn/
 	@echo "✓ Installation complete!"
 	@echo ""
 	@echo "Try it:"
 	@echo "  wyn version"
+	@echo "  wyn doc os"
 	@echo "  wyn new myapp"
 	@echo "  cd myapp && wyn run ."
 
