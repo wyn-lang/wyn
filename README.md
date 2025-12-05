@@ -129,13 +129,14 @@ See [benchmarks/FINAL_RESULTS.md](benchmarks/FINAL_RESULTS.md) for details.
 - **Fast** - Compiles to native code, 20-30x faster than Python
 - **Simple** - Python-like syntax, easy to learn
 - **Universal** - One language for everything: scripts, CLI, servers, systems
-- **Module system** - Clean organization (io, fs, math, http, gui, mobile)
+- **Module system** - Clean organization (io, os, time, math, http, string, array)
 - **Type safe** - Explicit types, no surprises
 - **Stage 1** - Enhanced type checking & optimizations
 - **Native GUI** - Built-in GUI support using platform APIs (macOS: Cocoa)
 - **iOS Mobile** - Native iOS apps with UIKit bindings
 - **Run anywhere** - Compile to binary OR run as script
 - **No dependencies** - Single binary, no runtime needed
+- **Builtins + Modules** - Simple builtins for scripts, modules for organization
 
 **One language to rule them all.**
 
