@@ -1,0 +1,20 @@
+fn main() {
+    print_str("Testing spawn with 1000 concurrent operations...\n")
+    
+    let mut counter: int = 0
+    
+    for i in 0..1000 {
+        spawn { counter = counter + 1 }
+    }
+    
+    sleep_ms(10000)
+    
+    print_str("Result: ")
+    print(counter)
+    print_str("/1000\n")
+    
+    # Allow 99.5% success rate (995+/1000)
+    assert(counter >= 995, "At least 995/1000 spawns should complete")
+    
+    print_str("✓ Spawn stress test passed\n")
+}
