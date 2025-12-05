@@ -73,10 +73,10 @@ jobs:
       - name: Install Vulkan SDK
         run: brew install vulkan-headers vulkan-loader
 
-      - name: Build All
+      - name: Build Compiler and Runtimes
         run: |
           make clean
-          make all
+          make stage0 gui-runtime gpu-runtime vulkan-runtime spawn-runtime array-runtime
 
       - name: Run Test Suite
         run: make test
