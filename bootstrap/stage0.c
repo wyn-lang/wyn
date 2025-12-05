@@ -2533,7 +2533,8 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     strcmp(e->ident, "file_exists") == 0 || strcmp(e->ident, "delete_file") == 0 ||
                     strcmp(e->ident, "file_size") == 0 || strcmp(e->ident, "is_dir") == 0 ||
                     strcmp(e->ident, "mkdir") == 0 || strcmp(e->ident, "rmdir") == 0 ||
-                    strcmp(e->ident, "append_file") == 0 || strcmp(e->ident, "time_now") == 0 ||
+                    strcmp(e->ident, "append_file") == 0 || strcmp(e->ident, "array_append") == 0 ||
+                    strcmp(e->ident, "time_now") == 0 ||
                     strcmp(e->ident, "sleep_ms") == 0 || strcmp(e->ident, "tcp_connect") == 0 ||
                     strcmp(e->ident, "tcp_close") == 0 || strcmp(e->ident, "char_at") == 0 ||
                     strcmp(e->ident, "str_find") == 0 || strcmp(e->ident, "str_cmp") == 0 ||
@@ -3110,7 +3111,8 @@ static bool tc1_is_builtin(const char* name) {
            strcmp(name, "file_exists") == 0 || strcmp(name, "delete_file") == 0 ||
            strcmp(name, "file_size") == 0 || strcmp(name, "is_dir") == 0 ||
            strcmp(name, "mkdir") == 0 || strcmp(name, "rmdir") == 0 ||
-           strcmp(name, "append_file") == 0 || strcmp(name, "time_now") == 0 ||
+           strcmp(name, "append_file") == 0 || strcmp(name, "array_append") == 0 ||
+           strcmp(name, "time_now") == 0 ||
            strcmp(name, "sleep_ms") == 0 || strcmp(name, "tcp_connect") == 0 ||
            strcmp(name, "tcp_close") == 0 || strcmp(name, "char_at") == 0 ||
            strcmp(name, "str_find") == 0 || strcmp(name, "str_cmp") == 0 ||
