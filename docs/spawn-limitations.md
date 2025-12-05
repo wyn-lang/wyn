@@ -80,7 +80,7 @@ spawn { counter = counter + 1 }
 
 ## Recommendations
 
-### For v1.0.0
+### For v0.0.1
 Use the workaround pattern:
 ```wyn
 for item in items {

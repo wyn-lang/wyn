@@ -91,7 +91,7 @@ fn compare_versions(a: Version, b: Version) -> int {
 }
 
 # Check if version satisfies a constraint
-# Supports: "*", "1.0.0", "^1.0.0", "~1.0.0", ">=1.0.0", ">1.0.0", "<=1.0.0", "<1.0.0"
+# Supports: "*", "0.0.1", "^0.0.1", "~0.0.1", ">=0.0.1", ">0.0.1", "<=0.0.1", "<0.0.1"
 fn satisfies(v: Version, constraint: str) -> bool {
     if constraint == "*" or constraint == "" {
         return true

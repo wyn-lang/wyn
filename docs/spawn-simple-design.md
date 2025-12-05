@@ -38,7 +38,7 @@ spawn {
 }
 ```
 
-### Spawn with Capture (v1.0.0)
+### Spawn with Capture (v0.0.1)
 
 ```wyn
 let x: int = 42
@@ -156,7 +156,7 @@ fn process_all(items: [str]) {
 
 ## Implementation Requirements
 
-### 1. Variable Capture (v1.0.0)
+### 1. Variable Capture (v0.0.1)
 **What to implement:**
 - Capture any variable from outer scope
 - Automatic - no special syntax
@@ -170,7 +170,7 @@ fn process_all(items: [str]) {
 **Runtime:**
 - No changes needed (already have spawn)
 
-### 2. Thread-Safe Collections (v1.0.0)
+### 2. Thread-Safe Collections (v0.0.1)
 **What to implement:**
 - `results.append(x)` - Atomic append
 - `queue.pop()` - Atomic pop
@@ -300,7 +300,7 @@ spawn { counter = counter + 1 }  // Atomic
 
 ## Implementation Priority
 
-### v1.0.0 (Next Release)
+### v0.0.1 (Next Release)
 1. **Variable capture** - 3 days
 2. **Thread-safe collections** - 2 days
 3. **Atomic operations** - 1 day
@@ -308,7 +308,7 @@ spawn { counter = counter + 1 }  // Atomic
 **Total: 1 week of work**
 
 ### Result
-After v1.0.0, Wyn will have:
+After v0.0.1, Wyn will have:
 - Simpler concurrency than Go
 - Simpler concurrency than Python
 - Faster than both
@@ -316,7 +316,7 @@ After v1.0.0, Wyn will have:
 
 **One way to do things. Simple. Fast. Safe.**
 
-## Example: Parallel Test Runner (v1.0.0)
+## Example: Parallel Test Runner (v0.0.1)
 
 ```wyn
 let mut passed: int = 0
@@ -336,7 +336,7 @@ print(passed)  // Correct count, no race conditions
 
 ## Recommendation
 
-**Implement v1.0.0 features only:**
+**Implement v0.0.1 features only:**
 - Variable capture
 - Thread-safe collections
 - Atomic operations

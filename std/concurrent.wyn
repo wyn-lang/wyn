@@ -31,5 +31,5 @@ pub fn get(c: Counter) -> int {
 #   spawn { r1 = compute(1) }
 #   ...
 
-# For v1.0.0: Use fixed-size result collection
+# For v0.0.1: Use fixed-size result collection
 # For v1.1: Implement true thread-safe dynamic arrays

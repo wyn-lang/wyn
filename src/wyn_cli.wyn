@@ -9,7 +9,7 @@ fn main() {
     let cmd: str = argv[1]
     
     if cmd == "version" {
-        print_str("Wyn v1.0.0\n")
+        print_str("Wyn v0.0.1\n")
         print_str("Stage 1 compiler with optimizations\n")
     } else if cmd == "new" or cmd == "init" {
         if argv.len() < 3 {

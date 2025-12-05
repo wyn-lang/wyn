@@ -126,7 +126,7 @@ fn cmd_add(args: [str]) {
         print_str("")
         print_str("Examples:")
         print_str("  wyn add github.com/user/repo")
-        print_str("  wyn add github.com/user/repo@v1.0.0")
+        print_str("  wyn add github.com/user/repo@v0.0.1")
         exit(1)
     }
     

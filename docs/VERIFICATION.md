@@ -1,4 +1,4 @@
-# Wyn v1.0.0 - Final Verification
+# Wyn v0.0.1 - Final Verification
 
 ## ✅ All Systems Verified
 
@@ -10,7 +10,7 @@
 - ✅ `make clean` - Cleanup works
 
 ### CLI Commands (All Working)
-- ✅ `wyn version` - Shows v1.0.0
+- ✅ `wyn version` - Shows v0.0.1
 - ✅ `wyn new <name>` - Creates projects
 - ✅ `wyn build` - Builds projects
 - ✅ `wyn run` - Builds and runs
@@ -99,7 +99,7 @@
 
 ## Final Status
 
-**🎉 Wyn v1.0.0 is production ready!**
+**🎉 Wyn v0.0.1 is production ready!**
 
 - ✅ 76/76 tests passing (100%)
 - ✅ 500+ stdlib functions

@@ -1,4 +1,4 @@
-# Spawn and Arrays - v1.0.0 Limitations
+# Spawn and Arrays - v0.0.1 Limitations
 
 ## Arrays are Immutable
 
@@ -7,7 +7,7 @@ In Wyn Stage 0, arrays are immutable by design. This means:
 - ❌ No dynamic array growth
 - ❌ Can't collect results from spawns into array
 
-## Workarounds for v1.0.0
+## Workarounds for v0.0.1
 
 ### 1. Use Atomic Counters (Works Perfectly)
 ```wyn
@@ -49,7 +49,7 @@ for i in 0..5 {
 }
 ```
 
-## What Works in v1.0.0
+## What Works in v0.0.1
 
 ### ✅ Atomic Counters
 ```wyn
@@ -113,7 +113,7 @@ Implement mutable arrays with:
 - Dynamic growth
 - Proper synchronization
 
-## Recommendation for v1.0.0
+## Recommendation for v0.0.1
 
 **Use atomic counters** - they work perfectly for:
 - Test runners (count passed/failed)

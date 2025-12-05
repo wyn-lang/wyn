@@ -2,7 +2,7 @@
 
 ## Overview
 
-Wyn v1.0.0 implements **automatic atomic operations** for all mutable variables captured in `spawn` blocks. This prevents race conditions and ensures thread-safe concurrent execution.
+Wyn v0.0.1 implements **automatic atomic operations** for all mutable variables captured in `spawn` blocks. This prevents race conditions and ensures thread-safe concurrent execution.
 
 ## How It Works
 

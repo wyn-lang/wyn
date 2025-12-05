@@ -45,7 +45,7 @@ license = "MIT"
 entry = "src/main.wyn"
 
 [dependencies]
-github.com/user/repo = "^1.0.0"
+github.com/user/repo = "^0.0.1"
 ```
 
 ## Dependencies
@@ -57,7 +57,7 @@ Dependencies are specified in `wyn.toml`:
 ```toml
 [dependencies]
 # GitHub packages
-github.com/user/repo = "^1.0.0"
+github.com/user/repo = "^0.0.1"
 github.com/user/repo = "v2.1.0"
 
 # Local packages
@@ -75,10 +75,10 @@ some-package = "*"
 | `1.2.3` | Exact version |
 | `^1.2.3` | Compatible (same major, >= 1.2.3) |
 | `~1.2.3` | Approximately (same major.minor, >= 1.2.3) |
-| `>=1.0.0` | Greater than or equal |
-| `>1.0.0` | Greater than |
-| `<=1.0.0` | Less than or equal |
-| `<1.0.0` | Less than |
+| `>=0.0.1` | Greater than or equal |
+| `>0.0.1` | Greater than |
+| `<=0.0.1` | Less than or equal |
+| `<0.0.1` | Less than |
 
 ### Import Syntax
 
