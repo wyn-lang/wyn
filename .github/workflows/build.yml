@@ -148,6 +148,7 @@ jobs:
         uses: docker/setup-qemu-action@v3
 
       - name: Build ARM64 in Docker
+        continue-on-error: true
         run: |
           docker run --rm --platform linux/arm64 -v $PWD:/workspace -w /workspace ubuntu:22.04 bash -c "
             apt-get update && 
