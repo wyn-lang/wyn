@@ -12,61 +12,90 @@ fn main() {
 
 fn show_doc_index() {
     print_str("Wyn Standard Library\n\n")
-    print_str("Modules:\n")
-    print_str("  io       - File I/O\n")
-    print_str("  fs       - Filesystem\n")
-    print_str("  os       - OS functions\n")
-    print_str("  time     - Time and date\n")
-    print_str("  math     - Math functions\n")
-    print_str("  string   - String ops\n")
-    print_str("  array    - Array ops\n")
-    print_str("\n")
-    print_str("Usage: wyn doc <module> [function]\n")
+    print_str("Usage: wyn doc <module> [function]\n\n")
+    print_str("Example: wyn doc os getenv\n")
 }
 
 fn show_module_doc(module: str) {
-    if module == "os" {
-        print_str("Module: os\n\n")
-        print_str("Functions:\n")
-        print_str("  getenv(key) -> str\n")
-        print_str("  setenv(key, val) -> Result\n")
-        print_str("  args() -> [str]\n")
-        print_str("  getcwd() -> str\n")
-        print_str("  getpid() -> int\n")
-    } else if module == "io" {
-        print_str("Module: io\n\n")
-        print_str("Functions:\n")
-        print_str("  read_file(path) -> str\n")
-        print_str("  write_file(path, content) -> bool\n")
-        print_str("  file_exists(path) -> bool\n")
-        print_str("  delete_file(path) -> bool\n")
-    } else if module == "time" {
-        print_str("Module: time\n\n")
-        print_str("Functions:\n")
-        print_str("  time_now() -> int\n")
-        print_str("  sleep_ms(ms: int)\n")
-        print_str("  clock() -> int\n")
-    } else {
-        print_str("Module not found. Use 'wyn doc' to list.\n")
+    let path: str = "std/" + module + ".wyn"
+    
+    if not file_exists(path) {
+        print_str("Module '")
+        print_str(module)
+        print_str("' not found in std/\n")
+        return
+    }
+    
+    let content: str = read_file(path)
+    
+    print_str("Module: ")
+    print_str(module)
+    print_str("\n\nFunctions:\n")
+    
+    # Parse and show function signatures
+    let lines: [str] = str_split(content, "\n")
+    let mut i: int = 0
+    while i < lines.len() {
+        let line: str = lines[i]
+        if str_find(line, "fn ") == 0 or str_find(line, "pub fn ") == 0 {
+            # Extract function signature
+            let sig_end: int = str_find(line, " {")
+            if sig_end > 0 {
+                let sig: str = line[0:sig_end]
+                print_str("  ")
+                print_str(sig)
+                print_newline()
+            }
+        }
+        i = i + 1
     }
 }
 
 fn show_function_doc(module: str, fn_name: str) {
-    if module == "os" {
-        if fn_name == "setenv" {
-            print_str("setenv(key: str, value: str) -> Result\n\n")
-            print_str("Set environment variable.\n\n")
-            print_str("Example:\n")
-            print_str("  setenv(\"MY_VAR\", \"hello\")\n")
-        } else if fn_name == "getenv" {
-            print_str("getenv(key: str) -> str\n\n")
-            print_str("Get environment variable.\n\n")
-            print_str("Example:\n")
-            print_str("  let path: str = getenv(\"PATH\")\n")
-        } else {
-            print_str("Function not found.\n")
-        }
-    } else {
+    let path: str = "std/" + module + ".wyn"
+    
+    if not file_exists(path) {
         print_str("Module not found.\n")
+        return
+    }
+    
+    let content: str = read_file(path)
+    let lines: [str] = str_split(content, "\n")
+    
+    # Find function and show its comments + signature
+    let mut i: int = 0
+    let mut found: bool = false
+    while i < lines.len() {
+        let line: str = lines[i]
+        
+        # Check if this is the function
+        if str_find(line, "fn " + fn_name) >= 0 or str_find(line, "pub fn " + fn_name) >= 0 {
+            found = true
+            
+            # Print preceding comment lines
+            let mut j: int = i - 1
+            while j >= 0 {
+                let prev: str = lines[j]
+                if str_find(prev, "#") == 0 {
+                    print_str(prev[2:prev.len()])
+                    print_newline()
+                    j = j - 1
+                } else {
+                    j = -1
+                }
+            }
+            
+            # Print signature
+            print_newline()
+            print_str(line)
+            print_newline()
+            
+            i = lines.len()
+        }
+        i = i + 1
+    }
+    
+    if not found {
+        print_str("Function not found.\n")
     }
 }
