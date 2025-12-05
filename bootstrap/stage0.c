@@ -4234,30 +4234,52 @@ static void find_used_vars_stmt(Stmt* s, char vars[][MAX_IDENT_LEN], int* count,
     }
 }
 
+static void analyze_spawn_stmt(Stmt* s) {
+    if (!s) return;
+    
+    if (s->kind == STMT_SPAWN) {
+        char used_vars[64][MAX_IDENT_LEN];
+        int used_count = 0;
+        
+        for (int k = 0; k < s->spawn.body_count; k++) {
+            find_used_vars_stmt(s->spawn.body[k], used_vars, &used_count, 64);
+        }
+        
+        if (used_count > 0) {
+            s->spawn.captured_vars = malloc(sizeof(char*) * used_count);
+            s->spawn.captured_count = used_count;
+            for (int k = 0; k < used_count; k++) {
+                s->spawn.captured_vars[k] = strdup(used_vars[k]);
+            }
+        }
+        return;
+    }
+    
+    // Recursively search in nested statements
+    switch (s->kind) {
+        case STMT_FOR:
+            for (int i = 0; i < s->for_stmt.body_count; i++)
+                analyze_spawn_stmt(s->for_stmt.body[i]);
+            break;
+        case STMT_WHILE:
+            for (int i = 0; i < s->while_stmt.body_count; i++)
+                analyze_spawn_stmt(s->while_stmt.body[i]);
+            break;
+        case STMT_IF:
+            for (int i = 0; i < s->if_stmt.then_count; i++)
+                analyze_spawn_stmt(s->if_stmt.then_block[i]);
+            for (int i = 0; i < s->if_stmt.else_count; i++)
+                analyze_spawn_stmt(s->if_stmt.else_block[i]);
+            break;
+        default: break;
+    }
+}
+
 static void analyze_spawn_captures(Module* m) {
-    // Analyze each function for spawn statements
     for (int i = 0; i < m->function_count; i++) {
         FnDef* fn = &m->functions[i];
         for (int j = 0; j < fn->body_count; j++) {
-            Stmt* s = fn->body[j];
-            if (s->kind == STMT_SPAWN) {
-                // Find variables used in spawn body
-                char used_vars[64][MAX_IDENT_LEN];
-                int used_count = 0;
-                
-                for (int k = 0; k < s->spawn.body_count; k++) {
-                    find_used_vars_stmt(s->spawn.body[k], used_vars, &used_count, 64);
-                }
-                
-                // Store captured variables
-                if (used_count > 0) {
-                    s->spawn.captured_vars = malloc(sizeof(char*) * used_count);
-                    s->spawn.captured_count = used_count;
-                    for (int k = 0; k < used_count; k++) {
-                        s->spawn.captured_vars[k] = strdup(used_vars[k]);
-                    }
-                }
-            }
+            analyze_spawn_stmt(fn->body[j]);
         }
     }
 }
