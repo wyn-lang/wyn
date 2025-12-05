@@ -7864,6 +7864,7 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                                 } else {
                                     cg_emit(cg, "    lock subq %%rcx, -%d(%%rbp)", off);
                                 }
+                                cg_emit(cg, "    mfence");  // Memory fence
                                 cg_emit(cg, "    movq -%d(%%rbp), %%rax", off);
                             }
                             break;  // Skip normal store
@@ -8792,6 +8793,7 @@ static void cg_function(CodeGen* cg, FnDef* fn) {
         // Join all spawned threads before function exit
         if (cg->spawn_count > 0) {
             cg_emit(cg, "    call ___wyn_join_all");
+            cg_emit(cg, "    mfence");  // Ensure all thread writes are visible
         }
         
         cg_emit_defers(cg);  // Execute defers at implicit return
@@ -8839,6 +8841,7 @@ static void cg_function(CodeGen* cg, FnDef* fn) {
     // Join all spawned threads before function exit
     if (cg->spawn_count > 0) {
         cg_emit(cg, "    bl ___wyn_join_all");
+        cg_emit(cg, "    dmb sy");  // Data memory barrier
     }
     
     cg_emit_defers(cg);  // Execute defers at implicit return
