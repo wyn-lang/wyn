@@ -6,13 +6,13 @@ CFLAGS = -Wall -Wextra -std=c11 -O2
 DEBUG_FLAGS = -g -O0 -DDEBUG
 GUI_CFLAGS = -framework Cocoa -framework CoreGraphics
 
-# Set macOS deployment target for compatibility
-ifeq ($(UNAME_S),Darwin)
-export MACOSX_DEPLOYMENT_TARGET = 11.0
-endif
-
 # Detect OS
 UNAME_S := $(shell uname -s)
+
+# Set macOS deployment target for compatibility
+ifeq ($(UNAME_S),Darwin)
+CFLAGS += -mmacosx-version-min=11.0
+endif
 
 # Directories
 BOOTSTRAP_DIR = bootstrap
