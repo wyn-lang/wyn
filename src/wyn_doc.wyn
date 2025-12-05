@@ -9,12 +9,26 @@ fn main() {
     }
     
     let module: str = argv[1]
-    let path: str = "std/" + module + ".wyn"
+    
+    # Try multiple locations for std directory
+    let mut path: str = "std/" + module + ".wyn"
+    if file_exists(path) == 0 {
+        path = "../std/" + module + ".wyn"
+    }
+    if file_exists(path) == 0 {
+        path = "/usr/local/share/wyn/std/" + module + ".wyn"
+    }
+    if file_exists(path) == 0 {
+        # Try to find wyn installation
+        let wyn_path: str = getcwd()
+        path = wyn_path + "/std/" + module + ".wyn"
+    }
     
     if file_exists(path) == 0 {
         print_str("Module '")
         print_str(module)
-        print_str("' not found in std/\n")
+        print_str("' not found.\n")
+        print_str("Try from wyn-lang directory or after 'make install'.\n")
         return
     }
     
