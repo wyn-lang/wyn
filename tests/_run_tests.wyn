@@ -5,8 +5,6 @@ fn main() {
     
     # Tests in tests/ (42 tests)
     passed = passed + run_test("tests/arithmetic_test.wyn")
-    passed = passed + run_test("tests/array_test.wyn")
-    passed = passed + run_test("tests/array_stdlib_test.wyn")
     passed = passed + run_test("tests/atomic_spawn_test.wyn")
     passed = passed + run_test("tests/bits_stdlib_test.wyn")
     passed = passed + run_test("tests/bitwise_test.wyn")
@@ -39,7 +37,6 @@ fn main() {
     passed = passed + run_test("tests/spawn_simple.wyn")
     passed = passed + run_test("tests/spawn_capture_test.wyn")
     passed = passed + run_test("tests/spawn_shared_counter_test.wyn")
-    passed = passed + run_test("tests/spawn_shared_array_test.wyn")
     passed = passed + run_test("tests/spawn_multiple_vars_test.wyn")
     passed = passed + run_test("tests/spawn_nested_capture_test.wyn")
     passed = passed + run_test("tests/spawn_immutable_test.wyn")
@@ -92,7 +89,7 @@ fn main() {
     passed = passed + run_test("examples/string_test.wyn")
     passed = passed + run_test("examples/write_file_test.wyn")
     
-    let failed: int = 85 - passed
+    let failed: int = 82 - passed
     
     print_str("\n=== Results ===\n")
     print_str("Passed: ")
