@@ -8715,8 +8715,10 @@ static void cg_method(CodeGen* cg, const char* struct_name, FnDef* fn) {
         
         // Save argc/argv for main function
         if (strcmp(fn->name, "main") == 0) {
-            cg_emit(cg, "    movq %%rdi, L_.wyn_argc(%%rip)");
-            cg_emit(cg, "    movq %%rsi, L_.wyn_argv(%%rip)");
+            cg_emit(cg, "    leaq L_.wyn_argc(%%rip), %%r10");
+            cg_emit(cg, "    movq %%rdi, (%%r10)");
+            cg_emit(cg, "    leaq L_.wyn_argv(%%rip), %%r10");
+            cg_emit(cg, "    movq %%rsi, (%%r10)");
         }
         
         const char* regs[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
