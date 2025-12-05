@@ -9043,7 +9043,7 @@ static void codegen_module(CodeGen* cg) {
         cg_emit(cg, "%sflush:", pfx);
         cg_emit(cg, "    pushq %%rbp");
         cg_emit(cg, "    movq %%rsp, %%rbp");
-        cg_emit(cg, "    movq %s__stdoutp(%%rip), %%rdi", pfx);
+        cg_emit(cg, "    movq %s%s(%%rip), %%rdi", pfx, cg->os == OS_MACOS ? "__stdoutp" : "stdout");
         cg_emit(cg, "    callq %sfflush", pfx);
         cg_emit(cg, "    popq %%rbp");
         cg_emit(cg, "    retq");
@@ -9105,7 +9105,7 @@ static void codegen_module(CodeGen* cg) {
         cg_emit(cg, "    movq %%rsp, %%rbp");
         cg_emit(cg, "    leaq L_.linebuf(%%rip), %%rdi");
         cg_emit(cg, "    movq $1024, %%rsi");
-        cg_emit(cg, "    movq %s__stdinp(%%rip), %%rdx", pfx);
+        cg_emit(cg, "    movq %s%s(%%rip), %%rdx", pfx, cg->os == OS_MACOS ? "__stdinp" : "stdin");
         cg_emit(cg, "    callq %sfgets", pfx);
         cg_emit(cg, "    testq %%rax, %%rax");
         cg_emit(cg, "    jz 1f");
@@ -9616,8 +9616,9 @@ static void codegen_module(CodeGen* cg) {
     cg_emit(cg, "    stp x29, x30, [sp]");
     cg_emit(cg, "    mov x29, sp");
     if (cg->os == OS_MACOS) {
-        cg_emit(cg, "    adrp x0, %s__stdoutp@GOTPAGE", pfx);
-        cg_emit(cg, "    ldr x0, [x0, %s__stdoutp@GOTPAGEOFF]", pfx);
+        const char* stdout_sym = cg->os == OS_MACOS ? "__stdoutp" : "stdout";
+        cg_emit(cg, "    adrp x0, %s%s@GOTPAGE", pfx, stdout_sym);
+        cg_emit(cg, "    ldr x0, [x0, %s%s@GOTPAGEOFF]", pfx, stdout_sym);
         cg_emit(cg, "    ldr x0, [x0]");
     } else {
         cg_emit(cg, "    adrp x0, stdout");
@@ -9686,8 +9687,9 @@ static void codegen_module(CodeGen* cg) {
     cg_emit(cg, "    mov x1, #1024");
     // Load stdin pointer
     if (cg->os == OS_MACOS) {
-        cg_emit(cg, "    adrp x2, %s__stdinp@GOTPAGE", pfx);
-        cg_emit(cg, "    ldr x2, [x2, %s__stdinp@GOTPAGEOFF]", pfx);
+        const char* stdin_sym = cg->os == OS_MACOS ? "__stdinp" : "stdin";
+        cg_emit(cg, "    adrp x2, %s%s@GOTPAGE", pfx, stdin_sym);
+        cg_emit(cg, "    ldr x2, [x2, %s%s@GOTPAGEOFF]", pfx, stdin_sym);
         cg_emit(cg, "    ldr x2, [x2]");
     } else {
         cg_emit(cg, "    adrp x2, stdin");
