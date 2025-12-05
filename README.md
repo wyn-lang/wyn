@@ -62,6 +62,39 @@ wyn -o hello hello.wyn
 wyn --stage1-tc --stage1-opt -o hello hello.wyn
 ```
 
+## Quick Examples
+
+**Mutable arrays:**
+```wyn
+let mut arr: [int] = []
+arr.append(42)
+arr.append(99)
+print(arr.len())  // 2
+```
+
+**Spawn (concurrency):**
+```wyn
+let mut counter: int = 0
+for i in 0..100 {
+    spawn { counter = counter + 1 }
+}
+sleep_ms(1000)
+print(counter)  // 100
+```
+
+**File I/O:**
+```wyn
+write_file("test.txt", "Hello")
+let content: str = read_file("test.txt")
+print(content)  // Hello
+```
+
+**HTTP (coming soon):**
+```wyn
+let response: str = http.get("https://api.example.com")
+print(response)
+```
+
 ## Performance
 
 **Wyn competes with C and Go, beats Java and Node.js, destroys Python:**
