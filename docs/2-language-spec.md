@@ -108,7 +108,7 @@ Wyn has 43 reserved keywords organized by category:
 
 ```wyn
 import std/io
-import std/fs
+import std/io
 import std/math
 import std/string
 
@@ -139,7 +139,7 @@ fn main() {
 | Module | Purpose | Examples |
 |--------|---------|----------|
 | `std/io` | Input/output | `print`, `println`, `read_line`, `flush` |
-| `std/fs` | File system | `read_file`, `write_file`, `file_exists`, `mkdir` |
+| `std/io` | File system | `read_file`, `write_file`, `file_exists`, `mkdir` |
 | `std/math` | Mathematics | `sin`, `cos`, `sqrt`, `pow`, `abs` |
 | `std/string` | String utilities | Helper functions (most use methods) |
 | `std/array` | Array utilities | `sum`, `max`, `min`, `sort` |

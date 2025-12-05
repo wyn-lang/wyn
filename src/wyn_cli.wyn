@@ -47,7 +47,7 @@ fn main() {
             print_str("Wyn Standard Library\n\n")
             print_str("Usage: wyn doc <module>\n\n")
             print_str("Modules in std/:\n")
-            print_str("  os, io, fs, time, math, string, array, collections\n")
+            print_str("  os, io, time, math, string, array, collections\n")
             print_str("  http, json, crypto, hash, random, regex, bits\n")
             print_str("  encoding, compress, validate, utils, error, log\n\n")
             print_str("View source: cat std/<module>.wyn\n")

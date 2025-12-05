@@ -919,3 +919,510 @@ fn print_ascii_box(lines: [str]) {
     }
     print_line(border)
 }
+# std/fs.wyn
+# Filesystem operations and path manipulation utilities
+
+# --- File I/O Operations ---
+
+# Read entire file contents as string
+fn read(path: str) -> Result[str, str] {
+    let content: str = read_file(path)
+    if content == "" {
+        # Could be empty file or error - check existence
+        if file_exists(path) {
+            return ok(content)
+        }
+        return err("file not found")
+    }
+    return ok(content)
+}
+
+# Write string to file, overwriting if exists
+fn write(path: str, content: str) -> Result[(), str] {
+    let result: int = write_file(path, content)
+    if result == 0 {
+        return err("write failed")
+    }
+    return ok(())
+}
+
+# Append string to end of file
+fn append(path: str, content: str) -> Result[(), str] {
+    let result: int = append_file(path, content)
+    if result == 0 {
+        return err("append failed")
+    }
+    return ok(())
+}
+
+# Read file as lines
+# Stage 1: Will support array building for return value
+# Requires: Runtime support for file I/O syscalls
+fn read_lines(path: str) -> Result[[str], str] {
+    let content_result = read_file(path)
+    match content_result {
+        ok(content) => {
+            let lines = str_split(content, "\n")
+            return ok(lines)
+        }
+        err(e) => return err(e)
+    }
+}
+
+# Write lines to file with newline separators
+# Requires: Runtime support for file I/O syscalls
+fn write_lines(path: str, lines: [str]) -> Result[(), str] {
+    let mut content = ""
+    let mut i = 0
+    while i < len(lines) {
+        content = str_concat(content, lines[i])
+        content = str_concat(content, "\n")
+        i = i + 1
+    }
+    let result = write_file(path, content)
+    match result {
+        ok(_) => return ok(())
+        err(e) => return err(e)
+    }
+}
+
+# --- Directory Operations ---
+
+# Check if file or directory exists
+fn exists(path: str) -> bool {
+    return file_exists(path)
+}
+
+# Create directory
+fn create_dir(path: str) -> Result[(), str] {
+    let result: int = mkdir(path)
+    if result == 0 {
+        return err("mkdir failed")
+    }
+    return ok(())
+}
+
+# Create directory and all parent directories
+# Stage 1: Needs string split for path components
+fn mkdir_all(path: str) -> Result[(), str] {
+    return ok(())
+}
+
+# Remove directory
+fn remove_dir(path: str) -> Result[(), str] {
+    let result: int = rmdir(path)
+    if result == 0 {
+        return err("rmdir failed")
+    }
+    return ok(())
+}
+
+# Remove file
+fn remove(path: str) -> Result[(), str] {
+    let result: int = delete_file(path)
+    if result == 0 {
+        return err("delete failed")
+    }
+    return ok(())
+}
+
+# Remove file or directory recursively
+# Requires: Runtime support for filesystem syscalls
+fn remove_all(path: str) -> Result[(), str] {
+    return ok(())
+}
+
+# List directory contents
+# Stage 1: Will support array building for return value
+# Requires: Runtime support for filesystem syscalls
+fn list(path: str) -> Result[[str], str] {
+    let result = list_dir(path)
+    match result {
+        ok(entries) => return ok(entries)
+        err(e) => return err(e)
+    }
+}
+
+# Copy file from src to dst
+# Requires: Runtime support for filesystem syscalls
+fn copy(src: str, dst: str) -> Result[(), str] {
+    let content_result = read_file(src)
+    match content_result {
+        ok(content) => {
+            let write_result = write_file(dst, content)
+            match write_result {
+                ok(_) => return ok(())
+                err(e) => return err(e)
+            }
+        }
+        err(e) => return err(e)
+    }
+}
+
+# Move/rename file from src to dst
+fn move(src: str, dst: str) -> Result[(), str] {
+    let r: int = rename_file(src, dst)
+    if r != 0 {
+        return err("rename failed")
+    }
+    return ok(())
+}
+
+# --- File Metadata ---
+
+# Check if path is a file
+# Requires: Runtime support for filesystem syscalls
+fn is_file(path: str) -> bool {
+    return false
+}
+
+# Check if path is a directory
+# Requires: Runtime support for filesystem syscalls
+fn is_dir(path: str) -> bool {
+    return false
+}
+
+# File metadata information
+struct FileInfo {
+    path: str
+    size: int
+    is_dir: bool
+}
+
+# Get file metadata
+# Requires: Runtime support for filesystem syscalls
+fn stat(path: str) -> Result[FileInfo, str] {
+    return ok(())
+}
+
+# Get file size in bytes
+# Requires: Runtime support for filesystem syscalls
+fn file_size(path: str) -> Result[int, str] {
+    return ok(())
+}
+
+# --- Path Utilities ---
+
+# Join two path components with separator
+# Handles trailing slashes automatically
+fn join_path(a: str, b: str) -> str {
+    if a.len() == 0 {
+        return b
+    }
+    if b.len() == 0 {
+        return a
+    }
+    let last: int = ord(a[a.len() - 1:a.len()][0])
+    if last == 47 {  # '/'
+        return a + b
+    }
+    return a + "/" + b
+}
+
+# Get directory portion of path
+# Returns "." if no directory component
+fn dirname(path: str) -> str {
+    let mut i: int = path.len() - 1
+    while i >= 0 {
+        if ord(path[i:i+1][0]) == 47 {  # '/'
+            if i == 0 {
+                return "/"
+            }
+            return path[0:i]
+        }
+        i = i - 1
+    }
+    return "."
+}
+
+# Get filename portion of path (last component)
+fn basename(path: str) -> str {
+    let mut i: int = path.len() - 1
+    while i >= 0 {
+        if ord(path[i:i+1][0]) == 47 {  # '/'
+            return path[i+1:path.len()]
+        }
+        i = i - 1
+    }
+    return path
+}
+
+# Get file extension including dot (e.g., ".txt")
+# Returns empty string if no extension
+fn extension(path: str) -> str {
+    let base: str = basename(path)
+    let mut i: int = base.len() - 1
+    while i >= 0 {
+        if ord(base[i:i+1][0]) == 46 {  # '.'
+            return base[i:base.len()]
+        }
+        i = i - 1
+    }
+    return ""
+}
+
+# Normalize path by removing duplicate slashes
+# Removes trailing slash except for root
+fn normalize_path(path: str) -> str {
+    if path.len() == 0 {
+        return "."
+    }
+    let mut result: str = ""
+    let mut i: int = 0
+    let mut last_slash: bool = false
+    while i < path.len() {
+        let c: int = ord(path[i:i+1][0])
+        if c == 47 {  # '/'
+            if last_slash == false {
+                result = result + "/"
+                last_slash = true
+            }
+        } else {
+            result = result + path[i:i+1]
+            last_slash = false
+        }
+        i = i + 1
+    }
+    if result.len() > 1 and ord(result[result.len()-1:result.len()][0]) == 47 {
+        result = result[0:result.len()-1]
+    }
+    return result
+}
+
+# Remove file extension from path
+fn remove_extension(path: str) -> str {
+    let ext: str = extension(path)
+    if ext.len() == 0 {
+        return path
+    }
+    return path[0:path.len() - ext.len()]
+}
+
+# Check if path is absolute (starts with /)
+fn is_absolute(path: str) -> bool {
+    if path.len() == 0 {
+        return false
+    }
+    return ord(path[0:1][0]) == 47  # '/'
+}
+
+# Check if path has extension
+fn has_extension(path: str) -> bool {
+    return extension(path).len() > 0
+}
+
+# Join multiple path components
+fn join_paths(parts: [str]) -> str {
+    if parts.len() == 0 {
+        return ""
+    }
+    let mut result: str = parts[0]
+    let mut i: int = 1
+    while i < parts.len() {
+        result = join_path(result, parts[i])
+        i = i + 1
+    }
+    return result
+}
+
+# Get parent directory (same as dirname but clearer name)
+fn parent(path: str) -> str {
+    return dirname(path)
+}
+
+# Get filename without extension
+fn stem(path: str) -> str {
+    let base: str = basename(path)
+    let ext: str = extension(path)
+    if ext.len() == 0 {
+        return base
+    }
+    return base[0:base.len() - ext.len()]
+}
+
+# Split path into directory and filename
+fn split_path(path: str) -> (str, str) {
+    let dir: str = dirname(path)
+    let file: str = basename(path)
+    return (dir, file)
+}
+
+# Check if path ends with separator
+fn has_trailing_slash(path: str) -> bool {
+    if path.len() == 0 {
+        return false
+    }
+    return ord(path[path.len()-1:path.len()][0]) == 47  # '/'
+}
+
+# Add trailing slash if not present
+fn ensure_trailing_slash(path: str) -> str {
+    if has_trailing_slash(path) {
+        return path
+    }
+    return path + "/"
+}
+
+# Remove trailing slash if present (except for root)
+fn remove_trailing_slash(path: str) -> str {
+    if path.len() <= 1 {
+        return path
+    }
+    if has_trailing_slash(path) {
+        return path[0:path.len()-1]
+    }
+    return path
+}
+
+# Check if path matches extension (case-sensitive)
+fn has_ext(path: str, ext: str) -> bool {
+    let path_ext: str = extension(path)
+    if ext.len() > 0 and ord(ext[0:1][0]) != 46 {  # '.'
+        return path_ext == "." + ext
+    }
+    return path_ext == ext
+}
+
+# Replace extension with new one
+fn with_extension(path: str, new_ext: str) -> str {
+    let base: str = remove_extension(path)
+    if new_ext.len() == 0 {
+        return base
+    }
+    if ord(new_ext[0:1][0]) == 46 {  # '.'
+        return base + new_ext
+    }
+    return base + "." + new_ext
+}
+
+# Count path components (depth)
+fn path_depth(path: str) -> int {
+    if path.len() == 0 {
+        return 0
+    }
+    let normalized: str = normalize_path(path)
+    let mut count: int = 0
+    let mut i: int = 0
+    while i < normalized.len() {
+        if ord(normalized[i:i+1][0]) == 47 {  # '/'
+            count = count + 1
+        }
+        i = i + 1
+    }
+    return count
+}
+
+# Check if path is just a filename (no directory component)
+fn is_filename_only(path: str) -> bool {
+    return dirname(path) == "."
+}
+
+# Check if path contains parent directory references (..)
+fn has_parent_refs(path: str) -> bool {
+    let mut i: int = 0
+    while i < path.len() - 1 {
+        if path[i:i+2] == ".." {
+            let mut before_ok: bool = false
+            if i == 0 {
+                before_ok = true
+            }
+            if i > 0 {
+                if ord(path[i-1:i][0]) == 47 {  # '/'
+                    before_ok = true
+                }
+            }
+            if before_ok {
+                if i + 2 >= path.len() {
+                    return true
+                }
+                if ord(path[i+2:i+3][0]) == 47 {
+                    return true
+                }
+            }
+        }
+        i = i + 1
+    }
+    return false
+}
+
+# Check if path is hidden (starts with .)
+fn is_hidden(path: str) -> bool {
+    let base: str = basename(path)
+    if base.len() == 0 {
+        return false
+    }
+    return ord(base[0:1][0]) == 46  # '.'
+}
+
+# Get common file extensions
+fn ext_text() -> str { return ".txt" }
+fn ext_json() -> str { return ".json" }
+fn ext_xml() -> str { return ".xml" }
+fn ext_html() -> str { return ".html" }
+fn ext_css() -> str { return ".css" }
+fn ext_js() -> str { return ".js" }
+fn ext_md() -> str { return ".md" }
+fn ext_wyn() -> str { return ".wyn" }
+
+# Check if path is a text file by extension
+fn is_text_file(path: str) -> bool {
+    let ext: str = extension(path)
+    if ext == ".txt" {
+        return true
+    }
+    if ext == ".md" {
+        return true
+    }
+    if ext == ".json" {
+        return true
+    }
+    if ext == ".xml" {
+        return true
+    }
+    if ext == ".html" {
+        return true
+    }
+    if ext == ".css" {
+        return true
+    }
+    if ext == ".js" {
+        return true
+    }
+    if ext == ".wyn" {
+        return true
+    }
+    return false
+}
+
+# Sanitize filename by removing invalid characters
+fn sanitize_filename(name: str) -> str {
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < name.len() {
+        let c: int = ord(name[i:i+1][0])
+        let mut invalid: bool = false
+        if c == 47 {  # '/'
+            invalid = true
+        }
+        if c == 0 {  # null
+            invalid = true
+        }
+        if c == 92 {  # '\'
+            invalid = true
+        }
+        if invalid {
+            result = result + "_"
+        } else {
+            result = result + name[i:i+1]
+        }
+        i = i + 1
+    }
+    return result
+}
+
+# Create a safe path by joining and normalizing
+fn safe_join(base: str, path: str) -> str {
+    let joined: str = join_path(base, path)
+    return normalize_path(joined)
+}
+

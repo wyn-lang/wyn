@@ -76,7 +76,7 @@ fn main() {
 ### Production Code (Modules)
 ```wyn
 import std/io
-import std/fs
+import std/io
 
 fn main() {
     if fs.exists("input.txt") {
