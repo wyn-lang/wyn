@@ -27,8 +27,8 @@ jobs:
 
       - name: Test wyn CLI
         run: |
-          ./wyn version
-          ./wyn new testapp
+          ./build/wyn version
+          ./build/wyn new testapp
           cd testapp
           ../build/stage0 --stage1-tc --stage1-opt -o build/testapp src/main.wyn
           ./build/testapp
