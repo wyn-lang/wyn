@@ -4502,10 +4502,13 @@ static void cg_atomic_load(CodeGen* cg, const char* name, int offset) {
             cg_emit(cg, "    ldar x0, [x9]");
         }
     } else {
+        // x86_64: Use lock or $0 to force atomic read with full barrier
         if (cg->in_thread_context) {
-            cg_emit(cg, "    movq -%d(%%rbp), %%rax", offset);
-            cg_emit(cg, "    movq (%%rax), %%rax");
+            cg_emit(cg, "    movq -%d(%%rbp), %%r9", offset);
+            cg_emit(cg, "    lock orq $0, (%%r9)");  // Force memory sync
+            cg_emit(cg, "    movq (%%r9), %%rax");
         } else {
+            cg_emit(cg, "    lock orq $0, -%d(%%rbp)", offset);  // Force memory sync
             cg_emit(cg, "    movq -%d(%%rbp), %%rax", offset);
         }
     }

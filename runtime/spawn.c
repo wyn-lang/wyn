@@ -1,5 +1,6 @@
 #include <pthread.h>
 #include <sched.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 // Dynamic thread pool for spawn (unlimited)
@@ -7,8 +8,9 @@ static pthread_t* threads = NULL;
 static int thread_count = 0;
 static int thread_capacity = 0;
 
-// Synchronization for reliable join
+// Synchronization
 static pthread_mutex_t sync_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t sync_cond = PTHREAD_COND_INITIALIZER;
 static int active_threads = 0;
 
 typedef void (*thread_func_t)(void*);
@@ -17,9 +19,10 @@ static void* thread_wrapper(void* arg) {
     thread_func_t func = (thread_func_t)arg;
     func(NULL);
     
-    // Decrement active count
+    // Signal completion
     pthread_mutex_lock(&sync_mutex);
     active_threads--;
+    pthread_cond_signal(&sync_cond);
     pthread_mutex_unlock(&sync_mutex);
     
     return NULL;
@@ -35,9 +38,10 @@ static void* thread_wrapper_with_context(void* arg) {
     args->func(args->context);
     free(args);
     
-    // Decrement active count
+    // Signal completion
     pthread_mutex_lock(&sync_mutex);
     active_threads--;
+    pthread_cond_signal(&sync_cond);
     pthread_mutex_unlock(&sync_mutex);
     
     return NULL;
@@ -56,7 +60,7 @@ void __wyn_spawn(thread_func_t func, void* context) {
         }
     }
     
-    // Increment active count before creating thread
+    // Increment active count
     pthread_mutex_lock(&sync_mutex);
     active_threads++;
     pthread_mutex_unlock(&sync_mutex);
@@ -87,20 +91,17 @@ void __wyn_spawn(thread_func_t func, void* context) {
 }
 
 void __wyn_join_all() {
-    // Join all threads
+    // Wait for all threads to signal completion
+    pthread_mutex_lock(&sync_mutex);
+    while (active_threads > 0) {
+        pthread_cond_wait(&sync_cond, &sync_mutex);
+    }
+    pthread_mutex_unlock(&sync_mutex);
+    
+    // Now join all threads (they're already done)
     for (int i = 0; i < thread_count; i++) {
         pthread_join(threads[i], NULL);
     }
-    
-    // Wait for active count to reach 0 (ensures all work is done)
-    pthread_mutex_lock(&sync_mutex);
-    while (active_threads > 0) {
-        pthread_mutex_unlock(&sync_mutex);
-        // Yield and retry
-        sched_yield();
-        pthread_mutex_lock(&sync_mutex);
-    }
-    pthread_mutex_unlock(&sync_mutex);
     
     thread_count = 0;
     
