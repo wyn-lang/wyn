@@ -11,5 +11,5 @@ fn main() {
     print(3)
     
     # This would fail: assert(false)
-    print_str("All assertions passed!")
+    print("All assertions passed!")
 }

@@ -14,7 +14,7 @@ fn main() {
         i = i + 1
     }
     
-    io.print_str("Array sum: ")
+    io.print("Array sum: ")
     print(sum)
-    io.print_newline()
+    io.print("")
 }

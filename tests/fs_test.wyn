@@ -13,6 +13,6 @@ fn main() {
     assert(file_exists("Makefile"))
     assert(not file_exists("nonexistent_file_xyz"))
     
-    io.print_str("fs_test passed")
-    io.print_newline()
+    io.print("fs_test passed")
+    io.print("")
 }

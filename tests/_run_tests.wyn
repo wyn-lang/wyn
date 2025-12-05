@@ -1,5 +1,6 @@
 fn main() {
-    print_str("=== Wyn Test Suite ===\n")
+    print("=== Wyn Test Suite ===")
+    print("")
     
     let passed: int = 0
     
@@ -91,14 +92,11 @@ fn main() {
     
     const failed: int = 82 - passed
     
-    print_str("\n=== Results ===\n")
-    print_str("Passed: ")
-    print(passed)
-    print_newline()
+    print("")
+    print("=== Results ===")
+    print("Passed:", passed)
     if failed > 0 {
-        print_str("Failed: ")
-        print(failed)
-        print_newline()
+        print("Failed:", failed)
     }
 }
 
@@ -111,9 +109,7 @@ fn run_test(path: str) -> int {
     const compile_result: int = system(compile_cmd)
     
     if compile_result != 0 {
-        print_str("FAIL ")
-        print_str(name)
-        print_newline()
+        print("FAIL " + name)
         return 0
     }
     
@@ -121,14 +117,12 @@ fn run_test(path: str) -> int {
     const run_result: int = system(run_cmd)
     
     if run_result == 0 {
-        print_str("PASS ")
-        print_str(name)
-        print_newline()
+//        print("PASS " + name)
+        print("PASS " + name)
         return 1
     } else {
-        print_str("FAIL ")
-        print_str(name)
-        print_newline()
+        print("FAIL " + name)
+        print(name)
         return 0
     }
 }

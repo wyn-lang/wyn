@@ -1,5 +1,5 @@
 fn main() {
-    print_str("Testing spawn with 1000 concurrent operations...\n")
+    print("Testing spawn with 1000 concurrent operations...\n")
     
     let counter: int = 0
     
@@ -9,12 +9,12 @@ fn main() {
     
     sleep_ms(10000)
     
-    print_str("Result: ")
+    print("Result: ")
     print(counter)
-    print_str("/1000\n")
+    print("/1000\n")
     
     # Allow 99.5% success rate (995+/1000)
     assert(counter >= 995, "At least 995/1000 spawns should complete")
     
-    print_str("✓ Spawn stress test passed\n")
+    print("✓ Spawn stress test passed\n")
 }

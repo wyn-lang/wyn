@@ -12,5 +12,5 @@ fn main() {
         i = i + 1
     }
     
-    print_str("Array benchmark complete\n")
+    print("Array benchmark complete\n")
 }

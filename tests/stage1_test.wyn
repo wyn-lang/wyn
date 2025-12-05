@@ -2,6 +2,5 @@ import std/io
 # Test that Stage 1 compiler can be compiled and run
 
 fn main() {
-    print_str("stage1_test passed")
-    print_newline()
+    print("stage1_test passed")
 }

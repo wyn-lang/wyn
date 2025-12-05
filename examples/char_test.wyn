@@ -16,15 +16,15 @@ fn main() {
     
     # Test chr() - create char from code
     const ch: str = chr(65)
-    print_str(ch)  # Should print A
+    print(ch)  # Should print A
     
     const ch2: str = chr(97)
-    print_str(ch2)  # Should print a
+    print(ch2)  # Should print a
     
     # Test round-trip
     const original: str = "X"
     const roundtrip: str = chr(ord(original))
-    print_str(roundtrip)  # Should print X
+    print(roundtrip)  # Should print X
     
-    print_str("ord/chr tests passed!")
+    print("ord/chr tests passed!")
 }

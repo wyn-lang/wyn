@@ -1,5 +1,5 @@
 fn main() {
-    print_str("Testing net stdlib...\n")
+    print("Testing net stdlib...\n")
     
     # Test URL parsing logic
     const url: str = "https://example.com:8080/path"
@@ -15,5 +15,5 @@ fn main() {
     assert(168 >= 0 and 168 <= 255, "valid IP octet")
     assert(1 >= 0 and 1 <= 255, "valid IP octet")
     
-    print_str("✓ All net stdlib tests passed\n")
+    print("✓ All net stdlib tests passed\n")
 }

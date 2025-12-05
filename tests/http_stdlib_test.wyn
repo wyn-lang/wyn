@@ -1,5 +1,5 @@
 fn main() {
-    print_str("Testing http stdlib...\n")
+    print("Testing http stdlib...\n")
     
     # Test HTTP status codes
     assert(200 == 200, "OK status")
@@ -15,5 +15,5 @@ fn main() {
     assert(301 >= 300 and 301 < 400, "3xx redirect")
     assert(302 >= 300 and 302 < 400, "3xx redirect")
     
-    print_str("✓ All http stdlib tests passed\n")
+    print("✓ All http stdlib tests passed\n")
 }

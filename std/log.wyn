@@ -21,7 +21,7 @@ fn level_to_str(level: LogLevel) -> str {
 
 # Log a message with the specified level
 fn log(level: LogLevel, msg: str) -> () {
-    print_str("[" + level_to_str(level) + "] " + msg + "\n")
+    print("[" + level_to_str(level) + "] " + msg + "\n")
     return ()
 }
 
@@ -56,28 +56,28 @@ fn set_level(level: str) -> () {
 
 # Log a debug message with an integer value
 fn debug_int(label: str, value: int) -> () {
-    print_str("[DEBUG] " + label + ": ")
+    print("[DEBUG] " + label + ": ")
     print(value)
     return ()
 }
 
 # Log an info message with an integer value
 fn info_int(label: str, value: int) -> () {
-    print_str("[INFO] " + label + ": ")
+    print("[INFO] " + label + ": ")
     print(value)
     return ()
 }
 
 # Log a warning message with an integer value
 fn warn_int(label: str, value: int) -> () {
-    print_str("[WARN] " + label + ": ")
+    print("[WARN] " + label + ": ")
     print(value)
     return ()
 }
 
 # Log an error message with an integer value
 fn error_int(label: str, value: int) -> () {
-    print_str("[ERROR] " + label + ": ")
+    print("[ERROR] " + label + ": ")
     print(value)
     return ()
 }

@@ -21,5 +21,5 @@ fn main() {
     assert((flags & mask) == 1)
     assert((flags | mask) == 7)
     
-    print_str("bitwise_test: PASS")
+    print("bitwise_test: PASS")
 }

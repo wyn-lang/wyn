@@ -2,25 +2,25 @@
 # Demonstrates the time_now() and sleep_ms() builtins
 
 fn main() {
-    print_str("=== Time and Sleep Demo ===\n\n")
+    print("=== Time and Sleep Demo ===\n\n")
     
     # Get current timestamp
     const start: int = time_now()
-    print_str("Start time: ")
+    print("Start time: ")
     println(start)
     
     # Sleep for 500ms
-    print_str("\nSleeping for 500ms...\n")
+    print("\nSleeping for 500ms...\n")
     sleep_ms(500)
     
     # Get timestamp after sleep
     const end: int = time_now()
-    print_str("End time: ")
+    print("End time: ")
     println(end)
     
     # Calculate elapsed time
     const elapsed: int = end - start
-    print_str("Elapsed: ")
+    print("Elapsed: ")
     print(elapsed)
-    print_str(" seconds\n")
+    print(" seconds\n")
 }

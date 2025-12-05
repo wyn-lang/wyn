@@ -12,16 +12,13 @@ fn main() {
     // Call lambda directly
     const r1: int = double(5)
     print(r1)
-    print_newline()
     assert(r1 == 10)
     
     // Lambda with multiple params
     const add: fn(int, int) -> int = fn(a: int, b: int) -> int { return a + b }
     const r2: int = add(3, 4)
     print(r2)
-    print_newline()
     assert(r2 == 7)
     
-    print_str("Lambda: OK")
-    print_newline()
+    print("Lambda: OK")
 }

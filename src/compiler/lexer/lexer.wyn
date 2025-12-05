@@ -388,36 +388,36 @@ fn tok_name(k: int) -> str {
 }
 
 fn main() {
-    println_str("=== Lexer Test ===")
+    print("=== Lexer Test ===")
     const src: str = "const x: int = 42"
     const len: int = src.len()
     
     const t1: Token = lex_next(src, 0, len)
-    print_str(tok_name(t1.kind))
-    print_str(" ")
-    println_str(t1.str_val)
+    print(tok_name(t1.kind))
+    print(" ")
+    print(t1.str_val)
     
     const t2: Token = lex_next(src, t1.int_val, len)
-    print_str(tok_name(t2.kind))
-    print_str(" ")
-    println_str(t2.str_val)
+    print(tok_name(t2.kind))
+    print(" ")
+    print(t2.str_val)
     
     const t3: Token = lex_next(src, t2.int_val, len)
-    println_str(tok_name(t3.kind))
+    print(tok_name(t3.kind))
     
     const t4: Token = lex_next(src, t3.int_val, len)
-    print_str(tok_name(t4.kind))
-    print_str(" ")
-    println_str(t4.str_val)
+    print(tok_name(t4.kind))
+    print(" ")
+    print(t4.str_val)
     
     const t5: Token = lex_next(src, t4.int_val, len)
-    println_str(tok_name(t5.kind))
+    print(tok_name(t5.kind))
     
     const t6: Token = lex_next(src, t5.int_val, len)
-    print_str(tok_name(t6.kind))
-    print_str(" ")
+    print(tok_name(t6.kind))
+    print(" ")
     println(t6.int_val)
     
     const t7: Token = lex_next(src, t6.line, len)
-    println_str(tok_name(t7.kind))
+    print(tok_name(t7.kind))
 }

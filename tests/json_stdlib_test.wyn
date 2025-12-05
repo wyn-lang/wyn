@@ -1,5 +1,5 @@
 fn main() {
-    print_str("Testing json stdlib...\n")
+    print("Testing json stdlib...\n")
     
     # Test JSON structure characters
     assert("{" == "{", "open brace")
@@ -17,5 +17,5 @@ fn main() {
     const quote: str = "\""
     assert(quote.len() == 1, "quote length")
     
-    print_str("✓ All json stdlib tests passed\n")
+    print("✓ All json stdlib tests passed\n")
 }

@@ -3,20 +3,20 @@ fn main() {
     const lines: [str] = str_split(content, "\n")
     
     // Direct access works
-    io.print_str("Direct: ")
-    io.print_str(lines[0])
-    io.print_newline()
+    io.print("Direct: ")
+    io.print(lines[0])
+    io.print("")
     
     // Loop access should work
-    io.print_str("Loop:\n")
+    io.print("Loop:\n")
     let i: int = 0
     while i < lines.len() {
         const line: str = lines[i]
-        io.print_str(line)
-        io.print_newline()
+        io.print(line)
+        io.print("")
         i = i + 1
     }
     
-    io.print_str("Test passed!")
-    io.print_newline()
+    io.print("Test passed!")
+    io.print("")
 }

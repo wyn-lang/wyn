@@ -14,5 +14,5 @@ fn main() {
     print(first_char)  # Should be 35 (#)
     assert(first_char == 35)
     
-    print_str("read_file works!")
+    print("read_file works!")
 }

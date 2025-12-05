@@ -80,11 +80,11 @@ fn is_prime(n: int) -> bool {
 # ============================================
 
 fn main() {
-    print_str("=== Wyn Language Demo ===")
-    print_str("")
+    print("=== Wyn Language Demo ===")
+    print("")
     
     # Variables and arithmetic
-    print_str("--- Variables & Arithmetic ---")
+    print("--- Variables & Arithmetic ---")
     const x: int = 10
     const y: int = 3
     print(x + y)   # 13
@@ -95,8 +95,8 @@ fn main() {
     print(x ** 2)  # 100 (power)
     
     # Bitwise operations
-    print_str("")
-    print_str("--- Bitwise Operations ---")
+    print("")
+    print("--- Bitwise Operations ---")
     print(5 | 3)   # 7 (OR)
     print(5 & 3)   # 1 (AND)
     print(5 ^ 3)   # 6 (XOR)
@@ -104,8 +104,8 @@ fn main() {
     print(16 >> 2) # 4 (right shift)
     
     # Control flow
-    print_str("")
-    print_str("--- Control Flow ---")
+    print("")
+    print("--- Control Flow ---")
     let sum: int = 0
     for i in 1..6 {
         sum = sum + i
@@ -113,8 +113,8 @@ fn main() {
     print(sum)  # 15 (1+2+3+4+5)
     
     # Arrays and slicing
-    print_str("")
-    print_str("--- Arrays & Slicing ---")
+    print("")
+    print("--- Arrays & Slicing ---")
     const arr: [int] = [10, 20, 30, 40, 50]
     print(len(arr))     # 5
     print(arr[0])       # 10
@@ -128,16 +128,16 @@ fn main() {
     print(last_two[0])  # 40
     
     # Array iteration
-    print_str("")
-    print_str("--- Array Iteration ---")
+    print("")
+    print("--- Array Iteration ---")
     const nums: [int] = [1, 2, 3]
     for n in nums {
         print(n * 10)  # 10, 20, 30
     }
     
     # Structs
-    print_str("")
-    print_str("--- Structs ---")
+    print("")
+    print("--- Structs ---")
     const p: Point = Point { x: 3, y: 4 }
     print(p.x)                    # 3
     print(p.y)                    # 4
@@ -152,8 +152,8 @@ fn main() {
     print(rect.origin.x)          # 0
     
     # Optionals
-    print_str("")
-    print_str("--- Optionals ---")
+    print("")
+    print("--- Optionals ---")
     const maybe: ?int = some(42)
     const value: int = maybe ?? 0
     print(value)  # 42
@@ -163,25 +163,25 @@ fn main() {
     print(default)  # -1
     
     # Match statements
-    print_str("")
-    print_str("--- Match ---")
+    print("")
+    print("--- Match ---")
     const dir: int = 1
     match dir {
-        0 => print_str("North")
-        1 => print_str("East")
-        2 => print_str("South")
-        _ => print_str("West")
+        0 => print("North")
+        1 => print("East")
+        2 => print("South")
+        _ => print("West")
     }
     
     # Recursion
-    print_str("")
-    print_str("--- Recursion ---")
+    print("")
+    print("--- Recursion ---")
     print(factorial(5))    # 120
     print(fibonacci(10))   # 55
     
     # Prime check
-    print_str("")
-    print_str("--- Prime Numbers ---")
+    print("")
+    print("--- Prime Numbers ---")
     for n in 2..12 {
         if is_prime(n) {
             print(n)  # 2, 3, 5, 7, 11
@@ -189,40 +189,40 @@ fn main() {
     }
     
     # Math builtins
-    print_str("")
-    print_str("--- Math Builtins ---")
+    print("")
+    print("--- Math Builtins ---")
     print(abs(-42))       # 42
     print(min(10, 3))     # 3
     print(max(10, 3))     # 10
     
     # String operations
-    print_str("")
-    print_str("--- Strings ---")
+    print("")
+    print("--- Strings ---")
     const greeting: str = "Hello"
     const name: str = "World"
     const message: str = greeting + ", " + name + "!"
-    print_str(message)
+    print(message)
     print(len("Hello"))  # 5 (string literal)
     
     # Character operations
-    print_str("")
-    print_str("--- Character Codes ---")
+    print("")
+    print("--- Character Codes ---")
     print(ord("A"))       # 65
     print(ord("a"))       # 97
-    print_str(chr(87))    # W
+    print(chr(87))    # W
     
     # Generics
-    print_str("")
-    print_str("--- Generics ---")
+    print("")
+    print("--- Generics ---")
     const box: Box[int] = Box[int] { value: 42 }
     print(box.value)      # 42
     
     # Method syntax on primitives
-    print_str("")
-    print_str("--- Method Syntax ---")
+    print("")
+    print("--- Method Syntax ---")
     const num: int = -123
     print(num.abs())      # 123
     
-    print_str("")
-    print_str("=== Demo Complete ===")
+    print("")
+    print("=== Demo Complete ===")
 }

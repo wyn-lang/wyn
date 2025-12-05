@@ -13,5 +13,5 @@ fn main() {
     # Conversions
     assert(str_to_int("123") == 123)
     
-    io.print_str("string_test: PASS")
+    io.print("string_test: PASS")
 }

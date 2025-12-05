@@ -24,8 +24,8 @@ fn main() {
         cmd_init()
     } else if cmd == "new" {
         if args.len() < 3 {
-            io.print_str("Usage: wyn pkg new <name>")
-            io.print_newline()
+            io.print("Usage: wyn pkg new <name>")
+            io.print("")
             return
         }
         cmd_new(args[2])
@@ -36,31 +36,31 @@ fn main() {
     } else if cmd == "test" {
         cmd_test()
     } else {
-        io.print_str("Unknown command: ")
-        io.print_str(cmd)
-        io.print_newline()
+        io.print("Unknown command: ")
+        io.print(cmd)
+        io.print("")
         print_help()
     }
 }
 
 fn print_help() {
-    io.print_str("Wyn Package Manager")
-    io.print_newline()
-    io.print_str("Usage: wyn pkg <command>")
-    io.print_newline()
-    io.print_newline()
-    io.print_str("Commands:")
-    io.print_newline()
-    io.print_str("  init       Initialize a new project in current directory")
-    io.print_newline()
-    io.print_str("  new <name> Create a new project")
-    io.print_newline()
-    io.print_str("  build      Build the project")
-    io.print_newline()
-    io.print_str("  run        Build and run the project")
-    io.print_newline()
-    io.print_str("  test       Run tests")
-    io.print_newline()
+    io.print("Wyn Package Manager")
+    io.print("")
+    io.print("Usage: wyn pkg <command>")
+    io.print("")
+    io.print("")
+    io.print("Commands:")
+    io.print("")
+    io.print("  init       Initialize a new project in current directory")
+    io.print("")
+    io.print("  new <name> Create a new project")
+    io.print("")
+    io.print("  build      Build the project")
+    io.print("")
+    io.print("  run        Build and run the project")
+    io.print("")
+    io.print("  test       Run tests")
+    io.print("")
 }
 
 fn cmd_init() {
@@ -68,8 +68,8 @@ fn cmd_init() {
     const manifest: str = "[package]\nname = \"myproject\"\nversion = \"0.1.0\"\n\n[build]\nentry = \"src/main.wyn\"\n"
     
     if file_exists("wyn.toml") {
-        io.print_str("Error: wyn.toml already exists")
-        io.print_newline()
+        io.print("Error: wyn.toml already exists")
+        io.print("")
         return
     }
     
@@ -81,12 +81,12 @@ fn cmd_init() {
     mkdir(".wyn")
     
     # Create main.wyn
-    const main_content: str = "import std/io\n\nfn main() {\n    io.print_str(\"Hello, Wyn!\")\n    io.print_newline()
+    const main_content: str = "import std/io\n\nfn main() {\n    io.print(\"Hello, Wyn!\")\n    io.print("")
 \n}\n"
     write_file("src/main.wyn", main_content)
     
-    io.print_str("Initialized Wyn project")
-    io.print_newline()
+    io.print("Initialized Wyn project")
+    io.print("")
 }
 
 fn cmd_new(name: str) {
@@ -110,49 +110,49 @@ fn cmd_new(name: str) {
     mkdir(wyn_path)
     
     # Create main.wyn
-    const main_content: str = "import std/io\n\nfn main() {\n    io.print_str(\"Hello from "
+    const main_content: str = "import std/io\n\nfn main() {\n    io.print(\"Hello from "
     main_content = str_concat(main_content, name)
-    main_content = str_concat(main_content, "!\")\n    io.print_newline()\n}\n")
+    main_content = str_concat(main_content, "!\")\n    io.print("")\n}\n")
     
     const main_path: str = str_concat(src_path, "/main.wyn")
     write_file(main_path, main_content)
     
-    io.print_str("Created project: ")
-    io.print_str(name)
-    io.print_newline()
+    io.print("Created project: ")
+    io.print(name)
+    io.print("")
 }
 
 fn cmd_build() {
     if not file_exists("wyn.toml") {
-        io.print_str("Error: Not a Wyn project (no wyn.toml)")
-        io.print_newline()
+        io.print("Error: Not a Wyn project (no wyn.toml)")
+        io.print("")
         return
     }
     
-    io.print_str("Building project...")
-    io.print_newline()
+    io.print("Building project...")
+    io.print("")
     
     # Simple build: compile src/main.wyn
     const result: int = system("./build/stage0 -o build/app src/main.wyn")
     
     if result == 0 {
-        io.print_str("Build successful!")
-        io.print_newline()
+        io.print("Build successful!")
+        io.print("")
     } else {
-        io.print_str("Build failed")
-        io.print_newline()
+        io.print("Build failed")
+        io.print("")
     }
 }
 
 fn cmd_run() {
     cmd_build()
-    io.print_str("Running...")
-    io.print_newline()
+    io.print("Running...")
+    io.print("")
     system("./build/app")
 }
 
 fn cmd_test() {
-    io.print_str("Running tests...")
-    io.print_newline()
+    io.print("Running tests...")
+    io.print("")
     system("./tests/run_tests.sh")
 }

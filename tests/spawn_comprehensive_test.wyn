@@ -1,5 +1,5 @@
 fn main() {
-    print_str("Testing spawn comprehensively...\n")
+    print("Testing spawn comprehensively...\n")
     
     # Test 1: Single spawn
     let t1: int = 0
@@ -41,5 +41,5 @@ fn main() {
     }
     assert(t6 == 100, "100 spawns work")
     
-    print_str("✓ All spawn tests passed\n")
+    print("✓ All spawn tests passed\n")
 }

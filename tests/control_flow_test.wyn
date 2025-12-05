@@ -55,5 +55,5 @@ fn main() {
     }
     assert(evens == 5)
     
-    print_str("control_flow_test: PASS")
+    print("control_flow_test: PASS")
 }

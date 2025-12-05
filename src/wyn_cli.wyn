@@ -9,11 +9,11 @@ fn main() {
     const cmd: str = argv[1]
     
     if cmd == "version" {
-        print_str("Wyn v0.0.1\n")
-        print_str("Stage 1 compiler with optimizations\n")
+        print("Wyn v0.0.1\n")
+        print("Stage 1 compiler with optimizations\n")
     } else if cmd == "new" or cmd == "init" {
         if argv.len() < 3 {
-            print_str("Usage: wyn new <project-name>\n")
+            print("Usage: wyn new <project-name>\n")
             exit(1)
         }
         create_project(argv[2])
@@ -32,7 +32,7 @@ fn main() {
         exec_stdin()
     } else if cmd == "inline" {
         if argv.len() < 3 {
-            print_str("Usage: wyn inline <code>\n")
+            print("Usage: wyn inline <code>\n")
             exit(1)
         }
         exec_inline(argv[2])
@@ -44,62 +44,60 @@ fn main() {
         clean_project()
     } else if cmd == "doc" {
         if argv.len() < 3 {
-            print_str("Wyn Standard Library\n\n")
-            print_str("Usage: wyn doc <module>\n\n")
-            print_str("Modules in std/:\n")
-            print_str("  os, io, time, math, string, array, collections\n")
-            print_str("  http, json, crypto, hash, random, regex, bits\n")
-            print_str("  encoding, compress, validate, utils, error, log\n\n")
-            print_str("View source: cat std/<module>.wyn\n")
+            print("Wyn Standard Library\n\n")
+            print("Usage: wyn doc <module>\n\n")
+            print("Modules in std/:\n")
+            print("  os, io, time, math, string, array, collections\n")
+            print("  http, json, crypto, hash, random, regex, bits\n")
+            print("  encoding, compress, validate, utils, error, log\n\n")
+            print("View source: cat std/<module>.wyn\n")
         } else {
-            print_str("Module: ")
-            print_str(argv[2])
-            print_str("\n\n")
-            print_str("Source: std/")
-            print_str(argv[2])
-            print_str(".wyn\n")
-            print_str("View with: cat std/")
-            print_str(argv[2])
-            print_str(".wyn\n")
+            print("Module: ")
+            print(argv[2])
+            print("\n\n")
+            print("Source: std/")
+            print(argv[2])
+            print(".wyn\n")
+            print("View with: cat std/")
+            print(argv[2])
+            print(".wyn\n")
         }
     } else if cmd == "help" or cmd == "--help" or cmd == "-h" {
         print_help()
     } else {
-        print_str("Unknown command: ")
-        print_str(cmd)
-        print_newline()
+        print("Unknown command: ")
+        print(cmd)
         print_help()
         exit(1)
     }
 }
 
 fn print_help() {
-    print_str("Wyn CLI - One language to rule them all\n\n")
-    print_str("Usage: wyn <command> [args]\n\n")
-    print_str("Commands:\n")
-    print_str("  version              Show version\n")
-    print_str("  new <name>           Create new project\n")
-    print_str("  init <name>          Alias for 'new'\n")
-    print_str("  build                Build current project\n")
-    print_str("  run [file]           Run file or project\n")
-    print_str("  exec                 Execute from stdin\n")
-    print_str("  inline <code>        Execute inline code\n")
-    print_str("  test                 Run test suite\n")
-    print_str("  bench                Run benchmarks\n")
-    print_str("  doc [module] [fn]    Show documentation\n")
-    print_str("  clean                Clean build artifacts\n")
-    print_str("  help                 Show this help\n\n")
-    print_str("Examples:\n")
-    print_str("  wyn run script.wyn           # Run a file\n")
-    print_str("  wyn run                      # Run current project\n")
-    print_str("  echo 'print(42)' | wyn exec  # Execute from stdin\n")
-    print_str("  wyn inline 'print(123)'      # Execute inline code\n")
+    print("Wyn CLI - One language to rule them all\n\n")
+    print("Usage: wyn <command> [args]\n\n")
+    print("Commands:\n")
+    print("  version              Show version\n")
+    print("  new <name>           Create new project\n")
+    print("  init <name>          Alias for 'new'\n")
+    print("  build                Build current project\n")
+    print("  run [file]           Run file or project\n")
+    print("  exec                 Execute from stdin\n")
+    print("  inline <code>        Execute inline code\n")
+    print("  test                 Run test suite\n")
+    print("  bench                Run benchmarks\n")
+    print("  doc [module] [fn]    Show documentation\n")
+    print("  clean                Clean build artifacts\n")
+    print("  help                 Show this help\n\n")
+    print("Examples:\n")
+    print("  wyn run script.wyn           # Run a file\n")
+    print("  wyn run                      # Run current project\n")
+    print("  echo 'print(42)' | wyn exec  # Execute from stdin\n")
+    print("  wyn inline 'print(123)'      # Execute inline code\n")
 }
 
 fn create_project(name: str) {
-    print_str("Creating project: ")
-    print_str(name)
-    print_newline()
+    print("Creating project: ")
+    print(name)
     
     mkdir(name)
     chdir(name)
@@ -107,7 +105,7 @@ fn create_project(name: str) {
     mkdir("build")
     
     const line1: str = "fn main() {"
-    const line2: str = "    print_str(\"Hello World!\\n\")"
+    const line2: str = "    print(\"Hello World!\\n\")"
     const line3: str = "}"
     const main_content: str = line1 + "\n" + line2 + "\n" + line3 + "\n"
     write_file("src/main.wyn", main_content)
@@ -115,16 +113,15 @@ fn create_project(name: str) {
     const toml_content: str = "[package]\nname = \"app\"\nversion = \"0.1.0\"\n"
     write_file("wyn.toml", toml_content)
     
-    print_str("✓ Created project: ")
-    print_str(name)
-    print_newline()
+    print("✓ Created project: ")
+    print(name)
 }
 
 fn build_project() {
-    print_str("Building project...\n")
+    print("Building project...\n")
     
     if not file_exists("src/main.wyn") {
-        print_str("✗ No src/main.wyn found\n")
+        print("✗ No src/main.wyn found\n")
         exit(1)
     }
     
@@ -134,9 +131,9 @@ fn build_project() {
     const compile_result: int = system(compile_cmd)
     
     if compile_result == 0 {
-        print_str("✓ Built: build/app\n")
+        print("✓ Built: build/app\n")
     } else {
-        print_str("✗ Build failed\n")
+        print("✗ Build failed\n")
         exit(1)
     }
 }
@@ -155,7 +152,7 @@ fn exec_file(file: str) {
     if compile_result == 0 {
         system(exe)
     } else {
-        print_str("✗ Compilation failed\n")
+        print("✗ Compilation failed\n")
         exit(1)
     }
 }
@@ -196,19 +193,19 @@ fn exec_inline(code: str) {
 }
 
 fn run_tests() {
-    print_str("Running tests...\n")
+    print("Running tests...\n")
     system("make test")
 }
 
 fn run_benchmarks() {
-    print_str("Running benchmarks...\n")
+    print("Running benchmarks...\n")
     system("make bench")
 }
 
 fn clean_project() {
-    print_str("Cleaning build artifacts...\n")
+    print("Cleaning build artifacts...\n")
     system("rm -rf build/*")
-    print_str("✓ Clean complete\n")
+    print("✓ Clean complete\n")
 }
 
 fn find_compiler() -> str {

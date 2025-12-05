@@ -409,20 +409,20 @@ fn lexer_next(let lex: Lexer) -> Token {
 
 # Test main
 fn main() {
-    println_str("Creating lexer")
+    print("Creating lexer")
     const lex: Lexer = lexer_new("hello")
-    println_str("Checking pos < len")
+    print("Checking pos < len")
     println(lex.pos)
     println(lex.len)
     if lex.pos >= lex.len {
-        println_str("pos >= len, returning EOF")
+        print("pos >= len, returning EOF")
     } else {
-        println_str("pos < len, continuing")
+        print("pos < len, continuing")
         const c: str = lexer_peek(lex)
-        println_str("Peeked char:")
-        println_str(c)
+        print("Peeked char:")
+        print(c)
         if is_alpha(c) {
-            println_str("Is alpha")
+            print("Is alpha")
         }
     }
 }

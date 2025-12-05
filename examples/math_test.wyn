@@ -21,5 +21,5 @@ fn main() {
     # Test exit() - commented out as it would exit
     # exit(0)
     
-    print_str("Math builtin tests passed!")
+    print("Math builtin tests passed!")
 }

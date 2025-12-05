@@ -2,11 +2,10 @@ fn main() {
     const x: int = 42
     let result: int = 0
     
-    print_str("Before spawn: x=")
+    print("Before spawn: x=")
     print(x)
-    print_str(", result=")
+    print(", result=")
     print(result)
-    print_newline()
     
     spawn {
         result = x
@@ -14,11 +13,10 @@ fn main() {
     
     sleep_ms(100)
     
-    print_str("After spawn: x=")
+    print("After spawn: x=")
     print(x)
-    print_str(", result=")
+    print(", result=")
     print(result)
-    print_newline()
     
     assert(result == 42)
 }

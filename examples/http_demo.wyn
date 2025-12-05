@@ -1,76 +1,76 @@
 import ./std/http
 
 fn main() {
-    println_str("=== HTTP Library Demo ===")
-    println_str("")
+    print("=== HTTP Library Demo ===")
+    print("")
     
     # Status codes
-    println_str("Status Codes:")
+    print("Status Codes:")
     println(http.status_ok())
     println(http.status_not_found())
     println(http.status_internal_error())
-    println_str("")
+    print("")
     
     # Status checks
-    println_str("Status Checks:")
+    print("Status Checks:")
     println(http.is_success(200))
     println(http.is_error(404))
     println(http.is_redirect(301))
-    println_str("")
+    print("")
     
     # Headers
-    println_str("Headers:")
+    print("Headers:")
     const header: str = http.make_header("Content-Type", "application/json")
-    println_str(header)
+    print(header)
     
     const parsed: ?[str] = http.parse_header(header)
     const parts: [str] = parsed ?? []
     if len(parts) > 0 {
-        println_str(parts[0])
-        println_str(parts[1])
+        print(parts[0])
+        print(parts[1])
     }
-    println_str("")
+    print("")
     
     # URL parsing
-    println_str("URL Parsing:")
+    print("URL Parsing:")
     const url: str = "https://api.example.com/users?id=123"
-    println_str(http.url_protocol(url))
-    println_str(http.url_host(url))
-    println_str(http.url_path(url))
-    println_str(http.url_query(url))
-    println_str("")
+    print(http.url_protocol(url))
+    print(http.url_host(url))
+    print(http.url_path(url))
+    print(http.url_query(url))
+    print("")
     
     # Query parameters
-    println_str("Query Parameters:")
+    print("Query Parameters:")
     const query: str = "id=123&name=alice&age=30"
     const id: ?str = http.parse_query_param(query, "id")
     const name: ?str = http.parse_query_param(query, "name")
-    println_str(id ?? "not found")
-    println_str(name ?? "not found")
-    println_str("")
+    print(id ?? "not found")
+    print(name ?? "not found")
+    print("")
     
     # Response builders
-    println_str("Response Builders:")
+    print("Response Builders:")
     const resp: http.Response = http.json_response(200, "{\"status\":\"ok\"}")
     println(resp.status)
-    println_str(resp.body)
+    print(resp.body)
     println(len(resp.headers))
     
     const err_resp: http.Response = http.error_response(404, "Not Found")
     println(err_resp.status)
-    println_str(err_resp.body)
-    println_str("")
+    print(err_resp.body)
+    print("")
     
     # Request builders
-    println_str("Request Builders:")
+    print("Request Builders:")
     const req: http.Request = http.post_request("/api/users", "{\"name\":\"alice\"}")
-    println_str(req.method)
-    println_str(req.path)
-    println_str(req.body)
-    println_str("")
+    print(req.method)
+    print(req.path)
+    print(req.body)
+    print("")
     
     # Method checks
-    println_str("Method Checks:")
+    print("Method Checks:")
     println(http.is_safe_method("GET"))
     println(http.is_safe_method("POST"))
     println(http.has_request_body("POST"))

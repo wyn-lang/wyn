@@ -19,6 +19,5 @@ fn main() {
     spawn { heavy_compute() }
     spawn { heavy_compute() }
     
-    print_str("Complete")
-    print_newline()
+    print("Complete")
 }

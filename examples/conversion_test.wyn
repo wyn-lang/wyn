@@ -1,22 +1,22 @@
 fn main() {
     const s: str = int_to_str(42)
-    print_str(s)
+    print(s)
     
     const n: int = str_to_int("123")
     assert(n == 123)
     
     # Test negative
     const neg: str = int_to_str(-99)
-    print_str(neg)
+    print(neg)
     
     const neg_n: int = str_to_int("-456")
     assert(neg_n == -456)
     
     # Test zero
     const zero: str = int_to_str(0)
-    print_str(zero)
+    print(zero)
     
     assert(str_to_int("0") == 0)
     
-    print_str("conversion tests passed")
+    print("conversion tests passed")
 }

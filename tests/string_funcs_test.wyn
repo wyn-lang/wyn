@@ -8,6 +8,6 @@ fn main() {
     assert(parts[1] == "b")
     assert(parts[2] == "c")
     
-    io.print_str("string_funcs_test passed")
-    io.print_newline()
+    io.print("string_funcs_test passed")
+    io.print("")
 }

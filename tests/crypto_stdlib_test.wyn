@@ -1,5 +1,5 @@
 fn main() {
-    print_str("Testing crypto stdlib...\n")
+    print("Testing crypto stdlib...\n")
     
     # Test XOR properties
     const a: int = 42
@@ -17,5 +17,5 @@ fn main() {
     # Test XOR commutativity
     assert((a ^ b) == (b ^ a), "XOR is commutative")
     
-    print_str("✓ All crypto stdlib tests passed\n")
+    print("✓ All crypto stdlib tests passed\n")
 }

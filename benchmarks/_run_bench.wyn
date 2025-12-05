@@ -1,40 +1,40 @@
 fn main() {
-    print_str("=== Wyn Benchmarks ===\n\n")
+    print("=== Wyn Benchmarks ===\n\n")
     
     # CPU Benchmarks
-    print_str("CPU Benchmarks:\n")
+    print("CPU Benchmarks:\n")
     run_benchmark("benchmarks/cpu/fib.wyn", "Fibonacci(35)")
     run_benchmark("benchmarks/cpu/primes.wyn", "Primes(1M)")
     run_benchmark("benchmarks/cpu/math.wyn", "Math(10M)")
     
-    print_newline()
+    print("")
     
     # Memory Benchmarks
-    print_str("Memory Benchmarks:\n")
+    print("Memory Benchmarks:\n")
     run_benchmark("benchmarks/memory/array.wyn", "Arrays(10M)")
     
-    print_newline()
+    print("")
     
     # Stdlib Benchmarks
-    print_str("Stdlib Benchmarks:\n")
+    print("Stdlib Benchmarks:\n")
     run_benchmark("benchmarks/stdlib/string_bench.wyn", "String ops(1M)")
     run_benchmark("benchmarks/stdlib/array_bench.wyn", "Array ops(100K)")
     run_benchmark("benchmarks/stdlib/math_bench.wyn", "Math ops(1M)")
     
-    print_str("\n✓ All benchmarks complete\n")
+    print("\n✓ All benchmarks complete\n")
 }
 
 fn run_benchmark(path: str, name: str) {
-    print_str("  ")
-    print_str(name)
-    print_str(": ")
+    print("  ")
+    print(name)
+    print(": ")
     
     const exe: str = "/tmp/wyn_bench"
     const compile_cmd: str = "./build/stage0 --stage1-opt -o " + exe + " " + path + " 2>/dev/null"
     const compile_result: int = system(compile_cmd)
     
     if compile_result != 0 {
-        print_str("FAIL (compile)\n")
+        print("FAIL (compile)\n")
         return
     }
     
@@ -44,10 +44,10 @@ fn run_benchmark(path: str, name: str) {
     
     if run_result == 0 {
         const elapsed: int = end - start
-        print_str("OK (")
+        print("OK (")
         print(elapsed)
-        print_str(" ticks)\n")
+        print(" ticks)\n")
     } else {
-        print_str("FAIL (runtime)\n")
+        print("FAIL (runtime)\n")
     }
 }

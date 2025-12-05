@@ -1,6 +1,5 @@
 fn main() {
-    print_str("Creating window...")
-    print_newline()
+    print("Creating window...")
     
     let win = gui.create_window("Wyn GUI", 400, 300)
     gui.show_window(win)
@@ -16,6 +15,5 @@ fn main() {
     }
     
     gui.close_window(win)
-    print_str("Done")
-    print_newline()
+    print("Done")
 }

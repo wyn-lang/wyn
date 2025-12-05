@@ -3,14 +3,14 @@
 fn main() {
     const x: int = 42
     const msg: str = "The answer is {x}"
-    print_str(msg)
-    print_str("\n")
+    print(msg)
+    print("\n")
     
     # Direct interpolation
-    print_str("Value: {x}\n")
+    print("Value: {x}\n")
     
     # Multiple interpolations
     const a: int = 10
     const b: int = 20
-    print_str("a={a}, b={b}\n")
+    print("a={a}, b={b}\n")
 }

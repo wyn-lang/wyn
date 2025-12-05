@@ -11,8 +11,8 @@ fn main() {
     }
     
     delete_file("temp/bench.txt")
-    io.print_str("File I/O: ")
+    io.print("File I/O: ")
     print(i)
-    io.print_str(" operations")
-    io.print_newline()
+    io.print(" operations")
+    io.print("")
 }

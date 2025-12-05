@@ -20,7 +20,6 @@ fn main() {
         i = i + 1
     }
     
-    print_str("Total: ")
+    print("Total: ")
     print(total)
-    print_newline()
 }

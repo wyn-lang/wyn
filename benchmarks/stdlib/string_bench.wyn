@@ -13,5 +13,5 @@ fn main() {
         i = i + 1
     }
     
-    print_str("String benchmark complete\n")
+    print("String benchmark complete\n")
 }

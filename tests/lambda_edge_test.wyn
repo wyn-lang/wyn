@@ -28,6 +28,5 @@ fn main() {
     const get_42: fn() -> int = fn() -> int { return 42 }
     assert(get_42() == 42)
     
-    print_str("Lambda edge cases: OK")
-    print_newline()
+    print("Lambda edge cases: OK")
 }

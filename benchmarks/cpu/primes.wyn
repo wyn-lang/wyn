@@ -22,7 +22,6 @@ fn main() {
         i = i + 1
     }
     
-    print_str("Primes found: ")
+    print("Primes found: ")
     print(count)
-    print_newline()
 }

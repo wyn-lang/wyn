@@ -1,5 +1,5 @@
 fn main() {
-    print_str("Testing gpu stdlib (Vulkan)...\n")
+    print("Testing gpu stdlib (Vulkan)...\n")
     
     # GPU tests are platform-specific
     # Just verify basic numeric operations work
@@ -13,5 +13,5 @@ fn main() {
     const c: float = a / b
     assert(c == 5.0, "float division")
     
-    print_str("✓ All gpu stdlib tests passed\n")
+    print("✓ All gpu stdlib tests passed\n")
 }

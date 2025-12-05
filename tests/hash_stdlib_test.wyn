@@ -1,5 +1,5 @@
 fn main() {
-    print_str("Testing hash stdlib...\n")
+    print("Testing hash stdlib...\n")
     
     # Test string hashing consistency
     const s1: str = "hello"
@@ -18,5 +18,5 @@ fn main() {
     assert("" == "", "empty strings equal")
     assert("" != "x", "empty vs non-empty")
     
-    print_str("✓ All hash stdlib tests passed\n")
+    print("✓ All hash stdlib tests passed\n")
 }

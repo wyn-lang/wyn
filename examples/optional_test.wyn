@@ -19,5 +19,5 @@ fn main() {
     const b: int = y ?? 99
     print(b)  # 99 (default because y is none)
     
-    print_str("Optional test passed!")
+    print("Optional test passed!")
 }

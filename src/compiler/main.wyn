@@ -61,7 +61,7 @@ impl Compiler {
     
     fn compile_source(self, source: str) -> Result[str, str] {
         if self.options.verbose {
-            print_str("Compiling: " + self.options.input + "\n")
+            print("Compiling: " + self.options.input + "\n")
         }
         
         // Lexing
@@ -69,7 +69,7 @@ impl Compiler {
         let tokens = lexer.tokenize()
         
         if self.options.verbose {
-            print_str("  Tokens: " + tokens.len().to_str() + "\n")
+            print("  Tokens: " + tokens.len().to_str() + "\n")
         }
         
         // Parsing
@@ -77,7 +77,7 @@ impl Compiler {
         let ast = parser.parse()
         
         if self.options.verbose {
-            print_str("  AST: " + ast.functions.len().to_str() + " functions\n")
+            print("  AST: " + ast.functions.len().to_str() + " functions\n")
         }
         
         // Type checking
@@ -88,7 +88,7 @@ impl Compiler {
         }
         
         if self.options.verbose {
-            print_str("  Type check: passed\n")
+            print("  Type check: passed\n")
         }
         
         // Lower to IR
@@ -96,7 +96,7 @@ impl Compiler {
         
         if self.options.emit_ir {
             // TODO: Print IR
-            print_str("IR output not yet implemented\n")
+            print("IR output not yet implemented\n")
         }
         
         // Code generation
@@ -106,10 +106,10 @@ impl Compiler {
         if self.options.output != "" {
             write_file(self.options.output, code)
             if self.options.verbose {
-                print_str("  Output: " + self.options.output + "\n")
+                print("  Output: " + self.options.output + "\n")
             }
         } else {
-            print_str(code)
+            print(code)
         }
         
         return ok("Compilation successful")
@@ -117,22 +117,22 @@ impl Compiler {
 }
 
 fn print_usage() {
-    print_str("Wyn Compiler Stage 1\n")
-    print_str("Usage: wyn [options] <input.wyn>\n")
-    print_str("\n")
-    print_str("Options:\n")
-    print_str("  -o <file>     Output file\n")
-    print_str("  -t <target>   Target: aarch64, x86_64, c, wasm (default: native)\n")
-    print_str("  -S            Emit assembly/IR only\n")
-    print_str("  --emit-ir     Print IR\n")
-    print_str("  -v, --verbose Verbose output\n")
-    print_str("  -h, --help    Show this help\n")
-    print_str("  --version     Show version\n")
+    print("Wyn Compiler Stage 1\n")
+    print("Usage: wyn [options] <input.wyn>\n")
+    print("\n")
+    print("Options:\n")
+    print("  -o <file>     Output file\n")
+    print("  -t <target>   Target: aarch64, x86_64, c, wasm (default: native)\n")
+    print("  -S            Emit assembly/IR only\n")
+    print("  --emit-ir     Print IR\n")
+    print("  -v, --verbose Verbose output\n")
+    print("  -h, --help    Show this help\n")
+    print("  --version     Show version\n")
 }
 
 fn print_version() {
-    print_str("Wyn Compiler Stage 1\n")
-    print_str("Version: 0.1.0\n")
+    print("Wyn Compiler Stage 1\n")
+    print("Version: 0.1.0\n")
 }
 
 fn detect_target() -> str {
@@ -183,7 +183,7 @@ fn main() {
             i = i + 1
             options.target = get_arg(i) ?? "aarch64"
         } else if str_starts_with(arg, "-") {
-            print_str("Unknown option: " + arg + "\n")
+            print("Unknown option: " + arg + "\n")
             exit(1)
         } else {
             options.input = arg
@@ -193,7 +193,7 @@ fn main() {
     }
     
     if options.input == "" {
-        print_str("Error: No input file specified\n")
+        print("Error: No input file specified\n")
         print_usage()
         exit(1)
     }
@@ -205,11 +205,11 @@ fn main() {
     match result {
         ok(msg) => {
             if options.verbose {
-                print_str(msg + "\n")
+                print(msg + "\n")
             }
         }
         err(e) => {
-            print_str("Error: " + e + "\n")
+            print("Error: " + e + "\n")
             exit(1)
         }
     }

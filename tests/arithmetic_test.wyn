@@ -27,5 +27,5 @@ fn main() {
     x /= 4
     assert(x == 6)
     
-    print_str("arithmetic_test: PASS")
+    print("arithmetic_test: PASS")
 }

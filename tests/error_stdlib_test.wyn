@@ -1,5 +1,5 @@
 fn main() {
-    print_str("Testing error stdlib...\n")
+    print("Testing error stdlib...\n")
     
     # Test error handling with assertions
     assert(true, "true assertion passes")
@@ -11,5 +11,5 @@ fn main() {
     assert(true and true, "AND logic")
     assert(not false, "NOT logic")
     
-    print_str("✓ All error stdlib tests passed\n")
+    print("✓ All error stdlib tests passed\n")
 }

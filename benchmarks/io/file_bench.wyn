@@ -7,6 +7,5 @@ fn main() {
     }
     
     delete_file("/tmp/bench_test.txt")
-    print_str("File I/O: 10000 operations")
-    print_newline()
+    print("File I/O: 10000 operations")
 }

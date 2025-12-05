@@ -19,8 +19,7 @@ fn main() {
     const final_len: int = len(results)
     assert(final_len == 3)
     
-    print_str("✓ Array append with spawn test passed - ")
+    print("✓ Array append with spawn test passed - ")
     print(final_len)
-    print_str(" elements")
-    print_newline()
+    print(" elements")
 }

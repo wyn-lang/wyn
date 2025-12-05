@@ -9,6 +9,5 @@ fn main() {
     assert(arr[1] == 99)
     assert(arr[2] == 123)
     
-    print_str("✓ Array append test passed")
-    print_newline()
+    print("✓ Array append test passed")
 }

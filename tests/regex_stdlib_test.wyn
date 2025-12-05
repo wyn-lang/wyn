@@ -1,5 +1,5 @@
 fn main() {
-    print_str("Testing regex stdlib...\n")
+    print("Testing regex stdlib...\n")
     
     const text: str = "hello world"
     
@@ -19,5 +19,5 @@ fn main() {
     assert(str_find(text, "hello") == 0, "find hello")
     assert(str_find(text, "xyz") == -1, "find missing")
     
-    print_str("✓ All regex stdlib tests passed\n")
+    print("✓ All regex stdlib tests passed\n")
 }

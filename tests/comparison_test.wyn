@@ -20,5 +20,5 @@ fn main() {
     assert("hello" == "hello")
     assert("hello" != "world")
     
-    print_str("comparison_test: PASS")
+    print("comparison_test: PASS")
 }

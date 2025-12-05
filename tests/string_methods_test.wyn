@@ -1,5 +1,5 @@
 fn main() {
-    print_str("Testing string methods...\n")
+    print("Testing string methods...\n")
     
     # Test upper/lower
     const s: str = "Hello"
@@ -44,5 +44,5 @@ fn main() {
     assert(is_digit("123"), "is_digit works")
     assert(not is_digit("12a"), "is_digit false works")
     
-    print_str("✓ All string method tests passed\n")
+    print("✓ All string method tests passed\n")
 }

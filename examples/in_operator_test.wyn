@@ -5,22 +5,18 @@ fn main() {
     
     // Test element found
     if 3 in arr {
-        print_str("Found 3: OK")
-        print_newline()
+        print("Found 3: OK")
     } else {
-        print_str("FAIL: 3 should be in array")
-        print_newline()
+        print("FAIL: 3 should be in array")
         exit(1)
     }
     
     // Test element not found
     if 10 in arr {
-        print_str("FAIL: 10 should not be in array")
-        print_newline()
+        print("FAIL: 10 should not be in array")
         exit(1)
     } else {
-        print_str("Not found 10: OK")
-        print_newline()
+        print("Not found 10: OK")
     }
     
     // Test first element
@@ -33,6 +29,5 @@ fn main() {
     const found: bool = 99 in arr
     assert(found == false)
     
-    print_str("In operator: OK")
-    print_newline()
+    print("In operator: OK")
 }

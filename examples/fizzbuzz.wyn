@@ -1,11 +1,11 @@
 fn main() {
     for i in 1..=100 {
         if i % 15 == 0 {
-            println_str("FizzBuzz")
+            print("FizzBuzz")
         } else if i % 3 == 0 {
-            println_str("Fizz")
+            print("Fizz")
         } else if i % 5 == 0 {
-            println_str("Buzz")
+            print("Buzz")
         } else {
             println(i)
         }

@@ -1,5 +1,5 @@
 fn main() {
-    print_str("Testing random stdlib...\n")
+    print("Testing random stdlib...\n")
     
     # Test random returns value
     const r1: int = random()
@@ -15,5 +15,5 @@ fn main() {
     const same: bool = (r1 == r2) and (r2 == r3)
     assert(not same or same, "random called")
     
-    print_str("✓ All random stdlib tests passed\n")
+    print("✓ All random stdlib tests passed\n")
 }

@@ -175,10 +175,10 @@ fn parser_current(p: Parser) -> Token {
 }
 
 fn main() {
-    io.print_str("Stage 1 Parser - Design Documentation")
-    io.print_newline()
-    io.print_str("See comments above for full parser specification")
-    io.print_newline()
-    io.print_str("Reference implementation: bootstrap/stage0.c lines 595-1800")
-    io.print_newline()
+    io.print("Stage 1 Parser - Design Documentation")
+    io.print("")
+    io.print("See comments above for full parser specification")
+    io.print("")
+    io.print("Reference implementation: bootstrap/stage0.c lines 595-1800")
+    io.print("")
 }

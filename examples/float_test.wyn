@@ -8,5 +8,5 @@ fn main() {
     # Arithmetic operations need more work
     
     print(42)  # Placeholder - float printing not yet implemented
-    print_str("Float test passed!")
+    print("Float test passed!")
 }

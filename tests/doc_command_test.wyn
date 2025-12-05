@@ -1,5 +1,5 @@
 fn main() {
-    print_str("Testing wyn doc command...\n")
+    print("Testing wyn doc command...\n")
     
     # Test 1: List modules
     const result1: int = system("./build/wyn doc >/tmp/doc_test1.txt 2>&1")
@@ -23,5 +23,5 @@ fn main() {
     const out3: str = read_file("/tmp/doc_test3.txt")
     assert(str_find(out3, "getenv") >= 0, "Should show getenv")
     
-    print_str("✓ All doc tests passed\n")
+    print("✓ All doc tests passed\n")
 }

@@ -6495,43 +6495,70 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 }
                 break;
             }
-            // Handle built-in print() - type-aware dispatch
+            // Handle built-in print() - type-aware dispatch with auto-newline
             if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "print") == 0 && e->call.arg_count > 0) {
-                Expr* arg = e->call.args[0];
-                Type* arg_type = NULL;
-                if (arg->kind == EXPR_IDENT) {
-                    arg_type = cg_local_type(cg, arg->ident);
-                } else if (arg->kind == EXPR_STRING) {
-                    arg_type = new_type(TYPE_STR);
-                } else if (arg->kind == EXPR_FIELD) {
-                    // For field access, need to look up the field type
-                    Type* obj_type = NULL;
-                    if (arg->field.object->kind == EXPR_IDENT) {
-                        obj_type = cg_local_type(cg, arg->field.object->ident);
-                    }
-                    if (obj_type && obj_type->kind == TYPE_NAMED) {
-                        for (int i = 0; i < cg->module->struct_count; i++) {
-                            if (strcmp(cg->module->structs[i].name, obj_type->name) == 0) {
-                                StructDef* s = &cg->module->structs[i];
-                                for (int j = 0; j < s->field_count; j++) {
-                                    if (strcmp(s->fields[j].name, arg->field.field) == 0) {
-                                        arg_type = s->fields[j].type;
-                                        break;
+                // Loop through all arguments
+                for (int arg_idx = 0; arg_idx < e->call.arg_count; arg_idx++) {
+                    Expr* arg = e->call.args[arg_idx];
+                    Type* arg_type = NULL;
+                    if (arg->kind == EXPR_IDENT) {
+                        arg_type = cg_local_type(cg, arg->ident);
+                    } else if (arg->kind == EXPR_STRING) {
+                        arg_type = new_type(TYPE_STR);
+                    } else if (arg->kind == EXPR_FLOAT) {
+                        arg_type = new_type(TYPE_FLOAT);
+                    } else if (arg->kind == EXPR_BINARY && arg->binary.op == TOK_PLUS) {
+                        // String concatenation results in a string
+                        if (arg->binary.left->kind == EXPR_STRING || arg->binary.right->kind == EXPR_STRING) {
+                            arg_type = new_type(TYPE_STR);
+                        } else if (arg->binary.left->kind == EXPR_IDENT) {
+                            Type* left_type = cg_local_type(cg, arg->binary.left->ident);
+                            if (left_type && left_type->kind == TYPE_STR) {
+                                arg_type = new_type(TYPE_STR);
+                            }
+                        } else if (arg->binary.right->kind == EXPR_IDENT) {
+                            Type* right_type = cg_local_type(cg, arg->binary.right->ident);
+                            if (right_type && right_type->kind == TYPE_STR) {
+                                arg_type = new_type(TYPE_STR);
+                            }
+                        }
+                    } else if (arg->kind == EXPR_FIELD) {
+                        // For field access, need to look up the field type
+                        Type* obj_type = NULL;
+                        if (arg->field.object->kind == EXPR_IDENT) {
+                            obj_type = cg_local_type(cg, arg->field.object->ident);
+                        }
+                        if (obj_type && obj_type->kind == TYPE_NAMED) {
+                            for (int i = 0; i < cg->module->struct_count; i++) {
+                                if (strcmp(cg->module->structs[i].name, obj_type->name) == 0) {
+                                    StructDef* s = &cg->module->structs[i];
+                                    for (int j = 0; j < s->field_count; j++) {
+                                        if (strcmp(s->fields[j].name, arg->field.field) == 0) {
+                                            arg_type = s->fields[j].type;
+                                            break;
+                                        }
                                     }
+                                    break;
                                 }
-                                break;
                             }
                         }
                     }
+                    cg_expr(cg, arg);
+                    if (arg_type && arg_type->kind == TYPE_STR) {
+                        cg_emit(cg, "    bl %sprint_str", cg_sym_prefix(cg));
+                    } else if (arg_type && arg_type->kind == TYPE_FLOAT) {
+                        cg_emit(cg, "    bl %sprint_float", cg_sym_prefix(cg));
+                    } else {
+                        cg_emit(cg, "    bl %sprint", cg_sym_prefix(cg));
+                    }
+                    // Add space between arguments (except after last one)
+                    if (arg_idx < e->call.arg_count - 1) {
+                        cg_emit(cg, "    mov w0, #32");  // space character
+                        cg_emit(cg, "    bl %sputchar", cg_sym_prefix(cg));
+                    }
                 }
-                cg_expr(cg, arg);
-                if (arg_type && arg_type->kind == TYPE_STR) {
-                    cg_emit(cg, "    bl %sprint_str", cg_sym_prefix(cg));
-                } else if (arg_type && arg_type->kind == TYPE_FLOAT) {
-                    cg_emit(cg, "    bl %sprint_float", cg_sym_prefix(cg));
-                } else {
-                    cg_emit(cg, "    bl %sprint", cg_sym_prefix(cg));
-                }
+                // Auto-add newline
+                cg_emit(cg, "    bl %sprint_newline", cg_sym_prefix(cg));
                 break;
             }
             // Handle built-in abs()

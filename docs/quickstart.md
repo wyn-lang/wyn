@@ -20,7 +20,7 @@ Create a file called `hello.wyn`:
 
 ```wyn
 fn main() {
-    print_str("Hello, World!")
+    print("Hello, World!")
 }
 ```
 
@@ -49,7 +49,7 @@ fn add(a: int, b: int) -> int {
 }
 
 fn greet(name: str) {
-    print_str("Hello, " + name + "!")
+    print("Hello, " + name + "!")
 }
 ```
 
@@ -58,9 +58,9 @@ fn greet(name: str) {
 ```wyn
 # If/else
 if x > 0 {
-    print_str("positive")
+    print("positive")
 } else {
-    print_str("non-positive")
+    print("non-positive")
 }
 
 # While loop
@@ -151,7 +151,7 @@ fn main() {
 | Function | Description |
 |----------|-------------|
 | `print(n)` | Print integer |
-| `print_str(s)` | Print string |
+| `print(s)` | Print string |
 | `len(x)` | Length of array or string |
 | `abs(n)` | Absolute value |
 | `min(a, b)` | Minimum of two values |

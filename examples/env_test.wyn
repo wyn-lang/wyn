@@ -2,6 +2,6 @@
 
 fn main() {
     const home: str = getenv("HOME")
-    print_str("HOME=")
-    print_str(home)
+    print("HOME=")
+    print(home)
 }

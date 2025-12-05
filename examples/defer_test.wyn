@@ -9,9 +9,9 @@ fn test_defer() -> int {
 }
 
 fn main() {
-    print_str("Defer test:")
+    print("Defer test:")
     const result: int = test_defer()
-    print_str(" result=")
+    print(" result=")
     print(result)
-    print_str(" done")
+    print(" done")
 }

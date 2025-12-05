@@ -58,6 +58,5 @@ fn main() {
     }
     assert(even_sum == 20)
     
-    print_str("For loop edge cases: OK")
-    print_newline()
+    print("For loop edge cases: OK")
 }

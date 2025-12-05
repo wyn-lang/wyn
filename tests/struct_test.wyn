@@ -30,5 +30,5 @@ fn main() {
     assert(r.x == 0)
     assert(r.area() == 50)
     
-    print_str("struct_test: PASS")
+    print("struct_test: PASS")
 }

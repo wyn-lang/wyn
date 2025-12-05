@@ -4,7 +4,7 @@ fn main() {
     # Test basic array iteration
     const arr: [int] = [10, 20, 30, 40, 50]
     
-    print_str("Array elements:")
+    print("Array elements:")
     for item in arr {
         print(item)
     }
@@ -14,7 +14,7 @@ fn main() {
     for val in arr {
         sum = sum + val
     }
-    print_str("Sum:")
+    print("Sum:")
     print(sum)
     
     # Test with smaller array
@@ -24,7 +24,7 @@ fn main() {
     }
     
     # Test range still works
-    print_str("Range 0..5:")
+    print("Range 0..5:")
     for i in 0..5 {
         print(i)
     }

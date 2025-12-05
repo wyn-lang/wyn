@@ -1,7 +1,6 @@
 fn worker(id: int) {
-    print_str("Worker ")
+    print("Worker ")
     print(id)
-    print_newline()
 }
 
 fn main() {
@@ -17,6 +16,5 @@ fn main() {
         worker(3)
     }
     
-    print_str("Main done")
-    print_newline()
+    print("Main done")
 }

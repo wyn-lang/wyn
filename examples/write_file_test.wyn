@@ -3,11 +3,11 @@
 fn main() {
     const result: int = write_file("/tmp/wyn_test.txt", "Hello from Wyn!")
     if result == 0 {
-        print_str("Write successful")
+        print("Write successful")
         const content: str = read_file("/tmp/wyn_test.txt")
-        print_str("Read back: ")
-        print_str(content)
+        print("Read back: ")
+        print(content)
     } else {
-        print_str("Write failed")
+        print("Write failed")
     }
 }

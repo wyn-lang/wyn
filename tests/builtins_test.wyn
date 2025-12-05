@@ -17,5 +17,5 @@ fn main() {
     assert("hello".len() == 5)
     assert("123".to_int() == 123)
     
-    io.print_str("builtins_test: PASS")
+    io.print("builtins_test: PASS")
 }

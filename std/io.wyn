@@ -3,8 +3,8 @@
 
 # Print a string followed by a newline
 fn print_line(s: str) {
-    print_str(s)
-    print_str("\n")
+    print(s)
+    print("\n")
 }
 
 # Read entire file contents as a string
@@ -250,7 +250,7 @@ fn format_bin(n: int) -> str {
 fn print_all(parts: [str]) {
     let i: int = 0
     while i < parts.len() {
-        print_str(parts[i])
+        print(parts[i])
         i = i + 1
     }
 }
@@ -258,7 +258,7 @@ fn print_all(parts: [str]) {
 # Print an integer followed by a newline
 fn println_int(n: int) {
     print(n)
-    print_str("\n")
+    print("\n")
 }
 
 # Repeat a character n times
@@ -307,37 +307,37 @@ fn format_percent(value: int, decimals: int) -> str {
 
 # Print a horizontal line of specified character and width
 fn print_line_char(c: str, width: int) {
-    print_str(repeat_char(c, width))
-    print_str("\n")
+    print(repeat_char(c, width))
+    print("\n")
 }
 
 # Print a box around text
 fn print_box(text: str) {
     const len: int = text.len()
     const border: str = repeat_char("-", len + 4)
-    print_str(border + "\n")
-    print_str("| " + text + " |\n")
-    print_str(border + "\n")
+    print(border + "\n")
+    print("| " + text + " |\n")
+    print(border + "\n")
 }
 
 # Print error message to stderr (simulated with prefix)
 fn print_error(msg: str) {
-    print_str("ERROR: " + msg + "\n")
+    print("ERROR: " + msg + "\n")
 }
 
 # Print warning message
 fn print_warning(msg: str) {
-    print_str("WARNING: " + msg + "\n")
+    print("WARNING: " + msg + "\n")
 }
 
 # Print info message
 fn print_info(msg: str) {
-    print_str("INFO: " + msg + "\n")
+    print("INFO: " + msg + "\n")
 }
 
 # Print success message
 fn print_success(msg: str) {
-    print_str("SUCCESS: " + msg + "\n")
+    print("SUCCESS: " + msg + "\n")
 }
 
 # Format Result error for display
@@ -355,7 +355,7 @@ fn print_result_error[T](result: Result[T, str], context: str) {
 
 # Print debug message with DEBUG prefix
 fn print_debug(msg: str) {
-    print_str("DEBUG: " + msg + "\n")
+    print("DEBUG: " + msg + "\n")
 }
 
 # Print separator line for visual organization
@@ -371,7 +371,7 @@ fn print_separator(width: int, char: str) {
 
 # Print formatted key-value pair
 fn print_kv(key: str, value: str) {
-    print_str(key + ": " + value + "\n")
+    print(key + ": " + value + "\n")
 }
 
 # Format bytes as human-readable size (KB, MB, GB)
@@ -410,18 +410,18 @@ fn print_table_row(cols: [str], widths: [int]) {
         const col: str = cols[i]
         const width: int = widths[i]
         const padding: int = width - col.len()
-        print_str(col)
+        print(col)
         let j: int = 0
         while j < padding {
-            print_str(" ")
+            print(" ")
             j = j + 1
         }
         if i < cols.len() - 1 {
-            print_str(" | ")
+            print(" | ")
         }
         i = i + 1
     }
-    print_str("\n")
+    print("\n")
 }
 
 # Print table header with separator
@@ -464,17 +464,17 @@ fn format_optional_int(opt: ?int) -> str {
 fn print_progress(current: int, total: int, width: int) {
     const percent: int = (current * 100) / total
     const filled: int = (current * width) / total
-    print_str("[")
+    print("[")
     let i: int = 0
     while i < width {
         if i < filled {
-            print_str("=")
+            print("=")
         } else {
-            print_str(" ")
+            print(" ")
         }
         i = i + 1
     }
-    print_str("] " + int_to_str(percent) + "%\n")
+    print("] " + int_to_str(percent) + "%\n")
 }
 
 # Print centered text
@@ -482,7 +482,7 @@ fn print_centered(text: str, width: int) {
     const padding: int = (width - text.len()) / 2
     let i: int = 0
     while i < padding {
-        print_str(" ")
+        print(" ")
         i = i + 1
     }
     print_line(text)
@@ -497,7 +497,7 @@ fn format_list_item(item: str, bullet: str) -> str {
 fn print_numbered_list(items: [str]) {
     let i: int = 0
     while i < items.len() {
-        print_str(int_to_str(i + 1) + ". " + items[i] + "\n")
+        print(int_to_str(i + 1) + ". " + items[i] + "\n")
         i = i + 1
     }
 }
@@ -506,7 +506,7 @@ fn print_numbered_list(items: [str]) {
 fn print_bulleted_list(items: [str]) {
     let i: int = 0
     while i < items.len() {
-        print_str("• " + items[i] + "\n")
+        print("• " + items[i] + "\n")
         i = i + 1
     }
 }
@@ -609,16 +609,16 @@ fn print_grid(grid: [[int]], cell_width: int) {
             const padding: int = cell_width - s.len()
             let k: int = 0
             while k < padding {
-                print_str(" ")
+                print(" ")
                 k = k + 1
             }
-            print_str(s)
+            print(s)
             if j < row.len() - 1 {
-                print_str(" ")
+                print(" ")
             }
             j = j + 1
         }
-        print_str("\n")
+        print("\n")
         i = i + 1
     }
 }
@@ -642,19 +642,19 @@ fn format_base(n: int, base: int) -> str {
 fn print_aligned(left: str, center: str, right: str, width: int) {
     const center_start: int = (width - center.len()) / 2
     const right_start: int = width - right.len()
-    print_str(left)
+    print(left)
     let i: int = left.len()
     while i < center_start {
-        print_str(" ")
+        print(" ")
         i = i + 1
     }
-    print_str(center)
+    print(center)
     i = center_start + center.len()
     while i < right_start {
-        print_str(" ")
+        print(" ")
         i = i + 1
     }
-    print_str(right + "\n")
+    print(right + "\n")
 }
 
 # Truncate string to max length with ellipsis
@@ -698,7 +698,7 @@ fn format_str_array(arr: [str]) -> str {
 fn print_indented(text: str, indent: int) {
     let i: int = 0
     while i < indent {
-        print_str("  ")
+        print("  ")
         i = i + 1
     }
     print_line(text)
@@ -728,13 +728,13 @@ fn print_properties(keys: [str], values: [str]) {
     while i < keys.len() {
         const key: str = keys[i]
         const padding: int = max_key_len - key.len()
-        print_str(key)
+        print(key)
         let j: int = 0
         while j < padding {
-            print_str(" ")
+            print(" ")
             j = j + 1
         }
-        print_str(" : " + values[i] + "\n")
+        print(" : " + values[i] + "\n")
         i = i + 1
     }
 }
@@ -748,7 +748,7 @@ fn format_path(path: str) -> str {
 
 # Print status message with timestamp
 fn print_status(msg: str, timestamp: int) {
-    print_str("[" + int_to_str(timestamp) + "] " + msg + "\n")
+    print("[" + int_to_str(timestamp) + "] " + msg + "\n")
 }
 
 # Format percentage as progress indicator
@@ -763,7 +763,7 @@ fn print_menu(title: str, options: [str]) {
     print_separator(title.len(), "-")
     let i: int = 0
     while i < options.len() {
-        print_str(int_to_str(i + 1) + ") " + options[i] + "\n")
+        print(int_to_str(i + 1) + ") " + options[i] + "\n")
         i = i + 1
     }
 }
@@ -784,16 +784,16 @@ fn print_divider(label: str, width: int) {
     const side_len: int = (width - label_len - 2) / 2
     let i: int = 0
     while i < side_len {
-        print_str("-")
+        print("-")
         i = i + 1
     }
-    print_str(" " + label + " ")
+    print(" " + label + " ")
     i = 0
     while i < side_len {
-        print_str("-")
+        print("-")
         i = i + 1
     }
-    print_str("\n")
+    print("\n")
 }
 
 # Format integer with ordinal suffix (1st, 2nd, 3rd, etc)
@@ -819,13 +819,13 @@ fn format_ordinal(n: int) -> str {
 fn print_tree_item(text: str, depth: int, is_last: bool) {
     let i: int = 0
     while i < depth {
-        print_str("  ")
+        print("  ")
         i = i + 1
     }
     if is_last {
-        print_str("└─ ")
+        print("└─ ")
     } else {
-        print_str("├─ ")
+        print("├─ ")
     }
     print_line(text)
 }
@@ -837,12 +837,12 @@ fn format_ratio(numerator: int, denominator: int) -> str {
 
 # Print colored text (ANSI codes)
 fn print_colored(text: str, color_code: int) {
-    print_str("\x1b[" + int_to_str(color_code) + "m" + text + "\x1b[0m\n")
+    print("\x1b[" + int_to_str(color_code) + "m" + text + "\x1b[0m\n")
 }
 
 # Print bold text
 fn print_bold(text: str) {
-    print_str("\x1b[1m" + text + "\x1b[0m\n")
+    print("\x1b[1m" + text + "\x1b[0m\n")
 }
 
 # Format file size with exact bytes
@@ -853,8 +853,8 @@ fn format_size_exact(bytes: int) -> str {
 # Print summary statistics
 fn print_stats(label: str, count: int, total: int) {
     const percent: int = if total > 0 then (count * 100) / total else 0
-    print_str(label + ": " + int_to_str(count) + "/" + int_to_str(total))
-    print_str(" (" + int_to_str(percent) + "%)\n")
+    print(label + ": " + int_to_str(count) + "/" + int_to_str(total))
+    print(" (" + int_to_str(percent) + "%)\n")
 }
 
 # Format version string
@@ -881,11 +881,11 @@ fn format_ip(a: int, b: int, c: int, d: int) -> str {
 
 # Print JSON-like key-value (simple)
 fn print_json_kv(key: str, value: str, is_last: bool) {
-    print_str("  \"" + key + "\": \"" + value + "\"")
+    print("  \"" + key + "\": \"" + value + "\"")
     if not is_last {
-        print_str(",")
+        print(",")
     }
-    print_str("\n")
+    print("\n")
 }
 
 # Format coordinate pair
@@ -908,13 +908,13 @@ fn print_ascii_box(lines: [str]) {
     i = 0
     while i < lines.len() {
         const padding: int = max_len - lines[i].len()
-        print_str("| " + lines[i])
+        print("| " + lines[i])
         let j: int = 0
         while j < padding {
-            print_str(" ")
+            print(" ")
             j = j + 1
         }
-        print_str(" |\n")
+        print(" |\n")
         i = i + 1
     }
     print_line(border)

@@ -181,6 +181,6 @@ fn keyword_from_str(s: str) -> int {
 
 fn main() {
     const t: Token = token_new(141, 1, 1)
-    println_str("Token module test")
+    print("Token module test")
     println(t.kind)
 }

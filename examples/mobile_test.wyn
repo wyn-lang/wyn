@@ -1,6 +1,6 @@
 fn main() {
-    print_str("Testing mobile API (non-blocking)...\n")
-    print_str("✓ Mobile test passed (manual verification required)\n")
+    print("Testing mobile API (non-blocking)...\n")
+    print("✓ Mobile test passed (manual verification required)\n")
 }
 
     mobile.set_font_size(label, 16)
@@ -23,6 +23,6 @@ fn main() {
     mobile.hide_view(label)
     mobile.show_view(label)
     
-    io.print_str("Mobile API test compiled successfully")
-    io.print_newline()
+    io.print("Mobile API test compiled successfully")
+    io.print("")
 }

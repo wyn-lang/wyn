@@ -12,7 +12,6 @@ fn main() {
         i = i + 1
     }
     
-    print_str("Array sum: ")
+    print("Array sum: ")
     print(s)
-    print_newline()
 }

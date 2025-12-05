@@ -8,7 +8,7 @@ fn main() {
         i = i + 1
     }
     
-    print_str("Math ops: ")
+    print("Math ops: ")
     print_float(sum)
-    print_newline()
+    print("")
 }

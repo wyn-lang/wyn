@@ -23,6 +23,5 @@ fn main() {
         i = i + 1
     }
     
-    print_str("Parallel sum complete")
-    print_newline()
+    print("Parallel sum complete")
 }

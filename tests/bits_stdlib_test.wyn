@@ -1,5 +1,5 @@
 fn main() {
-    print_str("Testing bits stdlib...\n")
+    print("Testing bits stdlib...\n")
     
     # Test bitwise AND
     assert((5 & 3) == 1, "AND works")
@@ -28,5 +28,5 @@ fn main() {
     # Test NOT
     assert((~0) == -1, "NOT works")
     
-    print_str("✓ All bits stdlib tests passed\n")
+    print("✓ All bits stdlib tests passed\n")
 }

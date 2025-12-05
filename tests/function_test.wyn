@@ -29,5 +29,5 @@ fn main() {
     assert(fib(1) == 1)
     assert(fib(10) == 55)
     
-    print_str("function_test: PASS")
+    print("function_test: PASS")
 }

@@ -15,6 +15,5 @@ fn main() {
     assert(arr[-1] == 5)
     assert(arr[-2] == 4)
     
-    print_str("✓ Basic array test passed")
-    print_newline()
+    print("✓ Basic array test passed")
 }

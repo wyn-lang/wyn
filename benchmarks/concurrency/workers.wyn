@@ -20,6 +20,5 @@ fn main() {
         i = i + 1
     }
     
-    print_str("Workers complete")
-    print_newline()
+    print("Workers complete")
 }

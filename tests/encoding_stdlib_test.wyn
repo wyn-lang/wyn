@@ -1,5 +1,5 @@
 fn main() {
-    print_str("Testing encoding stdlib...\n")
+    print("Testing encoding stdlib...\n")
     
     # Test chr and ord
     assert(chr(65) == "A", "chr(65) is A")
@@ -17,5 +17,5 @@ fn main() {
     assert(ord("0") == 48, "ord(0) is 48")
     assert(ord("9") == 57, "ord(9) is 57")
     
-    print_str("✓ All encoding stdlib tests passed\n")
+    print("✓ All encoding stdlib tests passed\n")
 }

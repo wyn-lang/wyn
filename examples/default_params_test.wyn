@@ -1,11 +1,10 @@
 // Test default parameters
 
 fn greet(name: str, greeting: str = "Hello") {
-    print_str(greeting)
-    print_str(", ")
-    print_str(name)
-    print_str("!")
-    print_newline()
+    print(greeting)
+    print(", ")
+    print(name)
+    print("!")
 }
 
 fn add(a: int, b: int = 10, c: int = 100) -> int {
@@ -22,21 +21,17 @@ fn main() {
     // Test numeric defaults
     const r1: int = add(1)  // 1 + 10 + 100 = 111
     print(r1)
-    print_newline()
     
     const r2: int = add(1, 20)  // 1 + 20 + 100 = 121
     print(r2)
-    print_newline()
     
     const r3: int = add(1, 20, 30)  // 1 + 20 + 30 = 51
     print(r3)
-    print_newline()
     
     // Verify results
     assert(r1 == 111)
     assert(r2 == 121)
     assert(r3 == 51)
     
-    print_str("Default params: OK")
-    print_newline()
+    print("Default params: OK")
 }

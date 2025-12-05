@@ -44,28 +44,28 @@ fn find_index(arr: [int], target: int) -> ?int {
 }
 
 fn main() {
-    print_str("=== Wyn Language Showcase ===")
-    print_str("")
+    print("=== Wyn Language Showcase ===")
+    print("")
     
     # Variables
     const x: int = 42
     let y: int = 0
     y = 10
-    print_str("Variables: x=42, y=10")
+    print("Variables: x=42, y=10")
     
     # Arithmetic
-    print_str("Arithmetic:")
+    print("Arithmetic:")
     print(2 + 3)      # 5
     print(2 ** 10)    # 1024
     
     # Arrays
-    print_str("Arrays:")
+    print("Arrays:")
     const arr: [int] = [1, 2, 3, 4, 5]
     print(len(arr))   # 5
     print(arr[-1])    # 5 (last element)
     
     # Iteration
-    print_str("Sum of 1..5:")
+    print("Sum of 1..5:")
     let sum: int = 0
     for item in arr {
         sum += item
@@ -73,44 +73,44 @@ fn main() {
     print(sum)        # 15
     
     # Structs
-    print_str("Structs:")
+    print("Structs:")
     const p: Point = Point { x: 3, y: 4 }
     print(p.magnitude_squared())  # 25
     
     # Generics
-    print_str("Generics:")
+    print("Generics:")
     const box: Box[int] = Box[int] { value: 100 }
     print(box.value)  # 100
     
     # Optionals
-    print_str("Optionals:")
+    print("Optionals:")
     const found: ?int = find_index(arr, 3)
     print(found ?? -1)  # 2
     const not_found: ?int = find_index(arr, 99)
     print(not_found ?? -1)  # -1
     
     # Recursion
-    print_str("Factorial(5):")
+    print("Factorial(5):")
     print(factorial(5))  # 120
     
-    print_str("Fibonacci(10):")
+    print("Fibonacci(10):")
     print(fib(10))  # 55
     
     # Match
-    print_str("Match:")
+    print("Match:")
     const color: int = Green
     match color {
-        Red => print_str("Red")
-        Green => print_str("Green")
-        Blue => print_str("Blue")
+        Red => print("Red")
+        Green => print("Green")
+        Blue => print("Blue")
     }
     
     # String operations
-    print_str("String operations:")
+    print("String operations:")
     const s: str = "hello"
     print(len(s))     # 5
     print(ord("A"))   # 65
     
-    print_str("")
-    print_str("=== Done ===")
+    print("")
+    print("=== Done ===")
 }

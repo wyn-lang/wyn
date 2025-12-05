@@ -5,9 +5,8 @@ fn compute(n: int) {
         sum = sum + i * i
         i = i + 1
     }
-    print_str("Sum: ")
+    print("Sum: ")
     print(sum)
-    print_newline()
 }
 
 fn main() {
@@ -15,6 +14,5 @@ fn main() {
     spawn { compute(100000) }
     spawn { compute(100000) }
     
-    print_str("Done")
-    print_newline()
+    print("Done")
 }

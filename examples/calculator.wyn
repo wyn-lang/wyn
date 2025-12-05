@@ -12,7 +12,7 @@ fn multiply(a: int, b: int) -> int {
 
 fn divide(a: int, b: int) -> int {
     if b == 0 {
-        println_str("Error: division by zero")
+        print("Error: division by zero")
         return 0
     }
     return a / b
@@ -29,23 +29,23 @@ fn power(base: int, exp: int) -> int {
 }
 
 fn main() {
-    println_str("Calculator Examples:")
+    print("Calculator Examples:")
     
-    println_str("2 + 3 =")
+    print("2 + 3 =")
     println(add(2, 3))
     
-    println_str("10 - 4 =")
+    print("10 - 4 =")
     println(subtract(10, 4))
     
-    println_str("3 * 4 =")
+    print("3 * 4 =")
     println(multiply(3, 4))
     
-    println_str("20 / 5 =")
+    print("20 / 5 =")
     println(divide(20, 5))
     
-    println_str("2 ^ 8 =")
+    print("2 ^ 8 =")
     println(power(2, 8))
     
-    println_str("Order of operations: 2 + 3 * 4 =")
+    print("Order of operations: 2 + 3 * 4 =")
     println(add(2, multiply(3, 4)))
 }

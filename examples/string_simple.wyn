@@ -1,7 +1,7 @@
 fn main() {
     # Test basic string operations
-    print_str("Hello")
-    print_str("World")
+    print("Hello")
+    print("World")
     
     # Test string length
     const len1: int = len("Hello")
@@ -14,5 +14,5 @@ fn main() {
     const neq: bool = "test" != "other"
     assert(neq)
     
-    print_str("Tests passed!")
+    print("Tests passed!")
 }

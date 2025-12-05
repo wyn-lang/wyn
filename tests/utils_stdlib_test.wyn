@@ -1,5 +1,5 @@
 fn main() {
-    print_str("Testing utils stdlib...\n")
+    print("Testing utils stdlib...\n")
     
     # Test min/max
     assert(min(3, 7) == 3, "min works")
@@ -22,5 +22,5 @@ fn main() {
     const z: int = 15
     assert(z > 10, "above range")
     
-    print_str("✓ All utils stdlib tests passed\n")
+    print("✓ All utils stdlib tests passed\n")
 }

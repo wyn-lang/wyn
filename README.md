@@ -48,8 +48,8 @@ This installs:
 
 ```wyn
 fn main() {
-    io.print_str("Hello, World!")
-    io.print_newline()
+    print("Hello, World!")
+    print("")
 }
 ```
 

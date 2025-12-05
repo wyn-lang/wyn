@@ -1,5 +1,5 @@
 fn main() {
-    print_str("Testing os stdlib...\n")
+    print("Testing os stdlib...\n")
     
     # Test getcwd
     const cwd: str = getcwd()
@@ -17,5 +17,5 @@ fn main() {
     const argv: [str] = args()
     assert(argv.len() >= 1, "args has program name")
     
-    print_str("✓ All os stdlib tests passed\n")
+    print("✓ All os stdlib tests passed\n")
 }

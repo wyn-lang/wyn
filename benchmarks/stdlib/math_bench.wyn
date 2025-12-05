@@ -15,7 +15,7 @@ fn main() {
         i = i + 1
     }
     
-    print_str("Math benchmark complete: ")
+    print("Math benchmark complete: ")
     print_float(sum)
-    print_newline()
+    print("")
 }

@@ -253,10 +253,8 @@ fn main() {
     const argv: [str] = args()
     
     if argv.len() < 2 {
-        print_str("Wyn Stage 1 Compiler")
-        print_newline()
-        print_str("Usage: stage1 <input.wyn>")
-        print_newline()
+        print("Wyn Stage 1 Compiler")
+        print("Usage: stage1 <input.wyn>")
         exit(1)
     }
     
@@ -264,15 +262,13 @@ fn main() {
     const source: str = read_file(input)
     
     if source.len() == 0 {
-        print_str("Error: Could not read file: ")
-        print_str(input)
-        print_newline()
+        print("Error: Could not read file: ")
+        print(input)
         exit(1)
     }
     
-    print_str("Compiling: ")
-    print_str(input)
-    print_newline()
+    print("Compiling: ")
+    print(input)
     
     // Single pass: tokenize, parse, and generate code
     let lex: Lexer = lexer_new(source)
@@ -316,13 +312,12 @@ fn main() {
         
         // Debug: print all tokens
         if token_count <= 15 {
-            print_str("tok ")
+            print("tok ")
             print(token_count)
-            print_str(": kind=")
+            print(": kind=")
             print(tok.kind)
-            print_str(" text=")
-            print_str(tok.text)
-            print_newline()
+            print(" text=")
+            print(tok.text)
         }
         
         // Detect print("string") - write code immediately
@@ -383,20 +378,19 @@ fn main() {
         // End of function (closing brace at fn_start_depth + 1 going to fn_start_depth)
         if tok.kind == 17 {  // }
             if in_fn and brace_depth == fn_start_depth + 1 {
-                print_str("  fn ")
-                print_str(cur_fn_name)
-                print_str("(")
+                print("  fn ")
+                print(cur_fn_name)
+                print("(")
                 print(param_count)
-                print_str(" params)")
+                print(" params)")
                 if has_return {
-                    print_str(" -> ...")
+                    print(" -> ...")
                 }
-                print_str(" [")
+                print(" [")
                 print(var_count)
-                print_str(" vars, ")
+                print(" vars, ")
                 print(stmt_count)
-                print_str(" stmts]")
-                print_newline()
+                print(" stmts]")
                 in_fn = false
             }
             brace_depth = brace_depth - 1
@@ -418,12 +412,11 @@ fn main() {
         
         // End of struct
         if in_struct and brace_depth == struct_start_depth and prev_kind == 17 {
-            print_str("  struct ")
-            print_str(cur_struct_name)
-            print_str(" [")
+            print("  struct ")
+            print(cur_struct_name)
+            print(" [")
             print(field_count)
-            print_str(" fields]")
-            print_newline()
+            print(" fields]")
             in_struct = false
         }
         
@@ -435,24 +428,19 @@ fn main() {
         if tok.kind == 0 { break }
     }
     
-    print_newline()
-    print_str("=== Summary ===")
-    print_newline()
-    print_str("Tokens: ")
+    print("")
+    print("=== Summary ===")
+    print("Tokens: ")
     print(token_count)
-    print_newline()
-    print_str("Functions: ")
+    print("Functions: ")
     print(fn_count)
-    print_newline()
-    print_str("Structs: ")
+    print("Structs: ")
     print(struct_count)
-    print_newline()
     
     // Write footer and string data if doing codegen
     if do_codegen {
-        print_str("Generating: ")
-        print_str(output)
-        print_newline()
+        print("Generating: ")
+        print(output)
         
         // Write main epilogue
         append_file(output, "    mov x0, #0\n    ldp x29, x30, [sp, #240]\n    add sp, sp, #256\n    ret\n\n")
@@ -466,11 +454,9 @@ fn main() {
         append_file(output, "    .section __DATA,__data\nL_.fmt:\n    .asciz \"%lld\\n\"\n")
         append_file(output, strings)
         
-        print_str("Written: ")
-        print_str(output)
-        print_newline()
+        print("Written: ")
+        print(output)
     }
     
-    print_str("Stage 1 compilation complete")
-    print_newline()
+    print("Stage 1 compilation complete")
 }

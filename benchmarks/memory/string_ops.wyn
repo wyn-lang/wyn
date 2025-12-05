@@ -9,7 +9,7 @@ fn main() {
         i = i + 1
     }
     
-    io.print_str("String concat: ")
+    io.print("String concat: ")
     print(result.len())
-    io.print_newline()
+    io.print("")
 }

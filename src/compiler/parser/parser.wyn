@@ -530,5 +530,5 @@ impl Parser {
     fn expect(self, kind: TokenKind) { if not self.check(kind) { self.error("Expected token") }; self.advance() }
     fn expect_ident(self) -> str { match self.advance().kind { Ident(s) => s, _ => "" } }
     fn check_expr_start(self) -> bool { match self.peek().kind { Int(_) | Float(_) | String(_) | Ident(_) | LParen | LBracket | If | Match | True | False | None_ | Some_ | Pipe => true, _ => false } }
-    fn error(self, msg: str) { print_str("Parse error: " + msg) }
+    fn error(self, msg: str) { print("Parse error: " + msg) }
 }

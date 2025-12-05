@@ -1,5 +1,5 @@
 fn main() {
-    print_str("Testing fs stdlib...\n")
+    print("Testing fs stdlib...\n")
     
     # Test file operations
     const test_file: str = "fs_test_file.txt"
@@ -46,5 +46,5 @@ fn main() {
     # Cleanup directory
     rmdir(test_dir)
     
-    print_str("✓ All fs stdlib tests passed\n")
+    print("✓ All fs stdlib tests passed\n")
 }

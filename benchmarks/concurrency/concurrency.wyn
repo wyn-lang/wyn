@@ -25,7 +25,6 @@ fn main() {
     # Wait for all to complete (simplified - no proper sync yet)
     sleep(1000)
     
-    print_str("Total: ")
+    print("Total: ")
     print(total)
-    print_newline()
 }

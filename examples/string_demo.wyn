@@ -1,37 +1,37 @@
 fn main() {
-    print_str("=== String Operations Demo ===")
+    print("=== String Operations Demo ===")
     
     # String length
-    print_str("String Length:")
+    print("String Length:")
     print(len("Hello"))
     print(len("World!"))
     print(len(""))
     
     # String concatenation
-    print_str("String Concatenation:")
+    print("String Concatenation:")
     const greeting: str = "Hello" + " " + "World"
-    print_str(greeting)
+    print(greeting)
     
     const name: str = "Wyn" + "Lang"
-    print_str(name)
+    print(name)
     
     # String comparison
-    print_str("String Comparison:")
+    print("String Comparison:")
     if "test" == "test" {
-        print_str("Equal strings match")
+        print("Equal strings match")
     }
     
     if "foo" != "bar" {
-        print_str("Different strings don't match")
+        print("Different strings don't match")
     }
     
     # Combined operations
-    print_str("Combined Operations:")
+    print("Combined Operations:")
     const s1: str = "Hello"
     const s2: str = "World"
     const combined: str = s1 + s2
-    print_str(combined)
+    print(combined)
     print(len(combined))
     
-    print_str("=== Demo Complete ===")
+    print("=== Demo Complete ===")
 }

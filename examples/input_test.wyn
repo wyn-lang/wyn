@@ -1,5 +1,5 @@
 fn main() {
-    print_str("Testing input (non-blocking)...\n")
-    print_str("✓ Input test passed (manual verification required)\n")
+    print("Testing input (non-blocking)...\n")
+    print("✓ Input test passed (manual verification required)\n")
 }
 

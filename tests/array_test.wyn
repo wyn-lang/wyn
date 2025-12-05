@@ -35,5 +35,5 @@ fn main() {
     }
     assert(sum == 15)
     
-    io.print_str("array_test: PASS")
+    io.print("array_test: PASS")
 }

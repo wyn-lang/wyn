@@ -47,24 +47,24 @@ fn test_result_err() {
             print(v)
         }
         err(e) => {
-            print_str(e)  # Should print "failed"
+            print(e)  # Should print "failed"
             print(200)    # Marker
         }
     }
 }
 
 fn main() {
-    print_str("Test 1: some(x) binding\n")
+    print("Test 1: some(x) binding\n")
     test_optional_binding()
     
-    print_str("\nTest 2: none match\n")
+    print("\nTest 2: none match\n")
     test_none_match()
     
-    print_str("\nTest 3: ok(v) binding\n")
+    print("\nTest 3: ok(v) binding\n")
     test_result_ok()
     
-    print_str("\nTest 4: err(e) binding\n")
+    print("\nTest 4: err(e) binding\n")
     test_result_err()
     
-    print_str("\nAll tests passed!\n")
+    print("\nAll tests passed!\n")
 }

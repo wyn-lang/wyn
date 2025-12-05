@@ -1,5 +1,5 @@
 fn main() {
-    print_str("Testing io stdlib...\n")
+    print("Testing io stdlib...\n")
     
     const test_file: str = "io_test_temp.txt"
     const content: str = "test content"
@@ -35,5 +35,5 @@ fn main() {
         rmdir(test_dir)
     }
     
-    print_str("✓ All io stdlib tests passed\n")
+    print("✓ All io stdlib tests passed\n")
 }

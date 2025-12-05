@@ -1,22 +1,19 @@
 fn main() {
-    print_str("Creating empty array...")
-    print_newline()
+    print("Creating empty array...")
     
     let arr: [int] = []
     
-    print_str("Array created, length: ")
+    print("Array created, length: ")
     print(len(arr))
-    print_newline()
+    print("")
     
-    print_str("Appending 42...")
-    print_newline()
+    print("Appending 42...")
     arr.append(42)
     
-    print_str("After append, length: ")
+    print("After append, length: ")
     print(len(arr))
-    print_newline()
+    print("")
     
-    print_str("Value at index 0: ")
+    print("Value at index 0: ")
     print(arr[0])
-    print_newline()
 }

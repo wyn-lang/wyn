@@ -1,5 +1,5 @@
 fn main() {
-    print_str("Testing collections stdlib...\n")
+    print("Testing collections stdlib...\n")
     
     const arr: [int] = [1, 2, 3, 4, 5]
     
@@ -29,5 +29,5 @@ fn main() {
     assert(single.len() == 1, "single element")
     assert(single[0] == 42, "value correct")
     
-    print_str("✓ All collections stdlib tests passed\n")
+    print("✓ All collections stdlib tests passed\n")
 }

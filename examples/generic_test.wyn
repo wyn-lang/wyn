@@ -51,5 +51,5 @@ fn main() {
     print(x)
     assert(x == 42)
     
-    print_str("Generic structs and functions work!")
+    print("Generic structs and functions work!")
 }

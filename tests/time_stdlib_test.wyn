@@ -1,5 +1,5 @@
 fn main() {
-    print_str("Testing time stdlib...\n")
+    print("Testing time stdlib...\n")
     
     # Test time_now builtin
     const now: int = time_now()
@@ -16,5 +16,5 @@ fn main() {
     const c2: int = clock()
     assert(c2 >= c1, "clock advances")
     
-    print_str("✓ All time stdlib tests passed\n")
+    print("✓ All time stdlib tests passed\n")
 }

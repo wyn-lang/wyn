@@ -21,6 +21,5 @@ fn main() {
     spawn { compute(100000) }
     spawn { compute(100000) }
     
-    print_str("Parallel work complete")
-    print_newline()
+    print("Parallel work complete")
 }

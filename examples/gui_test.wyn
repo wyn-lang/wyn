@@ -1,5 +1,5 @@
 fn main() {
-    print_str("Testing GUI (non-blocking)...\n")
-    print_str("✓ GUI test passed (manual verification required)\n")
+    print("Testing GUI (non-blocking)...\n")
+    print("✓ GUI test passed (manual verification required)\n")
 }
 

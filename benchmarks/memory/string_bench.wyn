@@ -7,7 +7,7 @@ fn main() {
         i = i + 1
     }
     
-    print_str("String length: ")
+    print("String length: ")
     print(len(result))
-    print_newline()
+    print("")
 }

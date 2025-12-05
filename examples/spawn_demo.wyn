@@ -1,38 +1,36 @@
 fn main() {
-    print_str("=== Spawn Demo ===\n\n")
+    print("=== Spawn Demo ===\n\n")
     
     # Example 1: Basic spawn
-    print_str("1. Basic spawn:\n")
+    print("1. Basic spawn:\n")
     spawn {
-        print_str("   Hello from spawn!\n")
+        print("   Hello from spawn!\n")
     }
-    print_str("   Done\n\n")
+    print("   Done\n\n")
     
     # Example 2: Variable capture
-    print_str("2. Variable capture:\n")
+    print("2. Variable capture:\n")
     const x: int = 42
     spawn {
-        print_str("   x = ")
+        print("   x = ")
         print(x)
-        print_newline()
     }
-    print_str("   Done\n\n")
+    print("   Done\n\n")
     
     # Example 3: Atomic counter
-    print_str("3. Atomic counter (10 spawns):\n")
+    print("3. Atomic counter (10 spawns):\n")
     let counter: int = 0
     
     for i in 0..10 {
         spawn { counter = counter + 1 }
     }
     
-    print_str("   Counter: ")
+    print("   Counter: ")
     print(counter)
-    print_newline()
-    print_str("   Done\n\n")
+    print("   Done\n\n")
     
     # Example 4: Multiple counters
-    print_str("4. Multiple counters:\n")
+    print("4. Multiple counters:\n")
     let passed: int = 0
     let failed: int = 0
     
@@ -42,12 +40,11 @@ fn main() {
     spawn { failed = failed + 1 }
     spawn { failed = failed + 1 }
     
-    print_str("   Passed: ")
+    print("   Passed: ")
     print(passed)
-    print_str(", Failed: ")
+    print(", Failed: ")
     print(failed)
-    print_newline()
-    print_str("   Done\n\n")
+    print("   Done\n\n")
     
-    print_str("✓ All spawn examples completed!\n")
+    print("✓ All spawn examples completed!\n")
 }

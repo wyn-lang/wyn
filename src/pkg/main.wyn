@@ -26,7 +26,7 @@ fn main() {
         "--help" => print_usage()
         "-h" => print_usage()
         _ => {
-            print_str("Unknown command: " + cmd)
+            print("Unknown command: " + cmd)
             print_usage()
             exit(1)
         }
@@ -34,25 +34,25 @@ fn main() {
 }
 
 fn print_usage() {
-    print_str("Wyn Package Manager")
-    print_str("")
-    print_str("Usage: wyn <command> [options]")
-    print_str("")
-    print_str("Commands:")
-    print_str("  new <name>      Create a new Wyn project")
-    print_str("  init            Initialize project in current directory")
-    print_str("  add <pkg>       Add a dependency")
-    print_str("  remove <pkg>    Remove a dependency")
-    print_str("  update          Update all dependencies")
-    print_str("  install         Install dependencies from wyn.lock")
-    print_str("  clean           Remove build artifacts and cache")
-    print_str("  help            Show this help message")
+    print("Wyn Package Manager")
+    print("")
+    print("Usage: wyn <command> [options]")
+    print("")
+    print("Commands:")
+    print("  new <name>      Create a new Wyn project")
+    print("  init            Initialize project in current directory")
+    print("  add <pkg>       Add a dependency")
+    print("  remove <pkg>    Remove a dependency")
+    print("  update          Update all dependencies")
+    print("  install         Install dependencies from wyn.lock")
+    print("  clean           Remove build artifacts and cache")
+    print("  help            Show this help message")
 }
 
 # Create a new project
 fn cmd_new(args: [str]) {
     if args.len() < 3 {
-        print_str("Usage: wyn new <project-name>")
+        print("Usage: wyn new <project-name>")
         exit(1)
     }
     
@@ -75,22 +75,22 @@ fn cmd_new(args: [str]) {
     write_file(name + "/wyn.toml", generate_manifest(manifest))
     
     # Create main.wyn
-    const main_content: str = "fn main() {\n    print_str(\"Hello, " + name + "!\")\n}\n"
+    const main_content: str = "fn main() {\n    print(\"Hello, " + name + "!\")\n}\n"
     write_file(name + "/src/main.wyn", main_content)
     
     # Create .gitignore
     write_file(name + "/.gitignore", "build/\n.wyn/\n*.o\n")
     
-    print_str("Created project: " + name)
-    print_str("")
-    print_str("  cd " + name)
-    print_str("  wyn build")
+    print("Created project: " + name)
+    print("")
+    print("  cd " + name)
+    print("  wyn build")
 }
 
 # Initialize in current directory
 fn cmd_init() {
     if exists("wyn.toml") {
-        print_str("Error: wyn.toml already exists")
+        print("Error: wyn.toml already exists")
         exit(1)
     }
     
@@ -113,20 +113,20 @@ fn cmd_init() {
     }
     
     if not exists("src/main.wyn") {
-        write_file("src/main.wyn", "fn main() {\n    print_str(\"Hello, World!\")\n}\n")
+        write_file("src/main.wyn", "fn main() {\n    print(\"Hello, World!\")\n}\n")
     }
     
-    print_str("Initialized Wyn project: " + name)
+    print("Initialized Wyn project: " + name)
 }
 
 # Add a dependency
 fn cmd_add(args: [str]) {
     if args.len() < 3 {
-        print_str("Usage: wyn add <package>")
-        print_str("")
-        print_str("Examples:")
-        print_str("  wyn add github.com/user/repo")
-        print_str("  wyn add github.com/user/repo@v0.0.1")
+        print("Usage: wyn add <package>")
+        print("")
+        print("Examples:")
+        print("  wyn add github.com/user/repo")
+        print("  wyn add github.com/user/repo@v0.0.1")
         exit(1)
     }
     
@@ -145,21 +145,21 @@ fn cmd_add(args: [str]) {
     const content: Result[str, str] = read_file("wyn.toml")
     match content {
         err(_) => {
-            print_str("Error: No wyn.toml found. Run 'wyn init' first.")
+            print("Error: No wyn.toml found. Run 'wyn init' first.")
             exit(1)
         }
         ok(c) => {
             const m: Result[Manifest, str] = parse_manifest(c)
             match m {
                 err(e) => {
-                    print_str("Error parsing wyn.toml: " + e)
+                    print("Error parsing wyn.toml: " + e)
                     exit(1)
                 }
                 ok(manifest) => {
                     # Check if already added
                     for dep in manifest.dependencies {
                         if dep.name == name {
-                            print_str("Package already in dependencies: " + name)
+                            print("Package already in dependencies: " + name)
                             exit(1)
                         }
                     }
@@ -176,7 +176,7 @@ fn cmd_add(args: [str]) {
                     # Write updated manifest
                     write_file("wyn.toml", generate_manifest(manifest))
                     
-                    print_str("Added: " + name + " @ " + version)
+                    print("Added: " + name + " @ " + version)
                     
                     # Fetch the package
                     cmd_install()
@@ -189,7 +189,7 @@ fn cmd_add(args: [str]) {
 # Remove a dependency
 fn cmd_remove(args: [str]) {
     if args.len() < 3 {
-        print_str("Usage: wyn remove <package>")
+        print("Usage: wyn remove <package>")
         exit(1)
     }
     
@@ -198,7 +198,7 @@ fn cmd_remove(args: [str]) {
     const content: Result[str, str] = read_file("wyn.toml")
     match content {
         err(_) => {
-            print_str("Error: No wyn.toml found")
+            print("Error: No wyn.toml found")
             exit(1)
         }
         ok(c) => {
@@ -217,17 +217,17 @@ fn cmd_remove(args: [str]) {
                     }
                     
                     if not found {
-                        print_str("Package not found: " + name)
+                        print("Package not found: " + name)
                         exit(1)
                     }
                     
                     manifest.dependencies = new_deps
                     write_file("wyn.toml", generate_manifest(manifest))
                     
-                    print_str("Removed: " + name)
+                    print("Removed: " + name)
                 }
                 err(e) => {
-                    print_str("Error: " + e)
+                    print("Error: " + e)
                     exit(1)
                 }
             }
@@ -237,7 +237,7 @@ fn cmd_remove(args: [str]) {
 
 # Update all dependencies
 fn cmd_update() {
-    print_str("Updating dependencies...")
+    print("Updating dependencies...")
     
     # Remove lock file to force re-resolution
     if exists("wyn.lock") {
@@ -246,7 +246,7 @@ fn cmd_update() {
     
     cmd_install()
     
-    print_str("Dependencies updated")
+    print("Dependencies updated")
 }
 
 # Install dependencies from manifest
@@ -254,7 +254,7 @@ fn cmd_install() {
     const content: Result[str, str] = read_file("wyn.toml")
     match content {
         err(_) => {
-            print_str("Error: No wyn.toml found")
+            print("Error: No wyn.toml found")
             exit(1)
         }
         ok(c) => {
@@ -262,7 +262,7 @@ fn cmd_install() {
             match m {
                 ok(manifest) => {
                     if manifest.dependencies.len() == 0 {
-                        print_str("No dependencies to install")
+                        print("No dependencies to install")
                         return
                     }
                     
@@ -275,22 +275,22 @@ fn cmd_install() {
                     match resolved {
                         ok(packages) => {
                             for pkg in packages {
-                                print_str("  Installing " + pkg.name + " @ " + pkg.version)
+                                print("  Installing " + pkg.name + " @ " + pkg.version)
                             }
                             
                             # Write lock file
                             write_file("wyn.lock", generate_lock(packages))
                             
-                            print_str("Installed " + int_to_str(packages.len()) + " packages")
+                            print("Installed " + int_to_str(packages.len()) + " packages")
                         }
                         err(e) => {
-                            print_str("Error resolving dependencies: " + e)
+                            print("Error resolving dependencies: " + e)
                             exit(1)
                         }
                     }
                 }
                 err(e) => {
-                    print_str("Error: " + e)
+                    print("Error: " + e)
                     exit(1)
                 }
             }
@@ -300,19 +300,19 @@ fn cmd_install() {
 
 # Clean build artifacts
 fn cmd_clean() {
-    print_str("Cleaning...")
+    print("Cleaning...")
     
     if exists("build") {
         remove_dir("build")
-        print_str("  Removed build/")
+        print("  Removed build/")
     }
     
     if exists(".wyn/cache") {
         remove_dir(".wyn/cache")
-        print_str("  Removed .wyn/cache/")
+        print("  Removed .wyn/cache/")
     }
     
-    print_str("Done")
+    print("Done")
 }
 
 # Helper: Get current directory name

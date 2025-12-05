@@ -11,13 +11,13 @@ fn main() {
     
     # Test .to_str() on integers
     const num: int = 123
-    print_str(num.to_str())
-    print_str((-456).to_str())
+    print(num.to_str())
+    print((-456).to_str())
     
     # Test .to_int() on strings
     const str_num: str = "789"
     assert(str_num.to_int() == 789)
     assert("-999".to_int() == -999)
     
-    print_str("method syntax tests passed")
+    print("method syntax tests passed")
 }

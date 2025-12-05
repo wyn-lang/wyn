@@ -9,7 +9,7 @@ fn fib(n: int) -> int {
 
 fn main() {
     const result: int = fib(35)
-    io.print_str("fib(35) = ")
+    io.print("fib(35) = ")
     print(result)
-    io.print_newline()
+    io.print("")
 }

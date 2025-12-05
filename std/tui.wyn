@@ -99,33 +99,33 @@ fn run(on_event: fn(Event) -> bool) {
 
 # Clear the entire screen
 fn clear() {
-    print_str("\x1b[2J\x1b[H")
+    print("\x1b[2J\x1b[H")
 }
 
 # Clear from cursor to end of screen
 fn clear_below() {
-    print_str("\x1b[J")
+    print("\x1b[J")
 }
 
 # Clear from cursor to end of line
 fn clear_line() {
-    print_str("\x1b[K")
+    print("\x1b[K")
 }
 
 # Move cursor to position (1-indexed)
 fn move_to(row: int, col: int) {
-    print_str("\x1b[" + int_to_str(row) + ";" + int_to_str(col) + "H")
+    print("\x1b[" + int_to_str(row) + ";" + int_to_str(col) + "H")
 }
 
 # Move cursor relative
-fn move_up(n: int) { print_str("\x1b[" + int_to_str(n) + "A") }
-fn move_down(n: int) { print_str("\x1b[" + int_to_str(n) + "B") }
-fn move_right(n: int) { print_str("\x1b[" + int_to_str(n) + "C") }
-fn move_left(n: int) { print_str("\x1b[" + int_to_str(n) + "D") }
+fn move_up(n: int) { print("\x1b[" + int_to_str(n) + "A") }
+fn move_down(n: int) { print("\x1b[" + int_to_str(n) + "B") }
+fn move_right(n: int) { print("\x1b[" + int_to_str(n) + "C") }
+fn move_left(n: int) { print("\x1b[" + int_to_str(n) + "D") }
 
 # Hide/show cursor
-fn hide_cursor() { print_str("\x1b[?25l") }
-fn show_cursor() { print_str("\x1b[?25h") }
+fn hide_cursor() { print("\x1b[?25l") }
+fn show_cursor() { print("\x1b[?25h") }
 
 # Get terminal size
 # Requires: ioctl TIOCGWINSZ
@@ -140,7 +140,7 @@ fn get_size() -> Size {
 
 # Print text at current position
 fn text(s: str) {
-    print_str(s)
+    print(s)
 }
 
 # Print styled text
@@ -165,9 +165,9 @@ fn styled(s: str, style: Style) {
     
     if codes.len() > 0 {
         codes = codes[:codes.len()-1]  # Remove trailing semicolon
-        print_str("\x1b[" + codes + "m" + s + "\x1b[0m")
+        print("\x1b[" + codes + "m" + s + "\x1b[0m")
     } else {
-        print_str(s)
+        print(s)
     }
 }
 
@@ -185,7 +185,7 @@ fn styled_at(row: int, col: int, s: str, style: Style) {
 
 # Reset all styling
 fn reset_style() {
-    print_str("\x1b[0m")
+    print("\x1b[0m")
 }
 
 # ============================================================================

@@ -10,8 +10,8 @@ fn main() {
     }
     
     const end: int = clock()
-    print_str("Sum: ")
+    print("Sum: ")
     print(sum)
-    print_str("Time (clocks): ")
+    print("Time (clocks): ")
     print(end - start)
 }

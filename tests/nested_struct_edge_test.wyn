@@ -32,6 +32,5 @@ fn main() {
     assert(m1.inner.a == 100)
     assert(m2.inner.a == 400)
     
-    print_str("Nested struct edge cases: OK")
-    print_newline()
+    print("Nested struct edge cases: OK")
 }
