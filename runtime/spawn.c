@@ -1,11 +1,10 @@
 #include <pthread.h>
 #include <stdlib.h>
 
-// Thread pool for spawn
-#define MAX_THREADS 1024
-
-static pthread_t threads[MAX_THREADS];
+// Dynamic thread pool for spawn (unlimited)
+static pthread_t* threads = NULL;
 static int thread_count = 0;
+static int thread_capacity = 0;
 
 typedef void (*thread_func_t)(void*);
 
@@ -28,15 +27,25 @@ static void* thread_wrapper_with_context(void* arg) {
 }
 
 void __wyn_spawn(thread_func_t func, void* context) {
-    if (thread_count < MAX_THREADS) {
-        if (context) {
-            thread_args_t* args = malloc(sizeof(thread_args_t));
-            args->func = func;
-            args->context = context;
-            pthread_create(&threads[thread_count++], NULL, thread_wrapper_with_context, args);
+    // Grow array if needed
+    if (thread_count >= thread_capacity) {
+        int new_capacity = thread_capacity == 0 ? 1024 : thread_capacity * 2;
+        pthread_t* new_threads = realloc(threads, new_capacity * sizeof(pthread_t));
+        if (new_threads) {
+            threads = new_threads;
+            thread_capacity = new_capacity;
         } else {
-            pthread_create(&threads[thread_count++], NULL, thread_wrapper, (void*)func);
+            return;  // Out of memory
         }
+    }
+    
+    if (context) {
+        thread_args_t* args = malloc(sizeof(thread_args_t));
+        args->func = func;
+        args->context = context;
+        pthread_create(&threads[thread_count++], NULL, thread_wrapper_with_context, args);
+    } else {
+        pthread_create(&threads[thread_count++], NULL, thread_wrapper, (void*)func);
     }
 }
 
