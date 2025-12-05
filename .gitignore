@@ -38,3 +38,16 @@ temp/
 test_*.wyn
 test_*
 !tests/
+
+# Temporary documentation (don't commit to root)
+/*_IMPLEMENTATION.md
+/*_CHECKLIST.md
+/*_SUMMARY.md
+/BUGFIX_*.md
+/IMPLEMENTATION_*.md
+/ATOMIC_*.md
+/ARRAY_*.md
+/REGRESSION_*.md
+/VERIFICATION*.md
+/CROSS_PLATFORM*.md
+!README.md
