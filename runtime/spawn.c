@@ -39,13 +39,19 @@ void __wyn_spawn(thread_func_t func, void* context) {
         }
     }
     
+    int result;
     if (context) {
         thread_args_t* args = malloc(sizeof(thread_args_t));
+        if (!args) return;
         args->func = func;
         args->context = context;
-        pthread_create(&threads[thread_count++], NULL, thread_wrapper_with_context, args);
+        result = pthread_create(&threads[thread_count], NULL, thread_wrapper_with_context, args);
     } else {
-        pthread_create(&threads[thread_count++], NULL, thread_wrapper, (void*)func);
+        result = pthread_create(&threads[thread_count], NULL, thread_wrapper, (void*)func);
+    }
+    
+    if (result == 0) {
+        thread_count++;
     }
 }
 
@@ -54,4 +60,7 @@ void __wyn_join_all() {
         pthread_join(threads[i], NULL);
     }
     thread_count = 0;
+    
+    // Memory barrier to ensure all writes are visible
+    __sync_synchronize();
 }
