@@ -89,10 +89,12 @@ let content: str = read_file("test.txt")
 print(content)  // Hello
 ```
 
-**HTTP (coming soon):**
+**HTTP:**
 ```wyn
-let response: str = http.get("https://api.example.com")
-print(response)
+# HTTP server
+let server: int = http.serve("0.0.0.0", 8080)
+# HTTP client (requires network)
+# let response: str = http.get("https://api.example.com")
 ```
 
 ## Performance
