@@ -8769,12 +8769,20 @@ static void cg_function(CodeGen* cg, FnDef* fn) {
             cg_emit(cg, "    movq %%%s, -%d(%%rbp)", regs[i], cg->locals[cg->local_count - 1].offset);
         }
         
-        for (int i = 0; i < fn->body_count; i++) cg_stmt(cg, fn->body[i]);
+        for (int i = 0; i < fn->body_count; i++) {
+            // If this is the last statement and we have spawns, join first
+            if (i == fn->body_count - 1 && cg->spawn_count > 0) {
+                cg_emit(cg, "    call ___wyn_join_all");
+                cg_emit(cg, "    mfence");
+                cg->spawn_count = 0;
+            }
+            cg_stmt(cg, fn->body[i]);
+        }
         
-        // Join all spawned threads before function exit
+        // Join any remaining spawns
         if (cg->spawn_count > 0) {
             cg_emit(cg, "    call ___wyn_join_all");
-            cg_emit(cg, "    mfence");  // Ensure all thread writes are visible
+            cg_emit(cg, "    mfence");
         }
         
         cg_emit_defers(cg);  // Execute defers at implicit return
@@ -8816,13 +8824,19 @@ static void cg_function(CodeGen* cg, FnDef* fn) {
     }
     
     for (int i = 0; i < fn->body_count; i++) {
+        // If this is the last statement and we have spawns, join first
+        if (i == fn->body_count - 1 && cg->spawn_count > 0) {
+            cg_emit(cg, "    bl ___wyn_join_all");
+            cg_emit(cg, "    dmb sy");
+            cg->spawn_count = 0;  // Mark as joined
+        }
         cg_stmt(cg, fn->body[i]);
     }
     
-    // Join all spawned threads before function exit
+    // Join any remaining spawns (if not already joined)
     if (cg->spawn_count > 0) {
         cg_emit(cg, "    bl ___wyn_join_all");
-        cg_emit(cg, "    dmb sy");  // Data memory barrier
+        cg_emit(cg, "    dmb sy");
     }
     
     cg_emit_defers(cg);  // Execute defers at implicit return

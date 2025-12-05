@@ -1,6 +1,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdio.h>
 
 // Thread pool for spawn
 #define MAX_THREADS 1024
@@ -32,15 +33,27 @@ static void* thread_wrapper_with_context(void* arg) {
 }
 
 void __wyn_spawn(thread_func_t func, void* context) {
+    
     if (thread_count < MAX_THREADS) {
         if (context) {
             thread_args_t* args = malloc(sizeof(thread_args_t));
             args->func = func;
             args->context = context;
-            pthread_create(&threads[thread_count++], NULL, thread_wrapper_with_context, args);
+            int result = pthread_create(&threads[thread_count], NULL, thread_wrapper_with_context, args);
+            if (result == 0) {
+                thread_count++;
+                // Delay to ensure thread starts
+                usleep(100);
+            }
         } else {
-            pthread_create(&threads[thread_count++], NULL, thread_wrapper, (void*)func);
+            int result = pthread_create(&threads[thread_count], NULL, thread_wrapper, (void*)func);
+            if (result == 0) {
+                thread_count++;
+                // Delay to ensure thread starts
+                usleep(100);
+            }
         }
+    } else {
     }
 }
 
@@ -56,6 +69,7 @@ long long __wyn_atomic_add(long long* ptr, long long value) {
     pthread_mutex_lock(&atomic_mutex);
     long long old = *ptr;
     *ptr = old + value;
+    long long new_val = *ptr;
     pthread_mutex_unlock(&atomic_mutex);
     return old;
 }
