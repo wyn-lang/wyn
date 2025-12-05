@@ -92,7 +92,7 @@ fn main() {
     passed = passed + run_test("examples/string_test.wyn")
     passed = passed + run_test("examples/write_file_test.wyn")
     
-    let failed: int = 81 - passed
+    let failed: int = 85 - passed
     
     print_str("\n=== Results ===\n")
     print_str("Passed: ")
