@@ -177,15 +177,15 @@ Stage 1 provides 28-42% performance improvements and enhanced developer experien
 
 ## Documentation
 
-- [Getting Started](docs/1-getting-started.md)
-- [Language Spec](docs/2-language-spec.md)
-- [Package Manager](docs/3-package-manager.md)
-- [Stdlib Reference](docs/4-stdlib-reference.md)
-- [GUI Support](docs/gui-support.md)
-- [iOS Mobile](docs/mobile-ios.md)
-- [Stage 1 Type Checker](docs/stage1-type-checker.md)
-- [Stage 1 Optimizations](docs/stage1-optimizations.md)
-- [Stage 1 Inlining](docs/stage1-inlining.md)
+- [Getting Started](docs/quickstart.md)
+- [Language Spec](docs/language.md)
+- [Package Manager](docs/packages.md)
+- [Stdlib Reference](docs/stdlib.md)
+- [GUI Support](docs/gui.md)
+- [iOS Mobile](docs/mobile.md)
+- [Stage 1 Type Checker](docs/compiler.md)
+- [Stage 1 Optimizations](docs/compiler.md)
+- [Stage 1 Inlining](docs/compiler.md)
 - [Performance Benchmarks](benchmarks/FINAL_RESULTS.md)
 
 ## Examples
