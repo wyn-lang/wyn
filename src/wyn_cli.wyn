@@ -44,9 +44,29 @@ fn main() {
         clean_project()
     } else if cmd == "doc" {
         if argv.len() < 3 {
-            show_doc_index()
+            print_str("Wyn Standard Library Documentation\n\n")
+            print_str("View stdlib source files:\n")
+            print_str("  std/os.wyn       - OS functions\n")
+            print_str("  std/io.wyn       - File I/O\n")
+            print_str("  std/time.wyn     - Time functions\n")
+            print_str("  std/math.wyn     - Math functions\n")
+            print_str("  std/string.wyn   - String operations\n")
+            print_str("  std/array.wyn    - Array operations\n")
+            print_str("  std/fs.wyn       - Filesystem\n")
+            print_str("  std/http.wyn     - HTTP utilities\n")
+            print_str("  std/json.wyn     - JSON handling\n")
+            print_str("  std/crypto.wyn   - Cryptographic functions\n")
+            print_str("\nAll 29 modules in std/ directory.\n")
+            print_str("Use: cat std/<module>.wyn\n")
         } else {
-            show_module_doc(argv[2])
+            let module: str = argv[2]
+            print_str("Documentation for: ")
+            print_str(module)
+            print_str("\n\n")
+            print_str("View source: cat std/")
+            print_str(module)
+            print_str(".wyn\n")
+            print_str("Or visit: docs/4-stdlib-reference.md\n")
         }
     } else if cmd == "help" or cmd == "--help" or cmd == "-h" {
         print_help()
@@ -208,67 +228,4 @@ fn find_compiler() -> str {
         return "/usr/local/bin/wyn-compiler"
     }
     return "wyn-compiler"
-}
-
-fn show_doc_index() {
-    print_str("Wyn Standard Library\n\n")
-    print_str("Modules:\n")
-    print_str("  os       - OS functions (getenv, setenv, args, getcwd, getpid)\n")
-    print_str("  io       - File I/O (read_file, write_file, file_exists)\n")
-    print_str("  time     - Time functions (time_now, sleep_ms, clock)\n")
-    print_str("  math     - Math functions (sqrt, sin, cos, abs, min, max)\n")
-    print_str("  string   - String operations (split, find, concat)\n")
-    print_str("  array    - Array operations (len, append)\n")
-    print_str("  fs       - Filesystem (mkdir, rmdir, getcwd, chdir)\n")
-    print_str("  http     - HTTP utilities\n")
-    print_str("  json     - JSON handling\n")
-    print_str("  crypto   - Cryptographic functions\n")
-    print_str("\nUsage: wyn doc <module>\n")
-}
-
-fn show_module_doc(module: str) {
-    if module == "os" {
-        print_str("Module: os - OS Functions\n\n")
-        print_str("getenv(key: str) -> str\n")
-        print_str("  Get environment variable value\n\n")
-        print_str("setenv(key: str, value: str) -> Result\n")
-        print_str("  Set environment variable\n\n")
-        print_str("args() -> [str]\n")
-        print_str("  Get command line arguments\n\n")
-        print_str("getcwd() -> str\n")
-        print_str("  Get current working directory\n\n")
-        print_str("getpid() -> int\n")
-        print_str("  Get process ID\n")
-    } else if module == "io" {
-        print_str("Module: io - File I/O\n\n")
-        print_str("read_file(path: str) -> str\n")
-        print_str("  Read entire file contents\n\n")
-        print_str("write_file(path: str, content: str) -> bool\n")
-        print_str("  Write content to file\n\n")
-        print_str("file_exists(path: str) -> int\n")
-        print_str("  Check if file exists (returns 1 if exists)\n\n")
-        print_str("delete_file(path: str) -> bool\n")
-        print_str("  Delete a file\n")
-    } else if module == "time" {
-        print_str("Module: time - Time Functions\n\n")
-        print_str("time_now() -> int\n")
-        print_str("  Get current Unix timestamp in seconds\n\n")
-        print_str("sleep_ms(ms: int)\n")
-        print_str("  Sleep for milliseconds\n\n")
-        print_str("clock() -> int\n")
-        print_str("  Get CPU clock ticks\n")
-    } else if module == "array" {
-        print_str("Module: array - Array Operations\n\n")
-        print_str("arr.len() -> int\n")
-        print_str("  Get array length\n\n")
-        print_str("arr.append(item)\n")
-        print_str("  Append item to mutable array\n\n")
-        print_str("arr[index]\n")
-        print_str("  Access element at index\n")
-    } else {
-        print_str("Module '")
-        print_str(module)
-        print_str("' not documented yet.\n")
-        print_str("Use 'wyn doc' to list available modules.\n")
-    }
 }
