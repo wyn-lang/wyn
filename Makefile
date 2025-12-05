@@ -6,6 +6,11 @@ CFLAGS = -Wall -Wextra -std=c11 -O2
 DEBUG_FLAGS = -g -O0 -DDEBUG
 GUI_CFLAGS = -framework Cocoa -framework CoreGraphics
 
+# Set macOS deployment target for compatibility
+ifeq ($(UNAME_S),Darwin)
+export MACOSX_DEPLOYMENT_TARGET = 11.0
+endif
+
 # Detect OS
 UNAME_S := $(shell uname -s)
 
