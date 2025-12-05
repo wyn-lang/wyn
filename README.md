@@ -84,17 +84,24 @@ print(counter)  // 100
 
 **File I/O:**
 ```wyn
+# Builtins (simple)
 write_file("test.txt", "Hello")
 let content: str = read_file("test.txt")
-print(content)  // Hello
+
+# Or use io module
+import std/io
+io.write_file("test.txt", "Hello")
 ```
 
 **HTTP:**
 ```wyn
+import std/http
+
 # HTTP server
 let server: int = http.serve("0.0.0.0", 8080)
-# HTTP client (requires network)
-# let response: str = http.get("https://api.example.com")
+
+# HTTP client
+let response: Result[Response, str] = http.get("https://api.example.com")
 ```
 
 ## Performance
