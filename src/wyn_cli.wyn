@@ -42,6 +42,19 @@ fn main() {
         run_benchmarks()
     } else if cmd == "clean" {
         clean_project()
+    } else if cmd == "doc" {
+        # Call separate wyn-doc binary
+        let compiler: str = find_compiler()
+        system(compiler + " -q -o /tmp/wyn_doc src/wyn_doc.wyn 2>/dev/null")
+        
+        let mut doc_cmd: str = "/tmp/wyn_doc"
+        if argv.len() >= 3 {
+            doc_cmd = doc_cmd + " " + argv[2]
+        }
+        if argv.len() >= 4 {
+            doc_cmd = doc_cmd + " " + argv[3]
+        }
+        system(doc_cmd)
     } else if cmd == "help" or cmd == "--help" or cmd == "-h" {
         print_help()
     } else {
@@ -66,6 +79,7 @@ fn print_help() {
     print_str("  inline <code>        Execute inline code\n")
     print_str("  test                 Run test suite\n")
     print_str("  bench                Run benchmarks\n")
+    print_str("  doc [module] [fn]    Show documentation\n")
     print_str("  clean                Clean build artifacts\n")
     print_str("  help                 Show this help\n\n")
     print_str("Examples:\n")

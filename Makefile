@@ -112,10 +112,10 @@ $(MOBILE_RUNTIME_OBJ): $(MOBILE_RUNTIME_SRC)
 stage0-debug: $(BUILD_DIR)
 	$(CC) $(DEBUG_FLAGS) -o $(STAGE0_BIN) $(STAGE0_SRC)
 
-# Build wyn CLI tool
+# Build wyn CLI tool (without optimizations due to compiler bug)
 .PHONY: wyn-cli
 wyn-cli: stage0
-	./$(STAGE0_BIN) --stage1-tc --stage1-opt -o $(BUILD_DIR)/wyn src/wyn_cli.wyn
+	./$(STAGE0_BIN) --stage1-tc -o $(BUILD_DIR)/wyn src/wyn_cli.wyn
 
 # Install to system
 .PHONY: install

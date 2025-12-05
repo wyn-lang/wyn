@@ -1,0 +1,72 @@
+fn main() {
+    let argv: [str] = args()
+    
+    if argv.len() < 2 {
+        show_doc_index()
+    } else if argv.len() == 2 {
+        show_module_doc(argv[1])
+    } else {
+        show_function_doc(argv[1], argv[2])
+    }
+}
+
+fn show_doc_index() {
+    print_str("Wyn Standard Library\n\n")
+    print_str("Modules:\n")
+    print_str("  io       - File I/O\n")
+    print_str("  fs       - Filesystem\n")
+    print_str("  os       - OS functions\n")
+    print_str("  time     - Time and date\n")
+    print_str("  math     - Math functions\n")
+    print_str("  string   - String ops\n")
+    print_str("  array    - Array ops\n")
+    print_str("\n")
+    print_str("Usage: wyn doc <module> [function]\n")
+}
+
+fn show_module_doc(module: str) {
+    if module == "os" {
+        print_str("Module: os\n\n")
+        print_str("Functions:\n")
+        print_str("  getenv(key) -> str\n")
+        print_str("  setenv(key, val) -> Result\n")
+        print_str("  args() -> [str]\n")
+        print_str("  getcwd() -> str\n")
+        print_str("  getpid() -> int\n")
+    } else if module == "io" {
+        print_str("Module: io\n\n")
+        print_str("Functions:\n")
+        print_str("  read_file(path) -> str\n")
+        print_str("  write_file(path, content) -> bool\n")
+        print_str("  file_exists(path) -> bool\n")
+        print_str("  delete_file(path) -> bool\n")
+    } else if module == "time" {
+        print_str("Module: time\n\n")
+        print_str("Functions:\n")
+        print_str("  time_now() -> int\n")
+        print_str("  sleep_ms(ms: int)\n")
+        print_str("  clock() -> int\n")
+    } else {
+        print_str("Module not found. Use 'wyn doc' to list.\n")
+    }
+}
+
+fn show_function_doc(module: str, fn_name: str) {
+    if module == "os" {
+        if fn_name == "setenv" {
+            print_str("setenv(key: str, value: str) -> Result\n\n")
+            print_str("Set environment variable.\n\n")
+            print_str("Example:\n")
+            print_str("  setenv(\"MY_VAR\", \"hello\")\n")
+        } else if fn_name == "getenv" {
+            print_str("getenv(key: str) -> str\n\n")
+            print_str("Get environment variable.\n\n")
+            print_str("Example:\n")
+            print_str("  let path: str = getenv(\"PATH\")\n")
+        } else {
+            print_str("Function not found.\n")
+        }
+    } else {
+        print_str("Module not found.\n")
+    }
+}
