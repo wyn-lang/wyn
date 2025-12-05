@@ -8713,6 +8713,12 @@ static void cg_method(CodeGen* cg, const char* struct_name, FnDef* fn) {
         cg_emit(cg, "    movq %%rsp, %%rbp");
         cg_emit(cg, "    subq $256, %%rsp");
         
+        // Save argc/argv for main function
+        if (strcmp(fn->name, "main") == 0) {
+            cg_emit(cg, "    movq %%rdi, L_.wyn_argc(%%rip)");
+            cg_emit(cg, "    movq %%rsi, L_.wyn_argv(%%rip)");
+        }
+        
         const char* regs[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
         for (int i = 0; i < fn->param_count && i < 6; i++) {
             cg_add_local(cg, fn->params[i].name, fn->params[i].type);
@@ -9452,6 +9458,10 @@ static void codegen_module(CodeGen* cg) {
         cg_emit(cg, "    .space 1024");
         cg_emit(cg, "L_.empty_str:");
         cg_emit(cg, "    .asciz \"\"");
+        cg_emit(cg, "L_.wyn_argc:");
+        cg_emit(cg, "    .quad 0");
+        cg_emit(cg, "L_.wyn_argv:");
+        cg_emit(cg, "    .quad 0");
         
         for (int i = 0; i < cg->string_count; i++) {
             cg_emit(cg, "L_.str%d:", cg->strings[i].label);
