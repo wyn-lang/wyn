@@ -7,8 +7,8 @@ fn maybe_double(x: int) -> ?int {
 }
 
 fn main() {
-    let a: ?int = some(42)
-    let b: ?int = none
+    const a: ?int = some(42)
+    const b: ?int = none
     
     # Unwrap with default
     assert(a ?? 0 == 42)
@@ -18,10 +18,10 @@ fn main() {
     assert(a! == 42)
     
     # Function returning optional
-    let c: ?int = maybe_double(5)
+    const c: ?int = maybe_double(5)
     assert(c ?? 0 == 10)
     
-    let d: ?int = maybe_double(-1)
+    const d: ?int = maybe_double(-1)
     assert(d ?? 0 == 0)
     
     print_str("optional_test: PASS")

@@ -20,7 +20,7 @@ fn tcp_connect(host: str, port: int) -> Result[Socket, str] {
 # Returns a listening Socket on success, or an error message on failure
 # Requires: Runtime support for socket syscalls
 fn tcp_listen(host: str, port: int) -> Result[Socket, str] {
-    let fd: int = tcp_listen(port)
+    const fd: int = tcp_listen(port)
     if fd < 0 {
         return err("failed to listen on port")
     }
@@ -31,7 +31,7 @@ fn tcp_listen(host: str, port: int) -> Result[Socket, str] {
 # Returns a new Socket for the connection, or an error message on failure
 # Requires: Runtime support for socket syscalls
 fn accept(socket: Socket) -> Result[Socket, str] {
-    let fd: int = tcp_accept(socket.fd)
+    const fd: int = tcp_accept(socket.fd)
     if fd < 0 {
         return err("failed to accept connection")
     }
@@ -41,7 +41,7 @@ fn accept(socket: Socket) -> Result[Socket, str] {
 # Send data through a TCP socket
 # Returns the number of bytes sent, or an error message on failure
 fn send(socket: Socket, data: str) -> Result[int, str] {
-    let sent: int = tcp_send(socket.fd, data)
+    const sent: int = tcp_send(socket.fd, data)
     if sent < 0 {
         return err("send failed")
     }
@@ -51,7 +51,7 @@ fn send(socket: Socket, data: str) -> Result[int, str] {
 # Receive up to size bytes from a TCP socket
 # Returns the received data, or an error message on failure
 fn recv(socket: Socket, size: int) -> Result[str, str] {
-    let data: str = tcp_recv(socket.fd, size)
+    const data: str = tcp_recv(socket.fd, size)
     return ok(data)
 }
 
@@ -116,11 +116,11 @@ struct URL {
 # Returns some(URL) on success, or none if the URL is malformed
 # Example: parse_url("http://example.com:8080/path") -> URL{scheme:"http", host:"example.com", port:8080, path:"/path"}
 fn parse_url(url: str) -> ?URL {
-    let mut i: int = 0
-    let mut scheme: str = ""
-    let mut host: str = ""
-    let mut port: int = 0
-    let mut path: str = ""
+    let i: int = 0
+    let scheme: str = ""
+    let host: str = ""
+    let port: int = 0
+    let path: str = ""
     
     # Find scheme
     while i < url.len() {
@@ -138,9 +138,9 @@ fn parse_url(url: str) -> ?URL {
     }
     
     # Find host and port
-    let start: int = i
+    const start: int = i
     while i < url.len() {
-        let c: str = url[i:i+1]
+        const c: str = url[i:i+1]
         if c == "/" or c == ":" {
             break
         }
@@ -151,7 +151,7 @@ fn parse_url(url: str) -> ?URL {
     # Parse port
     if i < url.len() and url[i:i+1] == ":" {
         i = i + 1
-        let port_start: int = i
+        const port_start: int = i
         while i < url.len() and url[i:i+1] != "/" {
             i = i + 1
         }
@@ -171,7 +171,7 @@ fn parse_url(url: str) -> ?URL {
 # Build a URL string from components
 # Example: build_url("http", "example.com", 8080, "/path") -> "http://example.com:8080/path"
 fn build_url(scheme: str, host: str, port: int, path: str) -> str {
-    let mut result: str = scheme + "://" + host
+    let result: str = scheme + "://" + host
     if port != 0 {
         result = result + ":" + int_to_str(port)
     }
@@ -182,7 +182,7 @@ fn build_url(scheme: str, host: str, port: int, path: str) -> str {
 # Extract query string from path (part after ?)
 # Example: extract_query("/path?key=value") -> "key=value"
 fn extract_query(path: str) -> str {
-    let mut i: int = 0
+    let i: int = 0
     while i < path.len() {
         if path[i:i+1] == "?" {
             return path[i+1:path.len()]
@@ -195,7 +195,7 @@ fn extract_query(path: str) -> str {
 # Remove query string from path
 # Example: strip_query("/path?key=value") -> "/path"
 fn strip_query(path: str) -> str {
-    let mut i: int = 0
+    let i: int = 0
     while i < path.len() {
         if path[i:i+1] == "?" {
             return path[0:i]
@@ -210,13 +210,13 @@ fn strip_query(path: str) -> str {
 # Check if a string is a valid IPv4 address (e.g., "192.168.1.1")
 # Returns true if valid, false otherwise
 fn is_valid_ipv4(ip: str) -> bool {
-    let mut dots: int = 0
-    let mut num: int = 0
-    let mut has_digit: bool = false
-    let mut i: int = 0
+    let dots: int = 0
+    let num: int = 0
+    let has_digit: bool = false
+    let i: int = 0
     
     while i < ip.len() {
-        let c: int = ord(ip[i:i+1][0])
+        const c: int = ord(ip[i:i+1][0])
         if c == 46 {  # '.'
             if not has_digit or num > 255 {
                 return false
@@ -244,12 +244,12 @@ fn ip_to_int(ip: str) -> ?int {
         return none
     }
     
-    let mut result: int = 0
-    let mut num: int = 0
-    let mut i: int = 0
+    let result: int = 0
+    let num: int = 0
+    let i: int = 0
     
     while i < ip.len() {
-        let c: int = ord(ip[i:i+1][0])
+        const c: int = ord(ip[i:i+1][0])
         if c == 46 {  # '.'
             result = result * 256 + num
             num = 0
@@ -266,57 +266,57 @@ fn ip_to_int(ip: str) -> ?int {
 # Convert a 32-bit integer to an IPv4 address string
 # Example: int_to_ip(3232235777) -> "192.168.1.1"
 fn int_to_ip(n: int) -> str {
-    let a: int = (n >> 24) & 255
-    let b: int = (n >> 16) & 255
-    let c: int = (n >> 8) & 255
-    let d: int = n & 255
+    const a: int = (n >> 24) & 255
+    const b: int = (n >> 16) & 255
+    const c: int = (n >> 8) & 255
+    const d: int = n & 255
     return int_to_str(a) + "." + int_to_str(b) + "." + int_to_str(c) + "." + int_to_str(d)
 }
 
 # Check if an IP address is in a private range (RFC 1918)
 # Returns true for 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
 fn is_private_ip(ip: str) -> bool {
-    let ip_int: ?int = ip_to_int(ip)
+    const ip_int: ?int = ip_to_int(ip)
     if ip_int == none {
         return false
     }
-    let n: int = ip_int!
-    let a: int = (n >> 24) & 255
-    let b: int = (n >> 16) & 255
+    const n: int = ip_int!
+    const a: int = (n >> 24) & 255
+    const b: int = (n >> 16) & 255
     return a == 10 or (a == 172 and b >= 16 and b <= 31) or (a == 192 and b == 168)
 }
 
 # Check if an IP address is a loopback address (127.0.0.0/8)
 fn is_loopback_ip(ip: str) -> bool {
-    let ip_int: ?int = ip_to_int(ip)
+    const ip_int: ?int = ip_to_int(ip)
     if ip_int == none {
         return false
     }
-    let n: int = ip_int!
-    let a: int = (n >> 24) & 255
+    const n: int = ip_int!
+    const a: int = (n >> 24) & 255
     return a == 127
 }
 
 # Check if an IP address is a multicast address (224.0.0.0/4)
 fn is_multicast_ip(ip: str) -> bool {
-    let ip_int: ?int = ip_to_int(ip)
+    const ip_int: ?int = ip_to_int(ip)
     if ip_int == none {
         return false
     }
-    let n: int = ip_int!
-    let a: int = (n >> 24) & 255
+    const n: int = ip_int!
+    const a: int = (n >> 24) & 255
     return a >= 224 and a <= 239
 }
 
 # Check if an IP address is a link-local address (169.254.0.0/16)
 fn is_link_local_ip(ip: str) -> bool {
-    let ip_int: ?int = ip_to_int(ip)
+    const ip_int: ?int = ip_to_int(ip)
     if ip_int == none {
         return false
     }
-    let n: int = ip_int!
-    let a: int = (n >> 24) & 255
-    let b: int = (n >> 16) & 255
+    const n: int = ip_int!
+    const a: int = (n >> 24) & 255
+    const b: int = (n >> 16) & 255
     return a == 169 and b == 254
 }
 
@@ -333,26 +333,26 @@ fn is_unspecified_ip(ip: str) -> bool {
 # Get the network address for an IP with CIDR prefix
 # Example: network_address("192.168.1.100", 24) -> "192.168.1.0"
 fn network_address(ip: str, prefix_len: int) -> str {
-    let ip_int: ?int = ip_to_int(ip)
+    const ip_int: ?int = ip_to_int(ip)
     if ip_int == none {
         return "0.0.0.0"
     }
-    let n: int = ip_int!
-    let mask: int = if prefix_len == 0 then 0 else (0 - (1 << (32 - prefix_len)))
-    let network: int = n & mask
+    const n: int = ip_int!
+    const mask: int = if prefix_len == 0 then 0 else (0 - (1 << (32 - prefix_len)))
+    const network: int = n & mask
     return int_to_ip(network)
 }
 
 # Get the broadcast address for an IP with CIDR prefix
 # Example: broadcast_address("192.168.1.0", 24) -> "192.168.1.255"
 fn broadcast_address(ip: str, prefix_len: int) -> str {
-    let ip_int: ?int = ip_to_int(ip)
+    const ip_int: ?int = ip_to_int(ip)
     if ip_int == none {
         return "255.255.255.255"
     }
-    let n: int = ip_int!
-    let mask: int = if prefix_len == 0 then 0 else (0 - (1 << (32 - prefix_len)))
-    let broadcast: int = n | (~mask)
+    const n: int = ip_int!
+    const mask: int = if prefix_len == 0 then 0 else (0 - (1 << (32 - prefix_len)))
+    const broadcast: int = n | (~mask)
     return int_to_ip(broadcast)
 }
 
@@ -361,7 +361,7 @@ fn broadcast_address(ip: str, prefix_len: int) -> str {
 # Extract the hostname from a URL string
 # Example: url_hostname("http://example.com:8080/path") -> "example.com"
 fn url_hostname(url: str) -> str {
-    let parsed: ?URL = parse_url(url)
+    const parsed: ?URL = parse_url(url)
     if parsed == none {
         return ""
     }
@@ -371,18 +371,18 @@ fn url_hostname(url: str) -> str {
 # Extract the port from a URL string, or return default_port if not specified
 # Example: url_port("http://example.com:8080/path", 80) -> 8080
 fn url_port(url: str, default_port: int) -> int {
-    let parsed: ?URL = parse_url(url)
+    const parsed: ?URL = parse_url(url)
     if parsed == none {
         return default_port
     }
-    let u: URL = parsed!
+    const u: URL = parsed!
     return if u.port == 0 then default_port else u.port
 }
 
 # Extract the path from a URL string
 # Example: url_path("http://example.com:8080/path?q=1") -> "/path?q=1"
 fn url_path(url: str) -> str {
-    let parsed: ?URL = parse_url(url)
+    const parsed: ?URL = parse_url(url)
     if parsed == none {
         return "/"
     }
@@ -392,7 +392,7 @@ fn url_path(url: str) -> str {
 # Extract the scheme from a URL string
 # Example: url_scheme("http://example.com") -> "http"
 fn url_scheme(url: str) -> str {
-    let parsed: ?URL = parse_url(url)
+    const parsed: ?URL = parse_url(url)
     if parsed == none {
         return ""
     }
@@ -406,7 +406,7 @@ fn is_https(url: str) -> bool {
 
 # Check if URL uses HTTP (including HTTPS)
 fn is_http(url: str) -> bool {
-    let scheme: str = url_scheme(url)
+    const scheme: str = url_scheme(url)
     return scheme == "http" or scheme == "https"
 }
 
@@ -432,9 +432,9 @@ fn parse_query_string(query: str) -> [[str]] {
 # Build query string from key-value pairs
 fn build_query_string(keys: [str], values: [str]) -> str {
     if keys.len() == 0 { return "" }
-    let mut result: str = ""
-    let mut i: int = 0
-    let count: int = if keys.len() < values.len() then keys.len() else values.len()
+    let result: str = ""
+    let i: int = 0
+    const count: int = if keys.len() < values.len() then keys.len() else values.len()
     while i < count {
         if i > 0 { result = result + "&" }
         result = result + url_encode(keys[i]) + "=" + url_encode(values[i])
@@ -445,11 +445,11 @@ fn build_query_string(keys: [str], values: [str]) -> str {
 
 # URL encode a string (percent encoding)
 fn url_encode(s: str) -> str {
-    let mut result: str = ""
-    let mut i: int = 0
+    let result: str = ""
+    let i: int = 0
     while i < s.len() {
-        let c: str = s[i:i+1]
-        let code: int = ord(c)
+        const c: str = s[i:i+1]
+        const code: int = ord(c)
         if (code >= 48 and code <= 57) or (code >= 65 and code <= 90) or (code >= 97 and code <= 122) or c == "-" or c == "_" or c == "." or c == "~" {
             result = result + c
         } else if c == " " {
@@ -464,16 +464,16 @@ fn url_encode(s: str) -> str {
 
 # URL decode a string
 fn url_decode(s: str) -> str {
-    let mut result: str = ""
-    let mut i: int = 0
+    let result: str = ""
+    let i: int = 0
     while i < s.len() {
-        let c: str = s[i:i+1]
+        const c: str = s[i:i+1]
         if c == "+" {
             result = result + " "
             i = i + 1
         } else if c == "%" and i + 2 < s.len() {
-            let h1: int = hex_digit_value(s[i+1:i+2])
-            let h2: int = hex_digit_value(s[i+2:i+3])
+            const h1: int = hex_digit_value(s[i+1:i+2])
+            const h2: int = hex_digit_value(s[i+2:i+3])
             result = result + chr((h1 << 4) + h2)
             i = i + 3
         } else {
@@ -486,8 +486,8 @@ fn url_decode(s: str) -> str {
 
 # Convert byte to hex string
 fn hex_byte(n: int) -> str {
-    let h1: int = (n >> 4) & 15
-    let h2: int = n & 15
+    const h1: int = (n >> 4) & 15
+    const h2: int = n & 15
     return hex_digit(h1) + hex_digit(h2)
 }
 
@@ -499,7 +499,7 @@ fn hex_digit(n: int) -> str {
 
 # Convert hex character to value
 fn hex_digit_value(c: str) -> int {
-    let code: int = ord(c)
+    const code: int = ord(c)
     if code >= 48 and code <= 57 { return code - 48 }
     if code >= 65 and code <= 70 { return code - 65 + 10 }
     if code >= 97 and code <= 102 { return code - 97 + 10 }
@@ -551,7 +551,7 @@ fn port_to_service(port: int) -> str {
 
 # Parse host:port string
 fn parse_host_port(s: str) -> ?[str] {
-    let mut i: int = s.len() - 1
+    let i: int = s.len() - 1
     while i >= 0 {
         if s[i:i+1] == ":" {
             return some([s[0:i], s[i+1:s.len()]])
@@ -569,11 +569,11 @@ fn format_host_port(host: str, port: int) -> str {
 # Check if hostname is valid (basic check)
 fn is_valid_hostname(host: str) -> bool {
     if host.len() == 0 or host.len() > 253 { return false }
-    let mut i: int = 0
+    let i: int = 0
     while i < host.len() {
-        let c: int = ord(host[i:i+1])
-        let is_alnum: bool = (c >= 48 and c <= 57) or (c >= 65 and c <= 90) or (c >= 97 and c <= 122)
-        let is_valid: bool = is_alnum or c == 45 or c == 46
+        const c: int = ord(host[i:i+1])
+        const is_alnum: bool = (c >= 48 and c <= 57) or (c >= 65 and c <= 90) or (c >= 97 and c <= 122)
+        const is_valid: bool = is_alnum or c == 45 or c == 46
         if not is_valid { return false }
         i = i + 1
     }
@@ -582,9 +582,9 @@ fn is_valid_hostname(host: str) -> bool {
 
 # Extract domain from hostname (remove subdomain)
 fn extract_domain(host: str) -> str {
-    let mut dots: int = 0
-    let mut last_dot: int = 0 - 1
-    let mut i: int = host.len() - 1
+    let dots: int = 0
+    let last_dot: int = 0 - 1
+    let i: int = host.len() - 1
     while i >= 0 {
         if host[i:i+1] == "." {
             dots = dots + 1
@@ -600,7 +600,7 @@ fn extract_domain(host: str) -> str {
 
 # Check if URL has query parameters
 fn has_query_params(url: str) -> bool {
-    let mut i: int = 0
+    let i: int = 0
     while i < url.len() {
         if url[i:i+1] == "?" { return true }
         i = i + 1
@@ -610,7 +610,7 @@ fn has_query_params(url: str) -> bool {
 
 # Check if URL has fragment (hash)
 fn has_fragment(url: str) -> bool {
-    let mut i: int = 0
+    let i: int = 0
     while i < url.len() {
         if url[i:i+1] == "#" { return true }
         i = i + 1
@@ -620,7 +620,7 @@ fn has_fragment(url: str) -> bool {
 
 # Extract fragment from URL
 fn extract_fragment(url: str) -> str {
-    let mut i: int = 0
+    let i: int = 0
     while i < url.len() {
         if url[i:i+1] == "#" {
             return url[i+1:url.len()]
@@ -632,7 +632,7 @@ fn extract_fragment(url: str) -> str {
 
 # Remove fragment from URL
 fn strip_fragment(url: str) -> str {
-    let mut i: int = 0
+    let i: int = 0
     while i < url.len() {
         if url[i:i+1] == "#" {
             return url[0:i]
@@ -646,8 +646,8 @@ fn strip_fragment(url: str) -> str {
 fn join_path(base: str, path: str) -> str {
     if base.len() == 0 { return path }
     if path.len() == 0 { return base }
-    let base_ends_slash: bool = base[base.len()-1:base.len()] == "/"
-    let path_starts_slash: bool = path[0:1] == "/"
+    const base_ends_slash: bool = base[base.len()-1:base.len()] == "/"
+    const path_starts_slash: bool = path[0:1] == "/"
     if base_ends_slash and path_starts_slash {
         return base + path[1:path.len()]
     }
@@ -665,9 +665,9 @@ fn normalize_path(path: str) -> str {
 
 # Check if URL is absolute (has scheme)
 fn is_absolute_url(url: str) -> bool {
-    let mut i: int = 0
+    let i: int = 0
     while i < url.len() {
-        let c: str = url[i:i+1]
+        const c: str = url[i:i+1]
         if c == ":" { return i > 0 }
         if c == "/" { return false }
         i = i + 1
@@ -682,10 +682,10 @@ fn is_relative_url(url: str) -> bool {
 
 # Get file extension from URL path
 fn url_extension(url: str) -> str {
-    let path: str = url_path(url)
-    let mut i: int = path.len() - 1
+    const path: str = url_path(url)
+    let i: int = path.len() - 1
     while i >= 0 {
-        let c: str = path[i:i+1]
+        const c: str = path[i:i+1]
         if c == "." { return path[i+1:path.len()] }
         if c == "/" { return "" }
         i = i - 1
@@ -695,8 +695,8 @@ fn url_extension(url: str) -> str {
 
 # Get filename from URL path
 fn url_filename(url: str) -> str {
-    let path: str = url_path(url)
-    let mut i: int = path.len() - 1
+    const path: str = url_path(url)
+    let i: int = path.len() - 1
     while i >= 0 {
         if path[i:i+1] == "/" {
             return path[i+1:path.len()]
@@ -708,10 +708,10 @@ fn url_filename(url: str) -> str {
 
 # Check if IP is in CIDR range
 fn ip_in_range(ip: str, network: str, prefix_len: int) -> bool {
-    let ip_int: ?int = ip_to_int(ip)
-    let net_int: ?int = ip_to_int(network)
+    const ip_int: ?int = ip_to_int(ip)
+    const net_int: ?int = ip_to_int(network)
     if ip_int == none or net_int == none { return false }
-    let mask: int = if prefix_len == 0 then 0 else (0 - (1 << (32 - prefix_len)))
+    const mask: int = if prefix_len == 0 then 0 else (0 - (1 << (32 - prefix_len)))
     return (ip_int! & mask) == (net_int! & mask)
 }
 
@@ -729,7 +729,7 @@ fn format_cidr(network: str, prefix_len: int) -> str {
 
 # Parse CIDR notation
 fn parse_cidr(cidr: str) -> ?[str] {
-    let mut i: int = 0
+    let i: int = 0
     while i < cidr.len() {
         if cidr[i:i+1] == "/" {
             return some([cidr[0:i], cidr[i+1:cidr.len()]])
@@ -743,17 +743,17 @@ fn parse_cidr(cidr: str) -> ?[str] {
 fn prefix_to_mask(prefix_len: int) -> str {
     if prefix_len <= 0 { return "0.0.0.0" }
     if prefix_len >= 32 { return "255.255.255.255" }
-    let mask: int = 0 - (1 << (32 - prefix_len))
+    const mask: int = 0 - (1 << (32 - prefix_len))
     return int_to_ip(mask)
 }
 
 # Convert subnet mask to prefix length
 fn mask_to_prefix(mask: str) -> int {
-    let mask_int: ?int = ip_to_int(mask)
+    const mask_int: ?int = ip_to_int(mask)
     if mask_int == none { return 0 }
-    let m: int = mask_int!
-    let mut count: int = 0
-    let mut i: int = 31
+    const m: int = mask_int!
+    let count: int = 0
+    let i: int = 31
     while i >= 0 {
         if (m & (1 << i)) != 0 {
             count = count + 1
@@ -767,18 +767,18 @@ fn mask_to_prefix(mask: str) -> int {
 
 # Check if two IPs are in same subnet
 fn same_subnet(ip1: str, ip2: str, prefix_len: int) -> bool {
-    let n1: ?int = ip_to_int(ip1)
-    let n2: ?int = ip_to_int(ip2)
+    const n1: ?int = ip_to_int(ip1)
+    const n2: ?int = ip_to_int(ip2)
     if n1 == none or n2 == none { return false }
-    let mask: int = if prefix_len == 0 then 0 else (0 - (1 << (32 - prefix_len)))
+    const mask: int = if prefix_len == 0 then 0 else (0 - (1 << (32 - prefix_len)))
     return (n1! & mask) == (n2! & mask)
 }
 
 # Format MAC address (6 bytes as hex)
 fn format_mac(bytes: [int]) -> str {
     if bytes.len() != 6 { return "" }
-    let mut result: str = ""
-    let mut i: int = 0
+    let result: str = ""
+    let i: int = 0
     while i < 6 {
         if i > 0 { result = result + ":" }
         result = result + hex_byte(bytes[i])
@@ -790,13 +790,13 @@ fn format_mac(bytes: [int]) -> str {
 # Validate MAC address format
 fn is_valid_mac(mac: str) -> bool {
     if mac.len() != 17 { return false }
-    let mut i: int = 0
+    let i: int = 0
     while i < 17 {
         if i % 3 == 2 {
             if mac[i:i+1] != ":" { return false }
         } else {
-            let c: int = ord(mac[i:i+1])
-            let is_hex: bool = (c >= 48 and c <= 57) or (c >= 65 and c <= 70) or (c >= 97 and c <= 102)
+            const c: int = ord(mac[i:i+1])
+            const is_hex: bool = (c >= 48 and c <= 57) or (c >= 65 and c <= 70) or (c >= 97 and c <= 102)
             if not is_hex { return false }
         }
         i = i + 1

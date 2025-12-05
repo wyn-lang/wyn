@@ -45,7 +45,7 @@ let arr = [1, 2, 3] # Inferred as [int]
 let immutable = 10
 immutable = 20
 # Error: cannot assign to immutable variable 'immutable'
-# suggestion: declare with 'let mut' to make it mutable
+# suggestion: declare with 'let' to make it mutable
 ```
 
 ### 4. Enhanced Validation ✅
@@ -58,8 +58,8 @@ immutable = 20
 
 ### Type Mismatch
 ```wyn
-let x: int = 42
-let y: float = 3.14
+const x: int = 42
+const y: float = 3.14
 let z = x + y
 ```
 **Error:** `type mismatch: int vs float`  
@@ -68,7 +68,7 @@ let z = x + y
 ### Invalid Index
 ```wyn
 let arr = [1, 2, 3]
-let idx: str = "hello"
+const idx: str = "hello"
 let elem = arr[idx]
 ```
 **Error:** `index must be int, got str`

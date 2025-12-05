@@ -45,15 +45,15 @@
 #   }
 fn parse(json_str: str) -> Result[str, str] {
     # Just validate and return the input
-    let len: int = json_str.len()
+    const len: int = json_str.len()
     if len == 0 {
         return err("Empty input")
     }
     
     # Basic validation - check first non-whitespace char
-    let mut i: int = 0
+    let i: int = 0
     while i < len {
-        let c: str = str_substr(json_str, i, 1)
+        const c: str = str_substr(json_str, i, 1)
         if c != " " and c != "\n" and c != "\r" and c != "\t" {
             # Found first non-whitespace
             if is_valid_start(c) {
@@ -81,8 +81,8 @@ fn is_valid_start(c: str) -> bool {
         return true
     }
     # Check for [ and ] using comparison
-    let test_open: str = "["
-    let test_close: str = "]"
+    const test_open: str = "["
+    const test_close: str = "]"
     if str_cmp(c, test_open) == 0 or str_cmp(c, test_close) == 0 {
         return true
     }
@@ -100,7 +100,7 @@ fn is_digit(c: str) -> bool {
 # In Stage 0, this is a pass-through function
 #
 # Example:
-#   let json: str = stringify("[1, 2, 3]")
+#   const json: str = stringify("[1, 2, 3]")
 #   print_line(json)  # Prints: [1, 2, 3]
 fn stringify(json_str: str) -> str {
     return json_str

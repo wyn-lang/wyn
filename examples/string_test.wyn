@@ -11,9 +11,9 @@ fn main() {
     
     # Test 2: String concatenation (literals)
     print_str("Test 2: String concatenation")
-    let s1: str = "Hello" + "World"
+    const s1: str = "Hello" + "World"
     print_str(s1)
-    let s2: str = "Wyn" + "Lang"
+    const s2: str = "Wyn" + "Lang"
     print_str(s2)
     print_str("PASS")
     

@@ -35,17 +35,17 @@ impl TypeEnv {
         TypeEnv{scopes: [Scope{vars: []}], types: [], funcs: []}
     }
     
-    pub fn push_scope(mut self) {
+    pub fn push_scope(self) {
         self.scopes = self.scopes + [Scope{vars: []}]
     }
     
-    pub fn pop_scope(mut self) {
+    pub fn pop_scope(self) {
         if self.scopes.len() > 1 {
             self.scopes = self.scopes[:self.scopes.len() - 1]
         }
     }
     
-    pub fn define_var(mut self, name: str, ty: WynType) {
+    pub fn define_var(self, name: str, ty: WynType) {
         let idx = self.scopes.len() - 1
         let scope = self.scopes[idx]
         scope.vars = scope.vars + [(name, ty)]
@@ -64,7 +64,7 @@ impl TypeEnv {
         return none
     }
     
-    pub fn define_func(mut self, name: str, sig: FuncSig) {
+    pub fn define_func(self, name: str, sig: FuncSig) {
         self.funcs = self.funcs + [(name, sig)]
     }
     
@@ -77,7 +77,7 @@ impl TypeEnv {
         return none
     }
     
-    pub fn define_type(mut self, name: str, ty: WynType) {
+    pub fn define_type(self, name: str, ty: WynType) {
         self.types = self.types + [(name, ty)]
     }
     

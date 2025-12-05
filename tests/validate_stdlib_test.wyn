@@ -2,19 +2,19 @@ fn main() {
     print_str("Testing validate stdlib...\n")
     
     # Test string validation
-    let s: str = "test"
+    const s: str = "test"
     assert(s.len() == 4, "length validation")
     assert(s.len() > 0, "non-empty validation")
     
     # Test numeric validation
-    let n: int = 42
+    const n: int = 42
     assert(n > 0, "positive validation")
     assert(n < 100, "range validation")
     assert(n >= 42, "min validation")
     assert(n <= 42, "max validation")
     
     # Test boolean validation
-    let b: bool = true
+    const b: bool = true
     assert(b == true, "bool validation")
     assert(not (b == false), "bool negation")
     

@@ -31,8 +31,8 @@ fn advance(lex: Lexer) -> Lexer {
         return lex
     }
     
-    let c: str = str_substr(lex.source, lex.pos, 1)
-    let mut new_lex: Lexer = lex
+    const c: str = str_substr(lex.source, lex.pos, 1)
+    let new_lex: Lexer = lex
     new_lex.pos = lex.pos + 1
     
     if c == "\n" {
@@ -46,10 +46,10 @@ fn advance(lex: Lexer) -> Lexer {
 }
 
 fn skip_whitespace(lex: Lexer) -> Lexer {
-    let mut l: Lexer = lex
+    let l: Lexer = lex
     
     while l.pos < l.source.len() {
-        let c: str = peek(l)
+        const c: str = peek(l)
         if c == " " or c == "\t" or c == "\n" or c == "\r" {
             l = advance(l)
         } else {
@@ -66,13 +66,13 @@ fn is_digit(c: str) -> bool {
 }
 
 fn is_alpha(c: str) -> bool {
-    let code: int = ord(c)
+    const code: int = ord(c)
     return (code >= 65 and code <= 90) or (code >= 97 and code <= 122) or c == "_"
 }
 
 fn lex_number(lex: Lexer) -> (Lexer, Token) {
-    let start: int = lex.pos
-    let mut l: Lexer = lex
+    const start: int = lex.pos
+    let l: Lexer = lex
     
     # Read digits
     while l.pos < l.source.len() and is_digit(peek(l)) {
@@ -88,18 +88,18 @@ fn lex_number(lex: Lexer) -> (Lexer, Token) {
         }
     }
     
-    let value: str = str_substr(lex.source, start, l.pos - start)
-    let tok: Token = Token{kind: 2, value: value, line: lex.line, col: lex.col}
+    const value: str = str_substr(lex.source, start, l.pos - start)
+    const tok: Token = Token{kind: 2, value: value, line: lex.line, col: lex.col}
     
     return (l, tok)
 }
 
 fn lex_ident(lex: Lexer) -> (Lexer, Token) {
-    let start: int = lex.pos
-    let mut l: Lexer = lex
+    const start: int = lex.pos
+    let l: Lexer = lex
     
     while l.pos < l.source.len() {
-        let c: str = peek(l)
+        const c: str = peek(l)
         if is_alpha(c) or is_digit(c) {
             l = advance(l)
         } else {
@@ -107,9 +107,9 @@ fn lex_ident(lex: Lexer) -> (Lexer, Token) {
         }
     }
     
-    let value: str = str_substr(lex.source, start, l.pos - start)
-    let kind: int = keyword_kind(value)
-    let tok: Token = Token{kind: kind, value: value, line: lex.line, col: lex.col}
+    const value: str = str_substr(lex.source, start, l.pos - start)
+    const kind: int = keyword_kind(value)
+    const tok: Token = Token{kind: kind, value: value, line: lex.line, col: lex.col}
     
     return (l, tok)
 }
@@ -133,14 +133,14 @@ fn keyword_kind(word: str) -> int {
 }
 
 fn next_token(lex: Lexer) -> (Lexer, Token) {
-    let l: Lexer = skip_whitespace(lex)
+    const l: Lexer = skip_whitespace(lex)
     
     if l.pos >= l.source.len() {
-        let tok: Token = Token{kind: 0, value: "", line: l.line, col: l.col}
+        const tok: Token = Token{kind: 0, value: "", line: l.line, col: l.col}
         return (l, tok)
     }
     
-    let c: str = peek(l)
+    const c: str = peek(l)
     
     # Numbers
     if is_digit(c) {
@@ -153,7 +153,7 @@ fn next_token(lex: Lexer) -> (Lexer, Token) {
     }
     
     # Single char tokens
-    let new_lex: Lexer = advance(l)
+    const new_lex: Lexer = advance(l)
     
     if c == "(" { return (new_lex, Token{kind: 5, value: c, line: l.line, col: l.col}) }
     if c == ")" { return (new_lex, Token{kind: 6, value: c, line: l.line, col: l.col}) }
@@ -165,6 +165,6 @@ fn next_token(lex: Lexer) -> (Lexer, Token) {
     if c == "/" { return (new_lex, Token{kind: 19, value: c, line: l.line, col: l.col}) }
     
     # Unknown
-    let tok: Token = Token{kind: 99, value: c, line: l.line, col: l.col}
+    const tok: Token = Token{kind: 99, value: c, line: l.line, col: l.col}
     return (new_lex, tok)
 }

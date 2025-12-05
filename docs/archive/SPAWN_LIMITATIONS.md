@@ -10,7 +10,7 @@
 
 ### Variable Capture Not Working
 ```wyn
-let mut i = 0
+let i = 0
 while i < 5 {
     spawn {
         work(i)  // i is not captured correctly!

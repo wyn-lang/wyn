@@ -67,16 +67,16 @@ fn lerp(a: float, b: float, t: float) -> float {
 
 # Map value from one range to another
 fn map_range(value: float, from_min: float, from_max: float, to_min: float, to_max: float) -> float {
-    let normalized: float = (value - from_min) / (from_max - from_min)
+    const normalized: float = (value - from_min) / (from_max - from_min)
     return to_min + normalized * (to_max - to_min)
 }
 
 # Greatest common divisor using Euclidean algorithm
 fn gcd(a: int, b: int) -> int {
-    let mut x: int = abs(a)
-    let mut y: int = abs(b)
+    let x: int = abs(a)
+    let y: int = abs(b)
     while y != 0 {
-        let temp: int = y
+        const temp: int = y
         y = x % y
         x = temp
     }
@@ -96,8 +96,8 @@ fn factorial(n: int) -> int {
     if n <= 1 {
         return 1
     }
-    let mut result: int = 1
-    let mut i: int = 2
+    let result: int = 1
+    let i: int = 2
     while i <= n {
         result = result * i
         i = i + 1
@@ -110,11 +110,11 @@ fn fibonacci(n: int) -> int {
     if n <= 1 {
         return n
     }
-    let mut a: int = 0
-    let mut b: int = 1
-    let mut i: int = 2
+    let a: int = 0
+    let b: int = 1
+    let i: int = 2
     while i <= n {
-        let temp: int = a + b
+        const temp: int = a + b
         a = b
         b = temp
         i = i + 1
@@ -133,7 +133,7 @@ fn is_prime(n: int) -> bool {
     if n % 2 == 0 {
         return false
     }
-    let mut i: int = 3
+    let i: int = 3
     while i * i <= n {
         if n % i == 0 {
             return false
@@ -148,8 +148,8 @@ fn digit_count(n: int) -> int {
     if n == 0 {
         return 1
     }
-    let mut count: int = 0
-    let mut num: int = abs(n)
+    let count: int = 0
+    let num: int = abs(n)
     while num > 0 {
         count = count + 1
         num = num / 10
@@ -159,8 +159,8 @@ fn digit_count(n: int) -> int {
 
 # Reverse digits of integer
 fn reverse_digits(n: int) -> int {
-    let mut result: int = 0
-    let mut num: int = abs(n)
+    let result: int = 0
+    let num: int = abs(n)
     while num > 0 {
         result = result * 10 + num % 10
         num = num / 10
@@ -173,8 +173,8 @@ fn reverse_digits(n: int) -> int {
 
 # Sum of digits
 fn digit_sum(n: int) -> int {
-    let mut sum: int = 0
-    let mut num: int = abs(n)
+    let sum: int = 0
+    let num: int = abs(n)
     while num > 0 {
         sum = sum + num % 10
         num = num / 10
@@ -202,8 +202,8 @@ fn rad_to_deg(radians: float) -> float {
 
 # Distance between two 2D points
 fn distance_2d(x1: float, y1: float, x2: float, y2: float) -> float {
-    let dx: float = x2 - x1
-    let dy: float = y2 - y1
+    const dx: float = x2 - x1
+    const dy: float = y2 - y1
     return sqrt(dx * dx + dy * dy)
 }
 
@@ -234,8 +234,8 @@ fn abs_diff(a: int, b: int) -> int {
 fn sqrt(n: float) -> float {
     if n < 0.0 { return 0.0 }
     if n == 0.0 { return 0.0 }
-    let mut x: float = n
-    let mut i: int = 0
+    let x: float = n
+    let i: int = 0
     while i < 20 {
         x = (x + n / x) / 2.0
         i = i + 1
@@ -285,7 +285,7 @@ fn in_range_float(value: float, min_val: float, max_val: float) -> bool {
 # Wrap value to range [0, max)
 fn wrap(value: int, max_val: int) -> int {
     if max_val <= 0 { return 0 }
-    let mut result: int = value % max_val
+    let result: int = value % max_val
     if result < 0 {
         result = result + max_val
     }
@@ -295,14 +295,14 @@ fn wrap(value: int, max_val: int) -> int {
 # Ping-pong value between 0 and length
 fn ping_pong(t: int, length: int) -> int {
     if length <= 0 { return 0 }
-    let cycle: int = t / length
-    let offset: int = t % length
+    const cycle: int = t / length
+    const offset: int = t % length
     return if cycle % 2 == 0 then offset else length - offset
 }
 
 # Approximately equal for floats (within epsilon)
 fn approx_equal(a: float, b: float, epsilon: float) -> bool {
-    let diff: float = abs_float(a - b)
+    const diff: float = abs_float(a - b)
     return diff < epsilon
 }
 
@@ -320,14 +320,14 @@ fn denormalize(value: float, min_val: float, max_val: float) -> float {
 # Snap value to nearest multiple of step
 fn snap(value: float, step: float) -> float {
     if step == 0.0 { return value }
-    let ratio: float = value / step
-    let rounded: int = if ratio >= 0.0 then (ratio + 0.5).to_int() else (ratio - 0.5).to_int()
+    const ratio: float = value / step
+    const rounded: int = if ratio >= 0.0 then (ratio + 0.5).to_int() else (ratio - 0.5).to_int()
     return rounded.to_float() * step
 }
 
 # Move value towards target by max_delta
 fn move_towards(current: float, target: float, max_delta: float) -> float {
-    let diff: float = target - current
+    const diff: float = target - current
     if abs_float(diff) <= max_delta {
         return target
     }
@@ -341,16 +341,16 @@ fn exp_decay(current: float, target: float, decay: float, dt: float) -> float {
 
 # Spring position (damped harmonic oscillator) - returns new position
 fn spring_position(current: float, target: float, velocity: float, stiffness: float, damping: float, dt: float) -> float {
-    let force: float = (target - current) * stiffness
-    let damping_force: float = velocity * damping
-    let new_velocity: float = velocity + (force - damping_force) * dt
+    const force: float = (target - current) * stiffness
+    const damping_force: float = velocity * damping
+    const new_velocity: float = velocity + (force - damping_force) * dt
     return current + new_velocity * dt
 }
 
 # Spring velocity (damped harmonic oscillator) - returns new velocity
 fn spring_velocity(current: float, target: float, velocity: float, stiffness: float, damping: float, dt: float) -> float {
-    let force: float = (target - current) * stiffness
-    let damping_force: float = velocity * damping
+    const force: float = (target - current) * stiffness
+    const damping_force: float = velocity * damping
     return velocity + (force - damping_force) * dt
 }
 
@@ -379,7 +379,7 @@ fn ease_in_cubic(t: float) -> float {
 
 # Cubic ease out
 fn ease_out_cubic(t: float) -> float {
-    let f: float = t - 1.0
+    const f: float = t - 1.0
     return f * f * f + 1.0
 }
 
@@ -388,7 +388,7 @@ fn ease_in_out_cubic(t: float) -> float {
     if t < 0.5 {
         return 4.0 * t * t * t
     }
-    let f: float = 2.0 * t - 2.0
+    const f: float = 2.0 * t - 2.0
     return 0.5 * f * f * f + 1.0
 }
 
@@ -398,35 +398,35 @@ fn ease_out_bounce(t: float) -> float {
         return 7.5625 * t * t
     }
     if t < 2.0 / 2.75 {
-        let t2: float = t - 1.5 / 2.75
+        const t2: float = t - 1.5 / 2.75
         return 7.5625 * t2 * t2 + 0.75
     }
     if t < 2.5 / 2.75 {
-        let t2: float = t - 2.25 / 2.75
+        const t2: float = t - 2.25 / 2.75
         return 7.5625 * t2 * t2 + 0.9375
     }
-    let t2: float = t - 2.625 / 2.75
+    const t2: float = t - 2.625 / 2.75
     return 7.5625 * t2 * t2 + 0.984375
 }
 
 # Elastic ease out
 fn ease_out_elastic(t: float) -> float {
     if t == 0.0 or t == 1.0 { return t }
-    let p: float = 0.3
-    let s: float = p / 4.0
+    const p: float = 0.3
+    const s: float = p / 4.0
     return pow_float(2.0, 0.0 - 10.0 * t) * sin((t - s) * (2.0 * 3.14159265359) / p) + 1.0
 }
 
 # Back ease in
 fn ease_in_back(t: float) -> float {
-    let s: float = 1.70158
+    const s: float = 1.70158
     return t * t * ((s + 1.0) * t - s)
 }
 
 # Back ease out
 fn ease_out_back(t: float) -> float {
-    let s: float = 1.70158
-    let t2: float = t - 1.0
+    const s: float = 1.70158
+    const t2: float = t - 1.0
     return t2 * t2 * ((s + 1.0) * t2 + s) + 1.0
 }
 
@@ -452,9 +452,9 @@ fn sin(x: float) -> float {
 }
 
 fn exp(x: float) -> float {
-    let mut result: float = 1.0
-    let mut term: float = 1.0
-    let mut i: int = 1
+    let result: float = 1.0
+    let term: float = 1.0
+    let i: int = 1
     while i < 20 {
         term = term * x / i.to_float()
         result = result + term
@@ -465,11 +465,11 @@ fn exp(x: float) -> float {
 
 fn ln(x: float) -> float {
     if x <= 0.0 { return 0.0 }
-    let mut result: float = 0.0
-    let mut y: float = (x - 1.0) / (x + 1.0)
-    let mut y_sq: float = y * y
-    let mut term: float = y
-    let mut i: int = 1
+    let result: float = 0.0
+    let y: float = (x - 1.0) / (x + 1.0)
+    let y_sq: float = y * y
+    let term: float = y
+    let i: int = 1
     while i < 20 {
         result = result + term / i.to_float()
         term = term * y_sq

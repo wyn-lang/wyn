@@ -1,6 +1,6 @@
 fn main() {
-    let x: int = 42
-    let mut result: int = 0
+    const x: int = 42
+    let result: int = 0
     
     print_str("Before spawn: x=")
     print(x)

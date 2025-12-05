@@ -8,7 +8,7 @@ fn fib(n: int) -> int {
 }
 
 fn main() {
-    let result: int = fib(35)
+    const result: int = fib(35)
     io.print_str("fib(35) = ")
     print(result)
     io.print_newline()

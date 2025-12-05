@@ -13,24 +13,24 @@ enum Status {
 }
 
 fn main() {
-    let red: int = Red
-    let green: int = Green
-    let blue: int = Blue
+    const red: int = Red
+    const green: int = Green
+    const blue: int = Blue
     
     print(red)
     print(green)
     print(blue)
     
-    let ok_val: int = Ok
-    let err_val: int = Error
-    let pending: int = Pending
+    const ok_val: int = Ok
+    const err_val: int = Error
+    const pending: int = Pending
     
     print(ok_val)
     print(err_val)
     print(pending)
     
     # Test in expressions
-    let sum: int = Red + Green + Blue
+    const sum: int = Red + Green + Blue
     print(sum)
     
     # Test in conditionals

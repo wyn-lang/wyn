@@ -3,14 +3,14 @@ fn main() {
     
     # GPU tests are platform-specific
     # Just verify basic numeric operations work
-    let x: float = 1.0
-    let y: float = 2.0
-    let z: float = x + y
+    const x: float = 1.0
+    const y: float = 2.0
+    const z: float = x + y
     assert(z == 3.0, "float addition")
     
-    let a: float = 10.0
-    let b: float = 2.0
-    let c: float = a / b
+    const a: float = 10.0
+    const b: float = 2.0
+    const c: float = a / b
     assert(c == 5.0, "float division")
     
     print_str("✓ All gpu stdlib tests passed\n")

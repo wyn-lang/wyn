@@ -41,7 +41,7 @@ L_cas_1:
 ### Counter Increment
 ```wyn
 fn main() {
-    let mut counter: int = 0
+    let counter: int = 0
     
     spawn { counter = counter + 1 }
     spawn { counter = counter + 1 }
@@ -55,8 +55,8 @@ fn main() {
 ### Multiple Variables
 ```wyn
 fn main() {
-    let mut x: int = 0
-    let mut y: int = 0
+    let x: int = 0
+    let y: int = 0
     
     spawn {
         x = x + 10
@@ -77,8 +77,8 @@ fn main() {
 ### Immutable Captures (No Atomics)
 ```wyn
 fn main() {
-    let x: int = 42  // Immutable
-    let mut result: int = 0
+    const x: int = 42  // Immutable
+    let result: int = 0
     
     spawn {
         result = x  // Only 'result' uses atomics, 'x' is read-only

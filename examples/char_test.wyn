@@ -2,28 +2,28 @@
 
 fn main() {
     # Test ord() - get ASCII code
-    let code: int = ord("A")
+    const code: int = ord("A")
     print(code)  # Should print 65
     assert(code == 65)
     
-    let code2: int = ord("a")
+    const code2: int = ord("a")
     print(code2)  # Should print 97
     assert(code2 == 97)
     
-    let code3: int = ord("0")
+    const code3: int = ord("0")
     print(code3)  # Should print 48
     assert(code3 == 48)
     
     # Test chr() - create char from code
-    let ch: str = chr(65)
+    const ch: str = chr(65)
     print_str(ch)  # Should print A
     
-    let ch2: str = chr(97)
+    const ch2: str = chr(97)
     print_str(ch2)  # Should print a
     
     # Test round-trip
-    let original: str = "X"
-    let roundtrip: str = chr(ord(original))
+    const original: str = "X"
+    const roundtrip: str = chr(ord(original))
     print_str(roundtrip)  # Should print X
     
     print_str("ord/chr tests passed!")

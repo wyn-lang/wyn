@@ -10,11 +10,11 @@ fn main() {
     assert("," == ",", "comma")
     
     # Test JSON strings
-    let json_str: str = "key:value"
+    const json_str: str = "key:value"
     assert(json_str.len() > 0, "JSON string not empty")
     
     # Test quotes
-    let quote: str = "\""
+    const quote: str = "\""
     assert(quote.len() == 1, "quote length")
     
     print_str("✓ All json stdlib tests passed\n")

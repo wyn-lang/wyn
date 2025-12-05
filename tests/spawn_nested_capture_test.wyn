@@ -3,10 +3,10 @@ fn main() {
 }
 
 fn test_multiple_spawns() {
-    let mut sum: int = 0
-    let val1: int = 0
-    let val2: int = 10
-    let val3: int = 20
+    let sum: int = 0
+    const val1: int = 0
+    const val2: int = 10
+    const val3: int = 20
     
     spawn {
         sum = sum + val1

@@ -42,9 +42,9 @@ fn main() {
 }
 
 // Variables - types required
-let name: str = "Wyn"
-let age: int = 1
-mut counter: int = 0
+const name: str = "Wyn"
+const age: int = 1
+let counter: int = 0
 
 // Functions - types required
 fn add(a: int, b: int) -> int {
@@ -116,21 +116,21 @@ fn main() {
     // I/O operations
     io.print("Hello")
     io.println("World")
-    let input: str = io.read_line()
+    const input: str = io.read_line()
     
     // File operations
-    let content: str = fs.read_file("data.txt")
+    const content: str = fs.read_file("data.txt")
     fs.write_file("out.txt", content)
-    let size: int = fs.file_size("data.txt")
+    const size: int = fs.file_size("data.txt")
     
     // Math operations
-    let x: float = math.sin(1.0)
-    let y: float = math.sqrt(4.0)
+    const x: float = math.sin(1.0)
+    const y: float = math.sqrt(4.0)
     
     // String methods (on the object)
-    let len: int = "hello".len()
-    let has: bool = "hello".contains("ell")
-    let idx: int = "hello".index_of("l")
+    const len: int = "hello".len()
+    const has: bool = "hello".contains("ell")
+    const idx: int = "hello".index_of("l")
 }
 ```
 
@@ -184,11 +184,11 @@ math.sin(1.0)          // Calculate sine
 | `any` | Dynamic type (runtime checked) | any value |
 
 ```wyn
-let x: int = 42
-let y: float = 3.14
-let z: float = float(x) + y    // explicit conversion: 45.14
-let w: int = x / 3             // integer division: 14
-let v: float = float(x) / 3.0  // float division: 14.0
+const x: int = 42
+const y: float = 3.14
+const z: float = float(x) + y    // explicit conversion: 45.14
+const w: int = x / 3             // integer division: 14
+const v: float = float(x) / 3.0  // float division: 14.0
 ```
 
 #### Arrays
@@ -196,8 +196,8 @@ let v: float = float(x) / 3.0  // float division: 14.0
 Arrays are homogeneous and mutable by default:
 
 ```wyn
-let numbers: [int] = [1, 2, 3, 4, 5]
-let names: [str] = ["Alice", "Bob", "Charlie"]
+const numbers: [int] = [1, 2, 3, 4, 5]
+const names: [str] = ["Alice", "Bob", "Charlie"]
 
 // Access
 print(numbers[0])      // 1
@@ -206,16 +206,16 @@ print(names[1])        // "Bob"
 // Mutation (arrays are reference types, always mutable)
 numbers.push(6)
 numbers.pop()
-let length: int = numbers.len()
+const length: int = numbers.len()
 
 // Slicing - Python style (creates a copy)
-let first_two: [int] = numbers[0:2]    // [1, 2]
-let last_two: [int] = numbers[-2:]     // [4, 5]
-let reversed: [int] = numbers[::-1]    // [5, 4, 3, 2, 1]
-let middle: [int] = numbers[1:-1]      // [2, 3, 4]
+const first_two: [int] = numbers[0:2]    // [1, 2]
+const last_two: [int] = numbers[-2:]     // [4, 5]
+const reversed: [int] = numbers[::-1]    // [5, 4, 3, 2, 1]
+const middle: [int] = numbers[1:-1]      // [2, 3, 4]
 
 // Mixed types when needed (explicit)
-let mixed: [any] = [1, "two", 3.0, true]
+const mixed: [any] = [1, "two", 3.0, true]
 ```
 
 #### Tuples
@@ -223,8 +223,8 @@ let mixed: [any] = [1, "two", 3.0, true]
 Tuples are fixed-size, can be heterogeneous:
 
 ```wyn
-let point: (int, int) = (10, 20)
-let mixed: (int, str, bool) = (1, "hello", true)
+const point: (int, int) = (10, 20)
+const mixed: (int, str, bool) = (1, "hello", true)
 
 // Access
 print(point.0)    // 10
@@ -240,14 +240,14 @@ let (a, b, c): (int, str, bool) = mixed
 Maps have explicit key and value types:
 
 ```wyn
-let user: {str: any} = {
+const user: {str: any} = {
     "name": "Alice",
     "age": 30,
     "active": true
 }
 
 // Typed maps
-let scores: {str: int} = {
+const scores: {str: int} = {
     "alice": 100,
     "bob": 85
 }
@@ -265,8 +265,8 @@ scores["charlie"] = 90
 Use `?Type` for values that might not exist:
 
 ```wyn
-let maybe: ?int = some(42)
-let nothing: ?int = none
+const maybe: ?int = some(42)
+const nothing: ?int = none
 
 match maybe {
     some(n) => print("Got: {n}")
@@ -274,7 +274,7 @@ match maybe {
 }
 
 // Default with ??
-let value: int = maybe ?? 0
+const value: int = maybe ?? 0
 
 // Check and use
 if maybe {
@@ -289,8 +289,8 @@ fn find_user(id: int) -> ?User {
     return none
 }
 
-let user: ?User = find_user(123)
-let name: str = user?.name ?? "Anonymous"
+const user: ?User = find_user(123)
+const name: str = user?.name ?? "Anonymous"
 ```
 
 #### Enums
@@ -303,8 +303,8 @@ enum Color {
     Custom(int, int, int)  // with associated data
 }
 
-let c: Color = Color.Red
-let custom: Color = Color.Custom(255, 128, 0)
+const c: Color = Color.Red
+const custom: Color = Color.Custom(255, 128, 0)
 
 match c {
     Color.Red => print("Red!")
@@ -320,7 +320,7 @@ enum Status {
     Error = 500
 }
 
-let code: int = Status.Ok.value  // 200
+const code: int = Status.Ok.value  // 200
 ```
 
 #### Generics
@@ -344,19 +344,19 @@ struct Stack[T] {
         return Stack[T]{items: []}
     }
     
-    fn push(mut self, item: T) {
+    fn push(self, item: T) {
         self.items.push(item)
     }
     
-    fn pop(mut self) -> ?T {
+    fn pop(self) -> ?T {
         return self.items.pop()
     }
 }
 
-let stack: Stack[int] = Stack[int].new()
+const stack: Stack[int] = Stack[int].new()
 stack.push(1)
 stack.push(2)
-let top: ?int = stack.pop()  // some(2)
+const top: ?int = stack.pop()  // some(2)
 
 // Generic with constraints
 fn compare[T: Comparable](a: T, b: T) -> int {
@@ -398,8 +398,8 @@ struct Point {
 
 impl Comparable for Point {
     fn compare(self, other: Point) -> int {
-        let d1: int = self.x + self.y
-        let d2: int = other.x + other.y
+        const d1: int = self.x + self.y
+        const d2: int = other.x + other.y
         return d1 - d2
     }
 }
@@ -417,7 +417,7 @@ fn max[T: Comparable](a: T, b: T) -> T {
 
 // Multiple constraints
 fn print_max[T: Comparable + Printable](a: T, b: T) {
-    let m: T = max(a, b)
+    const m: T = max(a, b)
     print(m.to_string())
 }
 ```
@@ -427,17 +427,17 @@ fn print_max[T: Comparable + Printable](a: T, b: T) {
 Explicit conversion using type as function:
 
 ```wyn
-let x: int = 42
-let s: str = str(x)           // "42"
-let f: float = float(x)       // 42.0
-let i: int = int(3.14)        // 3 (truncates)
-let i2: int = int("123")      // 123
-let b: bool = bool(1)         // true
-let raw: [byte] = x.to_bytes() // raw bytes
+const x: int = 42
+const s: str = str(x)           // "42"
+const f: float = float(x)       // 42.0
+const i: int = int(3.14)        // 3 (truncates)
+const i2: int = int("123")      // 123
+const b: bool = bool(1)         // true
+const raw: [byte] = x.to_bytes() // raw bytes
 
 // Arrays to tuples
-let arr: [int] = [1, 2, 3]
-let t: (int, int, int) = tuple(arr)
+const arr: [int] = [1, 2, 3]
+const t: (int, int, int) = tuple(arr)
 ```
 
 ### 2.4 Visibility
@@ -481,7 +481,7 @@ Multiple approaches for different situations:
 ```wyn
 // Option 1: Try/catch for exceptional cases
 try {
-    let content: str = read_file("config.txt")
+    const content: str = read_file("config.txt")
     process(content)
 } catch e {
     print("Error: {e}")
@@ -489,7 +489,7 @@ try {
 
 // Option 2: Result type for expected errors
 fn read_config(path: str) -> Result[Config, str] {
-    let content: Result[str, str] = fs.read(path)
+    const content: Result[str, str] = fs.read(path)
     match content {
         Ok(data) => return parse_config(data)
         Err(e) => return Err("Failed to read: {e}")
@@ -498,13 +498,13 @@ fn read_config(path: str) -> Result[Config, str] {
 
 // Option 3: Propagate with ?
 fn load_config() -> Result[Config, str] {
-    let content: str = read_file("config.txt")?
-    let config: Config = parse(content)?
+    const content: str = read_file("config.txt")?
+    const config: Config = parse(content)?
     return Ok(config)
 }
 
 // Option 4: Default on error with ??
-let content: str = read_file("config.txt") ?? ""
+const content: str = read_file("config.txt") ?? ""
 ```
 
 ### 2.6 Control Flow
@@ -520,7 +520,7 @@ if x > 0 {
 }
 
 // While loop
-mut i: int = 0
+let i: int = 0
 while i < 10 {
     print(i)
     i += 1
@@ -582,7 +582,7 @@ connect("localhost", 3000)  // uses port 3000
 
 // Variadic functions
 fn sum(numbers: ...int) -> int {
-    mut total: int = 0
+    let total: int = 0
     for n in numbers {
         total += n
     }
@@ -591,8 +591,8 @@ fn sum(numbers: ...int) -> int {
 sum(1, 2, 3, 4, 5)  // 15
 
 // Anonymous functions (lambdas)
-let double: fn(int) -> int = fn(x: int) -> int { return x * 2 }
-let nums: [int] = [1, 2, 3].map(fn(x: int) -> int { return x * 2 })
+const double: fn(int) -> int = fn(x: int) -> int { return x * 2 }
+const nums: [int] = [1, 2, 3].map(fn(x: int) -> int { return x * 2 })
 ```
 
 ### 2.8 Memory Management
@@ -600,7 +600,7 @@ let nums: [int] = [1, 2, 3].map(fn(x: int) -> int { return x * 2 })
 Automatic garbage collection handles 99% of cases:
 
 ```wyn
-let user: User = User{name: "Alice", age: 30}
+const user: User = User{name: "Alice", age: 30}
 // Memory is managed automatically
 // No manual free, no reference counting to think about
 ```
@@ -610,7 +610,7 @@ For performance-critical code, opt into manual management with `@manual` blocks:
 ```wyn
 @manual
 fn fast_algorithm(data: [byte]) -> [byte] {
-    let buffer: *byte = alloc(1024)  // raw pointer
+    const buffer: *byte = alloc(1024)  // raw pointer
     defer free(buffer)
     
     // Pointer arithmetic: buffer + offset
@@ -629,7 +629,7 @@ Use `?Type` when a value might not exist (no error info needed):
 fn find(id: int) -> ?User {
     return if id in db then some(db[id]) else none
 }
-let user: User = find(123) ?? default_user
+const user: User = find(123) ?? default_user
 ```
 
 Use `Result[T, E]` when you need error information:
@@ -637,13 +637,13 @@ Use `Result[T, E]` when you need error information:
 fn parse(s: str) -> Result[int, str] {
     // ... returns Ok(value) or Err("reason")
 }
-let value: int = parse("42")?  // propagates error
+const value: int = parse("42")?  // propagates error
 ```
 
 Both support `??` for defaults:
 ```wyn
-let a: int = optional_value ?? 0
-let b: int = result_value ?? 0  // uses default if Err
+const a: int = optional_value ?? 0
+const b: int = result_value ?? 0  // uses default if Err
 ```
 
 ---
@@ -659,17 +659,17 @@ spawn {
 }
 
 // Run and get result later
-let task: Task[int] = spawn {
+const task: Task[int] = spawn {
     return expensive_computation()
 }
 // ... do other stuff ...
-let result: int = task.wait()
+const result: int = task.wait()
 
 // Run multiple and wait for all
-let tasks: [Task[Result]] = items.map(fn(item: Item) -> Task[Result] {
+const tasks: [Task[Result]] = items.map(fn(item: Item) -> Task[Result] {
     return spawn { return process(item) }
 })
-let results: [Result] = wait_all(tasks)
+const results: [Result] = wait_all(tasks)
 ```
 
 ### 3.2 Parallel Loops
@@ -688,7 +688,7 @@ parallel for item in items {
 }
 
 // Parallel map
-let results: [Output] = parallel items.map(fn(x: Input) -> Output {
+const results: [Output] = parallel items.map(fn(x: Input) -> Output {
     return expensive(x)
 })
 ```
@@ -698,7 +698,7 @@ let results: [Output] = parallel items.map(fn(x: Input) -> Output {
 Thread-safe primitives with atomic operations:
 
 ```wyn
-let counter: Shared[int] = shared(0)
+const counter: Shared[int] = shared(0)
 
 spawn { counter.add(1) }      // atomic increment
 spawn { counter.add(1) }
@@ -707,10 +707,10 @@ spawn { counter.add(1) }
 counter.update(fn(x: int) -> int { return x * 2 })
 
 // Get current value
-let value: int = counter.get()
+const value: int = counter.get()
 
 // Queue for producer/consumer
-let queue: Queue[int] = Queue[int].new()
+const queue: Queue[int] = Queue[int].new()
 
 // Producer
 spawn {
@@ -736,7 +736,7 @@ For streaming data:
 // Async iterator
 async fn fetch_pages(urls: [str]) -> async [str] {
     for url in urls {
-        let response: Response = http.get(url)
+        const response: Response = http.get(url)
         yield response.body
     }
 }
@@ -747,7 +747,7 @@ for await page in fetch_pages(urls) {
 }
 
 // Or collect all
-let pages: [str] = await fetch_pages(urls).collect()
+const pages: [str] = await fetch_pages(urls).collect()
 ```
 
 ### 3.5 All I/O is Non-Blocking
@@ -756,9 +756,9 @@ Everything looks synchronous but never blocks the thread:
 
 ```wyn
 // These don't block - runtime handles async internally
-let response: Response = http.get("https://api.example.com")
-let file: str = fs.read("data.txt")
-let conn: Connection = net.connect("localhost:8080")
+const response: Response = http.get("https://api.example.com")
+const file: str = fs.read("data.txt")
+const conn: Connection = net.connect("localhost:8080")
 ```
 
 ---
@@ -825,7 +825,7 @@ pub fn create(name: str) -> User {
 import ./models/user
 
 fn main() {
-    let u: user.User = user.create("Alice")
+    const u: user.User = user.create("Alice")
     print(u.name)
 }
 ```
@@ -864,11 +864,11 @@ std/
 import http
 
 // Client - GET
-let response: Response = http.get("https://api.example.com/users")
-let data: any = response.json()
+const response: Response = http.get("https://api.example.com/users")
+const data: any = response.json()
 
 // Client - POST with JSON
-let response: Response = http.post("https://api.example.com/users", {
+const response: Response = http.post("https://api.example.com/users", {
     "name": "Alice",
     "age": 30
 })
@@ -889,9 +889,9 @@ http.serve(8080, fn(req: Request) -> Response {
 import fs
 
 // Read
-let content: str = fs.read("file.txt")
-let lines: [str] = fs.read("file.txt").lines()
-let data: any = fs.read_json("data.json")
+const content: str = fs.read("file.txt")
+const lines: [str] = fs.read("file.txt").lines()
+const data: any = fs.read_json("data.json")
 
 // Write
 fs.write("file.txt", "Hello, World!")
@@ -998,7 +998,7 @@ assert_near(0.1 + 0.2, 0.3, 0.0001)
 
 ```wyn
 test "add with multiple inputs" {
-    let cases: [(int, int, int)] = [
+    const cases: [(int, int, int)] = [
         (1, 2, 3),
         (0, 0, 0),
         (-1, 1, 0),
@@ -1015,7 +1015,7 @@ test "add with multiple inputs" {
 
 ```wyn
 test "database operations" {
-    let db: TestDB = create_test_db()
+    const db: TestDB = create_test_db()
     defer db.destroy()
     
     db.insert({"name": "Alice"})
@@ -1090,17 +1090,17 @@ not  // Logical NOT
 ### 7.5 Ternary Operator
 
 ```wyn
-let result: str = if condition then "yes" else "no"
+const result: str = if condition then "yes" else "no"
 
 // Nested
-let grade: str = if score >= 90 then "A" 
+const grade: str = if score >= 90 then "A" 
                  else if score >= 80 then "B"
                  else if score >= 70 then "C"
                  else "F"
 
 // With expressions
-let max: int = if a > b then a else b
-let abs: int = if x >= 0 then x else -x
+const max: int = if a > b then a else b
+const abs: int = if x >= 0 then x else -x
 ```
 
 ### 7.6 Other
@@ -1120,21 +1120,21 @@ let abs: int = if x >= 0 then x else -x
 
 ```wyn
 // Arrays
-let a: [int] = [1, 2, 3]
-let b: [int] = [4, 5, 6]
-let combined: [int] = [...a, ...b]  // [1, 2, 3, 4, 5, 6]
+const a: [int] = [1, 2, 3]
+const b: [int] = [4, 5, 6]
+const combined: [int] = [...a, ...b]  // [1, 2, 3, 4, 5, 6]
 
 // Function arguments
 fn sum(a: int, b: int, c: int) -> int {
     return a + b + c
 }
-let args: [int] = [1, 2, 3]
-let result: int = sum(...args)
+const args: [int] = [1, 2, 3]
+const result: int = sum(...args)
 
 // Maps
-let defaults: {str: int} = {"a": 1, "b": 2}
-let overrides: {str: int} = {"b": 3, "c": 4}
-let merged: {str: int} = {...defaults, ...overrides}  // {"a": 1, "b": 3, "c": 4}
+const defaults: {str: int} = {"a": 1, "b": 2}
+const overrides: {str: int} = {"b": 3, "c": 4}
+const merged: {str: int} = {...defaults, ...overrides}  // {"a": 1, "b": 3, "c": 4}
 ```
 
 ### 7.8 List Comprehensions
@@ -1143,26 +1143,26 @@ Python-style comprehensions for concise transformations:
 
 ```wyn
 // Basic: [expression for item in iterable]
-let squares: [int] = [x * x for x in 1..10]  // [1, 4, 9, 16, 25, 36, 49, 64, 81]
+const squares: [int] = [x * x for x in 1..10]  // [1, 4, 9, 16, 25, 36, 49, 64, 81]
 
 // With filter: [expression for item in iterable if condition]
-let evens: [int] = [x for x in 1..20 if x % 2 == 0]  // [2, 4, 6, 8, 10, 12, 14, 16, 18]
+const evens: [int] = [x for x in 1..20 if x % 2 == 0]  // [2, 4, 6, 8, 10, 12, 14, 16, 18]
 
 // Transform and filter
-let big_squares: [int] = [x * x for x in 1..10 if x > 5]  // [36, 49, 64, 81]
+const big_squares: [int] = [x * x for x in 1..10 if x > 5]  // [36, 49, 64, 81]
 
 // With function calls
-let names: [str] = ["alice", "bob", "charlie"]
-let upper: [str] = [name.upper() for name in names]
+const names: [str] = ["alice", "bob", "charlie"]
+const upper: [str] = [name.upper() for name in names]
 
 // Nested loops
-let pairs: [(int, int)] = [(x, y) for x in 1..4 for y in 1..4 if x != y]
+const pairs: [(int, int)] = [(x, y) for x in 1..4 for y in 1..4 if x != y]
 
 // Map comprehensions
-let scores: {str: int} = {name: name.len() for name in names}  // {"alice": 5, "bob": 3, "charlie": 7}
+const scores: {str: int} = {name: name.len() for name in names}  // {"alice": 5, "bob": 3, "charlie": 7}
 
 // With condition
-let passing: {str: int} = {name: score for (name, score) in results if score >= 60}
+const passing: {str: int} = {name: score for (name, score) in results if score >= 60}
 ```
 
 Comprehensions compile to the same code as explicit loops - no performance penalty.
@@ -1177,18 +1177,18 @@ All strings in Wyn are UTF-8 encoded and immutable.
 
 ```wyn
 // Regular strings
-let s: str = "Hello, World!"
+const s: str = "Hello, World!"
 
 // Escape sequences
-let escaped: str = "Line1\nLine2\tTabbed"
-let brace: str = "Use {{x}} for literal braces"
+const escaped: str = "Line1\nLine2\tTabbed"
+const brace: str = "Use {{x}} for literal braces"
 
 // Raw strings (no escapes)
-let raw: str = r"C:\Users\name\file.txt"
-let regex: str = r"\d+\.\d+"
+const raw: str = r"C:\Users\name\file.txt"
+const regex: str = r"\d+\.\d+"
 
 // Multi-line strings
-let multi: str = """
+const multi: str = """
     This is a multi-line string.
     Indentation is preserved.
     No need for \n escapes.
@@ -1200,8 +1200,8 @@ let multi: str = """
 Use `{expression}` inside strings:
 
 ```wyn
-let name: str = "Alice"
-let age: int = 30
+const name: str = "Alice"
+const age: int = 30
 
 print("Hello, {name}!")                    // Hello, Alice!
 print("{name} is {age} years old")         // Alice is 30 years old
@@ -1209,7 +1209,7 @@ print("Next year: {age + 1}")              // Next year: 31
 print("Uppercase: {name.upper()}")         // Uppercase: ALICE
 
 // Formatting
-let pi: float = 3.14159
+const pi: float = 3.14159
 print("Pi: {pi:.2}")                       // Pi: 3.14
 print("Padded: {age:05}")                  // Padded: 00030
 print("Hex: {255:x}")                      // Hex: ff
@@ -1220,7 +1220,7 @@ print("Hex: {255:x}")                      // Hex: ff
 ## 9. Keywords
 
 ```
-fn       struct   enum     interface impl     let      mut      pub
+fn       struct   enum     interface impl     let      pub
 if       else     then     match     for      while    in
 break    continue return   import    from     as
 true     false    try      catch     defer    Self
@@ -1348,15 +1348,15 @@ import os
 import fs
 
 fn main() {
-    let args: [str] = os.args()
+    const args: [str] = os.args()
     
     if args.len() < 2 {
         print("Usage: wc <file>")
         return
     }
     
-    let content: str = fs.read(args[1])
-    let lines: int = content.lines().len()
+    const content: str = fs.read(args[1])
+    const lines: int = content.lines().len()
     print("{args[1]}: {lines} lines")
 }
 ```
@@ -1367,14 +1367,14 @@ fn main() {
 import http
 
 fn main() {
-    let urls: [str] = [
+    const urls: [str] = [
         "https://example.com",
         "https://example.org",
         "https://example.net"
     ]
     
-    let results: [(str, int)] = parallel urls.map(fn(url: str) -> (str, int) {
-        let resp: Response = http.get(url)
+    const results: [(str, int)] = parallel urls.map(fn(url: str) -> (str, int) {
+        const resp: Response = http.get(url)
         return (url, resp.body.len())
     })
     
@@ -1394,11 +1394,11 @@ pub struct Queue[T] {
         return Queue[T]{items: []}
     }
     
-    pub fn push(mut self, item: T) {
+    pub fn push(self, item: T) {
         self.items.push(item)
     }
     
-    pub fn pop(mut self) -> ?T {
+    pub fn pop(self) -> ?T {
         if self.items.len() == 0 {
             return none
         }
@@ -1411,7 +1411,7 @@ pub struct Queue[T] {
 }
 
 fn main() {
-    let q: Queue[str] = Queue[str].new()
+    const q: Queue[str] = Queue[str].new()
     q.push("first")
     q.push("second")
     
@@ -1435,10 +1435,10 @@ Use `gpu {}` blocks to run code on the GPU:
 import gpu
 
 fn main() {
-    let data: [float] = [1.0, 2.0, 3.0, 4.0, 5.0]
+    const data: [float] = [1.0, 2.0, 3.0, 4.0, 5.0]
     
     // Run on GPU - parallel for is automatically parallelized across GPU cores
-    let result: [float] = gpu {
+    const result: [float] = gpu {
         parallel for i in 0..data.len() {
             data[i] = data[i] * 2.0
         }
@@ -1456,7 +1456,7 @@ Mark functions with `@gpu` to compile them for GPU execution:
 ```wyn
 @gpu
 fn vector_add(a: [float], b: [float]) -> [float] {
-    let result: [float] = [0.0; a.len()]
+    const result: [float] = [0.0; a.len()]
     parallel for i in 0..a.len() {
         result[i] = a[i] + b[i]
     }
@@ -1465,14 +1465,14 @@ fn vector_add(a: [float], b: [float]) -> [float] {
 
 @gpu
 fn matrix_multiply(a: [[float]], b: [[float]]) -> [[float]] {
-    let rows: int = a.len()
-    let cols: int = b[0].len()
-    let inner: int = b.len()
-    let result: [[float]] = [[0.0; cols]; rows]
+    const rows: int = a.len()
+    const cols: int = b[0].len()
+    const inner: int = b.len()
+    const result: [[float]] = [[0.0; cols]; rows]
     
     parallel for i in 0..rows {
         parallel for j in 0..cols {
-            mut sum: float = 0.0
+            let sum: float = 0.0
             for k in 0..inner {
                 sum = sum + a[i][k] * b[k][j]
             }
@@ -1492,27 +1492,27 @@ import gpu
 
 fn main() {
     // Create tensors (allocated on GPU by default)
-    let a: Tensor[float] = gpu.zeros(1024, 1024)
-    let b: Tensor[float] = gpu.rand(1024, 1024)
-    let c: Tensor[float] = gpu.ones(1024, 1024)
+    const a: Tensor[float] = gpu.zeros(1024, 1024)
+    const b: Tensor[float] = gpu.rand(1024, 1024)
+    const c: Tensor[float] = gpu.ones(1024, 1024)
     
     // Matrix operations (executed on GPU)
-    let d: Tensor[float] = a @ b           // Matrix multiply
-    let e: Tensor[float] = b + c           // Element-wise add
-    let f: Tensor[float] = b * 2.0         // Scalar multiply
-    let g: Tensor[float] = b.transpose()   // Transpose
+    const d: Tensor[float] = a @ b           // Matrix multiply
+    const e: Tensor[float] = b + c           // Element-wise add
+    const f: Tensor[float] = b * 2.0         // Scalar multiply
+    const g: Tensor[float] = b.transpose()   // Transpose
     
     // Reductions
-    let sum: float = b.sum()
-    let mean: float = b.mean()
-    let max_val: float = b.max()
+    const sum: float = b.sum()
+    const mean: float = b.mean()
+    const max_val: float = b.max()
     
     // Reshaping
-    let flat: Tensor[float] = b.flatten()
-    let reshaped: Tensor[float] = flat.reshape(512, 2048)
+    const flat: Tensor[float] = b.flatten()
+    const reshaped: Tensor[float] = flat.reshape(512, 2048)
     
     // Move to CPU when needed
-    let cpu_data: [[float]] = d.to_cpu()
+    const cpu_data: [[float]] = d.to_cpu()
 }
 ```
 
@@ -1525,20 +1525,20 @@ import gpu
 import gpu.nn
 
 fn main() {
-    let input: Tensor[float] = gpu.rand(32, 784)    // batch of 32, 784 features
-    let weights: Tensor[float] = gpu.rand(784, 256)
-    let bias: Tensor[float] = gpu.zeros(256)
+    const input: Tensor[float] = gpu.rand(32, 784)    // batch of 32, 784 features
+    const weights: Tensor[float] = gpu.rand(784, 256)
+    const bias: Tensor[float] = gpu.zeros(256)
     
     // Forward pass
-    let z: Tensor[float] = input @ weights + bias
-    let activated: Tensor[float] = nn.relu(z)
-    let output: Tensor[float] = nn.softmax(activated)
+    const z: Tensor[float] = input @ weights + bias
+    const activated: Tensor[float] = nn.relu(z)
+    const output: Tensor[float] = nn.softmax(activated)
     
     // Common layers
-    let conv_out: Tensor[float] = nn.conv2d(input, kernel, stride: 1, padding: 1)
-    let pooled: Tensor[float] = nn.max_pool2d(conv_out, kernel_size: 2)
-    let normed: Tensor[float] = nn.batch_norm(pooled)
-    let dropped: Tensor[float] = nn.dropout(normed, rate: 0.5)
+    const conv_out: Tensor[float] = nn.conv2d(input, kernel, stride: 1, padding: 1)
+    const pooled: Tensor[float] = nn.max_pool2d(conv_out, kernel_size: 2)
+    const normed: Tensor[float] = nn.batch_norm(pooled)
+    const dropped: Tensor[float] = nn.dropout(normed, rate: 0.5)
 }
 ```
 
@@ -1551,21 +1551,21 @@ import gpu
 
 @autodiff
 fn loss(weights: Tensor[float], x: Tensor[float], y: Tensor[float]) -> float {
-    let pred: Tensor[float] = x @ weights
-    let diff: Tensor[float] = pred - y
+    const pred: Tensor[float] = x @ weights
+    const diff: Tensor[float] = pred - y
     return (diff * diff).mean()
 }
 
 fn main() {
-    let weights: Tensor[float] = gpu.rand(784, 10)
-    let x: Tensor[float] = gpu.rand(32, 784)
-    let y: Tensor[float] = gpu.rand(32, 10)
+    const weights: Tensor[float] = gpu.rand(784, 10)
+    const x: Tensor[float] = gpu.rand(32, 784)
+    const y: Tensor[float] = gpu.rand(32, 10)
     
     // Compute loss and gradients in one call
     let (loss_val, grads) = loss.grad(weights, x, y)
     
     // Update weights
-    let lr: float = 0.01
+    const lr: float = 0.01
     weights = weights - grads * lr
 }
 ```
@@ -1579,7 +1579,7 @@ import gpu
 
 fn main() {
     // List available devices
-    let devices: [gpu.Device] = gpu.list_devices()
+    const devices: [gpu.Device] = gpu.list_devices()
     for d in devices {
         print("{d.name}: {d.memory_gb} GB")
     }
@@ -1588,16 +1588,16 @@ fn main() {
     gpu.set_device(0)
     
     // Check memory
-    let free: int = gpu.memory_free()
-    let total: int = gpu.memory_total()
+    const free: int = gpu.memory_free()
+    const total: int = gpu.memory_total()
     
     // Explicit device placement
-    let a: Tensor[float] = gpu.zeros(1000, 1000, device: 0)
-    let b: Tensor[float] = gpu.zeros(1000, 1000, device: 1)
+    const a: Tensor[float] = gpu.zeros(1000, 1000, device: 0)
+    const b: Tensor[float] = gpu.zeros(1000, 1000, device: 1)
     
     // Move between devices
-    let b_on_0: Tensor[float] = b.to_device(0)
-    let c: Tensor[float] = a @ b_on_0
+    const b_on_0: Tensor[float] = b.to_device(0)
+    const c: Tensor[float] = a @ b_on_0
     
     // Synchronize (wait for GPU operations to complete)
     gpu.sync()
@@ -1613,21 +1613,21 @@ import gpu
 
 fn main() {
     // Half precision (float16)
-    let a: Tensor[float16] = gpu.rand_f16(1024, 1024)
-    let b: Tensor[float16] = gpu.rand_f16(1024, 1024)
-    let c: Tensor[float16] = a @ b
+    const a: Tensor[float16] = gpu.rand_f16(1024, 1024)
+    const b: Tensor[float16] = gpu.rand_f16(1024, 1024)
+    const c: Tensor[float16] = a @ b
     
     // BFloat16 for training
-    let weights: Tensor[bfloat16] = gpu.rand_bf16(784, 256)
+    const weights: Tensor[bfloat16] = gpu.rand_bf16(784, 256)
     
     // Mixed precision - accumulate in float32
-    let result: Tensor[float] = gpu.matmul_mixed(a, b)  // inputs f16, output f32
+    const result: Tensor[float] = gpu.matmul_mixed(a, b)  // inputs f16, output f32
     
     // Automatic mixed precision
     @amp  // automatic mixed precision
     fn train_step(model: Model, x: Tensor[float], y: Tensor[float]) -> float {
         // Compiler automatically uses f16 where safe, f32 where needed
-        let pred: Tensor[float] = model.forward(x)
+        const pred: Tensor[float] = model.forward(x)
         return loss(pred, y)
     }
 }
@@ -1658,17 +1658,17 @@ import gpu
 import gpu.image
 
 fn main() {
-    let img: Tensor[float] = image.load("photo.jpg")  // HxWx3 tensor
+    const img: Tensor[float] = image.load("photo.jpg")  // HxWx3 tensor
     
     // Apply filters on GPU
-    let blurred: Tensor[float] = gpu {
-        let kernel: Tensor[float] = image.gaussian_kernel(5, sigma: 1.0)
+    const blurred: Tensor[float] = gpu {
+        const kernel: Tensor[float] = image.gaussian_kernel(5, sigma: 1.0)
         return image.convolve(img, kernel)
     }
     
     // Batch process multiple images
-    let images: [Tensor[float]] = load_images("./photos/")
-    let processed: [Tensor[float]] = gpu {
+    const images: [Tensor[float]] = load_images("./photos/")
+    const processed: [Tensor[float]] = gpu {
         parallel for i in 0..images.len() {
             images[i] = image.resize(images[i], 224, 224)
             images[i] = image.normalize(images[i])
@@ -1703,16 +1703,16 @@ struct MLP {
     
     @gpu
     fn forward(self, x: Tensor[float]) -> Tensor[float] {
-        let h: Tensor[float] = nn.relu(x @ self.w1 + self.b1)
+        const h: Tensor[float] = nn.relu(x @ self.w1 + self.b1)
         return nn.softmax(h @ self.w2 + self.b2)
     }
 }
 
 fn main() {
-    let model: MLP = MLP.new(784, 256, 10)
-    let x: Tensor[float] = gpu.rand(32, 784)  // batch of 32 images
+    const model: MLP = MLP.new(784, 256, 10)
+    const x: Tensor[float] = gpu.rand(32, 784)  // batch of 32 images
     
-    let predictions: Tensor[float] = model.forward(x)
+    const predictions: Tensor[float] = model.forward(x)
     print("Output shape: {predictions.shape()}")  // [32, 10]
 }
 ```

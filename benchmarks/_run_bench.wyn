@@ -29,21 +29,21 @@ fn run_benchmark(path: str, name: str) {
     print_str(name)
     print_str(": ")
     
-    let exe: str = "/tmp/wyn_bench"
-    let compile_cmd: str = "./build/stage0 --stage1-opt -o " + exe + " " + path + " 2>/dev/null"
-    let compile_result: int = system(compile_cmd)
+    const exe: str = "/tmp/wyn_bench"
+    const compile_cmd: str = "./build/stage0 --stage1-opt -o " + exe + " " + path + " 2>/dev/null"
+    const compile_result: int = system(compile_cmd)
     
     if compile_result != 0 {
         print_str("FAIL (compile)\n")
         return
     }
     
-    let start: int = clock()
-    let run_result: int = system(exe + " >/dev/null 2>&1")
-    let end: int = clock()
+    const start: int = clock()
+    const run_result: int = system(exe + " >/dev/null 2>&1")
+    const end: int = clock()
     
     if run_result == 0 {
-        let elapsed: int = end - start
+        const elapsed: int = end - start
         print_str("OK (")
         print(elapsed)
         print_str(" ticks)\n")

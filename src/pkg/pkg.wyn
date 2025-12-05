@@ -11,14 +11,14 @@ struct Package {
 }
 
 fn main() {
-    let args: [str] = args()
+    const args: [str] = args()
     
     if args.len() < 2 {
         print_help()
         return
     }
     
-    let cmd: str = args[1]
+    const cmd: str = args[1]
     
     if cmd == "init" {
         cmd_init()
@@ -65,7 +65,7 @@ fn print_help() {
 
 fn cmd_init() {
     # Create wyn.toml
-    let manifest: str = "[package]\nname = \"myproject\"\nversion = \"0.1.0\"\n\n[build]\nentry = \"src/main.wyn\"\n"
+    const manifest: str = "[package]\nname = \"myproject\"\nversion = \"0.1.0\"\n\n[build]\nentry = \"src/main.wyn\"\n"
     
     if file_exists("wyn.toml") {
         io.print_str("Error: wyn.toml already exists")
@@ -81,7 +81,7 @@ fn cmd_init() {
     mkdir(".wyn")
     
     # Create main.wyn
-    let main_content: str = "import std/io\n\nfn main() {\n    io.print_str(\"Hello, Wyn!\")\n    io.print_newline()
+    const main_content: str = "import std/io\n\nfn main() {\n    io.print_str(\"Hello, Wyn!\")\n    io.print_newline()
 \n}\n"
     write_file("src/main.wyn", main_content)
     
@@ -94,27 +94,27 @@ fn cmd_new(name: str) {
     mkdir(name)
     
     # Create manifest
-    let manifest: str = str_concat("[package]\nname = \"", name)
+    const manifest: str = str_concat("[package]\nname = \"", name)
     manifest = str_concat(manifest, "\"\nversion = \"0.1.0\"\n\n[build]\nentry = \"src/main.wyn\"\n")
     
-    let manifest_path: str = str_concat(name, "/wyn.toml")
+    const manifest_path: str = str_concat(name, "/wyn.toml")
     write_file(manifest_path, manifest)
     
     # Create directories
-    let src_path: str = str_concat(name, "/src")
-    let build_path: str = str_concat(name, "/build")
-    let wyn_path: str = str_concat(name, "/.wyn")
+    const src_path: str = str_concat(name, "/src")
+    const build_path: str = str_concat(name, "/build")
+    const wyn_path: str = str_concat(name, "/.wyn")
     
     mkdir(src_path)
     mkdir(build_path)
     mkdir(wyn_path)
     
     # Create main.wyn
-    let main_content: str = "import std/io\n\nfn main() {\n    io.print_str(\"Hello from "
+    const main_content: str = "import std/io\n\nfn main() {\n    io.print_str(\"Hello from "
     main_content = str_concat(main_content, name)
     main_content = str_concat(main_content, "!\")\n    io.print_newline()\n}\n")
     
-    let main_path: str = str_concat(src_path, "/main.wyn")
+    const main_path: str = str_concat(src_path, "/main.wyn")
     write_file(main_path, main_content)
     
     io.print_str("Created project: ")
@@ -133,7 +133,7 @@ fn cmd_build() {
     io.print_newline()
     
     # Simple build: compile src/main.wyn
-    let result: int = system("./build/stage0 -o build/app src/main.wyn")
+    const result: int = system("./build/stage0 -o build/app src/main.wyn")
     
     if result == 0 {
         io.print_str("Build successful!")

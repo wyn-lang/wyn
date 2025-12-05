@@ -65,7 +65,7 @@ fn is_prime(n: int) -> bool {
     if n < 2 {
         return false
     }
-    let mut i: int = 2
+    let i: int = 2
     while i * i <= n {
         if n % i == 0 {
             return false
@@ -85,8 +85,8 @@ fn main() {
     
     # Variables and arithmetic
     print_str("--- Variables & Arithmetic ---")
-    let x: int = 10
-    let y: int = 3
+    const x: int = 10
+    const y: int = 3
     print(x + y)   # 13
     print(x - y)   # 7
     print(x * y)   # 30
@@ -106,7 +106,7 @@ fn main() {
     # Control flow
     print_str("")
     print_str("--- Control Flow ---")
-    let mut sum: int = 0
+    let sum: int = 0
     for i in 1..6 {
         sum = sum + i
     }
@@ -115,22 +115,22 @@ fn main() {
     # Arrays and slicing
     print_str("")
     print_str("--- Arrays & Slicing ---")
-    let arr: [int] = [10, 20, 30, 40, 50]
+    const arr: [int] = [10, 20, 30, 40, 50]
     print(len(arr))     # 5
     print(arr[0])       # 10
     print(arr[4])       # 50
     
-    let slice: [int] = arr[1:4]
+    const slice: [int] = arr[1:4]
     print(len(slice))   # 3
     print(slice[0])     # 20
     
-    let last_two: [int] = arr[-2:]
+    const last_two: [int] = arr[-2:]
     print(last_two[0])  # 40
     
     # Array iteration
     print_str("")
     print_str("--- Array Iteration ---")
-    let nums: [int] = [1, 2, 3]
+    const nums: [int] = [1, 2, 3]
     for n in nums {
         print(n * 10)  # 10, 20, 30
     }
@@ -138,12 +138,12 @@ fn main() {
     # Structs
     print_str("")
     print_str("--- Structs ---")
-    let p: Point = Point { x: 3, y: 4 }
+    const p: Point = Point { x: 3, y: 4 }
     print(p.x)                    # 3
     print(p.y)                    # 4
     print(p.distance_squared())   # 25
     
-    let rect: Rectangle = Rectangle { 
+    const rect: Rectangle = Rectangle { 
         origin: Point { x: 0, y: 0 }, 
         width: 10, 
         height: 5 
@@ -154,18 +154,18 @@ fn main() {
     # Optionals
     print_str("")
     print_str("--- Optionals ---")
-    let maybe: ?int = some(42)
-    let value: int = maybe ?? 0
+    const maybe: ?int = some(42)
+    const value: int = maybe ?? 0
     print(value)  # 42
     
-    let nothing: ?int = none
-    let default: int = nothing ?? -1
+    const nothing: ?int = none
+    const default: int = nothing ?? -1
     print(default)  # -1
     
     # Match statements
     print_str("")
     print_str("--- Match ---")
-    let dir: int = 1
+    const dir: int = 1
     match dir {
         0 => print_str("North")
         1 => print_str("East")
@@ -198,9 +198,9 @@ fn main() {
     # String operations
     print_str("")
     print_str("--- Strings ---")
-    let greeting: str = "Hello"
-    let name: str = "World"
-    let message: str = greeting + ", " + name + "!"
+    const greeting: str = "Hello"
+    const name: str = "World"
+    const message: str = greeting + ", " + name + "!"
     print_str(message)
     print(len("Hello"))  # 5 (string literal)
     
@@ -214,13 +214,13 @@ fn main() {
     # Generics
     print_str("")
     print_str("--- Generics ---")
-    let box: Box[int] = Box[int] { value: 42 }
+    const box: Box[int] = Box[int] { value: 42 }
     print(box.value)      # 42
     
     # Method syntax on primitives
     print_str("")
     print_str("--- Method Syntax ---")
-    let num: int = -123
+    const num: int = -123
     print(num.abs())      # 123
     
     print_str("")

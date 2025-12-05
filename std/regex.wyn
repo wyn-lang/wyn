@@ -56,7 +56,7 @@ fn is_digit(c: str) -> bool {
     if c.len() == 0 {
         return false
     }
-    let code: int = ord(c[0])
+    const code: int = ord(c[0])
     return code >= 48 and code <= 57  # '0'-'9'
 }
 
@@ -65,7 +65,7 @@ fn is_alpha(c: str) -> bool {
     if c.len() == 0 {
         return false
     }
-    let code: int = ord(c[0])
+    const code: int = ord(c[0])
     return (code >= 65 and code <= 90) or (code >= 97 and code <= 122)  # 'A'-'Z' or 'a'-'z'
 }
 
@@ -79,7 +79,7 @@ fn is_space(c: str) -> bool {
     if c.len() == 0 {
         return false
     }
-    let code: int = ord(c[0])
+    const code: int = ord(c[0])
     return code == 32 or code == 9 or code == 10 or code == 13
 }
 
@@ -88,7 +88,7 @@ fn is_upper(c: str) -> bool {
     if c.len() == 0 {
         return false
     }
-    let code: int = ord(c[0])
+    const code: int = ord(c[0])
     return code >= 65 and code <= 90  # 'A'-'Z'
 }
 
@@ -97,7 +97,7 @@ fn is_lower(c: str) -> bool {
     if c.len() == 0 {
         return false
     }
-    let code: int = ord(c[0])
+    const code: int = ord(c[0])
     return code >= 97 and code <= 122  # 'a'-'z'
 }
 
@@ -124,7 +124,7 @@ fn is_hex_digit(c: str) -> bool {
     if c.len() == 0 {
         return false
     }
-    let code: int = ord(c[0])
+    const code: int = ord(c[0])
     return (code >= 48 and code <= 57) or (code >= 65 and code <= 70) or (code >= 97 and code <= 102)
 }
 
@@ -133,7 +133,7 @@ fn is_punct(c: str) -> bool {
     if c.len() == 0 {
         return false
     }
-    let code: int = ord(c[0])
+    const code: int = ord(c[0])
     return (code >= 33 and code <= 47) or (code >= 58 and code <= 64) or (code >= 91 and code <= 96) or (code >= 123 and code <= 126)
 }
 
@@ -141,10 +141,10 @@ fn is_punct(c: str) -> bool {
 # * matches zero or more characters, ? matches exactly one character
 # Example: wildcard_match("hello", "h*o") -> true
 fn wildcard_match(text: str, pattern: str) -> bool {
-    let mut ti: int = 0
-    let mut pi: int = 0
-    let mut star_idx: int = -1
-    let mut match_idx: int = 0
+    let ti: int = 0
+    let pi: int = 0
+    let star_idx: int = -1
+    let match_idx: int = 0
     
     while ti < text.len() {
         if pi < pattern.len() and (pattern[pi:pi+1] == "?" or pattern[pi:pi+1] == text[ti:ti+1]) {
@@ -195,7 +195,7 @@ fn contains(text: str, substring: str) -> bool {
         return false
     }
     
-    let mut i: int = 0
+    let i: int = 0
     while i <= text.len() - substring.len() {
         if text[i:i + substring.len()] == substring {
             return true
@@ -214,7 +214,7 @@ fn index_of(text: str, substring: str) -> int {
         return -1
     }
     
-    let mut i: int = 0
+    let i: int = 0
     while i <= text.len() - substring.len() {
         if text[i:i + substring.len()] == substring {
             return i
@@ -233,7 +233,7 @@ fn last_index_of(text: str, substring: str) -> int {
         return -1
     }
     
-    let mut i: int = text.len() - substring.len()
+    let i: int = text.len() - substring.len()
     while i >= 0 {
         if text[i:i + substring.len()] == substring {
             return i
@@ -249,8 +249,8 @@ fn count_occurrences(text: str, substring: str) -> int {
         return 0
     }
     
-    let mut count: int = 0
-    let mut i: int = 0
+    let count: int = 0
+    let i: int = 0
     while i <= text.len() - substring.len() {
         if text[i:i + substring.len()] == substring {
             count = count + 1
@@ -268,8 +268,8 @@ fn replace_all(text: str, old: str, new: str) -> str {
         return text
     }
     
-    let mut result: str = ""
-    let mut i: int = 0
+    let result: str = ""
+    let i: int = 0
     while i < text.len() {
         if i <= text.len() - old.len() and text[i:i + old.len()] == old {
             result = result + new
@@ -288,9 +288,9 @@ fn split_by(text: str, delimiter: str) -> [str] {
         return [text]
     }
     
-    let mut parts: [str] = []
-    let mut start: int = 0
-    let mut i: int = 0
+    let parts: [str] = []
+    let start: int = 0
+    let i: int = 0
     
     while i <= text.len() - delimiter.len() {
         if text[i:i + delimiter.len()] == delimiter {
@@ -308,12 +308,12 @@ fn split_by(text: str, delimiter: str) -> [str] {
 
 # Trim whitespace from both ends
 fn trim(text: str) -> str {
-    let mut start: int = 0
+    let start: int = 0
     while start < text.len() and is_space(text[start:start+1]) {
         start = start + 1
     }
     
-    let mut end: int = text.len()
+    let end: int = text.len()
     while end > start and is_space(text[end-1:end]) {
         end = end - 1
     }
@@ -323,7 +323,7 @@ fn trim(text: str) -> str {
 
 # Trim whitespace from start
 fn trim_start(text: str) -> str {
-    let mut start: int = 0
+    let start: int = 0
     while start < text.len() and is_space(text[start:start+1]) {
         start = start + 1
     }
@@ -332,7 +332,7 @@ fn trim_start(text: str) -> str {
 
 # Trim whitespace from end
 fn trim_end(text: str) -> str {
-    let mut end: int = text.len()
+    let end: int = text.len()
     while end > 0 and is_space(text[end-1:end]) {
         end = end - 1
     }
@@ -341,8 +341,8 @@ fn trim_end(text: str) -> str {
 
 # Reverse a string
 fn reverse(text: str) -> str {
-    let mut result: str = ""
-    let mut i: int = text.len() - 1
+    let result: str = ""
+    let i: int = text.len() - 1
     while i >= 0 {
         result = result + text[i:i+1]
         i = i - 1
@@ -352,8 +352,8 @@ fn reverse(text: str) -> str {
 
 # Repeat a string n times
 fn repeat(text: str, n: int) -> str {
-    let mut result: str = ""
-    let mut i: int = 0
+    let result: str = ""
+    let i: int = 0
     while i < n {
         result = result + text
         i = i + 1
@@ -363,7 +363,7 @@ fn repeat(text: str, n: int) -> str {
 
 # Pad string to length with character on the left
 fn pad_left(text: str, length: int, pad_char: str) -> str {
-    let mut result: str = text
+    let result: str = text
     while result.len() < length {
         result = pad_char + result
     }
@@ -372,7 +372,7 @@ fn pad_left(text: str, length: int, pad_char: str) -> str {
 
 # Pad string to length with character on the right
 fn pad_right(text: str, length: int, pad_char: str) -> str {
-    let mut result: str = text
+    let result: str = text
     while result.len() < length {
         result = result + pad_char
     }
@@ -385,12 +385,12 @@ fn center(text: str, width: int, pad_char: str) -> str {
         return text
     }
     
-    let total_padding: int = width - text.len()
-    let left_padding: int = total_padding / 2
-    let right_padding: int = total_padding - left_padding
+    const total_padding: int = width - text.len()
+    const left_padding: int = total_padding / 2
+    const right_padding: int = total_padding - left_padding
     
-    let mut result: str = ""
-    let mut i: int = 0
+    let result: str = ""
+    let i: int = 0
     while i < left_padding {
         result = result + pad_char
         i = i + 1
@@ -407,8 +407,8 @@ fn center(text: str, width: int, pad_char: str) -> str {
 
 # Convert entire string to uppercase
 fn to_uppercase(text: str) -> str {
-    let mut result: str = ""
-    let mut i: int = 0
+    let result: str = ""
+    let i: int = 0
     while i < text.len() {
         result = result + to_upper(text[i:i+1])
         i = i + 1
@@ -418,8 +418,8 @@ fn to_uppercase(text: str) -> str {
 
 # Convert entire string to lowercase
 fn to_lowercase(text: str) -> str {
-    let mut result: str = ""
-    let mut i: int = 0
+    let result: str = ""
+    let i: int = 0
     while i < text.len() {
         result = result + to_lower(text[i:i+1])
         i = i + 1
@@ -429,12 +429,12 @@ fn to_lowercase(text: str) -> str {
 
 # Convert string to title case (first letter of each word capitalized)
 fn to_titlecase(text: str) -> str {
-    let mut result: str = ""
-    let mut capitalize_next: bool = true
-    let mut i: int = 0
+    let result: str = ""
+    let capitalize_next: bool = true
+    let i: int = 0
     
     while i < text.len() {
-        let c: str = text[i:i+1]
+        const c: str = text[i:i+1]
         if is_space(c) {
             result = result + c
             capitalize_next = true
@@ -452,11 +452,11 @@ fn to_titlecase(text: str) -> str {
 
 # Check if string is all uppercase letters
 fn is_all_upper(text: str) -> bool {
-    let mut i: int = 0
-    let mut has_letter: bool = false
+    let i: int = 0
+    let has_letter: bool = false
     
     while i < text.len() {
-        let c: str = text[i:i+1]
+        const c: str = text[i:i+1]
         if is_alpha(c) {
             has_letter = true
             if not is_upper(c) {
@@ -471,11 +471,11 @@ fn is_all_upper(text: str) -> bool {
 
 # Check if string is all lowercase letters
 fn is_all_lower(text: str) -> bool {
-    let mut i: int = 0
-    let mut has_letter: bool = false
+    let i: int = 0
+    let has_letter: bool = false
     
     while i < text.len() {
-        let c: str = text[i:i+1]
+        const c: str = text[i:i+1]
         if is_alpha(c) {
             has_letter = true
             if not is_lower(c) {
@@ -490,11 +490,11 @@ fn is_all_lower(text: str) -> bool {
 
 # Check if string is in title case
 fn is_titlecase(text: str) -> bool {
-    let mut expect_upper: bool = true
-    let mut i: int = 0
+    let expect_upper: bool = true
+    let i: int = 0
     
     while i < text.len() {
-        let c: str = text[i:i+1]
+        const c: str = text[i:i+1]
         if is_alpha(c) {
             if expect_upper and not is_upper(c) {
                 return false
@@ -518,7 +518,7 @@ fn is_alnum_string(text: str) -> bool {
         return false
     }
     
-    let mut i: int = 0
+    let i: int = 0
     while i < text.len() {
         if not is_alnum(text[i:i+1]) {
             return false
@@ -534,7 +534,7 @@ fn is_alpha_string(text: str) -> bool {
         return false
     }
     
-    let mut i: int = 0
+    let i: int = 0
     while i < text.len() {
         if not is_alpha(text[i:i+1]) {
             return false
@@ -550,7 +550,7 @@ fn is_digit_string(text: str) -> bool {
         return false
     }
     
-    let mut i: int = 0
+    let i: int = 0
     while i < text.len() {
         if not is_digit(text[i:i+1]) {
             return false
@@ -566,7 +566,7 @@ fn is_whitespace_string(text: str) -> bool {
         return false
     }
     
-    let mut i: int = 0
+    let i: int = 0
     while i < text.len() {
         if not is_space(text[i:i+1]) {
             return false
@@ -578,8 +578,8 @@ fn is_whitespace_string(text: str) -> bool {
 
 # Remove all occurrences of a character from string
 fn remove_char(text: str, char_to_remove: str) -> str {
-    let mut result: str = ""
-    let mut i: int = 0
+    let result: str = ""
+    let i: int = 0
     while i < text.len() {
         if text[i:i+1] != char_to_remove {
             result = result + text[i:i+1]
@@ -592,12 +592,12 @@ fn remove_char(text: str, char_to_remove: str) -> str {
 # Keep only characters that match a predicate (simulated with character class)
 # For now, supports "alpha", "digit", "alnum", "space" as filter types
 fn filter_chars(text: str, filter_type: str) -> str {
-    let mut result: str = ""
-    let mut i: int = 0
+    let result: str = ""
+    let i: int = 0
     
     while i < text.len() {
-        let c: str = text[i:i+1]
-        let keep: bool = false
+        const c: str = text[i:i+1]
+        const keep: bool = false
         
         if filter_type == "alpha" {
             keep = is_alpha(c)
@@ -624,7 +624,7 @@ fn truncate(text: str, max_len: int, suffix: str) -> str {
         return text
     }
     
-    let truncate_at: int = max_len - suffix.len()
+    const truncate_at: int = max_len - suffix.len()
     if truncate_at < 0 {
         truncate_at = 0
     }

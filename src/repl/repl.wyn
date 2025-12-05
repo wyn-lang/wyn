@@ -25,12 +25,12 @@ impl Repl {
         }
     }
     
-    pub fn run(mut self) {
+    pub fn run(self) {
         self.print_banner()
         
         while self.running {
             print_str(">>> ")
-            let input: str = read_line()
+            const input: str = read_line()
             
             if input.len() == 0 {
                 continue
@@ -47,7 +47,7 @@ impl Repl {
         print_str("\n")
     }
     
-    fn eval(mut self, input: str) {
+    fn eval(self, input: str) {
         // Check for REPL commands
         if starts_with(input, ":") {
             self.handle_command(input)
@@ -55,7 +55,7 @@ impl Repl {
         }
         
         // Try to parse and evaluate
-        let result: Result[str, str] = self.eval_code(input)
+        const result: Result[str, str] = self.eval_code(input)
         match result {
             ok(output) => {
                 if output != "" {
@@ -68,9 +68,9 @@ impl Repl {
         }
     }
     
-    fn handle_command(mut self, cmd: str) {
-        let parts: [str] = split(cmd, " ")
-        let command: str = parts[0]
+    fn handle_command(self, cmd: str) {
+        const parts: [str] = split(cmd, " ")
+        const command: str = parts[0]
         
         match command {
             ":quit" => { self.running = false }
@@ -107,13 +107,13 @@ impl Repl {
         print_str("  :type <expr>   Show type of expression\n")
         print_str("\n")
         print_str("Examples:\n")
-        print_str("  let x: int = 42\n")
+        print_str("  const x: int = 42\n")
         print_str("  x + 10\n")
         print_str("  fn double(n: int) -> int { return n * 2 }\n")
         print_str("  double(x)\n")
     }
     
-    fn clear_context(mut self) {
+    fn clear_context(self) {
         self.context.variables = []
         self.context.functions = []
         print_str("Context cleared\n")
@@ -150,7 +150,7 @@ impl Repl {
         }
         
         print_str("History:\n")
-        let mut i: int = 0
+        let i: int = 0
         while i < self.history.len() {
             print_str("  " + (i + 1).to_str() + ": " + self.history[i] + "\n")
             i = i + 1
@@ -158,32 +158,32 @@ impl Repl {
     }
     
     fn show_type(self, expr: str) {
-        let mut lexer: Lexer = Lexer.new(expr, "<repl>")
+        let lexer: Lexer = Lexer.new(expr, "<repl>")
         let tokens = lexer.tokenize()
         
-        let mut parser: Parser = Parser.new(tokens)
+        let parser: Parser = Parser.new(tokens)
         let ast = parser.parse_expr()
         
-        let mut checker: TypeChecker = TypeChecker.new()
-        let ty: str = checker.infer_type(ast)
+        let checker: TypeChecker = TypeChecker.new()
+        const ty: str = checker.infer_type(ast)
         
         print_str(expr + " : " + ty + "\n")
     }
     
-    fn eval_code(mut self, code: str) -> Result[str, str] {
+    fn eval_code(self, code: str) -> Result[str, str] {
         // Wrap expression in print if it's just an expression
-        let wrapped: str = self.wrap_code(code)
+        const wrapped: str = self.wrap_code(code)
         
         // Lex
-        let mut lexer: Lexer = Lexer.new(wrapped, "<repl>")
+        let lexer: Lexer = Lexer.new(wrapped, "<repl>")
         let tokens = lexer.tokenize()
         
         // Parse
-        let mut parser: Parser = Parser.new(tokens)
+        let parser: Parser = Parser.new(tokens)
         let ast = parser.parse()
         
         // Type check
-        let mut checker: TypeChecker = TypeChecker.new()
+        let checker: TypeChecker = TypeChecker.new()
         let errors = checker.check_module(ast)
         if errors.len() > 0 {
             return err(errors[0])
@@ -210,13 +210,13 @@ impl Repl {
         return "let _result = " + code
     }
     
-    fn update_context(mut self, ast: any) {
+    fn update_context(self, ast: any) {
         // Extract variable and function definitions
         // Stage 1: Will properly inspect AST
     }
 }
 
 fn main() {
-    let mut repl: Repl = Repl.new()
+    let repl: Repl = Repl.new()
     repl.run()
 }

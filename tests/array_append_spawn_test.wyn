@@ -1,5 +1,5 @@
 fn main() {
-    let mut results: [int] = []
+    let results: [int] = []
     
     // Append from multiple spawns
     spawn {
@@ -16,7 +16,7 @@ fn main() {
     sleep(1)
     
     // Check that values were appended
-    let final_len: int = len(results)
+    const final_len: int = len(results)
     assert(final_len == 3)
     
     print_str("✓ Array append with spawn test passed - ")

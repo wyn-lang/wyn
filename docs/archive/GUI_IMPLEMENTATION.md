@@ -110,7 +110,7 @@ make all
 
 ```wyn
 fn main() {
-    let win: int = gui.create_window("Demo", 800, 600)
+    const win: int = gui.create_window("Demo", 800, 600)
     gui.show_window(win)
     
     # Draw red rectangle

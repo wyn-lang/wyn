@@ -2,9 +2,9 @@ fn main() {
     print_str("Testing hash stdlib...\n")
     
     # Test string hashing consistency
-    let s1: str = "hello"
-    let s2: str = "hello"
-    let s3: str = "world"
+    const s1: str = "hello"
+    const s2: str = "hello"
+    const s3: str = "world"
     
     # Same strings should be equal
     assert(s1 == s2, "same strings equal")

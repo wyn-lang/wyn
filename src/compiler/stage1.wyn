@@ -44,8 +44,8 @@ fn lexer_peek(lex: Lexer) -> str {
     return substring(lex.source, lex.pos, 1)
 }
 
-fn lexer_advance(mut lex: Lexer) -> str {
-    let c: str = lexer_peek(lex)
+fn lexer_advance(let lex: Lexer) -> str {
+    const c: str = lexer_peek(lex)
     lex.pos = lex.pos + 1
     if c == "\n" {
         lex.line = lex.line + 1
@@ -56,9 +56,9 @@ fn lexer_advance(mut lex: Lexer) -> str {
     return c
 }
 
-fn lexer_skip_ws(mut lex: Lexer) {
+fn lexer_skip_ws(let lex: Lexer) {
     while lex.pos < lex.len {
-        let c: str = lexer_peek(lex)
+        const c: str = lexer_peek(lex)
         if c == " " or c == "\t" or c == "\n" or c == "\r" {
             lexer_advance(lex)
         } else if c == "#" {
@@ -66,7 +66,7 @@ fn lexer_skip_ws(mut lex: Lexer) {
                 lexer_advance(lex)
             }
         } else if c == "/" and lex.pos + 1 < lex.len {
-            let next: str = substring(lex.source, lex.pos + 1, 1)
+            const next: str = substring(lex.source, lex.pos + 1, 1)
             if next == "/" {
                 while lex.pos < lex.len and lexer_peek(lex) != "\n" {
                     lexer_advance(lex)
@@ -102,58 +102,58 @@ fn keyword_kind(text: str) -> int {
     return 1  // IDENT
 }
 
-fn lexer_next(mut lex: Lexer) -> Token {
+fn lexer_next(let lex: Lexer) -> Token {
     lexer_skip_ws(lex)
     
     if lex.pos >= lex.len {
         return Token{kind: 0, text: "", int_val: 0, line: lex.line, col: lex.col}
     }
     
-    let start_line: int = lex.line
-    let start_col: int = lex.col
-    let c: str = lexer_peek(lex)
+    const start_line: int = lex.line
+    const start_col: int = lex.col
+    const c: str = lexer_peek(lex)
     
     // Identifiers and keywords
     if is_alpha(c) {
-        let start: int = lex.pos
+        const start: int = lex.pos
         while lex.pos < lex.len and is_alnum(lexer_peek(lex)) {
             lexer_advance(lex)
         }
-        let ident_text: str = substring(lex.source, start, lex.pos - start)
-        let kind: int = keyword_kind(ident_text)
+        const ident_text: str = substring(lex.source, start, lex.pos - start)
+        const kind: int = keyword_kind(ident_text)
         return Token{kind: kind, text: ident_text, int_val: 0, line: start_line, col: start_col}
     }
     
     // Numbers
     if is_digit(c) {
-        let start: int = lex.pos
-        let mut val: int = 0
+        const start: int = lex.pos
+        let val: int = 0
         while lex.pos < lex.len and is_digit(lexer_peek(lex)) {
             val = val * 10 + (ord(lexer_peek(lex)) - ord("0"))
             lexer_advance(lex)
         }
-        let num_text: str = substring(lex.source, start, lex.pos - start)
+        const num_text: str = substring(lex.source, start, lex.pos - start)
         return Token{kind: 2, text: num_text, int_val: val, line: start_line, col: start_col}
     }
     
     // Strings
     if c == "\"" {
         lexer_advance(lex)
-        let start: int = lex.pos
+        const start: int = lex.pos
         while lex.pos < lex.len and lexer_peek(lex) != "\"" {
             if lexer_peek(lex) == "\\" {
                 lexer_advance(lex)
             }
             lexer_advance(lex)
         }
-        let str_text: str = substring(lex.source, start, lex.pos - start)
+        const str_text: str = substring(lex.source, start, lex.pos - start)
         lexer_advance(lex)  // consume closing quote
         return Token{kind: 3, text: str_text, int_val: 0, line: start_line, col: start_col}
     }
     
     // Two-character operators
     if lex.pos + 1 < lex.len {
-        let two: str = substring(lex.source, lex.pos, 2)
+        const two: str = substring(lex.source, lex.pos, 2)
         if two == "==" {
             lexer_advance(lex)
             lexer_advance(lex)
@@ -250,7 +250,7 @@ fn token_name(kind: int) -> str {
 
 // Main entry point
 fn main() {
-    let argv: [str] = args()
+    const argv: [str] = args()
     
     if argv.len() < 2 {
         print_str("Wyn Stage 1 Compiler")
@@ -260,8 +260,8 @@ fn main() {
         exit(1)
     }
     
-    let input: str = argv[1]
-    let source: str = read_file(input)
+    const input: str = argv[1]
+    const source: str = read_file(input)
     
     if source.len() == 0 {
         print_str("Error: Could not read file: ")
@@ -275,34 +275,34 @@ fn main() {
     print_newline()
     
     // Single pass: tokenize, parse, and generate code
-    let mut lex: Lexer = lexer_new(source)
-    let mut token_count: int = 0
-    let mut fn_count: int = 0
-    let mut struct_count: int = 0
-    let mut prev_kind: int = 0
-    let mut prev2_kind: int = 0
-    let mut prev_text: str = ""
+    let lex: Lexer = lexer_new(source)
+    let token_count: int = 0
+    let fn_count: int = 0
+    let struct_count: int = 0
+    let prev_kind: int = 0
+    let prev2_kind: int = 0
+    let prev_text: str = ""
     
     // State for current function/struct being parsed
-    let mut in_fn: bool = false
-    let mut in_struct: bool = false
-    let mut fn_start_depth: int = 0
-    let mut struct_start_depth: int = 0
-    let mut brace_depth: int = 0
-    let mut paren_depth: int = 0
-    let mut param_count: int = 0
-    let mut field_count: int = 0
-    let mut stmt_count: int = 0
-    let mut var_count: int = 0
-    let mut cur_fn_name: str = ""
-    let mut cur_struct_name: str = ""
-    let mut has_return: bool = false
+    let in_fn: bool = false
+    let in_struct: bool = false
+    let fn_start_depth: int = 0
+    let struct_start_depth: int = 0
+    let brace_depth: int = 0
+    let paren_depth: int = 0
+    let param_count: int = 0
+    let field_count: int = 0
+    let stmt_count: int = 0
+    let var_count: int = 0
+    let cur_fn_name: str = ""
+    let cur_struct_name: str = ""
+    let has_return: bool = false
     
     // Code generation state
-    let mut str_count: int = 0
-    let do_codegen: bool = argv.len() >= 3
-    let mut output: str = ""
-    let mut strings: str = ""
+    let str_count: int = 0
+    const do_codegen: bool = argv.len() >= 3
+    let output: str = ""
+    let strings: str = ""
     
     // Write header if doing codegen
     if do_codegen {
@@ -311,7 +311,7 @@ fn main() {
     }
     
     while true {
-        let tok: Token = lexer_next(lex)
+        const tok: Token = lexer_next(lex)
         token_count = token_count + 1
         
         // Debug: print all tokens
@@ -327,7 +327,7 @@ fn main() {
         
         // Detect print("string") - write code immediately
         if do_codegen and prev2_kind == 1 and prev_text == "print" and prev_kind == 14 and tok.kind == 3 {
-            let lbl: str = int_to_str(str_count)
+            const lbl: str = int_to_str(str_count)
             append_file(output, "    adrp x0, L_.str" + lbl + "@PAGE\n")
             append_file(output, "    add x0, x0, L_.str" + lbl + "@PAGEOFF\n")
             append_file(output, "    bl _puts\n")

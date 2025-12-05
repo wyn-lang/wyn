@@ -11,21 +11,21 @@ fn new_codegen() -> CodeGen {
 }
 
 fn emit(cg: CodeGen, line: str) -> CodeGen {
-    let mut new_cg: CodeGen = cg
+    let new_cg: CodeGen = cg
     new_cg.output = str_concat(cg.output, line)
     new_cg.output = str_concat(new_cg.output, "\n")
     return new_cg
 }
 
 fn new_label(cg: CodeGen) -> (CodeGen, int) {
-    let mut new_cg: CodeGen = cg
+    let new_cg: CodeGen = cg
     new_cg.label_count = cg.label_count + 1
     return (new_cg, cg.label_count)
 }
 
 # ARM64 code generation
 fn gen_function(cg: CodeGen, name: str) -> CodeGen {
-    let mut c: CodeGen = cg
+    let c: CodeGen = cg
     c = emit(c, "    .globl _")
     c = emit(c, name)
     c = emit(c, "    .p2align 2")
@@ -37,7 +37,7 @@ fn gen_function(cg: CodeGen, name: str) -> CodeGen {
 }
 
 fn gen_return(cg: CodeGen) -> CodeGen {
-    let mut c: CodeGen = cg
+    let c: CodeGen = cg
     c = emit(c, "    mov x0, #0")
     c = emit(c, "    ldp x29, x30, [sp]")
     c = emit(c, "    add sp, sp, #4096")
@@ -46,7 +46,7 @@ fn gen_return(cg: CodeGen) -> CodeGen {
 }
 
 fn gen_call(cg: CodeGen, func: str) -> CodeGen {
-    let mut c: CodeGen = cg
+    let c: CodeGen = cg
     c = emit(c, str_concat("    bl _", func))
     return c
 }

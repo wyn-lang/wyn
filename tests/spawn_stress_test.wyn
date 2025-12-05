@@ -1,7 +1,7 @@
 fn main() {
     print_str("Testing spawn with 1000 concurrent operations...\n")
     
-    let mut counter: int = 0
+    let counter: int = 0
     
     for i in 0..1000 {
         spawn { counter = counter + 1 }

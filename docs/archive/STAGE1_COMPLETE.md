@@ -60,8 +60,8 @@ let arr = [1, 2, 3] // Inferred as [int]
 
 ### Better Errors
 ```wyn
-let x: int = 42
-let y: float = 3.14
+const x: int = 42
+const y: float = 3.14
 let z = x + y
 // Error: type mismatch: int vs float
 // Suggestion: convert int to float with .to_float()

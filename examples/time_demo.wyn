@@ -5,7 +5,7 @@ fn main() {
     print_str("=== Time and Sleep Demo ===\n\n")
     
     # Get current timestamp
-    let start: int = time_now()
+    const start: int = time_now()
     print_str("Start time: ")
     println(start)
     
@@ -14,12 +14,12 @@ fn main() {
     sleep_ms(500)
     
     # Get timestamp after sleep
-    let end: int = time_now()
+    const end: int = time_now()
     print_str("End time: ")
     println(end)
     
     # Calculate elapsed time
-    let elapsed: int = end - start
+    const elapsed: int = end - start
     print_str("Elapsed: ")
     print(elapsed)
     print_str(" seconds\n")

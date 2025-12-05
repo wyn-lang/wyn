@@ -81,7 +81,7 @@ fn main() {
     gui.draw_text(win, 120, 180, "Hello, GUI!")
     
     # Poll events for 5 seconds
-    let mut i = 0
+    let i = 0
     while i < 500 {
         gui.poll_events()
         sleep_ms(10)

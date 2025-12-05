@@ -13,12 +13,12 @@ impl Optimizer {
     }
     
     // Run all optimization passes
-    pub fn optimize(mut self, module: IRModule) -> IRModule {
-        let mut result: IRModule = module
+    pub fn optimize(self, module: IRModule) -> IRModule {
+        let result: IRModule = module
         
         // Run passes until no more changes
-        let mut iterations: int = 0
-        let max_iterations: int = 10
+        let iterations: int = 0
+        const max_iterations: int = 10
         
         while iterations < max_iterations {
             self.changed = false
@@ -38,17 +38,17 @@ impl Optimizer {
     }
     
     // Constant folding: evaluate constant expressions at compile time
-    fn constant_fold(mut self, module: IRModule) -> IRModule {
+    fn constant_fold(self, module: IRModule) -> IRModule {
         for func in module.functions {
             for block in func.blocks {
-                let mut i: int = 0
+                let i: int = 0
                 while i < block.instrs.len() {
-                    let instr: IRInstr = block.instrs[i]
+                    const instr: IRInstr = block.instrs[i]
                     
                     match instr.op {
                         "add" => {
-                            let a: ?int = try_parse_int(instr.args[0])
-                            let b: ?int = try_parse_int(instr.args[1])
+                            const a: ?int = try_parse_int(instr.args[0])
+                            const b: ?int = try_parse_int(instr.args[1])
                             match (a, b) {
                                 (some(x), some(y)) => {
                                     block.instrs[i] = IRInstr{
@@ -63,8 +63,8 @@ impl Optimizer {
                             }
                         }
                         "sub" => {
-                            let a: ?int = try_parse_int(instr.args[0])
-                            let b: ?int = try_parse_int(instr.args[1])
+                            const a: ?int = try_parse_int(instr.args[0])
+                            const b: ?int = try_parse_int(instr.args[1])
                             match (a, b) {
                                 (some(x), some(y)) => {
                                     block.instrs[i] = IRInstr{
@@ -79,8 +79,8 @@ impl Optimizer {
                             }
                         }
                         "mul" => {
-                            let a: ?int = try_parse_int(instr.args[0])
-                            let b: ?int = try_parse_int(instr.args[1])
+                            const a: ?int = try_parse_int(instr.args[0])
+                            const b: ?int = try_parse_int(instr.args[1])
                             match (a, b) {
                                 (some(x), some(y)) => {
                                     block.instrs[i] = IRInstr{
@@ -95,8 +95,8 @@ impl Optimizer {
                             }
                         }
                         "div" => {
-                            let a: ?int = try_parse_int(instr.args[0])
-                            let b: ?int = try_parse_int(instr.args[1])
+                            const a: ?int = try_parse_int(instr.args[0])
+                            const b: ?int = try_parse_int(instr.args[1])
                             match (a, b) {
                                 (some(x), some(y)) => {
                                     if y != 0 {
@@ -123,10 +123,10 @@ impl Optimizer {
     }
     
     // Dead code elimination: remove unused instructions
-    fn dead_code_elim(mut self, module: IRModule) -> IRModule {
+    fn dead_code_elim(self, module: IRModule) -> IRModule {
         for func in module.functions {
             // Find all used variables
-            let mut used: [str] = []
+            let used: [str] = []
             
             for block in func.blocks {
                 for instr in block.instrs {
@@ -140,9 +140,9 @@ impl Optimizer {
             
             // Remove instructions whose results are never used
             for block in func.blocks {
-                let mut new_instrs: [IRInstr] = []
+                let new_instrs: [IRInstr] = []
                 for instr in block.instrs {
-                    let keep: bool = instr.dest == "" or 
+                    const keep: bool = instr.dest == "" or 
                                      contains(used, instr.dest) or
                                      has_side_effect(instr.op)
                     if keep {
@@ -158,10 +158,10 @@ impl Optimizer {
     }
     
     // Copy propagation: replace copies with original values
-    fn copy_propagation(mut self, module: IRModule) -> IRModule {
+    fn copy_propagation(self, module: IRModule) -> IRModule {
         for func in module.functions {
             // Build copy map
-            let mut copies: [(str, str)] = []
+            let copies: [(str, str)] = []
             
             for block in func.blocks {
                 for instr in block.instrs {
@@ -174,7 +174,7 @@ impl Optimizer {
             // Replace uses
             for block in func.blocks {
                 for instr in block.instrs {
-                    let mut i: int = 0
+                    let i: int = 0
                     while i < instr.args.len() {
                         for copy in copies {
                             if instr.args[i] == copy.0 {
@@ -191,17 +191,17 @@ impl Optimizer {
     }
     
     // Strength reduction: replace expensive ops with cheaper ones
-    fn strength_reduction(mut self, module: IRModule) -> IRModule {
+    fn strength_reduction(self, module: IRModule) -> IRModule {
         for func in module.functions {
             for block in func.blocks {
-                let mut i: int = 0
+                let i: int = 0
                 while i < block.instrs.len() {
-                    let instr: IRInstr = block.instrs[i]
+                    const instr: IRInstr = block.instrs[i]
                     
                     match instr.op {
                         "mul" => {
                             // x * 2 -> x + x (or x << 1)
-                            let b: ?int = try_parse_int(instr.args[1])
+                            const b: ?int = try_parse_int(instr.args[1])
                             match b {
                                 some(2) => {
                                     block.instrs[i] = IRInstr{
@@ -214,7 +214,7 @@ impl Optimizer {
                                 }
                                 some(n) => {
                                     // x * power_of_2 -> x << log2(n)
-                                    let shift: ?int = log2_if_power(n)
+                                    const shift: ?int = log2_if_power(n)
                                     match shift {
                                         some(s) => {
                                             block.instrs[i] = IRInstr{
@@ -233,10 +233,10 @@ impl Optimizer {
                         }
                         "div" => {
                             // x / power_of_2 -> x >> log2(n)
-                            let b: ?int = try_parse_int(instr.args[1])
+                            const b: ?int = try_parse_int(instr.args[1])
                             match b {
                                 some(n) => {
-                                    let shift: ?int = log2_if_power(n)
+                                    const shift: ?int = log2_if_power(n)
                                     match shift {
                                         some(s) => {
                                             block.instrs[i] = IRInstr{
@@ -268,15 +268,15 @@ impl Optimizer {
 fn try_parse_int(s: str) -> ?int {
     if s.len() == 0 { return none }
     
-    let first: str = s[0:1]
-    let is_neg: bool = first == "-"
-    let start: int = if is_neg then 1 else 0
+    const first: str = s[0:1]
+    const is_neg: bool = first == "-"
+    const start: int = if is_neg then 1 else 0
     
-    let mut result: int = 0
-    let mut i: int = start
+    let result: int = 0
+    let i: int = start
     while i < s.len() {
-        let c: str = s[i:i+1]
-        let code: int = ord(c)
+        const c: str = s[i:i+1]
+        const code: int = ord(c)
         if code < 48 or code > 57 {
             return none  // Not a digit
         }
@@ -290,8 +290,8 @@ fn try_parse_int(s: str) -> ?int {
 // Helper: check if string is a constant (number or string literal)
 fn is_constant(s: str) -> bool {
     if s.len() == 0 { return false }
-    let first: str = s[0:1]
-    let code: int = ord(first)
+    const first: str = s[0:1]
+    const code: int = ord(first)
     return (code >= 48 and code <= 57) or first == "-" or first == "\""
 }
 
@@ -312,8 +312,8 @@ fn log2_if_power(n: int) -> ?int {
     if n <= 0 { return none }
     if (n & (n - 1)) != 0 { return none }  // Not power of 2
     
-    let mut result: int = 0
-    let mut val: int = n
+    let result: int = 0
+    let val: int = n
     while val > 1 {
         val = val / 2
         result = result + 1

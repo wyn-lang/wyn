@@ -10,7 +10,7 @@ fn main() {
     
     # Example 2: Variable capture
     print_str("2. Variable capture:\n")
-    let x: int = 42
+    const x: int = 42
     spawn {
         print_str("   x = ")
         print(x)
@@ -20,7 +20,7 @@ fn main() {
     
     # Example 3: Atomic counter
     print_str("3. Atomic counter (10 spawns):\n")
-    let mut counter: int = 0
+    let counter: int = 0
     
     for i in 0..10 {
         spawn { counter = counter + 1 }
@@ -33,8 +33,8 @@ fn main() {
     
     # Example 4: Multiple counters
     print_str("4. Multiple counters:\n")
-    let mut passed: int = 0
-    let mut failed: int = 0
+    let passed: int = 0
+    let failed: int = 0
     
     spawn { passed = passed + 1 }
     spawn { passed = passed + 1 }

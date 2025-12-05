@@ -1,16 +1,16 @@
 fn main() {
-    let iterations: int = 1000000
-    let mut i: int = 0
-    let mut sum: float = 0.0
+    const iterations: int = 1000000
+    let i: int = 0
+    let sum: float = 0.0
     
     # Math operations
     while i < iterations {
-        let a: float = 3.14159
-        let b: float = 2.71828
-        let s: float = sqrtf(a * a + b * b)
-        let p: float = powf(a, 2.0)
-        let sin_val: float = sinf(a)
-        let cos_val: float = cosf(a)
+        const a: float = 3.14159
+        const b: float = 2.71828
+        const s: float = sqrtf(a * a + b * b)
+        const p: float = powf(a, 2.0)
+        const sin_val: float = sinf(a)
+        const cos_val: float = cosf(a)
         sum = sum + s + p + sin_val + cos_val
         i = i + 1
     }

@@ -8,22 +8,22 @@ mobile.run()   // Start event loop (blocking)
 
 ## Views
 ```wyn
-let view: i64 = mobile.create_view(x, y, w, h)
+const view: i64 = mobile.create_view(x, y, w, h)
 mobile.add_subview(parent, child)
 mobile.add_to_root(view)
 ```
 
 ## Components
 ```wyn
-let btn: i64 = mobile.create_button("Title", x, y, w, h)
-let lbl: i64 = mobile.create_label("Text", x, y, w, h)
-let txt: i64 = mobile.create_textfield(x, y, w, h)
+const btn: i64 = mobile.create_button("Title", x, y, w, h)
+const lbl: i64 = mobile.create_label("Text", x, y, w, h)
+const txt: i64 = mobile.create_textfield(x, y, w, h)
 ```
 
 ## Text
 ```wyn
 mobile.set_text(view, "New text")
-let text: str = mobile.get_text(view)
+const text: str = mobile.get_text(view)
 ```
 
 ## Layout
@@ -59,11 +59,11 @@ fn on_click() {
 fn main() {
     mobile.init()
     
-    let label: i64 = mobile.create_label("Hello iOS", 20, 100, 350, 40)
+    const label: i64 = mobile.create_label("Hello iOS", 20, 100, 350, 40)
     mobile.set_font_size(label, 24)
     mobile.add_to_root(label)
     
-    let button: i64 = mobile.create_button("Tap Me", 20, 160, 350, 50)
+    const button: i64 = mobile.create_button("Tap Me", 20, 160, 350, 50)
     mobile.set_background_color(button, 0, 122, 255)
     mobile.add_to_root(button)
     mobile.on_tap(button, on_click)

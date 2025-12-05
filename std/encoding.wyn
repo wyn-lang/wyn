@@ -12,7 +12,7 @@ fn base64_char(n: int) -> str {
 
 # Base64 decode character to value
 fn base64_value(c: str) -> int {
-    let code: int = ord(c)
+    const code: int = ord(c)
     if code >= 65 and code <= 90 { return code - 65 }
     if code >= 97 and code <= 122 { return code - 97 + 26 }
     if code >= 48 and code <= 57 { return code - 48 + 52 }
@@ -23,16 +23,16 @@ fn base64_value(c: str) -> int {
 
 # Encode string to base64
 fn base64_encode(s: str) -> str {
-    let len: int = s.len()
-    let mut result: str = ""
-    let mut i: int = 0
+    const len: int = s.len()
+    let result: str = ""
+    let i: int = 0
     
     while i < len {
-        let b1: int = ord(s[i:i+1])
-        let b2: int = if i + 1 < len then ord(s[i+1:i+2]) else 0
-        let b3: int = if i + 2 < len then ord(s[i+2:i+3]) else 0
+        const b1: int = ord(s[i:i+1])
+        const b2: int = if i + 1 < len then ord(s[i+1:i+2]) else 0
+        const b3: int = if i + 2 < len then ord(s[i+2:i+3]) else 0
         
-        let n: int = (b1 << 16) + (b2 << 8) + b3
+        const n: int = (b1 << 16) + (b2 << 8) + b3
         
         result = result + base64_char((n >> 18) & 63)
         result = result + base64_char((n >> 12) & 63)
@@ -47,24 +47,24 @@ fn base64_encode(s: str) -> str {
 
 # Decode base64 string
 fn base64_decode(s: str) -> str {
-    let len: int = s.len()
-    let mut result: str = ""
-    let mut i: int = 0
+    const len: int = s.len()
+    let result: str = ""
+    let i: int = 0
     
     while i < len {
         if i + 3 >= len { break }
         
-        let c1: str = s[i:i+1]
-        let c2: str = s[i+1:i+2]
-        let c3: str = s[i+2:i+3]
-        let c4: str = s[i+3:i+4]
+        const c1: str = s[i:i+1]
+        const c2: str = s[i+1:i+2]
+        const c3: str = s[i+2:i+3]
+        const c4: str = s[i+3:i+4]
         
-        let n1: int = base64_value(c1)
-        let n2: int = base64_value(c2)
-        let n3: int = if c3 == "=" then 0 else base64_value(c3)
-        let n4: int = if c4 == "=" then 0 else base64_value(c4)
+        const n1: int = base64_value(c1)
+        const n2: int = base64_value(c2)
+        const n3: int = if c3 == "=" then 0 else base64_value(c3)
+        const n4: int = if c4 == "=" then 0 else base64_value(c4)
         
-        let n: int = (n1 << 18) + (n2 << 12) + (n3 << 6) + n4
+        const n: int = (n1 << 18) + (n2 << 12) + (n3 << 6) + n4
         
         result = result + chr((n >> 16) & 255)
         if c3 != "=" {
@@ -88,7 +88,7 @@ fn hex_char(n: int) -> str {
 
 # Convert hex character to value
 fn hex_value(c: str) -> int {
-    let code: int = ord(c)
+    const code: int = ord(c)
     if code >= 48 and code <= 57 { return code - 48 }
     if code >= 97 and code <= 102 { return code - 97 + 10 }
     if code >= 65 and code <= 70 { return code - 65 + 10 }
@@ -97,10 +97,10 @@ fn hex_value(c: str) -> int {
 
 # Encode string to hexadecimal
 fn hex_encode(s: str) -> str {
-    let mut result: str = ""
-    let mut i: int = 0
+    let result: str = ""
+    let i: int = 0
     while i < s.len() {
-        let b: int = ord(s[i:i+1])
+        const b: int = ord(s[i:i+1])
         result = result + hex_char(b >> 4)
         result = result + hex_char(b & 15)
         i = i + 1
@@ -110,11 +110,11 @@ fn hex_encode(s: str) -> str {
 
 # Decode hexadecimal string
 fn hex_decode(s: str) -> str {
-    let mut result: str = ""
-    let mut i: int = 0
+    let result: str = ""
+    let i: int = 0
     while i + 1 < s.len() {
-        let h1: int = hex_value(s[i:i+1])
-        let h2: int = hex_value(s[i+1:i+2])
+        const h1: int = hex_value(s[i:i+1])
+        const h2: int = hex_value(s[i+1:i+2])
         result = result + chr((h1 << 4) + h2)
         i = i + 2
     }
@@ -123,7 +123,7 @@ fn hex_decode(s: str) -> str {
 
 # Check if character should be URL encoded
 fn should_encode(c: str) -> bool {
-    let code: int = ord(c)
+    const code: int = ord(c)
     if code >= 48 and code <= 57 { return false }
     if code >= 65 and code <= 90 { return false }
     if code >= 97 and code <= 122 { return false }
@@ -133,14 +133,14 @@ fn should_encode(c: str) -> bool {
 
 # URL encode string
 fn url_encode(s: str) -> str {
-    let mut result: str = ""
-    let mut i: int = 0
+    let result: str = ""
+    let i: int = 0
     while i < s.len() {
-        let c: str = s[i:i+1]
+        const c: str = s[i:i+1]
         if c == " " {
             result = result + "+"
         } else if should_encode(c) {
-            let b: int = ord(c)
+            const b: int = ord(c)
             result = result + "%" + hex_char(b >> 4) + hex_char(b & 15)
         } else {
             result = result + c
@@ -152,16 +152,16 @@ fn url_encode(s: str) -> str {
 
 # URL decode string
 fn url_decode(s: str) -> str {
-    let mut result: str = ""
-    let mut i: int = 0
+    let result: str = ""
+    let i: int = 0
     while i < s.len() {
-        let c: str = s[i:i+1]
+        const c: str = s[i:i+1]
         if c == "+" {
             result = result + " "
             i = i + 1
         } else if c == "%" and i + 2 < s.len() {
-            let h1: int = hex_value(s[i+1:i+2])
-            let h2: int = hex_value(s[i+2:i+3])
+            const h1: int = hex_value(s[i+1:i+2])
+            const h2: int = hex_value(s[i+2:i+3])
             result = result + chr((h1 << 4) + h2)
             i = i + 3
         } else {

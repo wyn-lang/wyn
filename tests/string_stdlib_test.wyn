@@ -6,14 +6,14 @@ fn main() {
     assert("".len() == 0, "empty string length")
     
     # Test string concatenation
-    let s1: str = "hello"
-    let s2: str = " world"
-    let s3: str = s1 + s2
+    const s1: str = "hello"
+    const s2: str = " world"
+    const s3: str = s1 + s2
     assert(s3 == "hello world", "concatenation")
     assert(s3.len() == 11, "concat length")
     
     # Test string slicing
-    let text: str = "hello world"
+    const text: str = "hello world"
     assert(text[0:5] == "hello", "slice 0:5")
     assert(text[6:11] == "world", "slice 6:11")
     assert(text[0:1] == "h", "single char slice")
@@ -29,14 +29,14 @@ fn main() {
     assert(str_find(text, "o") == 4, "find char")
     
     # Test str_split
-    let parts: [str] = str_split("a,b,c", ",")
+    const parts: [str] = str_split("a,b,c", ",")
     assert(parts.len() == 3, "split length")
     
-    let parts2: [str] = str_split("one two three", " ")
+    const parts2: [str] = str_split("one two three", " ")
     assert(parts2.len() == 3, "split by space")
     
     # Test str_concat
-    let joined: str = str_concat("hello", " world")
+    const joined: str = str_concat("hello", " world")
     assert(joined == "hello world", "str_concat")
     
     # Test str_cmp
@@ -45,7 +45,7 @@ fn main() {
     assert(str_cmp("def", "abc") > 0, "greater than")
     
     # Test substring
-    let sub: str = substring(text, 0, 5)
+    const sub: str = substring(text, 0, 5)
     assert(sub == "hello", "substring")
     
     # Test chr and ord

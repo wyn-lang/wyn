@@ -1,7 +1,7 @@
 fn main() {
     print_str("=== Wyn Test Suite ===\n")
     
-    let mut passed: int = 0
+    let passed: int = 0
     
     # Tests in tests/ (42 tests)
     passed = passed + run_test("tests/arithmetic_test.wyn")
@@ -89,7 +89,7 @@ fn main() {
     passed = passed + run_test("examples/string_test.wyn")
     passed = passed + run_test("examples/write_file_test.wyn")
     
-    let failed: int = 82 - passed
+    const failed: int = 82 - passed
     
     print_str("\n=== Results ===\n")
     print_str("Passed: ")
@@ -103,12 +103,12 @@ fn main() {
 }
 
 fn run_test(path: str) -> int {
-    let parts: [str] = str_split(path, "/")
-    let name: str = parts[parts.len() - 1]
+    const parts: [str] = str_split(path, "/")
+    const name: str = parts[parts.len() - 1]
     
-    let exe: str = "/tmp/wyn_test"
-    let compile_cmd: str = "./build/stage0 -q -o " + exe + " " + path + " 2>/dev/null"
-    let compile_result: int = system(compile_cmd)
+    const exe: str = "/tmp/wyn_test"
+    const compile_cmd: str = "./build/stage0 -q -o " + exe + " " + path + " 2>/dev/null"
+    const compile_result: int = system(compile_cmd)
     
     if compile_result != 0 {
         print_str("FAIL ")
@@ -117,8 +117,8 @@ fn run_test(path: str) -> int {
         return 0
     }
     
-    let run_cmd: str = exe + " >/dev/null 2>&1"
-    let run_result: int = system(run_cmd)
+    const run_cmd: str = exe + " >/dev/null 2>&1"
+    const run_result: int = system(run_cmd)
     
     if run_result == 0 {
         print_str("PASS ")

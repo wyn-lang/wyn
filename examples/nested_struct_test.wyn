@@ -4,7 +4,7 @@ struct Rect { origin: Point, size: Point }
 
 fn main() {
     # Simple struct
-    let p: Point = Point { x: 5, y: 10 }
+    const p: Point = Point { x: 5, y: 10 }
     print(p.x)
     print_newline()
     print(p.y)
@@ -13,7 +13,7 @@ fn main() {
     assert(p.y == 10)
     
     # Nested struct
-    let r: Rect = Rect { origin: Point { x: 100, y: 200 }, size: Point { x: 50, y: 60 } }
+    const r: Rect = Rect { origin: Point { x: 100, y: 200 }, size: Point { x: 50, y: 60 } }
     print(r.origin.x)
     print_newline()
     print(r.origin.y)

@@ -6,7 +6,7 @@
 Loop variables are captured by reference, causing all spawns to see the final value:
 
 ```wyn
-let mut counter: int = 0
+let counter: int = 0
 for i in 0..10 {
     spawn { 
         print(i)  // All print 10, not 0-9
@@ -24,9 +24,9 @@ for i in 0..10 {
 
 ### Workaround: Create Local Copy
 ```wyn
-let mut counter: int = 0
+let counter: int = 0
 for i in 0..10 {
-    let i_copy: int = i  // Create copy for this iteration
+    const i_copy: int = i  // Create copy for this iteration
     spawn { 
         print(i_copy)  // Each spawn gets correct value
         counter = counter + 1
@@ -38,7 +38,7 @@ for i in 0..10 {
 ### What Works
 ✅ **Fixed spawn statements:**
 ```wyn
-let mut counter: int = 0
+let counter: int = 0
 spawn { counter = counter + 1 }
 spawn { counter = counter + 1 }
 spawn { counter = counter + 1 }
@@ -48,7 +48,7 @@ spawn { counter = counter + 1 }
 ✅ **Spawn with local copies:**
 ```wyn
 for i in 0..100 {
-    let val: int = i
+    const val: int = i
     spawn { process(val) }
 }
 ```
@@ -71,7 +71,7 @@ for i in 0..100 {
 
 ### Verified
 ```wyn
-let mut counter: int = 0
+let counter: int = 0
 spawn { counter = counter + 1 }
 spawn { counter = counter + 1 }
 spawn { counter = counter + 1 }
@@ -84,7 +84,7 @@ spawn { counter = counter + 1 }
 Use the workaround pattern:
 ```wyn
 for item in items {
-    let item_copy: T = item
+    const item_copy: T = item
     spawn { process(item_copy) }
 }
 ```

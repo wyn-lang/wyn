@@ -13,28 +13,28 @@ impl Parser {
         Parser{tokens, pos: 0}
     }
     
-    pub fn parse(mut self) -> Module {
-        let imports: [Import] = []
+    pub fn parse(self) -> Module {
+        const imports: [Import] = []
         while self.check(Import) {
             imports = imports + [self.parse_import()]
         }
-        let items: [Item] = []
+        const items: [Item] = []
         while not self.is_eof() {
             items = items + [self.parse_item()]
         }
         return Module{name: "", imports, items}
     }
     
-    fn parse_import(mut self) -> Import {
+    fn parse_import(self) -> Import {
         let span = self.peek().span
         self.expect(Import)
-        let path: [str] = [self.expect_ident()]
+        const path: [str] = [self.expect_ident()]
         while self.check(Dot) {
             self.advance()
             if self.check(LBrace) {
                 // import foo.bar.{a, b}
                 self.advance()
-                let items: [str] = []
+                const items: [str] = []
                 while not self.check(RBrace) and not self.is_eof() {
                     items = items + [self.expect_ident()]
                     if not self.check(RBrace) { self.expect(Comma) }
@@ -47,7 +47,7 @@ impl Parser {
         return Import{path, alias: none, items: none, span}
     }
     
-    fn parse_item(mut self) -> Item {
+    fn parse_item(self) -> Item {
         let vis = self.parse_visibility()
         match self.peek().kind {
             Fn => Function(self.parse_fn(vis))
@@ -61,7 +61,7 @@ impl Parser {
         }
     }
     
-    fn parse_visibility(mut self) -> Visibility {
+    fn parse_visibility(self) -> Visibility {
         if self.check(Pub) {
             self.advance()
             return Public
@@ -69,7 +69,7 @@ impl Parser {
         return Private
     }
     
-    fn parse_fn(mut self, vis: Visibility) -> FnDef {
+    fn parse_fn(self, vis: Visibility) -> FnDef {
         let start = self.peek().span
         self.expect(Fn)
         let name = self.expect_ident()
@@ -81,12 +81,12 @@ impl Parser {
         return FnDef{name, generics: [], params, return_type: ret, body, visibility: vis, attributes: [], span: start}
     }
     
-    fn parse_impl(mut self) -> ImplDef {
+    fn parse_impl(self) -> ImplDef {
         let span = self.peek().span
         self.expect(Impl)
         let ty = self.parse_type()
         self.expect(LBrace)
-        let methods: [FnDef] = []
+        const methods: [FnDef] = []
         while not self.check(RBrace) and not self.is_eof() {
             let vis = self.parse_visibility()
             methods = methods + [self.parse_fn(vis)]
@@ -95,19 +95,10 @@ impl Parser {
         return ImplDef{generics: [], trait_: none, type_: ty, methods, span}
     }
     
-    fn parse_params(mut self) -> [Param] {
-        let params: [Param] = []
+    fn parse_params(self) -> [Param] {
+        const params: [Param] = []
         while not self.check(RParen) and not self.is_eof() {
-            // Handle 'self' and 'mut self'
-            if self.check(Mut) {
-                self.advance()
-                if self.check(Self_) {
-                    self.advance()
-                    params = params + [Param{name: "self", type_: SelfType, default: none, span: self.peek().span}]
-                    if not self.check(RParen) { self.expect(Comma) }
-                    continue
-                }
-            }
+            // Handle 'self' parameter (all parameters are mutable by default)
             if self.check(Self_) {
                 self.advance()
                 params = params + [Param{name: "self", type_: SelfType, default: none, span: self.peek().span}]
@@ -123,10 +114,10 @@ impl Parser {
         return params
     }
     
-    fn parse_block(mut self) -> Block {
+    fn parse_block(self) -> Block {
         let start = self.peek().span
         self.expect(LBrace)
-        let stmts: [Stmt] = []
+        const stmts: [Stmt] = []
         while not self.check(RBrace) and not self.is_eof() {
             stmts = stmts + [self.parse_stmt()]
         }
@@ -134,10 +125,11 @@ impl Parser {
         return Block{stmts, expr: none, span: start}
     }
     
-    fn parse_stmt(mut self) -> Stmt {
+    fn parse_stmt(self) -> Stmt {
         let span = self.peek().span
         match self.peek().kind {
-            Let => self.parse_let()
+            Let => self.parse_let(true)
+            Const => self.parse_let(false)
             Return => { self.advance(); Return(if self.check_expr_start() then some(self.parse_expr()) else none, span) }
             Break => { self.advance(); Break(none, span) }
             Continue => { self.advance(); Continue(span) }
@@ -159,11 +151,13 @@ impl Parser {
         }
     }
     
-    fn parse_let(mut self) -> Stmt {
+    fn parse_let(self, is_mut: bool) -> Stmt {
         let span = self.peek().span
-        self.expect(Let)
-        let is_mut = self.check(Mut)
-        if is_mut { self.advance() }
+        if is_mut {
+            self.expect(Let)
+        } else {
+            self.expect(Const)
+        }
         let name = self.expect_ident()
         let ty = if self.check(Colon) { self.advance(); some(self.parse_type()) } else { none }
         self.expect(Eq)
@@ -171,7 +165,7 @@ impl Parser {
         return Let(name, is_mut, ty, value, span)
     }
     
-    fn parse_while(mut self) -> Stmt {
+    fn parse_while(self) -> Stmt {
         let span = self.peek().span
         self.expect(While)
         let cond = self.parse_expr()
@@ -179,7 +173,7 @@ impl Parser {
         return While(cond, body, span)
     }
     
-    fn parse_for(mut self) -> Stmt {
+    fn parse_for(self) -> Stmt {
         let span = self.peek().span
         self.expect(For)
         let name = self.expect_ident()
@@ -189,12 +183,12 @@ impl Parser {
         return For(Ident(name, false, span), iter, body, span)
     }
     
-    fn parse_match(mut self) -> Expr {
+    fn parse_match(self) -> Expr {
         let span = self.peek().span
         self.expect(Match)
         let value = self.parse_expr()
         self.expect(LBrace)
-        let arms: [MatchArm] = []
+        const arms: [MatchArm] = []
         while not self.check(RBrace) and not self.is_eof() {
             let pat = self.parse_pattern()
             self.expect(FatArrow)
@@ -205,7 +199,7 @@ impl Parser {
         return Match(Box{value}, arms, span)
     }
     
-    fn parse_pattern(mut self) -> Pattern {
+    fn parse_pattern(self) -> Pattern {
         let span = self.peek().span
         match self.peek().kind {
             Underscore => { self.advance(); Wildcard(span) }
@@ -227,11 +221,11 @@ impl Parser {
         }
     }
     
-    fn parse_expr(mut self) -> Expr {
+    fn parse_expr(self) -> Expr {
         return self.parse_or()
     }
     
-    fn parse_or(mut self) -> Expr {
+    fn parse_or(self) -> Expr {
         let left = self.parse_and()
         while self.check(OrOr) {
             self.advance()
@@ -241,7 +235,7 @@ impl Parser {
         return left
     }
     
-    fn parse_and(mut self) -> Expr {
+    fn parse_and(self) -> Expr {
         let left = self.parse_comparison()
         while self.check(AndAnd) {
             self.advance()
@@ -251,7 +245,7 @@ impl Parser {
         return left
     }
     
-    fn parse_comparison(mut self) -> Expr {
+    fn parse_comparison(self) -> Expr {
         let left = self.parse_range()
         if self.check(EqEq) or self.check(NotEq) or self.check(Lt) or self.check(Gt) or self.check(LtEq) or self.check(GtEq) {
             let op = self.parse_cmp_op()
@@ -261,7 +255,7 @@ impl Parser {
         return left
     }
     
-    fn parse_range(mut self) -> Expr {
+    fn parse_range(self) -> Expr {
         let left = self.parse_additive()
         if self.check(DotDot) {
             self.advance()
@@ -276,7 +270,7 @@ impl Parser {
         return left
     }
     
-    fn parse_additive(mut self) -> Expr {
+    fn parse_additive(self) -> Expr {
         let left = self.parse_multiplicative()
         while self.check(Plus) or self.check(Minus) {
             let op = if self.check(Plus) then Add else Sub
@@ -287,7 +281,7 @@ impl Parser {
         return left
     }
     
-    fn parse_multiplicative(mut self) -> Expr {
+    fn parse_multiplicative(self) -> Expr {
         let left = self.parse_unary()
         while self.check(Star) or self.check(Slash) or self.check(Percent) {
             let op = if self.check(Star) then Mul else if self.check(Slash) then Div else Mod
@@ -298,7 +292,7 @@ impl Parser {
         return left
     }
     
-    fn parse_unary(mut self) -> Expr {
+    fn parse_unary(self) -> Expr {
         if self.check(Minus) {
             self.advance()
             return Unary(Neg, Box{value: self.parse_unary()}, self.peek().span)
@@ -310,7 +304,7 @@ impl Parser {
         return self.parse_postfix()
     }
     
-    fn parse_postfix(mut self) -> Expr {
+    fn parse_postfix(self) -> Expr {
         let expr = self.parse_primary()
         while true {
             if self.check(LParen) {
@@ -344,7 +338,7 @@ impl Parser {
         return expr
     }
     
-    fn parse_primary(mut self) -> Expr {
+    fn parse_primary(self) -> Expr {
         let span = self.peek().span
         match self.peek().kind {
             Int(n) => { self.advance(); IntLit(n, span) }
@@ -373,7 +367,7 @@ impl Parser {
                 let e = self.parse_expr()
                 // Check for tuple
                 if self.check(Comma) {
-                    let elems: [Expr] = [e]
+                    const elems: [Expr] = [e]
                     while self.check(Comma) {
                         self.advance()
                         if self.check(RParen) { break }
@@ -393,9 +387,9 @@ impl Parser {
         }
     }
     
-    fn parse_struct_lit(mut self, name: str, span: Span) -> Expr {
+    fn parse_struct_lit(self, name: str, span: Span) -> Expr {
         self.expect(LBrace)
-        let fields: [(str, Expr)] = []
+        const fields: [(str, Expr)] = []
         while not self.check(RBrace) and not self.is_eof() {
             let fname = self.expect_ident()
             let value = if self.check(Colon) {
@@ -411,10 +405,10 @@ impl Parser {
         return StructLit(Named(name, []), fields, span)
     }
     
-    fn parse_closure(mut self) -> Expr {
+    fn parse_closure(self) -> Expr {
         let span = self.peek().span
         self.expect(Pipe)
-        let params: [Param] = []
+        const params: [Param] = []
         while not self.check(Pipe) and not self.is_eof() {
             let name = self.expect_ident()
             let ty = if self.check(Colon) { self.advance(); self.parse_type() } else { Infer }
@@ -429,7 +423,7 @@ impl Parser {
         return Closure(params, ret, body, span)
     }
     
-    fn parse_if_expr(mut self) -> Expr {
+    fn parse_if_expr(self) -> Expr {
         let span = self.peek().span
         self.expect(If)
         let cond = self.parse_expr()
@@ -438,10 +432,10 @@ impl Parser {
         return If(Box{value: cond}, then_block, else_block, span)
     }
     
-    fn parse_array_lit(mut self) -> Expr {
+    fn parse_array_lit(self) -> Expr {
         let span = self.peek().span
         self.expect(LBracket)
-        let elems: [Expr] = []
+        const elems: [Expr] = []
         while not self.check(RBracket) and not self.is_eof() {
             elems = elems + [self.parse_expr()]
             if not self.check(RBracket) { self.expect(Comma) }
@@ -450,8 +444,8 @@ impl Parser {
         return ArrayLit(elems, span)
     }
     
-    fn parse_args(mut self) -> [Expr] {
-        let args: [Expr] = []
+    fn parse_args(self) -> [Expr] {
+        const args: [Expr] = []
         while not self.check(RParen) and not self.is_eof() {
             args = args + [self.parse_expr()]
             if not self.check(RParen) { self.expect(Comma) }
@@ -459,14 +453,14 @@ impl Parser {
         return args
     }
     
-    fn parse_type(mut self) -> Type {
+    fn parse_type(self) -> Type {
         match self.peek().kind {
             Ident(name) => {
                 self.advance()
                 // Check for generic params: Name[T, U]
                 if self.check(LBracket) {
                     self.advance()
-                    let params: [Type] = []
+                    const params: [Type] = []
                     while not self.check(RBracket) and not self.is_eof() {
                         params = params + [self.parse_type()]
                         if not self.check(RBracket) { self.expect(Comma) }
@@ -484,12 +478,12 @@ impl Parser {
         }
     }
     
-    fn parse_struct(mut self, vis: Visibility) -> StructDef {
+    fn parse_struct(self, vis: Visibility) -> StructDef {
         let span = self.peek().span
         self.expect(Struct)
         let name = self.expect_ident()
         self.expect(LBrace)
-        let fields: [Field] = []
+        const fields: [Field] = []
         while not self.check(RBrace) and not self.is_eof() {
             let fname = self.expect_ident()
             self.expect(Colon)
@@ -500,12 +494,12 @@ impl Parser {
         return StructDef{name, generics: [], fields, visibility: vis, span}
     }
     
-    fn parse_enum(mut self, vis: Visibility) -> EnumDef {
+    fn parse_enum(self, vis: Visibility) -> EnumDef {
         let span = self.peek().span
         self.expect(Enum)
         let name = self.expect_ident()
         self.expect(LBrace)
-        let variants: [Variant] = []
+        const variants: [Variant] = []
         while not self.check(RBrace) and not self.is_eof() {
             let vname = self.expect_ident()
             variants = variants + [Variant{name: vname, fields: none, span}]
@@ -514,7 +508,7 @@ impl Parser {
         return EnumDef{name, generics: [], variants, visibility: vis, span}
     }
     
-    fn parse_cmp_op(mut self) -> BinOp {
+    fn parse_cmp_op(self) -> BinOp {
         let op = match self.peek().kind {
             EqEq => Eq
             NotEq => NotEq
@@ -530,11 +524,11 @@ impl Parser {
     
     // Helpers
     fn peek(self) -> Token { return self.tokens[self.pos] }
-    fn advance(mut self) -> Token { let t = self.peek(); self.pos = self.pos + 1; return t }
+    fn advance(self) -> Token { let t = self.peek(); self.pos = self.pos + 1; return t }
     fn is_eof(self) -> bool { return self.pos >= self.tokens.len() or self.check(EOF) }
     fn check(self, kind: TokenKind) -> bool { return self.peek().kind == kind }
-    fn expect(mut self, kind: TokenKind) { if not self.check(kind) { self.error("Expected token") }; self.advance() }
-    fn expect_ident(mut self) -> str { match self.advance().kind { Ident(s) => s, _ => "" } }
+    fn expect(self, kind: TokenKind) { if not self.check(kind) { self.error("Expected token") }; self.advance() }
+    fn expect_ident(self) -> str { match self.advance().kind { Ident(s) => s, _ => "" } }
     fn check_expr_start(self) -> bool { match self.peek().kind { Int(_) | Float(_) | String(_) | Ident(_) | LParen | LBracket | If | Match | True | False | None_ | Some_ | Pipe => true, _ => false } }
     fn error(self, msg: str) { print_str("Parse error: " + msg) }
 }

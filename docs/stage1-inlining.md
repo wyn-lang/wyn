@@ -62,14 +62,14 @@ fn add(a: int, b: int) -> int {
 }
 
 fn main() {
-    let x: int = add(5, 10)  // Function call
+    const x: int = add(5, 10)  // Function call
 }
 ```
 
 **After inlining:**
 ```wyn
 fn main() {
-    let x: int = 5 + 10  // Inlined expression
+    const x: int = 5 + 10  // Inlined expression
 }
 ```
 

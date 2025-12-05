@@ -1,11 +1,11 @@
 import std/io
 
 fn main() {
-    let mut sum: float = 0.0
-    let mut i: int = 0
+    let sum: float = 0.0
+    let i: int = 0
     
     while i < 1000000 {
-        let x: float = int_to_float(i)
+        const x: float = int_to_float(i)
         sum = sum + math.sin(x) + math.cos(x)
         i = i + 1
     }

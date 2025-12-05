@@ -28,8 +28,8 @@ fn new_checker() -> TypeChecker {
 }
 
 fn add_symbol(tc: TypeChecker, name: str, typ: Type) -> TypeChecker {
-    let sym: Symbol = Symbol{name: name, typ: typ}
-    let mut new_tc: TypeChecker = tc
+    const sym: Symbol = Symbol{name: name, typ: typ}
+    let new_tc: TypeChecker = tc
     # Would push to symbols array
     return new_tc
 }

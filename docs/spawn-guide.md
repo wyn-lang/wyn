@@ -21,7 +21,7 @@ Spawn automatically captures variables from outer scope:
 
 ```wyn
 fn main() {
-    let x: int = 42
+    const x: int = 42
     
     spawn {
         print(x)  # Reads x from outer scope
@@ -35,7 +35,7 @@ Mutable variables are automatically atomic:
 
 ```wyn
 fn main() {
-    let mut counter: int = 0
+    let counter: int = 0
     
     for i in 0..100 {
         spawn { counter = counter + 1 }
@@ -49,12 +49,12 @@ fn main() {
 
 ### Parallel HTTP Requests
 ```wyn
-let urls: [str] = ["url1", "url2", "url3"]
-let mut results: int = 0
+const urls: [str] = ["url1", "url2", "url3"]
+let results: int = 0
 
 for url in urls {
     spawn {
-        let response: str = http.get(url)
+        const response: str = http.get(url)
         if response.len() > 0 {
             results = results + 1
         }
@@ -67,13 +67,13 @@ print(results)
 
 ### Parallel File Processing
 ```wyn
-let files: [str] = ["file1.txt", "file2.txt", "file3.txt"]
-let mut total_lines: int = 0
+const files: [str] = ["file1.txt", "file2.txt", "file3.txt"]
+let total_lines: int = 0
 
 for file in files {
     spawn {
-        let content: str = read_file(file)
-        let lines: int = count_lines(content)
+        const content: str = read_file(file)
+        const lines: int = count_lines(content)
         total_lines = total_lines + lines
     }
 }
@@ -84,11 +84,11 @@ print(total_lines)
 
 ### Parallel Computation
 ```wyn
-let mut sum: int = 0
+let sum: int = 0
 
 for i in 0..1000 {
     spawn {
-        let result: int = expensive_computation(i)
+        const result: int = expensive_computation(i)
         sum = sum + result
     }
 }
@@ -115,7 +115,7 @@ fn main() {
 All operations on mutable captured variables are atomic:
 
 ```wyn
-let mut counter: int = 0
+let counter: int = 0
 
 spawn { counter = counter + 1 }  # Atomic increment
 spawn { counter = counter + 1 }  # Atomic increment

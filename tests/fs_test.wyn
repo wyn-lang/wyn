@@ -6,7 +6,7 @@ fn main() {
     assert(not is_dir("Makefile"))
     
     # Test file_size
-    let size: int = file_size("Makefile")
+    const size: int = file_size("Makefile")
     assert(size > 0)
     
     # Test file_exists

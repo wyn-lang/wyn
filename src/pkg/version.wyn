@@ -10,7 +10,7 @@ struct Version {
 
 # Parse version string like "1.2.3" or "v1.2.3-beta"
 fn parse_version(s: str) -> Result[Version, str] {
-    let input: str = s
+    const input: str = s
     
     # Strip leading 'v' if present
     if starts_with(input, "v") {
@@ -18,22 +18,22 @@ fn parse_version(s: str) -> Result[Version, str] {
     }
     
     # Split on '-' for prerelease
-    let prerelease: str = ""
-    let dash: int = find(input, "-")
+    const prerelease: str = ""
+    const dash: int = find(input, "-")
     if dash >= 0 {
         prerelease = input[dash+1:]
         input = input[:dash]
     }
     
     # Split on '.'
-    let parts: [str] = split(input, ".")
+    const parts: [str] = split(input, ".")
     if parts.len() < 1 {
         return err("Invalid version: " + s)
     }
     
-    let major: int = str_to_int(parts[0]) ?? 0
-    let minor: int = 0
-    let patch: int = 0
+    const major: int = str_to_int(parts[0]) ?? 0
+    const minor: int = 0
+    const patch: int = 0
     
     if parts.len() >= 2 {
         minor = str_to_int(parts[1]) ?? 0
@@ -52,7 +52,7 @@ fn parse_version(s: str) -> Result[Version, str] {
 
 # Convert version to string
 fn version_to_str(v: Version) -> str {
-    let s: str = int_to_str(v.major) + "." + int_to_str(v.minor) + "." + int_to_str(v.patch)
+    const s: str = int_to_str(v.major) + "." + int_to_str(v.minor) + "." + int_to_str(v.patch)
     if v.prerelease != "" {
         s = s + "-" + v.prerelease
     }
@@ -98,8 +98,8 @@ fn satisfies(v: Version, constraint: str) -> bool {
     }
     
     # Parse operator and version
-    let op: str = ""
-    let ver_str: str = constraint
+    const op: str = ""
+    const ver_str: str = constraint
     
     if starts_with(constraint, ">=") {
         op = ">="
@@ -124,11 +124,11 @@ fn satisfies(v: Version, constraint: str) -> bool {
         ver_str = constraint[1:]
     }
     
-    let target: Result[Version, str] = parse_version(ver_str)
+    const target: Result[Version, str] = parse_version(ver_str)
     match target {
         err(_) => return false
         ok(t) => {
-            let cmp: int = compare_versions(v, t)
+            const cmp: int = compare_versions(v, t)
             
             match op {
                 ">=" => return cmp >= 0

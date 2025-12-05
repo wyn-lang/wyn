@@ -19,8 +19,8 @@ fn divide(a: int, b: int) -> int {
 }
 
 fn power(base: int, exp: int) -> int {
-    mut result: int = 1
-    mut i: int = 0
+    let result: int = 1
+    let i: int = 0
     while i < exp {
         result = result * base
         i += 1

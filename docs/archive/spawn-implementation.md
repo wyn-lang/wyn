@@ -59,7 +59,7 @@ fn main() {
 ### With shared state (atomic)
 ```wyn
 fn main() {
-    let mut counter = 0
+    let counter = 0
     
     spawn { counter = counter + 1 }
     spawn { counter = counter + 1 }

@@ -1,6 +1,6 @@
 fn main() {
-    let content: str = "line1\nline2\nline3"
-    let lines: [str] = str_split(content, "\n")
+    const content: str = "line1\nline2\nline3"
+    const lines: [str] = str_split(content, "\n")
     
     // Direct access works
     io.print_str("Direct: ")
@@ -9,9 +9,9 @@ fn main() {
     
     // Loop access should work
     io.print_str("Loop:\n")
-    let mut i: int = 0
+    let i: int = 0
     while i < lines.len() {
-        let line: str = lines[i]
+        const line: str = lines[i]
         io.print_str(line)
         io.print_newline()
         i = i + 1

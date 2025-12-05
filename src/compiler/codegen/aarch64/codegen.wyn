@@ -13,14 +13,14 @@ impl AArch64Gen {
         AArch64Gen{output: "", label_count: 0, string_count: 0}
     }
     
-    pub fn generate(mut self, module: IRModule) -> str {
+    pub fn generate(self, module: IRModule) -> str {
         self.emit(".global _main")
         self.emit(".align 4")
         self.emit("")
         
         // Generate string literals
         self.emit(".data")
-        let mut i: int = 0
+        let i: int = 0
         while i < module.strings.len() {
             self.emit("str_" + i.to_str() + ": .asciz \"" + module.strings[i] + "\"")
             i = i + 1
@@ -36,7 +36,7 @@ impl AArch64Gen {
         return self.output
     }
     
-    fn gen_function(mut self, func: IRFunction) {
+    fn gen_function(self, func: IRFunction) {
         self.emit("")
         self.emit("_" + func.name + ":")
         
@@ -45,7 +45,7 @@ impl AArch64Gen {
         self.emit("    mov x29, sp")
         
         // Allocate stack space for locals
-        let stack_size: int = func.locals.len() * 8
+        const stack_size: int = func.locals.len() * 8
         if stack_size > 0 {
             self.emit("    sub sp, sp, #" + stack_size.to_str())
         }
@@ -64,14 +64,14 @@ impl AArch64Gen {
         self.emit("    ret")
     }
     
-    fn gen_block(mut self, block: IRBlock) {
+    fn gen_block(self, block: IRBlock) {
         self.emit(block.label + ":")
         for instr in block.instrs {
             self.gen_instr(instr)
         }
     }
     
-    fn gen_instr(mut self, instr: IRInstr) {
+    fn gen_instr(self, instr: IRInstr) {
         match instr {
             Add(dst, src1, src2) => {
                 self.emit("    add x" + dst.to_str() + ", x" + src1.to_str() + ", x" + src2.to_str())
@@ -164,7 +164,7 @@ impl AArch64Gen {
             }
             Call(dst, name, args) => {
                 // Move args to x0-x7
-                let mut i: int = 0
+                let i: int = 0
                 while i < args.len() and i < 8 {
                     self.emit("    mov x" + i.to_str() + ", x" + args[i].to_str())
                     i = i + 1
@@ -176,12 +176,12 @@ impl AArch64Gen {
         }
     }
     
-    fn emit(mut self, line: str) {
+    fn emit(self, line: str) {
         self.output = self.output + line + "\n"
     }
     
-    fn new_label(mut self) -> str {
-        let label: str = ".L" + self.label_count.to_str()
+    fn new_label(self) -> str {
+        const label: str = ".L" + self.label_count.to_str()
         self.label_count = self.label_count + 1
         return label
     }

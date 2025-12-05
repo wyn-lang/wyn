@@ -15,7 +15,7 @@ fn stack_new[T]() -> Stack[T] {
 
 # Push item onto stack
 # Stage 1: Will support dynamic array append
-fn stack_push[T](mut s: Stack[T], item: T) -> Stack[T] {
+fn stack_push[T](let s: Stack[T], item: T) -> Stack[T] {
     # Stage 0 limitation: cannot dynamically append to arrays
     # Stage 1 will support: s.items = s.items + [item]
     return s
@@ -23,12 +23,12 @@ fn stack_push[T](mut s: Stack[T], item: T) -> Stack[T] {
 
 # Pop item from stack, returns none if empty
 # Stage 1: Will support removing elements
-fn stack_pop[T](mut s: Stack[T]) -> ?T {
-    let len: int = s.items.len()
+fn stack_pop[T](let s: Stack[T]) -> ?T {
+    const len: int = s.items.len()
     if len == 0 {
         return none
     }
-    let item: T = s.items[len - 1]
+    const item: T = s.items[len - 1]
     # Stage 0 limitation: cannot remove from arrays
     # Stage 1 will support: s.items = s.items[:len-1]
     return some(item)
@@ -36,7 +36,7 @@ fn stack_pop[T](mut s: Stack[T]) -> ?T {
 
 # Peek at top of stack without removing
 fn stack_peek[T](s: Stack[T]) -> ?T {
-    let len: int = s.items.len()
+    const len: int = s.items.len()
     if len == 0 {
         return none
     }
@@ -67,7 +67,7 @@ fn queue_new[T]() -> Queue[T] {
 
 # Add item to back of queue
 # Stage 1: Will support dynamic array append
-fn queue_enqueue[T](mut q: Queue[T], item: T) -> Queue[T] {
+fn queue_enqueue[T](let q: Queue[T], item: T) -> Queue[T] {
     # Stage 0 limitation: cannot dynamically append to arrays
     # Stage 1 will support: q.items = q.items + [item]
     return q
@@ -75,12 +75,12 @@ fn queue_enqueue[T](mut q: Queue[T], item: T) -> Queue[T] {
 
 # Remove item from front of queue
 # Stage 1: Will support removing elements
-fn queue_dequeue[T](mut q: Queue[T]) -> ?T {
-    let len: int = q.items.len()
+fn queue_dequeue[T](let q: Queue[T]) -> ?T {
+    const len: int = q.items.len()
     if len == 0 {
         return none
     }
-    let item: T = q.items[0]
+    const item: T = q.items[0]
     # Stage 0 limitation: cannot remove from arrays
     # Stage 1 will support: q.items = q.items[1:]
     return some(item)
@@ -116,7 +116,7 @@ fn array_push[T](arr: [T], item: T) -> [T] {
 
 # Pop last item from array
 fn array_pop[T](arr: [T]) -> ?T {
-    let len: int = arr.len()
+    const len: int = arr.len()
     if len == 0 {
         return none
     }
@@ -133,7 +133,7 @@ fn array_first[T](arr: [T]) -> ?T {
 
 # Get last element of array, returns none if empty
 fn array_last[T](arr: [T]) -> ?T {
-    let len: int = arr.len()
+    const len: int = arr.len()
     if len == 0 {
         return none
     }
@@ -142,7 +142,7 @@ fn array_last[T](arr: [T]) -> ?T {
 
 # Check if array contains item (uses == comparison)
 fn array_contains[T](arr: [T], item: T) -> bool {
-    let mut i: int = 0
+    let i: int = 0
     while i < arr.len() {
         if arr[i] == item {
             return true
@@ -154,7 +154,7 @@ fn array_contains[T](arr: [T], item: T) -> bool {
 
 # Find first index of item in array, returns none if not found
 fn array_index_of[T](arr: [T], item: T) -> ?int {
-    let mut i: int = 0
+    let i: int = 0
     while i < arr.len() {
         if arr[i] == item {
             return some(i)
@@ -167,7 +167,7 @@ fn array_index_of[T](arr: [T], item: T) -> ?int {
 # Reverse array order
 # Stage 1: Will support building reversed arrays
 fn array_reverse[T](arr: [T]) -> [T] {
-    let len: int = arr.len()
+    const len: int = arr.len()
     if len <= 1 {
         return arr
     }
@@ -224,7 +224,7 @@ fn array_take[T](arr: [T], n: int) -> [T] {
     if n <= 0 {
         return []
     }
-    let len: int = arr.len()
+    const len: int = arr.len()
     if n >= len {
         return arr
     }
@@ -236,7 +236,7 @@ fn array_skip[T](arr: [T], n: int) -> [T] {
     if n <= 0 {
         return arr
     }
-    let len: int = arr.len()
+    const len: int = arr.len()
     if n >= len {
         return []
     }
@@ -293,8 +293,8 @@ fn range_step(start: int, end: int, step: int) -> [int] {
 
 # Calculate sum of all integers in array
 fn array_sum(arr: [int]) -> int {
-    let mut sum: int = 0
-    let mut i: int = 0
+    let sum: int = 0
+    let i: int = 0
     while i < arr.len() {
         sum = sum + arr[i]
         i = i + 1
@@ -307,8 +307,8 @@ fn array_max(arr: [int]) -> ?int {
     if arr.len() == 0 {
         return none
     }
-    let mut max_val: int = arr[0]
-    let mut i: int = 1
+    let max_val: int = arr[0]
+    let i: int = 1
     while i < arr.len() {
         if arr[i] > max_val {
             max_val = arr[i]
@@ -323,8 +323,8 @@ fn array_min(arr: [int]) -> ?int {
     if arr.len() == 0 {
         return none
     }
-    let mut min_val: int = arr[0]
-    let mut i: int = 1
+    let min_val: int = arr[0]
+    let i: int = 1
     while i < arr.len() {
         if arr[i] < min_val {
             min_val = arr[i]
@@ -347,14 +347,14 @@ fn array_avg(arr: [int]) -> ?int {
     if arr.len() == 0 {
         return none
     }
-    let sum: int = array_sum(arr)
+    const sum: int = array_sum(arr)
     return some(sum / arr.len())
 }
 
 # Count occurrences of value in array
 fn array_count(arr: [int], value: int) -> int {
-    let mut count: int = 0
-    let mut i: int = 0
+    let count: int = 0
+    let i: int = 0
     while i < arr.len() {
         if arr[i] == value {
             count = count + 1
@@ -374,7 +374,7 @@ fn array_find_all(arr: [int], value: int) -> [int] {
 
 # Check if array is sorted in ascending order
 fn array_is_sorted(arr: [int]) -> bool {
-    let mut i: int = 0
+    let i: int = 0
     while i < arr.len() - 1 {
         if arr[i] > arr[i + 1] {
             return false
@@ -386,7 +386,7 @@ fn array_is_sorted(arr: [int]) -> bool {
 
 # Get slice of array with safe bounds checking
 fn array_slice(arr: [int], start: int, end: int) -> [int] {
-    let len: int = arr.len()
+    const len: int = arr.len()
     if start < 0 or start >= len or end <= start or end > len {
         return []
     }
@@ -412,11 +412,11 @@ fn array_dedup_sorted(arr: [int]) -> [int] {
 # Rotate array left by n positions
 # Stage 1: Will support array concatenation
 fn array_rotate_left(arr: [int], n: int) -> [int] {
-    let len: int = arr.len()
+    const len: int = arr.len()
     if len == 0 or n == 0 {
         return arr
     }
-    let shift: int = n % len
+    const shift: int = n % len
     # Stage 0 limitation: would need array concatenation
     # Stage 1 will support: arr[shift:] + arr[:shift]
     return arr
@@ -425,11 +425,11 @@ fn array_rotate_left(arr: [int], n: int) -> [int] {
 # Rotate array right by n positions
 # Stage 1: Will support array concatenation
 fn array_rotate_right(arr: [int], n: int) -> [int] {
-    let len: int = arr.len()
+    const len: int = arr.len()
     if len == 0 or n == 0 {
         return arr
     }
-    let shift: int = n % len
+    const shift: int = n % len
     return array_rotate_left(arr, len - shift)
 }
 
@@ -451,8 +451,8 @@ fn array_fill(size: int, value: int) -> [int] {
 
 # Calculate product of all elements in array
 fn array_product(arr: [int]) -> int {
-    let mut prod: int = 1
-    let mut i: int = 0
+    let prod: int = 1
+    let i: int = 0
     while i < arr.len() {
         prod = prod * arr[i]
         i = i + 1
@@ -472,7 +472,7 @@ fn array_length[T](arr: [T]) -> int {
 
 # Find last index of item in array, returns none if not found
 fn array_last_index_of(arr: [int], value: int) -> ?int {
-    let mut i: int = arr.len() - 1
+    let i: int = arr.len() - 1
     while i >= 0 {
         if arr[i] == value {
             return some(i)
@@ -487,7 +487,7 @@ fn array_starts_with(arr: [int], prefix: [int]) -> bool {
     if prefix.len() > arr.len() {
         return false
     }
-    let mut i: int = 0
+    let i: int = 0
     while i < prefix.len() {
         if arr[i] != prefix[i] {
             return false
@@ -502,8 +502,8 @@ fn array_ends_with(arr: [int], suffix: [int]) -> bool {
     if suffix.len() > arr.len() {
         return false
     }
-    let offset: int = arr.len() - suffix.len()
-    let mut i: int = 0
+    const offset: int = arr.len() - suffix.len()
+    let i: int = 0
     while i < suffix.len() {
         if arr[offset + i] != suffix[i] {
             return false
@@ -518,18 +518,18 @@ fn array_ends_with(arr: [int], suffix: [int]) -> bool {
 fn array_partition(arr: [int], pivot: int) -> ([int], [int]) {
     # Stage 0 limitation: cannot dynamically build arrays
     # Stage 1 will support: split into elements < pivot and >= pivot
-    let left: [int] = []
-    let right: [int] = []
+    const left: [int] = []
+    const right: [int] = []
     return (left, right)
 }
 
 # Get median value from sorted array, returns none if empty
 fn array_median_sorted(arr: [int]) -> ?int {
-    let len: int = arr.len()
+    const len: int = arr.len()
     if len == 0 {
         return none
     }
-    let mid: int = len / 2
+    const mid: int = len / 2
     if len % 2 == 0 {
         return some((arr[mid - 1] + arr[mid]) / 2)
     }
@@ -538,8 +538,8 @@ fn array_median_sorted(arr: [int]) -> ?int {
 
 # Count elements greater than value
 fn array_count_greater(arr: [int], value: int) -> int {
-    let mut count: int = 0
-    let mut i: int = 0
+    let count: int = 0
+    let i: int = 0
     while i < arr.len() {
         if arr[i] > value {
             count = count + 1
@@ -551,8 +551,8 @@ fn array_count_greater(arr: [int], value: int) -> int {
 
 # Count elements less than value
 fn array_count_less(arr: [int], value: int) -> int {
-    let mut count: int = 0
-    let mut i: int = 0
+    let count: int = 0
+    let i: int = 0
     while i < arr.len() {
         if arr[i] < value {
             count = count + 1
@@ -567,19 +567,19 @@ fn array_range(arr: [int]) -> ?int {
     if arr.len() == 0 {
         return none
     }
-    let max_val: ?int = array_max(arr)
-    let min_val: ?int = array_min(arr)
+    const max_val: ?int = array_max(arr)
+    const min_val: ?int = array_min(arr)
     # Unwrap with !! since we know array is not empty
     return some(max_val! - min_val!)
 }
 
 # Binary search in sorted array, returns index if found or none
 fn array_binary_search(arr: [int], target: int) -> ?int {
-    let mut left: int = 0
-    let mut right: int = arr.len() - 1
+    let left: int = 0
+    let right: int = arr.len() - 1
     
     while left <= right {
-        let mid: int = left + (right - left) / 2
+        const mid: int = left + (right - left) / 2
         if arr[mid] == target {
             return some(mid)
         }
@@ -597,7 +597,7 @@ fn array_equals[T](a: [T], b: [T]) -> bool {
     if a.len() != b.len() {
         return false
     }
-    let mut i: int = 0
+    let i: int = 0
     while i < a.len() {
         if a[i] != b[i] {
             return false
@@ -609,8 +609,8 @@ fn array_equals[T](a: [T], b: [T]) -> bool {
 
 # Calculate sum of all floats in array
 fn array_sum_float(arr: [float]) -> float {
-    let mut sum: float = 0.0
-    let mut i: int = 0
+    let sum: float = 0.0
+    let i: int = 0
     while i < arr.len() {
         sum = sum + arr[i]
         i = i + 1
@@ -623,7 +623,7 @@ fn array_avg_float(arr: [float]) -> ?float {
     if arr.len() == 0 {
         return none
     }
-    let sum: float = array_sum_float(arr)
+    const sum: float = array_sum_float(arr)
     return some(sum / arr.len().to_float())
 }
 
@@ -632,8 +632,8 @@ fn array_max_float(arr: [float]) -> ?float {
     if arr.len() == 0 {
         return none
     }
-    let mut max_val: float = arr[0]
-    let mut i: int = 1
+    let max_val: float = arr[0]
+    let i: int = 1
     while i < arr.len() {
         if arr[i] > max_val {
             max_val = arr[i]
@@ -648,8 +648,8 @@ fn array_min_float(arr: [float]) -> ?float {
     if arr.len() == 0 {
         return none
     }
-    let mut min_val: float = arr[0]
-    let mut i: int = 1
+    let min_val: float = arr[0]
+    let i: int = 1
     while i < arr.len() {
         if arr[i] < min_val {
             min_val = arr[i]
@@ -661,8 +661,8 @@ fn array_min_float(arr: [float]) -> ?float {
 
 # Calculate product of all floats in array
 fn array_product_float(arr: [float]) -> float {
-    let mut prod: float = 1.0
-    let mut i: int = 0
+    let prod: float = 1.0
+    let i: int = 0
     while i < arr.len() {
         prod = prod * arr[i]
         i = i + 1
@@ -676,9 +676,9 @@ fn array_second_max(arr: [int]) -> ?int {
     if arr.len() < 2 {
         return none
     }
-    let mut max1: int = arr[0]
-    let mut max2: int = arr[0]
-    let mut i: int = 1
+    let max1: int = arr[0]
+    let max2: int = arr[0]
+    let i: int = 1
     
     while i < arr.len() {
         if arr[i] > max1 {
@@ -703,9 +703,9 @@ fn array_second_min(arr: [int]) -> ?int {
     if arr.len() < 2 {
         return none
     }
-    let mut min1: int = arr[0]
-    let mut min2: int = arr[0]
-    let mut i: int = 1
+    let min1: int = arr[0]
+    let min2: int = arr[0]
+    let i: int = 1
     
     while i < arr.len() {
         if arr[i] < min1 {
@@ -727,7 +727,7 @@ fn array_second_min(arr: [int]) -> ?int {
 
 # Check if all elements in array are positive
 fn array_all_positive(arr: [int]) -> bool {
-    let mut i: int = 0
+    let i: int = 0
     while i < arr.len() {
         if arr[i] <= 0 {
             return false
@@ -739,7 +739,7 @@ fn array_all_positive(arr: [int]) -> bool {
 
 # Check if any element in array is positive
 fn array_any_positive(arr: [int]) -> bool {
-    let mut i: int = 0
+    let i: int = 0
     while i < arr.len() {
         if arr[i] > 0 {
             return true
@@ -751,7 +751,7 @@ fn array_any_positive(arr: [int]) -> bool {
 
 # Check if all elements in array are negative
 fn array_all_negative(arr: [int]) -> bool {
-    let mut i: int = 0
+    let i: int = 0
     while i < arr.len() {
         if arr[i] >= 0 {
             return false
@@ -763,7 +763,7 @@ fn array_all_negative(arr: [int]) -> bool {
 
 # Check if any element in array is negative
 fn array_any_negative(arr: [int]) -> bool {
-    let mut i: int = 0
+    let i: int = 0
     while i < arr.len() {
         if arr[i] < 0 {
             return true
@@ -775,7 +775,7 @@ fn array_any_negative(arr: [int]) -> bool {
 
 # Check if all elements in array are zero
 fn array_all_zero(arr: [int]) -> bool {
-    let mut i: int = 0
+    let i: int = 0
     while i < arr.len() {
         if arr[i] != 0 {
             return false
@@ -787,7 +787,7 @@ fn array_all_zero(arr: [int]) -> bool {
 
 # Check if any element in array is zero
 fn array_any_zero(arr: [int]) -> bool {
-    let mut i: int = 0
+    let i: int = 0
     while i < arr.len() {
         if arr[i] == 0 {
             return true
@@ -805,8 +805,8 @@ fn array_interleave(a: [int], b: [int]) -> [int] {
 # Find index of maximum value
 fn array_index_of_max(arr: [int]) -> ?int {
     if arr.len() == 0 { return none }
-    let mut max_idx: int = 0
-    let mut i: int = 1
+    let max_idx: int = 0
+    let i: int = 1
     while i < arr.len() {
         if arr[i] > arr[max_idx] {
             max_idx = i
@@ -819,8 +819,8 @@ fn array_index_of_max(arr: [int]) -> ?int {
 # Find index of minimum value
 fn array_index_of_min(arr: [int]) -> ?int {
     if arr.len() == 0 { return none }
-    let mut min_idx: int = 0
-    let mut i: int = 1
+    let min_idx: int = 0
+    let i: int = 1
     while i < arr.len() {
         if arr[i] < arr[min_idx] {
             min_idx = i
@@ -842,7 +842,7 @@ fn array_diff(arr: [int]) -> [int] {
 
 # Check if array is strictly increasing
 fn array_is_increasing(arr: [int]) -> bool {
-    let mut i: int = 0
+    let i: int = 0
     while i < arr.len() - 1 {
         if arr[i] >= arr[i + 1] {
             return false
@@ -854,7 +854,7 @@ fn array_is_increasing(arr: [int]) -> bool {
 
 # Check if array is strictly decreasing
 fn array_is_decreasing(arr: [int]) -> bool {
-    let mut i: int = 0
+    let i: int = 0
     while i < arr.len() - 1 {
         if arr[i] <= arr[i + 1] {
             return false
@@ -866,8 +866,8 @@ fn array_is_decreasing(arr: [int]) -> bool {
 
 # Count elements in range [min, max]
 fn array_count_in_range(arr: [int], min_val: int, max_val: int) -> int {
-    let mut count: int = 0
-    let mut i: int = 0
+    let count: int = 0
+    let i: int = 0
     while i < arr.len() {
         if arr[i] >= min_val and arr[i] <= max_val {
             count = count + 1
@@ -891,8 +891,8 @@ fn array_nth_smallest(arr: [int], n: int) -> ?int {
 
 # Calculate absolute sum (sum of absolute values)
 fn array_abs_sum(arr: [int]) -> int {
-    let mut sum: int = 0
-    let mut i: int = 0
+    let sum: int = 0
+    let i: int = 0
     while i < arr.len() {
         sum = sum + abs(arr[i])
         i = i + 1
@@ -903,11 +903,11 @@ fn array_abs_sum(arr: [int]) -> int {
 # Count distinct elements in array
 fn array_count_distinct(arr: [int]) -> int {
     if arr.len() == 0 { return 0 }
-    let mut count: int = 0
-    let mut i: int = 0
+    let count: int = 0
+    let i: int = 0
     while i < arr.len() {
-        let mut is_unique: bool = true
-        let mut j: int = 0
+        let is_unique: bool = true
+        let j: int = 0
         while j < i {
             if arr[j] == arr[i] {
                 is_unique = false
@@ -924,9 +924,9 @@ fn array_count_distinct(arr: [int]) -> int {
 
 # Check if array has duplicates
 fn array_has_duplicates(arr: [int]) -> bool {
-    let mut i: int = 0
+    let i: int = 0
     while i < arr.len() {
-        let mut j: int = i + 1
+        let j: int = i + 1
         while j < arr.len() {
             if arr[i] == arr[j] {
                 return true
@@ -947,7 +947,7 @@ fn array_kth_smallest(arr: [int], k: int) -> ?int {
 # Check if array is a permutation of another
 fn array_is_permutation(a: [int], b: [int]) -> bool {
     if a.len() != b.len() { return false }
-    let mut i: int = 0
+    let i: int = 0
     while i < a.len() {
         if array_count(b, a[i]) != array_count(a, a[i]) {
             return false
@@ -960,12 +960,12 @@ fn array_is_permutation(a: [int], b: [int]) -> bool {
 # Find longest increasing subsequence length
 fn array_lis_length(arr: [int]) -> int {
     if arr.len() == 0 { return 0 }
-    let mut max_len: int = 1
-    let mut i: int = 0
+    let max_len: int = 1
+    let i: int = 0
     while i < arr.len() {
-        let mut len: int = 1
-        let mut j: int = i + 1
-        let mut prev: int = arr[i]
+        let len: int = 1
+        let j: int = i + 1
+        let prev: int = arr[i]
         while j < arr.len() {
             if arr[j] > prev {
                 len = len + 1
@@ -984,8 +984,8 @@ fn array_lis_length(arr: [int]) -> int {
 # Calculate dot product of two integer arrays
 fn array_dot_product(a: [int], b: [int]) -> ?int {
     if a.len() != b.len() { return none }
-    let mut sum: int = 0
-    let mut i: int = 0
+    let sum: int = 0
+    let i: int = 0
     while i < a.len() {
         sum = sum + (a[i] * b[i])
         i = i + 1
@@ -996,8 +996,8 @@ fn array_dot_product(a: [int], b: [int]) -> ?int {
 # Check if array is arithmetic progression
 fn array_is_arithmetic(arr: [int]) -> bool {
     if arr.len() < 2 { return true }
-    let diff: int = arr[1] - arr[0]
-    let mut i: int = 1
+    const diff: int = arr[1] - arr[0]
+    let i: int = 1
     while i < arr.len() - 1 {
         if arr[i + 1] - arr[i] != diff {
             return false
@@ -1011,8 +1011,8 @@ fn array_is_arithmetic(arr: [int]) -> bool {
 fn array_is_geometric(arr: [int]) -> bool {
     if arr.len() < 2 { return true }
     if arr[0] == 0 { return false }
-    let ratio: int = arr[1] / arr[0]
-    let mut i: int = 1
+    const ratio: int = arr[1] / arr[0]
+    let i: int = 1
     while i < arr.len() - 1 {
         if arr[i] == 0 or arr[i + 1] / arr[i] != ratio {
             return false
@@ -1024,8 +1024,8 @@ fn array_is_geometric(arr: [int]) -> bool {
 
 # Map integers by doubling
 fn array_double(arr: [int]) -> [int] {
-    let mut result: [int] = []
-    let mut i: int = 0
+    let result: [int] = []
+    let i: int = 0
     while i < arr.len() {
         result = result + [arr[i] * 2]
         i = i + 1
@@ -1035,8 +1035,8 @@ fn array_double(arr: [int]) -> [int] {
 
 # Map integers by squaring
 fn array_square(arr: [int]) -> [int] {
-    let mut result: [int] = []
-    let mut i: int = 0
+    let result: [int] = []
+    let i: int = 0
     while i < arr.len() {
         result = result + [arr[i] * arr[i]]
         i = i + 1
@@ -1046,8 +1046,8 @@ fn array_square(arr: [int]) -> [int] {
 
 # Filter even numbers
 fn array_filter_even(arr: [int]) -> [int] {
-    let mut result: [int] = []
-    let mut i: int = 0
+    let result: [int] = []
+    let i: int = 0
     while i < arr.len() {
         if arr[i] % 2 == 0 {
             result = result + [arr[i]]
@@ -1059,8 +1059,8 @@ fn array_filter_even(arr: [int]) -> [int] {
 
 # Filter odd numbers
 fn array_filter_odd(arr: [int]) -> [int] {
-    let mut result: [int] = []
-    let mut i: int = 0
+    let result: [int] = []
+    let i: int = 0
     while i < arr.len() {
         if arr[i] % 2 != 0 {
             result = result + [arr[i]]
@@ -1072,8 +1072,8 @@ fn array_filter_odd(arr: [int]) -> [int] {
 
 # Filter negative numbers
 fn array_filter_negative(arr: [int]) -> [int] {
-    let mut result: [int] = []
-    let mut i: int = 0
+    let result: [int] = []
+    let i: int = 0
     while i < arr.len() {
         if arr[i] < 0 {
             result = result + [arr[i]]
@@ -1085,8 +1085,8 @@ fn array_filter_negative(arr: [int]) -> [int] {
 
 # Map integers to absolute values
 fn array_abs(arr: [int]) -> [int] {
-    let mut result: [int] = []
-    let mut i: int = 0
+    let result: [int] = []
+    let i: int = 0
     while i < arr.len() {
         result = result + [abs(arr[i])]
         i = i + 1
@@ -1096,8 +1096,8 @@ fn array_abs(arr: [int]) -> [int] {
 
 # Map integers by negating
 fn array_negate(arr: [int]) -> [int] {
-    let mut result: [int] = []
-    let mut i: int = 0
+    let result: [int] = []
+    let i: int = 0
     while i < arr.len() {
         result = result + [0 - arr[i]]
         i = i + 1
@@ -1111,7 +1111,7 @@ fn abs(n: int) -> int {
 
 # Find index of first occurrence of element, returns -1 if not found
 fn array_index_of(arr: [int], target: int) -> int {
-    let mut i: int = 0
+    let i: int = 0
     while i < arr.len() {
         if arr[i] == target {
             return i
@@ -1123,7 +1123,7 @@ fn array_index_of(arr: [int], target: int) -> int {
 
 # Find index of last occurrence of element, returns -1 if not found
 fn array_last_index_of(arr: [int], target: int) -> int {
-    let mut i: int = arr.len() - 1
+    let i: int = arr.len() - 1
     while i >= 0 {
         if arr[i] == target {
             return i
@@ -1135,8 +1135,8 @@ fn array_last_index_of(arr: [int], target: int) -> int {
 
 # Count occurrences of element in array
 fn array_count(arr: [int], target: int) -> int {
-    let mut count: int = 0
-    let mut i: int = 0
+    let count: int = 0
+    let i: int = 0
     while i < arr.len() {
         if arr[i] == target {
             count = count + 1
@@ -1194,27 +1194,27 @@ fn array_chunk_count(arr: [int], chunk_size: int) -> int {
     if chunk_size <= 0 {
         return 0
     }
-    let len: int = arr.len()
+    const len: int = arr.len()
     return (len + chunk_size - 1) / chunk_size
 }
 
 # Get specific chunk from array
 fn array_get_chunk(arr: [int], chunk_index: int, chunk_size: int) -> [int] {
-    let start: int = chunk_index * chunk_size
+    const start: int = chunk_index * chunk_size
     if start >= arr.len() {
         return []
     }
-    let end: int = min(start + chunk_size, arr.len())
+    const end: int = min(start + chunk_size, arr.len())
     return arr[start:end]
 }
 
 # Rotate array left by n positions
 fn array_rotate_left(arr: [int], n: int) -> [int] {
-    let len: int = arr.len()
+    const len: int = arr.len()
     if len == 0 or n == 0 {
         return arr
     }
-    let shift: int = n % len
+    const shift: int = n % len
     if shift == 0 {
         return arr
     }
@@ -1223,11 +1223,11 @@ fn array_rotate_left(arr: [int], n: int) -> [int] {
 
 # Rotate array right by n positions
 fn array_rotate_right(arr: [int], n: int) -> [int] {
-    let len: int = arr.len()
+    const len: int = arr.len()
     if len == 0 or n == 0 {
         return arr
     }
-    let shift: int = n % len
+    const shift: int = n % len
     if shift == 0 {
         return arr
     }
@@ -1236,9 +1236,9 @@ fn array_rotate_right(arr: [int], n: int) -> [int] {
 
 # Interleave two arrays
 fn array_interleave(a: [int], b: [int]) -> [int] {
-    let len_a: int = a.len()
-    let len_b: int = b.len()
-    let min_len: int = min(len_a, len_b)
+    const len_a: int = a.len()
+    const len_b: int = b.len()
+    const min_len: int = min(len_a, len_b)
     
     if min_len == 0 {
         if len_a > 0 { return a }
@@ -1246,8 +1246,8 @@ fn array_interleave(a: [int], b: [int]) -> [int] {
     }
     
     # Build result by alternating elements
-    let mut result: [int] = []
-    let mut i: int = 0
+    let result: [int] = []
+    let i: int = 0
     while i < min_len {
         result = result + [a[i], b[i]]
         i = i + 1
@@ -1270,10 +1270,10 @@ fn min(a: int, b: int) -> int {
 
 # Binary search in sorted array, returns index or -1
 fn binary_search(arr: [int], target: int) -> int {
-    let mut left: int = 0
-    let mut right: int = arr.len() - 1
+    let left: int = 0
+    let right: int = arr.len() - 1
     while left <= right {
-        let mid: int = left + (right - left) / 2
+        const mid: int = left + (right - left) / 2
         if arr[mid] == target {
             return mid
         }
@@ -1288,17 +1288,17 @@ fn binary_search(arr: [int], target: int) -> int {
 
 # Bubble sort (ascending)
 fn bubble_sort(arr: [int]) -> [int] {
-    let len: int = arr.len()
+    const len: int = arr.len()
     if len <= 1 {
         return arr
     }
-    let mut result: [int] = arr
-    let mut i: int = 0
+    let result: [int] = arr
+    let i: int = 0
     while i < len - 1 {
-        let mut j: int = 0
+        let j: int = 0
         while j < len - i - 1 {
             if result[j] > result[j + 1] {
-                let temp: int = result[j]
+                const temp: int = result[j]
                 result[j] = result[j + 1]
                 result[j + 1] = temp
             }
@@ -1311,7 +1311,7 @@ fn bubble_sort(arr: [int]) -> [int] {
 
 # Check if array is sorted (ascending)
 fn is_sorted(arr: [int]) -> bool {
-    let mut i: int = 1
+    let i: int = 1
     while i < arr.len() {
         if arr[i - 1] > arr[i] {
             return false
@@ -1326,8 +1326,8 @@ fn array_min(arr: [int]) -> ?int {
     if arr.len() == 0 {
         return none
     }
-    let mut min_val: int = arr[0]
-    let mut i: int = 1
+    let min_val: int = arr[0]
+    let i: int = 1
     while i < arr.len() {
         if arr[i] < min_val {
             min_val = arr[i]
@@ -1342,8 +1342,8 @@ fn array_max(arr: [int]) -> ?int {
     if arr.len() == 0 {
         return none
     }
-    let mut max_val: int = arr[0]
-    let mut i: int = 1
+    let max_val: int = arr[0]
+    let i: int = 1
     while i < arr.len() {
         if arr[i] > max_val {
             max_val = arr[i]
@@ -1355,8 +1355,8 @@ fn array_max(arr: [int]) -> ?int {
 
 # Sum all elements in array
 fn array_sum(arr: [int]) -> int {
-    let mut sum: int = 0
-    let mut i: int = 0
+    let sum: int = 0
+    let i: int = 0
     while i < arr.len() {
         sum = sum + arr[i]
         i = i + 1
@@ -1369,8 +1369,8 @@ fn array_product(arr: [int]) -> int {
     if arr.len() == 0 {
         return 0
     }
-    let mut prod: int = 1
-    let mut i: int = 0
+    let prod: int = 1
+    let i: int = 0
     while i < arr.len() {
         prod = prod * arr[i]
         i = i + 1
@@ -1380,9 +1380,9 @@ fn array_product(arr: [int]) -> int {
 
 # Partition array into two based on predicate
 fn partition(arr: [int], threshold: int) -> ([int], [int]) {
-    let mut left: [int] = []
-    let mut right: [int] = []
-    let mut i: int = 0
+    let left: [int] = []
+    let right: [int] = []
+    let i: int = 0
     while i < arr.len() {
         if arr[i] < threshold {
             left = left + [arr[i]]
@@ -1399,8 +1399,8 @@ fn unique_sorted(arr: [int]) -> [int] {
     if arr.len() <= 1 {
         return arr
     }
-    let mut result: [int] = [arr[0]]
-    let mut i: int = 1
+    let result: [int] = [arr[0]]
+    let i: int = 1
     while i < arr.len() {
         if arr[i] != arr[i - 1] {
             result = result + [arr[i]]
@@ -1412,9 +1412,9 @@ fn unique_sorted(arr: [int]) -> [int] {
 
 # Merge two sorted arrays
 fn merge_sorted(a: [int], b: [int]) -> [int] {
-    let mut result: [int] = []
-    let mut i: int = 0
-    let mut j: int = 0
+    let result: [int] = []
+    let i: int = 0
+    let j: int = 0
     while i < a.len() and j < b.len() {
         if a[i] <= b[j] {
             result = result + [a[i]]

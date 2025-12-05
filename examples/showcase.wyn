@@ -48,8 +48,8 @@ fn main() {
     print_str("")
     
     # Variables
-    let x: int = 42
-    let mut y: int = 0
+    const x: int = 42
+    let y: int = 0
     y = 10
     print_str("Variables: x=42, y=10")
     
@@ -60,13 +60,13 @@ fn main() {
     
     # Arrays
     print_str("Arrays:")
-    let arr: [int] = [1, 2, 3, 4, 5]
+    const arr: [int] = [1, 2, 3, 4, 5]
     print(len(arr))   # 5
     print(arr[-1])    # 5 (last element)
     
     # Iteration
     print_str("Sum of 1..5:")
-    let mut sum: int = 0
+    let sum: int = 0
     for item in arr {
         sum += item
     }
@@ -74,19 +74,19 @@ fn main() {
     
     # Structs
     print_str("Structs:")
-    let p: Point = Point { x: 3, y: 4 }
+    const p: Point = Point { x: 3, y: 4 }
     print(p.magnitude_squared())  # 25
     
     # Generics
     print_str("Generics:")
-    let box: Box[int] = Box[int] { value: 100 }
+    const box: Box[int] = Box[int] { value: 100 }
     print(box.value)  # 100
     
     # Optionals
     print_str("Optionals:")
-    let found: ?int = find_index(arr, 3)
+    const found: ?int = find_index(arr, 3)
     print(found ?? -1)  # 2
-    let not_found: ?int = find_index(arr, 99)
+    const not_found: ?int = find_index(arr, 99)
     print(not_found ?? -1)  # -1
     
     # Recursion
@@ -98,7 +98,7 @@ fn main() {
     
     # Match
     print_str("Match:")
-    let color: int = Green
+    const color: int = Green
     match color {
         Red => print_str("Red")
         Green => print_str("Green")
@@ -107,7 +107,7 @@ fn main() {
     
     # String operations
     print_str("String operations:")
-    let s: str = "hello"
+    const s: str = "hello"
     print(len(s))     # 5
     print(ord("A"))   # 65
     

@@ -6,7 +6,7 @@ struct Outer { middle: Middle, d: int }
 
 fn main() {
     # Triple nesting
-    let outer: Outer = Outer {
+    const outer: Outer = Outer {
         middle: Middle {
             inner: Inner { a: 1, b: 2 },
             c: 3
@@ -20,15 +20,15 @@ fn main() {
     assert(outer.d == 4)
     
     # Nested struct in array
-    let arr: [Inner] = [Inner { a: 10, b: 20 }, Inner { a: 30, b: 40 }]
+    const arr: [Inner] = [Inner { a: 10, b: 20 }, Inner { a: 30, b: 40 }]
     assert(arr[0].a == 10)
     assert(arr[0].b == 20)
     assert(arr[1].a == 30)
     assert(arr[1].b == 40)
     
     # Multiple nested structs
-    let m1: Middle = Middle { inner: Inner { a: 100, b: 200 }, c: 300 }
-    let m2: Middle = Middle { inner: Inner { a: 400, b: 500 }, c: 600 }
+    const m1: Middle = Middle { inner: Inner { a: 100, b: 200 }, c: 300 }
+    const m2: Middle = Middle { inner: Inner { a: 400, b: 500 }, c: 600 }
     assert(m1.inner.a == 100)
     assert(m2.inner.a == 400)
     

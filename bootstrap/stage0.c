@@ -75,6 +75,7 @@ typedef enum {
     TOK_IMPL,
     TOK_LET,
     TOK_MUT,
+    TOK_CONST,
     TOK_PUB,
     TOK_IF,
     TOK_ELSE,
@@ -192,7 +193,7 @@ struct Lexer {
 };
 
 static const char* keywords[] = {
-    "fn", "struct", "enum", "interface", "impl", "let", "mut", "pub",
+    "fn", "struct", "enum", "interface", "impl", "let", "mut", "const", "pub",
     "if", "else", "then", "match", "for", "while", "in",
     "break", "continue", "return", "import", "from", "as",
     "true", "false", "none", "some", "ok", "err", "self", "Self",
@@ -201,7 +202,7 @@ static const char* keywords[] = {
 };
 
 static const TokenKind keyword_tokens[] = {
-    TOK_FN, TOK_STRUCT, TOK_ENUM, TOK_INTERFACE, TOK_IMPL, TOK_LET, TOK_MUT, TOK_PUB,
+    TOK_FN, TOK_STRUCT, TOK_ENUM, TOK_INTERFACE, TOK_IMPL, TOK_LET, TOK_MUT, TOK_CONST, TOK_PUB,
     TOK_IF, TOK_ELSE, TOK_THEN, TOK_MATCH, TOK_FOR, TOK_WHILE, TOK_IN,
     TOK_BREAK, TOK_CONTINUE, TOK_RETURN, TOK_IMPORT, TOK_FROM, TOK_AS,
     TOK_TRUE, TOK_FALSE, TOK_NONE, TOK_SOME, TOK_OK, TOK_ERR, TOK_SELF, TOK_SELF_TYPE,
@@ -1744,17 +1745,17 @@ static Stmt** parse_block(Parser* p, int* count) {
 static Stmt* parse_stmt(Parser* p) {
     int line = p->current.line, col = p->current.column;
     
-    // Let statement: let x, let mut x, pub let x, pub let mut x
-    if (parser_check(p, TOK_LET) || 
-        (parser_check(p, TOK_PUB) && lexer_peek(p->lexer).kind == TOK_LET) ||
-        parser_check(p, TOK_MUT)) {
+    // Variable declaration: let (mutable) or const (immutable)
+    if (parser_check(p, TOK_LET) || parser_check(p, TOK_CONST) ||
+        (parser_check(p, TOK_PUB) && (lexer_peek(p->lexer).kind == TOK_LET || lexer_peek(p->lexer).kind == TOK_CONST))) {
         Stmt* s = new_stmt(STMT_LET, line, col);
         s->let.is_pub = parser_match(p, TOK_PUB);
-        if (!parser_match(p, TOK_MUT)) {
-            parser_expect(p, TOK_LET, "let");
-            s->let.is_mut = parser_match(p, TOK_MUT);
-        } else {
-            s->let.is_mut = true;  // standalone mut
+        
+        // let = mutable, const = immutable
+        if (parser_match(p, TOK_LET)) {
+            s->let.is_mut = true;
+        } else if (parser_match(p, TOK_CONST)) {
+            s->let.is_mut = false;
         }
         
         Token name = parser_expect(p, TOK_IDENT, "variable name");
@@ -1959,7 +1960,7 @@ static FnDef* parse_function(Parser* p, bool is_pub, bool is_async) {
     parser_expect(p, TOK_LPAREN, "(");
     if (!parser_check(p, TOK_RPAREN)) {
         do {
-            bool is_mut = parser_match(p, TOK_MUT);
+            // All parameters are mutable by default
             // Handle 'self' as a special parameter
             if (parser_check(p, TOK_SELF)) {
                 parser_advance(p);
@@ -1968,7 +1969,6 @@ static FnDef* parse_function(Parser* p, bool is_pub, bool is_async) {
                 Token pname = parser_expect(p, TOK_IDENT, "parameter name");
                 strcpy(fn->params[fn->param_count].name, pname.ident);
             }
-            (void)is_mut; // TODO: store mutability
             if (parser_match(p, TOK_COLON)) {
                 // Check for variadic: ...Type
                 if (parser_match(p, TOK_DOTDOTDOT)) {
@@ -2109,7 +2109,7 @@ static FnDef* parse_method_sig(Parser* p) {
     parser_expect(p, TOK_LPAREN, "(");
     if (!parser_check(p, TOK_RPAREN)) {
         do {
-            bool is_mut = parser_match(p, TOK_MUT);
+            // All parameters are mutable by default
             if (parser_check(p, TOK_SELF)) {
                 parser_advance(p);
                 strcpy(fn->params[fn->param_count].name, "self");
@@ -2117,7 +2117,6 @@ static FnDef* parse_method_sig(Parser* p) {
                 Token pname = parser_expect(p, TOK_IDENT, "parameter name");
                 strcpy(fn->params[fn->param_count].name, pname.ident);
             }
-            (void)is_mut;
             if (parser_match(p, TOK_COLON)) {
                 fn->params[fn->param_count].type = parse_type(p);
             }

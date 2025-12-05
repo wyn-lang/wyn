@@ -44,7 +44,7 @@ fn read_line() -> str {
 # Returns ok(content) on success, or err(message) on failure
 # Requires: Runtime support (file I/O syscalls)
 fn read_file(path: str) -> Result[str, str] {
-    let content: str = read_file(path)
+    const content: str = read_file(path)
     if content.len() >= 0 {
         return ok(content)
     }
@@ -55,7 +55,7 @@ fn read_file(path: str) -> Result[str, str] {
 # Returns ok(true) on success, or err(message) on failure
 # Requires: Runtime support (file I/O syscalls)
 fn write_file(path: str, content: str) -> Result[bool, str] {
-    let result: bool = write_file(path, content)
+    const result: bool = write_file(path, content)
     if result {
         return ok(true)
     }
@@ -66,7 +66,7 @@ fn write_file(path: str, content: str) -> Result[bool, str] {
 # Returns ok(true) on success, or err(message) on failure
 # Requires: Runtime support (file I/O syscalls)
 fn append_file(path: str, content: str) -> Result[bool, str] {
-    let result: bool = append_file(path, content)
+    const result: bool = append_file(path, content)
     if result {
         return ok(true)
     }
@@ -83,7 +83,7 @@ fn file_exists(path: str) -> bool {
 # Returns ok(true) on success, or err(message) on failure
 # Requires: Runtime support (file I/O syscalls)
 fn delete_file(path: str) -> Result[bool, str] {
-    let result: bool = delete_file(path)
+    const result: bool = delete_file(path)
     if result {
         return ok(true)
     }
@@ -109,12 +109,12 @@ fn write_bytes(path: str, data: [byte]) -> Result[bool, str] {
 # Read file contents as an array of lines
 # Returns ok(lines) on success, or err(message) on failure
 fn read_lines(path: str) -> Result[[str], str] {
-    let content_result: Result[str, str] = read_file(path)
+    const content_result: Result[str, str] = read_file(path)
     if content_result.is_err {
         return err("Failed to read file")
     }
-    let content: str = content_result.value
-    let lines: [str] = str_split(content, "\n")
+    const content: str = content_result.value
+    const lines: [str] = str_split(content, "\n")
     return ok(lines)
 }
 }
@@ -123,7 +123,7 @@ fn read_lines(path: str) -> Result[[str], str] {
 # Returns ok(true) on success, or err(message) on failure
 # Requires: Runtime support (directory syscalls)
 fn create_dir(path: str) -> Result[bool, str] {
-    let result: bool = mkdir(path)
+    const result: bool = mkdir(path)
     if result {
         return ok(true)
     }
@@ -134,7 +134,7 @@ fn create_dir(path: str) -> Result[bool, str] {
 # Returns ok(true) on success, or err(message) on failure
 # Requires: Runtime support (directory syscalls)
 fn remove_dir(path: str) -> Result[bool, str] {
-    let result: bool = rmdir(path)
+    const result: bool = rmdir(path)
     if result {
         return ok(true)
     }
@@ -145,14 +145,14 @@ fn remove_dir(path: str) -> Result[bool, str] {
 # Returns ok(entries) on success, or err(message) on failure
 # Requires: Runtime support (directory syscalls)
 fn list_dir(path: str) -> Result[[str], str] {
-    let entries: [str] = list_dir(path)
+    const entries: [str] = list_dir(path)
     return ok(entries)
 }
 
 # Copy a file from src to dst
 # Returns ok(true) on success, or err(message) on failure
 fn copy_file(src: str, dst: str) -> Result[bool, str] {
-    let content_result: Result[str, str] = read_file(src)
+    const content_result: Result[str, str] = read_file(src)
     # Stage 0: Can't pattern match, so just try to write
     # Stage 1 will properly handle Result chaining
     return write_file(dst, "")
@@ -162,7 +162,7 @@ fn copy_file(src: str, dst: str) -> Result[bool, str] {
 # Returns ok(true) on success, or err(message) on failure
 # Requires: Runtime support (file I/O syscalls)
 fn move_file(src: str, dst: str) -> Result[bool, str] {
-    let result: bool = rename_file(src, dst)
+    const result: bool = rename_file(src, dst)
     if result {
         return ok(true)
     }
@@ -172,14 +172,14 @@ fn move_file(src: str, dst: str) -> Result[bool, str] {
 # Format an integer with zero-padding to the specified width
 # Example: format_int(42, 5) -> "00042"
 fn format_int(n: int, width: int) -> str {
-    let s: str = int_to_str(n)
-    let len: int = s.len()
+    const s: str = int_to_str(n)
+    const len: int = s.len()
     if len >= width {
         return s
     }
-    let padding: int = width - len
-    let mut result: str = ""
-    let mut i: int = 0
+    const padding: int = width - len
+    let result: str = ""
+    let i: int = 0
     while i < padding {
         result = result + "0"
         i = i + 1
@@ -198,14 +198,14 @@ fn format_bool(b: bool) -> str {
 # Format integer with left padding using spaces instead of zeros
 # Example: format_int_padded(42, 5) -> "   42"
 fn format_int_padded(n: int, width: int) -> str {
-    let s: str = int_to_str(n)
-    let len: int = s.len()
+    const s: str = int_to_str(n)
+    const len: int = s.len()
     if len >= width {
         return s
     }
-    let padding: int = width - len
-    let mut result: str = ""
-    let mut i: int = 0
+    const padding: int = width - len
+    let result: str = ""
+    let i: int = 0
     while i < padding {
         result = result + " "
         i = i + 1
@@ -219,11 +219,11 @@ fn format_hex(n: int) -> str {
     if n == 0 {
         return "0"
     }
-    let mut result: str = ""
-    let mut val: int = n
-    let hex_chars: str = "0123456789abcdef"
+    let result: str = ""
+    let val: int = n
+    const hex_chars: str = "0123456789abcdef"
     while val > 0 {
-        let digit: int = val % 16
+        const digit: int = val % 16
         result = hex_chars[digit:digit+1] + result
         val = val / 16
     }
@@ -236,10 +236,10 @@ fn format_bin(n: int) -> str {
     if n == 0 {
         return "0"
     }
-    let mut result: str = ""
-    let mut val: int = n
+    let result: str = ""
+    let val: int = n
     while val > 0 {
-        let bit: int = val % 2
+        const bit: int = val % 2
         result = int_to_str(bit) + result
         val = val / 2
     }
@@ -248,7 +248,7 @@ fn format_bin(n: int) -> str {
 
 # Print multiple strings in sequence without newline
 fn print_all(parts: [str]) {
-    let mut i: int = 0
+    let i: int = 0
     while i < parts.len() {
         print_str(parts[i])
         i = i + 1
@@ -267,8 +267,8 @@ fn repeat_char(c: str, n: int) -> str {
     if n <= 0 or c.len() == 0 {
         return ""
     }
-    let mut result: str = ""
-    let mut i: int = 0
+    let result: str = ""
+    let i: int = 0
     while i < n {
         result = result + c
         i = i + 1
@@ -279,14 +279,14 @@ fn repeat_char(c: str, n: int) -> str {
 # Format integer with thousands separator
 # Example: format_thousands(1234567) -> "1,234,567"
 fn format_thousands(n: int) -> str {
-    let s: str = int_to_str(n)
-    let len: int = s.len()
+    const s: str = int_to_str(n)
+    const len: int = s.len()
     if len <= 3 {
         return s
     }
-    let mut result: str = ""
-    let mut count: int = 0
-    let mut i: int = len - 1
+    let result: str = ""
+    let count: int = 0
+    let i: int = len - 1
     while i >= 0 {
         if count == 3 {
             result = "," + result
@@ -313,8 +313,8 @@ fn print_line_char(c: str, width: int) {
 
 # Print a box around text
 fn print_box(text: str) {
-    let len: int = text.len()
-    let border: str = repeat_char("-", len + 4)
+    const len: int = text.len()
+    const border: str = repeat_char("-", len + 4)
     print_str(border + "\n")
     print_str("| " + text + " |\n")
     print_str(border + "\n")
@@ -360,8 +360,8 @@ fn print_debug(msg: str) {
 
 # Print separator line for visual organization
 fn print_separator(width: int, char: str) {
-    let mut line: str = ""
-    let mut i: int = 0
+    let line: str = ""
+    let i: int = 0
     while i < width {
         line = line + char
         i = i + 1
@@ -394,24 +394,24 @@ fn format_elapsed(seconds: int) -> str {
         return int_to_str(seconds) + "s"
     }
     if seconds < 3600 {
-        let mins: int = seconds / 60
-        let secs: int = seconds % 60
+        const mins: int = seconds / 60
+        const secs: int = seconds % 60
         return int_to_str(mins) + "m " + int_to_str(secs) + "s"
     }
-    let hours: int = seconds / 3600
-    let mins: int = (seconds % 3600) / 60
+    const hours: int = seconds / 3600
+    const mins: int = (seconds % 3600) / 60
     return int_to_str(hours) + "h " + int_to_str(mins) + "m"
 }
 
 # Print a table row with columns
 fn print_table_row(cols: [str], widths: [int]) {
-    let mut i: int = 0
+    let i: int = 0
     while i < cols.len() {
-        let col: str = cols[i]
-        let width: int = widths[i]
-        let padding: int = width - col.len()
+        const col: str = cols[i]
+        const width: int = widths[i]
+        const padding: int = width - col.len()
         print_str(col)
-        let mut j: int = 0
+        let j: int = 0
         while j < padding {
             print_str(" ")
             j = j + 1
@@ -427,8 +427,8 @@ fn print_table_row(cols: [str], widths: [int]) {
 # Print table header with separator
 fn print_table_header(headers: [str], widths: [int]) {
     print_table_row(headers, widths)
-    let mut total_width: int = 0
-    let mut i: int = 0
+    let total_width: int = 0
+    let i: int = 0
     while i < widths.len() {
         total_width = total_width + widths[i]
         if i < widths.len() - 1 {
@@ -462,10 +462,10 @@ fn format_optional_int(opt: ?int) -> str {
 
 # Print progress bar
 fn print_progress(current: int, total: int, width: int) {
-    let percent: int = (current * 100) / total
-    let filled: int = (current * width) / total
+    const percent: int = (current * 100) / total
+    const filled: int = (current * width) / total
     print_str("[")
-    let mut i: int = 0
+    let i: int = 0
     while i < width {
         if i < filled {
             print_str("=")
@@ -479,8 +479,8 @@ fn print_progress(current: int, total: int, width: int) {
 
 # Print centered text
 fn print_centered(text: str, width: int) {
-    let padding: int = (width - text.len()) / 2
-    let mut i: int = 0
+    const padding: int = (width - text.len()) / 2
+    let i: int = 0
     while i < padding {
         print_str(" ")
         i = i + 1
@@ -495,7 +495,7 @@ fn format_list_item(item: str, bullet: str) -> str {
 
 # Print numbered list
 fn print_numbered_list(items: [str]) {
-    let mut i: int = 0
+    let i: int = 0
     while i < items.len() {
         print_str(int_to_str(i + 1) + ". " + items[i] + "\n")
         i = i + 1
@@ -504,7 +504,7 @@ fn print_numbered_list(items: [str]) {
 
 # Print bulleted list
 fn print_bulleted_list(items: [str]) {
-    let mut i: int = 0
+    let i: int = 0
     while i < items.len() {
         print_str("• " + items[i] + "\n")
         i = i + 1
@@ -513,9 +513,9 @@ fn print_bulleted_list(items: [str]) {
 
 # Format time in HH:MM:SS
 fn format_time(hours: int, minutes: int, seconds: int) -> str {
-    let h: str = if hours < 10 then "0" + int_to_str(hours) else int_to_str(hours)
-    let m: str = if minutes < 10 then "0" + int_to_str(minutes) else int_to_str(minutes)
-    let s: str = if seconds < 10 then "0" + int_to_str(seconds) else int_to_str(seconds)
+    const h: str = if hours < 10 then "0" + int_to_str(hours) else int_to_str(hours)
+    const m: str = if minutes < 10 then "0" + int_to_str(minutes) else int_to_str(minutes)
+    const s: str = if seconds < 10 then "0" + int_to_str(seconds) else int_to_str(seconds)
     return h + ":" + m + ":" + s
 }
 
@@ -529,8 +529,8 @@ fn print_banner(title: str, width: int) {
 # Format integer in octal (no prefix)
 fn format_octal(n: int) -> str {
     if n == 0 { return "0" }
-    let mut result: str = ""
-    let mut val: int = n
+    let result: str = ""
+    let val: int = n
     while val > 0 {
         result = int_to_str(val % 8) + result
         val = val / 8
@@ -541,8 +541,8 @@ fn format_octal(n: int) -> str {
 # Format integer as Roman numerals (1-3999)
 fn format_roman(n: int) -> str {
     if n <= 0 or n >= 4000 { return "?" }
-    let mut result: str = ""
-    let mut num: int = n
+    let result: str = ""
+    let num: int = n
     while num >= 1000 {
         result = result + "M"
         num = num - 1000
@@ -600,14 +600,14 @@ fn format_roman(n: int) -> str {
 
 # Print 2D grid of integers
 fn print_grid(grid: [[int]], cell_width: int) {
-    let mut i: int = 0
+    let i: int = 0
     while i < grid.len() {
-        let row: [int] = grid[i]
-        let mut j: int = 0
+        const row: [int] = grid[i]
+        let j: int = 0
         while j < row.len() {
-            let s: str = int_to_str(row[j])
-            let padding: int = cell_width - s.len()
-            let mut k: int = 0
+            const s: str = int_to_str(row[j])
+            const padding: int = cell_width - s.len()
+            let k: int = 0
             while k < padding {
                 print_str(" ")
                 k = k + 1
@@ -627,11 +627,11 @@ fn print_grid(grid: [[int]], cell_width: int) {
 fn format_base(n: int, base: int) -> str {
     if base < 2 or base > 36 { return "?" }
     if n == 0 { return "0" }
-    let digits: str = "0123456789abcdefghijklmnopqrstuvwxyz"
-    let mut result: str = ""
-    let mut val: int = n
+    const digits: str = "0123456789abcdefghijklmnopqrstuvwxyz"
+    let result: str = ""
+    let val: int = n
     while val > 0 {
-        let digit: int = val % base
+        const digit: int = val % base
         result = digits[digit:digit+1] + result
         val = val / base
     }
@@ -640,10 +640,10 @@ fn format_base(n: int, base: int) -> str {
 
 # Print aligned columns (left, center, right)
 fn print_aligned(left: str, center: str, right: str, width: int) {
-    let center_start: int = (width - center.len()) / 2
-    let right_start: int = width - right.len()
+    const center_start: int = (width - center.len()) / 2
+    const right_start: int = width - right.len()
     print_str(left)
-    let mut i: int = left.len()
+    let i: int = left.len()
     while i < center_start {
         print_str(" ")
         i = i + 1
@@ -667,8 +667,8 @@ fn truncate_display(s: str, max_len: int) -> str {
 # Format array of integers as comma-separated string
 fn format_int_array(arr: [int]) -> str {
     if arr.len() == 0 { return "[]" }
-    let mut result: str = "["
-    let mut i: int = 0
+    let result: str = "["
+    let i: int = 0
     while i < arr.len() {
         result = result + int_to_str(arr[i])
         if i < arr.len() - 1 {
@@ -682,8 +682,8 @@ fn format_int_array(arr: [int]) -> str {
 # Format array of strings as comma-separated string
 fn format_str_array(arr: [str]) -> str {
     if arr.len() == 0 { return "[]" }
-    let mut result: str = "["
-    let mut i: int = 0
+    let result: str = "["
+    let i: int = 0
     while i < arr.len() {
         result = result + "\"" + arr[i] + "\""
         if i < arr.len() - 1 {
@@ -696,7 +696,7 @@ fn format_str_array(arr: [str]) -> str {
 
 # Print indented text
 fn print_indented(text: str, indent: int) {
-    let mut i: int = 0
+    let i: int = 0
     while i < indent {
         print_str("  ")
         i = i + 1
@@ -709,15 +709,15 @@ fn format_millis(ms: int) -> str {
     if ms < 1000 {
         return int_to_str(ms) + "ms"
     }
-    let secs: int = ms / 1000
-    let remaining_ms: int = ms % 1000
+    const secs: int = ms / 1000
+    const remaining_ms: int = ms % 1000
     return int_to_str(secs) + "." + int_to_str(remaining_ms) + "s"
 }
 
 # Print key-value pairs as a table
 fn print_properties(keys: [str], values: [str]) {
-    let mut max_key_len: int = 0
-    let mut i: int = 0
+    let max_key_len: int = 0
+    let i: int = 0
     while i < keys.len() {
         if keys[i].len() > max_key_len {
             max_key_len = keys[i].len()
@@ -726,10 +726,10 @@ fn print_properties(keys: [str], values: [str]) {
     }
     i = 0
     while i < keys.len() {
-        let key: str = keys[i]
-        let padding: int = max_key_len - key.len()
+        const key: str = keys[i]
+        const padding: int = max_key_len - key.len()
         print_str(key)
-        let mut j: int = 0
+        let j: int = 0
         while j < padding {
             print_str(" ")
             j = j + 1
@@ -753,7 +753,7 @@ fn print_status(msg: str, timestamp: int) {
 
 # Format percentage as progress indicator
 fn format_progress_percent(current: int, total: int) -> str {
-    let percent: int = (current * 100) / total
+    const percent: int = (current * 100) / total
     return int_to_str(percent) + "%"
 }
 
@@ -761,7 +761,7 @@ fn format_progress_percent(current: int, total: int) -> str {
 fn print_menu(title: str, options: [str]) {
     print_line(title)
     print_separator(title.len(), "-")
-    let mut i: int = 0
+    let i: int = 0
     while i < options.len() {
         print_str(int_to_str(i + 1) + ") " + options[i] + "\n")
         i = i + 1
@@ -780,9 +780,9 @@ fn format_enabled(b: bool) -> str {
 
 # Print divider with label
 fn print_divider(label: str, width: int) {
-    let label_len: int = label.len()
-    let side_len: int = (width - label_len - 2) / 2
-    let mut i: int = 0
+    const label_len: int = label.len()
+    const side_len: int = (width - label_len - 2) / 2
+    let i: int = 0
     while i < side_len {
         print_str("-")
         i = i + 1
@@ -798,8 +798,8 @@ fn print_divider(label: str, width: int) {
 
 # Format integer with ordinal suffix (1st, 2nd, 3rd, etc)
 fn format_ordinal(n: int) -> str {
-    let last_digit: int = n % 10
-    let last_two: int = n % 100
+    const last_digit: int = n % 10
+    const last_two: int = n % 100
     if last_two >= 11 and last_two <= 13 {
         return int_to_str(n) + "th"
     }
@@ -817,7 +817,7 @@ fn format_ordinal(n: int) -> str {
 
 # Print tree structure with branches
 fn print_tree_item(text: str, depth: int, is_last: bool) {
-    let mut i: int = 0
+    let i: int = 0
     while i < depth {
         print_str("  ")
         i = i + 1
@@ -852,7 +852,7 @@ fn format_size_exact(bytes: int) -> str {
 
 # Print summary statistics
 fn print_stats(label: str, count: int, total: int) {
-    let percent: int = if total > 0 then (count * 100) / total else 0
+    const percent: int = if total > 0 then (count * 100) / total else 0
     print_str(label + ": " + int_to_str(count) + "/" + int_to_str(total))
     print_str(" (" + int_to_str(percent) + "%)\n")
 }
@@ -895,21 +895,21 @@ fn format_coord(x: int, y: int) -> str {
 
 # Print ASCII art box with text
 fn print_ascii_box(lines: [str]) {
-    let mut max_len: int = 0
-    let mut i: int = 0
+    let max_len: int = 0
+    let i: int = 0
     while i < lines.len() {
         if lines[i].len() > max_len {
             max_len = lines[i].len()
         }
         i = i + 1
     }
-    let border: str = "+" + repeat_char("-", max_len + 2) + "+"
+    const border: str = "+" + repeat_char("-", max_len + 2) + "+"
     print_line(border)
     i = 0
     while i < lines.len() {
-        let padding: int = max_len - lines[i].len()
+        const padding: int = max_len - lines[i].len()
         print_str("| " + lines[i])
-        let mut j: int = 0
+        let j: int = 0
         while j < padding {
             print_str(" ")
             j = j + 1
@@ -926,7 +926,7 @@ fn print_ascii_box(lines: [str]) {
 
 # Read entire file contents as string
 fn read(path: str) -> Result[str, str] {
-    let content: str = read_file(path)
+    const content: str = read_file(path)
     if content == "" {
         # Could be empty file or error - check existence
         if file_exists(path) {
@@ -939,7 +939,7 @@ fn read(path: str) -> Result[str, str] {
 
 # Write string to file, overwriting if exists
 fn write(path: str, content: str) -> Result[(), str] {
-    let result: int = write_file(path, content)
+    const result: int = write_file(path, content)
     if result == 0 {
         return err("write failed")
     }
@@ -948,7 +948,7 @@ fn write(path: str, content: str) -> Result[(), str] {
 
 # Append string to end of file
 fn append(path: str, content: str) -> Result[(), str] {
-    let result: int = append_file(path, content)
+    const result: int = append_file(path, content)
     if result == 0 {
         return err("append failed")
     }
@@ -995,7 +995,7 @@ fn exists(path: str) -> bool {
 
 # Create directory
 fn create_dir(path: str) -> Result[(), str] {
-    let result: int = mkdir(path)
+    const result: int = mkdir(path)
     if result == 0 {
         return err("mkdir failed")
     }
@@ -1010,7 +1010,7 @@ fn mkdir_all(path: str) -> Result[(), str] {
 
 # Remove directory
 fn remove_dir(path: str) -> Result[(), str] {
-    let result: int = rmdir(path)
+    const result: int = rmdir(path)
     if result == 0 {
         return err("rmdir failed")
     }
@@ -1019,7 +1019,7 @@ fn remove_dir(path: str) -> Result[(), str] {
 
 # Remove file
 fn remove(path: str) -> Result[(), str] {
-    let result: int = delete_file(path)
+    const result: int = delete_file(path)
     if result == 0 {
         return err("delete failed")
     }
@@ -1061,7 +1061,7 @@ fn copy(src: str, dst: str) -> Result[(), str] {
 
 # Move/rename file from src to dst
 fn move(src: str, dst: str) -> Result[(), str] {
-    let r: int = rename_file(src, dst)
+    const r: int = rename_file(src, dst)
     if r != 0 {
         return err("rename failed")
     }
@@ -1112,7 +1112,7 @@ fn join_path(a: str, b: str) -> str {
     if b.len() == 0 {
         return a
     }
-    let last: int = ord(a[a.len() - 1:a.len()][0])
+    const last: int = ord(a[a.len() - 1:a.len()][0])
     if last == 47 {  # '/'
         return a + b
     }
@@ -1122,7 +1122,7 @@ fn join_path(a: str, b: str) -> str {
 # Get directory portion of path
 # Returns "." if no directory component
 fn dirname(path: str) -> str {
-    let mut i: int = path.len() - 1
+    let i: int = path.len() - 1
     while i >= 0 {
         if ord(path[i:i+1][0]) == 47 {  # '/'
             if i == 0 {
@@ -1137,7 +1137,7 @@ fn dirname(path: str) -> str {
 
 # Get filename portion of path (last component)
 fn basename(path: str) -> str {
-    let mut i: int = path.len() - 1
+    let i: int = path.len() - 1
     while i >= 0 {
         if ord(path[i:i+1][0]) == 47 {  # '/'
             return path[i+1:path.len()]
@@ -1150,8 +1150,8 @@ fn basename(path: str) -> str {
 # Get file extension including dot (e.g., ".txt")
 # Returns empty string if no extension
 fn extension(path: str) -> str {
-    let base: str = basename(path)
-    let mut i: int = base.len() - 1
+    const base: str = basename(path)
+    let i: int = base.len() - 1
     while i >= 0 {
         if ord(base[i:i+1][0]) == 46 {  # '.'
             return base[i:base.len()]
@@ -1167,11 +1167,11 @@ fn normalize_path(path: str) -> str {
     if path.len() == 0 {
         return "."
     }
-    let mut result: str = ""
-    let mut i: int = 0
-    let mut last_slash: bool = false
+    let result: str = ""
+    let i: int = 0
+    let last_slash: bool = false
     while i < path.len() {
-        let c: int = ord(path[i:i+1][0])
+        const c: int = ord(path[i:i+1][0])
         if c == 47 {  # '/'
             if last_slash == false {
                 result = result + "/"
@@ -1191,7 +1191,7 @@ fn normalize_path(path: str) -> str {
 
 # Remove file extension from path
 fn remove_extension(path: str) -> str {
-    let ext: str = extension(path)
+    const ext: str = extension(path)
     if ext.len() == 0 {
         return path
     }
@@ -1216,8 +1216,8 @@ fn join_paths(parts: [str]) -> str {
     if parts.len() == 0 {
         return ""
     }
-    let mut result: str = parts[0]
-    let mut i: int = 1
+    let result: str = parts[0]
+    let i: int = 1
     while i < parts.len() {
         result = join_path(result, parts[i])
         i = i + 1
@@ -1232,8 +1232,8 @@ fn parent(path: str) -> str {
 
 # Get filename without extension
 fn stem(path: str) -> str {
-    let base: str = basename(path)
-    let ext: str = extension(path)
+    const base: str = basename(path)
+    const ext: str = extension(path)
     if ext.len() == 0 {
         return base
     }
@@ -1242,8 +1242,8 @@ fn stem(path: str) -> str {
 
 # Split path into directory and filename
 fn split_path(path: str) -> (str, str) {
-    let dir: str = dirname(path)
-    let file: str = basename(path)
+    const dir: str = dirname(path)
+    const file: str = basename(path)
     return (dir, file)
 }
 
@@ -1276,7 +1276,7 @@ fn remove_trailing_slash(path: str) -> str {
 
 # Check if path matches extension (case-sensitive)
 fn has_ext(path: str, ext: str) -> bool {
-    let path_ext: str = extension(path)
+    const path_ext: str = extension(path)
     if ext.len() > 0 and ord(ext[0:1][0]) != 46 {  # '.'
         return path_ext == "." + ext
     }
@@ -1285,7 +1285,7 @@ fn has_ext(path: str, ext: str) -> bool {
 
 # Replace extension with new one
 fn with_extension(path: str, new_ext: str) -> str {
-    let base: str = remove_extension(path)
+    const base: str = remove_extension(path)
     if new_ext.len() == 0 {
         return base
     }
@@ -1300,9 +1300,9 @@ fn path_depth(path: str) -> int {
     if path.len() == 0 {
         return 0
     }
-    let normalized: str = normalize_path(path)
-    let mut count: int = 0
-    let mut i: int = 0
+    const normalized: str = normalize_path(path)
+    let count: int = 0
+    let i: int = 0
     while i < normalized.len() {
         if ord(normalized[i:i+1][0]) == 47 {  # '/'
             count = count + 1
@@ -1319,10 +1319,10 @@ fn is_filename_only(path: str) -> bool {
 
 # Check if path contains parent directory references (..)
 fn has_parent_refs(path: str) -> bool {
-    let mut i: int = 0
+    let i: int = 0
     while i < path.len() - 1 {
         if path[i:i+2] == ".." {
-            let mut before_ok: bool = false
+            let before_ok: bool = false
             if i == 0 {
                 before_ok = true
             }
@@ -1347,7 +1347,7 @@ fn has_parent_refs(path: str) -> bool {
 
 # Check if path is hidden (starts with .)
 fn is_hidden(path: str) -> bool {
-    let base: str = basename(path)
+    const base: str = basename(path)
     if base.len() == 0 {
         return false
     }
@@ -1366,7 +1366,7 @@ fn ext_wyn() -> str { return ".wyn" }
 
 # Check if path is a text file by extension
 fn is_text_file(path: str) -> bool {
-    let ext: str = extension(path)
+    const ext: str = extension(path)
     if ext == ".txt" {
         return true
     }
@@ -1396,11 +1396,11 @@ fn is_text_file(path: str) -> bool {
 
 # Sanitize filename by removing invalid characters
 fn sanitize_filename(name: str) -> str {
-    let mut result: str = ""
-    let mut i: int = 0
+    let result: str = ""
+    let i: int = 0
     while i < name.len() {
-        let c: int = ord(name[i:i+1][0])
-        let mut invalid: bool = false
+        const c: int = ord(name[i:i+1][0])
+        let invalid: bool = false
         if c == 47 {  # '/'
             invalid = true
         }
@@ -1422,7 +1422,7 @@ fn sanitize_filename(name: str) -> str {
 
 # Create a safe path by joining and normalizing
 fn safe_join(base: str, path: str) -> str {
-    let joined: str = join_path(base, path)
+    const joined: str = join_path(base, path)
     return normalize_path(joined)
 }
 

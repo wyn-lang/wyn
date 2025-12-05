@@ -6,7 +6,7 @@ Wyn provides **two ways** to do common operations:
 
 ### 1. Builtins (Python-like simplicity)
 ```wyn
-let content: str = read_file("test.txt")
+const content: str = read_file("test.txt")
 write_file("test.txt", "hello")
 print(42)
 ```
@@ -21,7 +21,7 @@ print(42)
 ```wyn
 import std/io
 
-let result: Result[str, str] = io.read_file("test.txt")
+const result: Result[str, str] = io.read_file("test.txt")
 io.write_file("test.txt", "hello")
 io.print(42)
 ```
@@ -68,7 +68,7 @@ io.print(42)
 ### Quick Script (Builtins)
 ```wyn
 fn main() {
-    let data: str = read_file("input.txt")
+    const data: str = read_file("input.txt")
     write_file("output.txt", data)
 }
 ```
@@ -80,7 +80,7 @@ import std/io
 
 fn main() {
     if fs.exists("input.txt") {
-        let result: Result[str, str] = io.read_file("input.txt")
+        const result: Result[str, str] = io.read_file("input.txt")
         if result.is_ok {
             io.write_file("output.txt", result.value)
         }

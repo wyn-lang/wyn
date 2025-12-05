@@ -2,7 +2,7 @@
 
 fn main() {
     # Test break in while loop
-    let mut i: int = 0
+    let i: int = 0
     while i < 10 {
         if i == 5 {
             break

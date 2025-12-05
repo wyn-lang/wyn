@@ -10,19 +10,19 @@ Like Python's threading/multiprocessing, but faster and safer.
 
 ### Read Variables
 ```wyn
-let config: str = "production"
+const config: str = "production"
 spawn { print(config) }  // Reads config
 ```
 
 ### Write Variables
 ```wyn
-let mut counter: int = 0
+let counter: int = 0
 spawn { counter = counter + 1 }  // Writes counter (atomic)
 ```
 
 ### Share Collections
 ```wyn
-let mut results: [int] = []
+let results: [int] = []
 spawn { results.append(42) }  // Appends to shared list (thread-safe)
 ```
 
@@ -41,7 +41,7 @@ spawn {
 ### Spawn with Capture (v0.0.1)
 
 ```wyn
-let x: int = 42
+const x: int = 42
 spawn {
     print(x)  // Just works - captured automatically
 }
@@ -54,11 +54,11 @@ spawn {
 Instead of complex channels and handles, just use a shared list:
 
 ```wyn
-let mut results: [int] = []
+let results: [int] = []
 
 for i in 0..10 {
     spawn {
-        let result: int = compute(i)
+        const result: int = compute(i)
         results.append(result)  // Thread-safe append
     }
 }
@@ -84,7 +84,7 @@ for t in threads:
 ## Shared State: Just Works
 
 ```wyn
-let mut counter: int = 0
+let counter: int = 0
 
 for i in 0..10 {
     spawn {
@@ -119,7 +119,7 @@ for t in threads:
 Instead of channels, just use lists:
 
 ```wyn
-let mut queue: [int] = []
+let queue: [int] = []
 
 // Producer
 spawn {
@@ -131,7 +131,7 @@ spawn {
 // Consumer
 spawn {
     while queue.len() > 0 {
-        let item: int = queue.pop()
+        const item: int = queue.pop()
         process(item)
     }
 }
@@ -214,7 +214,7 @@ wg.Wait()
 
 ### Wyn (Simple)
 ```wyn
-let mut results: [int] = []
+let results: [int] = []
 
 for i in 0..10 {
     spawn {
@@ -248,7 +248,7 @@ for t in threads:
 
 ### Wyn (Simple)
 ```wyn
-let mut results: [int] = []
+let results: [int] = []
 
 for i in 0..10 {
     spawn {
@@ -280,19 +280,19 @@ Just spawn in a loop.
 
 ### ✅ Variable Capture
 ```wyn
-let x: int = 42
+const x: int = 42
 spawn { print(x) }  // Just works
 ```
 
 ### ✅ Thread-Safe Append
 ```wyn
-let mut results: [int] = []
+let results: [int] = []
 spawn { results.append(42) }  // Atomic
 ```
 
 ### ✅ Atomic Operations
 ```wyn
-let mut counter: int = 0
+let counter: int = 0
 spawn { counter = counter + 1 }  // Atomic
 ```
 
@@ -319,7 +319,7 @@ After v0.0.1, Wyn will have:
 ## Example: Parallel Test Runner (v0.0.1)
 
 ```wyn
-let mut passed: int = 0
+let passed: int = 0
 
 for test in tests {
     spawn {

@@ -21,11 +21,11 @@ fn parse_url(url: str) -> Result[(str, int, str), str] {
         return err("Only http:// URLs supported")
     }
     
-    let without_proto: str = str_substr(url, 7, url.len() - 7)  # Skip "http://"
-    let slash_pos: int = without_proto.index_of("/")
+    const without_proto: str = str_substr(url, 7, url.len() - 7)  # Skip "http://"
+    const slash_pos: int = without_proto.index_of("/")
     
-    let host_port: str = ""
-    let path: str = "/"
+    const host_port: str = ""
+    const path: str = "/"
     
     if slash_pos >= 0 {
         host_port = str_substr(without_proto, 0, slash_pos)
@@ -35,13 +35,13 @@ fn parse_url(url: str) -> Result[(str, int, str), str] {
     }
     
     # Parse host:port
-    let colon_pos: int = host_port.index_of(":")
-    let host: str = host_port
-    let port: int = 80
+    const colon_pos: int = host_port.index_of(":")
+    const host: str = host_port
+    const port: int = 80
     
     if colon_pos >= 0 {
         host = str_substr(host_port, 0, colon_pos)
-        let port_str: str = str_substr(host_port, colon_pos + 1, host_port.len() - colon_pos - 1)
+        const port_str: str = str_substr(host_port, colon_pos + 1, host_port.len() - colon_pos - 1)
         port = str_to_int(port_str)
     }
     
@@ -49,24 +49,24 @@ fn parse_url(url: str) -> Result[(str, int, str), str] {
 }
 
 pub fn get(url: str) -> Result[Response, str] {
-    let parse_result: Result[(str, int, str), str] = parse_url(url)
+    const parse_result: Result[(str, int, str), str] = parse_url(url)
     if parse_result.is_err() {
         return err(parse_result.err_value())
     }
     
-    let parts: (str, int, str) = parse_result.ok_value()
-    let host: str = parts.0
-    let port: int = parts.1
-    let path: str = parts.2
+    const parts: (str, int, str) = parse_result.ok_value()
+    const host: str = parts.0
+    const port: int = parts.1
+    const path: str = parts.2
     
     # Connect
-    let fd: int = tcp_connect(host, port)
+    const fd: int = tcp_connect(host, port)
     if fd < 0 {
         return err("Connection failed")
     }
     
     # Send GET request
-    let request: str = str_concat("GET ", path)
+    const request: str = str_concat("GET ", path)
     request = str_concat(request, " HTTP/1.1\r\nHost: ")
     request = str_concat(request, host)
     request = str_concat(request, "\r\nConnection: close\r\n\r\n")
@@ -74,12 +74,12 @@ pub fn get(url: str) -> Result[Response, str] {
     tcp_send(fd, request)
     
     # Read response
-    let response_data: str = tcp_recv(fd, 8192)
+    const response_data: str = tcp_recv(fd, 8192)
     tcp_close(fd)
     
     # Parse response (simple)
-    let lines: [str] = str_split(response_data, "\r\n")
-    let status: int = 200
+    const lines: [str] = str_split(response_data, "\r\n")
+    const status: int = 200
     if len(lines) > 0 {
         # Parse "HTTP/1.1 200 OK" -> extract 200
         let status_line = lines[0]
@@ -89,7 +89,7 @@ pub fn get(url: str) -> Result[Response, str] {
         }
     }
     
-    let resp: Response = Response {
+    const resp: Response = Response {
         status: status,
         headers: [],
         body: response_data
@@ -153,7 +153,7 @@ pub fn options(url: str) -> Result[Response, str] {
 # --- HTTP Server (basic implementation using TCP) ---
 
 pub fn serve(host: str, port: int) -> Result[int, str] {
-    let server_fd: int = tcp_listen(port)
+    const server_fd: int = tcp_listen(port)
     if server_fd < 0 {
         return err("Failed to create server socket")
     }
@@ -161,7 +161,7 @@ pub fn serve(host: str, port: int) -> Result[int, str] {
 }
 
 pub fn accept_connection(server_fd: int) -> Result[int, str] {
-    let client_fd: int = tcp_accept(server_fd)
+    const client_fd: int = tcp_accept(server_fd)
     if client_fd < 0 {
         return err("Failed to accept connection")
     }
@@ -169,24 +169,24 @@ pub fn accept_connection(server_fd: int) -> Result[int, str] {
 }
 
 pub fn read_request(client_fd: int) -> Result[Request, str] {
-    let data: str = tcp_recv(client_fd, 4096)
+    const data: str = tcp_recv(client_fd, 4096)
     if data.len() == 0 {
         return err("Failed to read request")
     }
     
     # Parse first line: METHOD /path HTTP/1.1
-    let lines: [str] = str_split(data, "\n")
+    const lines: [str] = str_split(data, "\n")
     if lines.len() == 0 {
         return err("Empty request")
     }
     
-    let first_line: str = lines[0]
-    let parts: [str] = str_split(first_line, " ")
+    const first_line: str = lines[0]
+    const parts: [str] = str_split(first_line, " ")
     if parts.len() < 2 {
         return err("Invalid request line")
     }
     
-    let req: Request = Request {
+    const req: Request = Request {
         method: parts[0],
         path: parts[1],
         headers: [],
@@ -197,18 +197,18 @@ pub fn read_request(client_fd: int) -> Result[Request, str] {
 }
 
 pub fn send_response(client_fd: int, status: int, body: str) -> Result[int, str] {
-    let status_line: str = str_concat("HTTP/1.1 ", int_to_str(status))
+    const status_line: str = str_concat("HTTP/1.1 ", int_to_str(status))
     status_line = str_concat(status_line, " OK\r\n")
     
-    let headers: str = "Content-Type: text/plain\r\n"
+    const headers: str = "Content-Type: text/plain\r\n"
     headers = str_concat(headers, "Content-Length: ")
     headers = str_concat(headers, int_to_str(body.len()))
     headers = str_concat(headers, "\r\n\r\n")
     
-    let response: str = str_concat(status_line, headers)
+    const response: str = str_concat(status_line, headers)
     response = str_concat(response, body)
     
-    let sent: int = tcp_send(client_fd, response)
+    const sent: int = tcp_send(client_fd, response)
     if sent < 0 {
         return err("Failed to send response")
     }
@@ -314,15 +314,15 @@ pub fn make_header(key: str, value: str) -> str {
 }
 
 pub fn parse_header(header: str) -> ?[str] {
-    mut i: int = 0
+    let i: int = 0
     while i < len(header) {
         if header[i:i+1] == ":" {
-            let key: str = header[0:i]
-            mut value_start: int = i + 1
+            const key: str = header[0:i]
+            let value_start: int = i + 1
             while value_start < len(header) and header[value_start:value_start+1] == " " {
                 value_start = value_start + 1
             }
-            let value: str = header[value_start:len(header)]
+            const value: str = header[value_start:len(header)]
             return some([key, value])
         }
         i = i + 1
@@ -331,7 +331,7 @@ pub fn parse_header(header: str) -> ?[str] {
 }
 
 pub fn header_key(header: str) -> str {
-    mut i: int = 0
+    let i: int = 0
     while i < len(header) {
         if header[i:i+1] == ":" {
             return header[0:i]
@@ -342,10 +342,10 @@ pub fn header_key(header: str) -> str {
 }
 
 pub fn header_value(header: str) -> str {
-    mut i: int = 0
+    let i: int = 0
     while i < len(header) {
         if header[i:i+1] == ":" {
-            mut value_start: int = i + 1
+            let value_start: int = i + 1
             while value_start < len(header) and header[value_start:value_start+1] == " " {
                 value_start = value_start + 1
             }
@@ -399,16 +399,16 @@ pub fn is_https(url: str) -> bool {
 }
 
 pub fn url_host(url: str) -> str {
-    mut start: int = 0
+    let start: int = 0
     if len(url) >= 7 and url[0:7] == "http://" {
         start = 7
     } else if len(url) >= 8 and url[0:8] == "https://" {
         start = 8
     }
     
-    mut end: int = start
+    let end: int = start
     while end < len(url) {
-        let c: str = url[end:end+1]
+        const c: str = url[end:end+1]
         if c == "/" or c == ":" or c == "?" {
             break
         }
@@ -418,17 +418,17 @@ pub fn url_host(url: str) -> str {
 }
 
 pub fn url_path(url: str) -> str {
-    mut start: int = 0
+    let start: int = 0
     if len(url) >= 7 and url[0:7] == "http://" {
         start = 7
     } else if len(url) >= 8 and url[0:8] == "https://" {
         start = 8
     }
     
-    mut i: int = start
+    let i: int = start
     while i < len(url) {
         if url[i:i+1] == "/" {
-            mut end: int = i
+            let end: int = i
             while end < len(url) and url[end:end+1] != "?" {
                 end = end + 1
             }
@@ -440,7 +440,7 @@ pub fn url_path(url: str) -> str {
 }
 
 pub fn url_query(url: str) -> str {
-    mut i: int = 0
+    let i: int = 0
     while i < len(url) {
         if url[i:i+1] == "?" {
             return url[i+1:len(url)]
@@ -451,26 +451,26 @@ pub fn url_query(url: str) -> str {
 }
 
 pub fn url_port(url: str) -> int {
-    mut start: int = 0
+    let start: int = 0
     if len(url) >= 7 and url[0:7] == "http://" {
         start = 7
     } else if len(url) >= 8 and url[0:8] == "https://" {
         start = 8
     }
     
-    mut i: int = start
+    let i: int = start
     while i < len(url) {
         if url[i:i+1] == ":" {
-            mut port_start: int = i + 1
-            mut port_end: int = port_start
+            let port_start: int = i + 1
+            let port_end: int = port_start
             while port_end < len(url) {
-                let c: str = url[port_end:port_end+1]
+                const c: str = url[port_end:port_end+1]
                 if c == "/" or c == "?" {
                     break
                 }
                 port_end = port_end + 1
             }
-            let port_str: str = url[port_start:port_end]
+            const port_str: str = url[port_start:port_end]
             return str_to_int(port_str)
         }
         if url[i:i+1] == "/" or url[i:i+1] == "?" {
@@ -488,9 +488,9 @@ pub fn url_port(url: str) -> int {
 # --- Query String ---
 
 pub fn parse_query_param(query: str, key: str) -> ?str {
-    mut i: int = 0
+    let i: int = 0
     while i < len(query) {
-        mut eq_pos: int = i
+        let eq_pos: int = i
         while eq_pos < len(query) and query[eq_pos:eq_pos+1] != "=" {
             eq_pos = eq_pos + 1
         }
@@ -499,13 +499,13 @@ pub fn parse_query_param(query: str, key: str) -> ?str {
             break
         }
         
-        let param_key: str = query[i:eq_pos]
-        mut value_end: int = eq_pos + 1
+        const param_key: str = query[i:eq_pos]
+        let value_end: int = eq_pos + 1
         while value_end < len(query) and query[value_end:value_end+1] != "&" {
             value_end = value_end + 1
         }
         
-        let param_value: str = query[eq_pos+1:value_end]
+        const param_value: str = query[eq_pos+1:value_end]
         
         if param_key == key {
             return some(param_value)
@@ -517,8 +517,8 @@ pub fn parse_query_param(query: str, key: str) -> ?str {
 }
 
 pub fn build_query(params: [[str]]) -> str {
-    mut result: str = ""
-    mut first: bool = true
+    let result: str = ""
+    let first: bool = true
     for pair in params {
         if not first {
             result = result + "&"
@@ -662,7 +662,7 @@ pub fn is_valid_method(method: str) -> bool {
 
 pub fn find_header(response: Response, key: str) -> ?str {
     for header in response.headers {
-        let h_key: str = header_key(header)
+        const h_key: str = header_key(header)
         if h_key == key {
             return some(header_value(header))
         }
@@ -675,17 +675,17 @@ pub fn response_content_type(response: Response) -> str {
 }
 
 pub fn is_json_response(response: Response) -> bool {
-    let ct: str = response_content_type(response)
+    const ct: str = response_content_type(response)
     return len(ct) >= 16 and ct[0:16] == "application/json"
 }
 
 pub fn is_html_response(response: Response) -> bool {
-    let ct: str = response_content_type(response)
+    const ct: str = response_content_type(response)
     return len(ct) >= 9 and ct[0:9] == "text/html"
 }
 
 pub fn is_text_response(response: Response) -> bool {
-    let ct: str = response_content_type(response)
+    const ct: str = response_content_type(response)
     return len(ct) >= 10 and ct[0:10] == "text/plain"
 }
 
@@ -717,7 +717,7 @@ pub fn request_body(request: Request) -> str {
 
 pub fn find_request_header(request: Request, key: str) -> ?str {
     for header in request.headers {
-        let h_key: str = header_key(header)
+        const h_key: str = header_key(header)
         if h_key == key {
             return some(header_value(header))
         }

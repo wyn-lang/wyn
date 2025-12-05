@@ -1,7 +1,7 @@
 # Test match with variable binding
 
 fn test_optional_binding() {
-    let opt: ?int = some(42)
+    const opt: ?int = some(42)
     
     match opt {
         some(x) => {
@@ -14,7 +14,7 @@ fn test_optional_binding() {
 }
 
 fn test_none_match() {
-    let opt: ?int = none
+    const opt: ?int = none
     
     match opt {
         some(x) => {
@@ -27,7 +27,7 @@ fn test_none_match() {
 }
 
 fn test_result_ok() {
-    let res: Result[int, str] = ok(100)
+    const res: Result[int, str] = ok(100)
     
     match res {
         ok(v) => {
@@ -40,7 +40,7 @@ fn test_result_ok() {
 }
 
 fn test_result_err() {
-    let res: Result[int, str] = err("failed")
+    const res: Result[int, str] = err("failed")
     
     match res {
         ok(v) => {

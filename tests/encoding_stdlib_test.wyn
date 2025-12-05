@@ -8,7 +8,7 @@ fn main() {
     assert(ord("a") == 97, "ord(a) is 97")
     
     # Test round trip
-    let c: str = "X"
+    const c: str = "X"
     assert(chr(ord(c)) == c, "chr/ord round trip")
     
     # Test digits

@@ -9,20 +9,20 @@ fn divide(a: int, b: int) -> Result[int, str] {
 
 fn main() {
     # Test ok case
-    let r1: Result[int, str] = ok(42)
+    const r1: Result[int, str] = ok(42)
     print(r1!)  # Should print 42
     
     # Test err case  
-    let r2: Result[int, str] = err("error message")
-    let val: int = r2 ?? -1  # Should use default
+    const r2: Result[int, str] = err("error message")
+    const val: int = r2 ?? -1  # Should use default
     print(val)  # Should print -1
     
     # Test with function
-    let r3: Result[int, str] = divide(10, 2)
+    const r3: Result[int, str] = divide(10, 2)
     print(r3!)  # Should print 5
     
-    let r4: Result[int, str] = divide(10, 0)
-    let safe: int = r4 ?? 0
+    const r4: Result[int, str] = divide(10, 0)
+    const safe: int = r4 ?? 0
     print(safe)  # Should print 0 (error case)
     
     print(999)  # Done marker

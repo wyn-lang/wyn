@@ -2,11 +2,11 @@ struct Point {
     x: int
     y: int
     
-    fn move_right(mut self, amount: int) {
+    fn move_right(self, amount: int) {
         self.x = self.x + amount
     }
     
-    fn move_up(mut self, amount: int) {
+    fn move_up(self, amount: int) {
         self.y = self.y + amount
     }
     
@@ -20,7 +20,7 @@ struct Point {
 }
 
 fn main() {
-    let mut p: Point = Point { x: 10, y: 20 }
+    let p: Point = Point { x: 10, y: 20 }
     p.move_right(5)
     p.move_up(3)
     print(p.get_x())

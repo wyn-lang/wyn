@@ -1,7 +1,7 @@
 # Test match statement
 
 fn main() {
-    let x: int = 2
+    const x: int = 2
     
     match x {
         1 => print(100)
@@ -11,7 +11,7 @@ fn main() {
     }
     
     # Test with different value
-    let y: int = 5
+    const y: int = 5
     match y {
         1 => print(10)
         2 => print(20)
@@ -19,7 +19,7 @@ fn main() {
     }
     
     # Test with block body
-    let z: int = 1
+    const z: int = 1
     match z {
         1 => {
             print(111)

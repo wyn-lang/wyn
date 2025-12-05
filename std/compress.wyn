@@ -5,12 +5,12 @@
 fn rle_encode(s: str) -> str {
     if s.len() == 0 { return "" }
     
-    let mut result: str = ""
-    let mut i: int = 0
+    let result: str = ""
+    let i: int = 0
     
     while i < s.len() {
-        let c: str = s[i:i+1]
-        let mut count: int = 1
+        const c: str = s[i:i+1]
+        let count: int = 1
         
         while i + count < s.len() and s[i+count:i+count+1] == c {
             count = count + 1
@@ -25,11 +25,11 @@ fn rle_encode(s: str) -> str {
 
 # Decode RLE back to original: "3a2b1c" -> "aaabbc"
 fn rle_decode(s: str) -> str {
-    let mut result: str = ""
-    let mut i: int = 0
+    let result: str = ""
+    let i: int = 0
     
     while i < s.len() {
-        let mut num_str: str = ""
+        let num_str: str = ""
         
         while i < s.len() and s[i:i+1] >= "0" and s[i:i+1] <= "9" {
             num_str = num_str + s[i:i+1]
@@ -38,10 +38,10 @@ fn rle_decode(s: str) -> str {
         
         if num_str.len() == 0 or i >= s.len() { break }
         
-        let count: int = str_to_int(num_str)
-        let c: str = s[i:i+1]
+        const count: int = str_to_int(num_str)
+        const c: str = s[i:i+1]
         
-        let mut j: int = 0
+        let j: int = 0
         while j < count {
             result = result + c
             j = j + 1
@@ -60,8 +60,8 @@ fn count_chars(s: str) -> int {
 
 # Calculate compression ratio (original / compressed)
 fn compress_ratio(original: str, compressed: str) -> float {
-    let orig_len: int = original.len()
-    let comp_len: int = compressed.len()
+    const orig_len: int = original.len()
+    const comp_len: int = compressed.len()
     
     if comp_len == 0 { return 0.0 }
     

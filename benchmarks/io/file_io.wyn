@@ -1,12 +1,12 @@
 import std/io
 
 fn main() {
-    let content: str = "test data\n"
-    let mut i: int = 0
+    const content: str = "test data\n"
+    let i: int = 0
     
     while i < 1000 {
         write_file("temp/bench.txt", content)
-        let data: str = read_file("temp/bench.txt")
+        const data: str = read_file("temp/bench.txt")
         i = i + 1
     }
     

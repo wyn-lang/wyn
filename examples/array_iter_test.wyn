@@ -2,7 +2,7 @@
 
 fn main() {
     # Test basic array iteration
-    let arr: [int] = [10, 20, 30, 40, 50]
+    const arr: [int] = [10, 20, 30, 40, 50]
     
     print_str("Array elements:")
     for item in arr {
@@ -10,7 +10,7 @@ fn main() {
     }
     
     # Test with computed values
-    let mut sum: int = 0
+    let sum: int = 0
     for val in arr {
         sum = sum + val
     }
@@ -18,7 +18,7 @@ fn main() {
     print(sum)
     
     # Test with smaller array
-    let small: [int] = [1, 2, 3]
+    const small: [int] = [1, 2, 3]
     for n in small {
         print(n * 2)
     }

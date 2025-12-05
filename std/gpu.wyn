@@ -83,7 +83,7 @@ struct Tensor {
     
     # Get total number of elements
     fn numel(self) -> int {
-        mut total: int = 1
+        let total: int = 1
         for dim in self.shape {
             total = total * dim
         }
@@ -188,7 +188,7 @@ struct Tensor {
 
 # Create tensor filled with zeros
 fn zeros(dims: ...int) -> Tensor {
-    let shape: [int] = []
+    const shape: [int] = []
     # Variadic arguments
     return Tensor{
         data_ptr: 0,

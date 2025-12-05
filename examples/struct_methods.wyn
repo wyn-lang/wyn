@@ -1,7 +1,7 @@
 struct Counter {
     value: int
     
-    fn increment(mut self) {
+    fn increment(self) {
         self.value = self.value + 1
     }
     
@@ -11,10 +11,10 @@ struct Counter {
 }
 
 fn main() {
-    let mut c: Counter = Counter { value: 0 }
+    let c: Counter = Counter { value: 0 }
     c.increment()
     c.increment()
     c.increment()
-    let result: int = c.get()
+    const result: int = c.get()
     print(result)
 }

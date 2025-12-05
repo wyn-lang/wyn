@@ -1,7 +1,7 @@
 import std/io
 
 fn main() {
-    let s: str = "hello"
+    const s: str = "hello"
     
     # Length - using method
     assert(s.len() == 5)

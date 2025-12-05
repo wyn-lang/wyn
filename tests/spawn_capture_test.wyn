@@ -5,8 +5,8 @@ fn main() {
 }
 
 fn test_immutable_capture() {
-    let x: int = 42
-    let mut result: int = 0
+    const x: int = 42
+    let result: int = 0
     
     spawn {
         result = x
@@ -17,7 +17,7 @@ fn test_immutable_capture() {
 }
 
 fn test_mutable_capture() {
-    let mut counter: int = 0
+    let counter: int = 0
     
     spawn {
         counter = counter + 1
@@ -28,7 +28,7 @@ fn test_mutable_capture() {
 }
 
 fn test_multiple_spawns() {
-    let mut sum: int = 0
+    let sum: int = 0
     
     spawn {
         sum = sum + 10

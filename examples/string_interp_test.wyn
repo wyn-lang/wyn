@@ -1,8 +1,8 @@
 # Test string interpolation
 
 fn main() {
-    let x: int = 42
-    let msg: str = "The answer is {x}"
+    const x: int = 42
+    const msg: str = "The answer is {x}"
     print_str(msg)
     print_str("\n")
     
@@ -10,7 +10,7 @@ fn main() {
     print_str("Value: {x}\n")
     
     # Multiple interpolations
-    let a: int = 10
-    let b: int = 20
+    const a: int = 10
+    const b: int = 20
     print_str("a={a}, b={b}\n")
 }

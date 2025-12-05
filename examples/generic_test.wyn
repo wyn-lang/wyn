@@ -24,30 +24,30 @@ fn identity[T](x: T) -> T {
 
 fn main() {
     # Create a Box[int]
-    let int_box: Box[int] = Box[int] { value: 42 }
+    const int_box: Box[int] = Box[int] { value: 42 }
     print(int_box.value)
     assert(int_box.value == 42)
     
     # Create a Pair[int, int]
-    let pair: Pair[int, int] = Pair[int, int] { first: 10, second: 20 }
+    const pair: Pair[int, int] = Pair[int, int] { first: 10, second: 20 }
     print(pair.first)
     print(pair.second)
     assert(pair.first == 10)
     assert(pair.second == 20)
     
     # Test generic function calls
-    let nums: [int] = [1, 2, 3]
-    let f: int = first[int](nums, 0)
+    const nums: [int] = [1, 2, 3]
+    const f: int = first[int](nums, 0)
     print(f)
     assert(f == 1)
     
-    let empty: [int] = []
-    let d: int = first[int](empty, 99)
+    const empty: [int] = []
+    const d: int = first[int](empty, 99)
     print(d)
     assert(d == 99)
     
     # Test identity
-    let x: int = identity[int](42)
+    const x: int = identity[int](42)
     print(x)
     assert(x == 42)
     

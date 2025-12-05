@@ -50,7 +50,7 @@ impl LspServer {
     }
     
     // Handle incoming JSON-RPC request
-    pub fn handle_request(mut self, method: str, params: str) -> str {
+    pub fn handle_request(self, method: str, params: str) -> str {
         match method {
             "initialize" => self.handle_initialize(params)
             "textDocument/didOpen" => self.handle_did_open(params)
@@ -80,9 +80,9 @@ impl LspServer {
         "}")
     }
     
-    fn handle_did_open(mut self, params: str) -> str {
-        let uri: str = json_get(params, "textDocument.uri")
-        let content: str = json_get(params, "textDocument.text")
+    fn handle_did_open(self, params: str) -> str {
+        const uri: str = json_get(params, "textDocument.uri")
+        const content: str = json_get(params, "textDocument.text")
         
         self.documents = append(self.documents, (uri, content))
         self.validate_document(uri, content)
@@ -90,12 +90,12 @@ impl LspServer {
         return json_null()
     }
     
-    fn handle_did_change(mut self, params: str) -> str {
-        let uri: str = json_get(params, "textDocument.uri")
-        let content: str = json_get(params, "contentChanges[0].text")
+    fn handle_did_change(self, params: str) -> str {
+        const uri: str = json_get(params, "textDocument.uri")
+        const content: str = json_get(params, "contentChanges[0].text")
         
         // Update document
-        let mut i: int = 0
+        let i: int = 0
         while i < self.documents.len() {
             if self.documents[i].0 == uri {
                 self.documents[i] = (uri, content)
@@ -108,11 +108,11 @@ impl LspServer {
         return json_null()
     }
     
-    fn handle_did_close(mut self, params: str) -> str {
-        let uri: str = json_get(params, "textDocument.uri")
+    fn handle_did_close(self, params: str) -> str {
+        const uri: str = json_get(params, "textDocument.uri")
         
         // Remove document
-        let mut new_docs: [(str, str)] = []
+        let new_docs: [(str, str)] = []
         for doc in self.documents {
             if doc.0 != uri {
                 new_docs = append(new_docs, doc)
@@ -124,23 +124,23 @@ impl LspServer {
     }
     
     fn handle_completion(self, params: str) -> str {
-        let uri: str = json_get(params, "textDocument.uri")
-        let line: int = str_to_int(json_get(params, "position.line")) ?? 0
-        let col: int = str_to_int(json_get(params, "position.character")) ?? 0
+        const uri: str = json_get(params, "textDocument.uri")
+        const line: int = str_to_int(json_get(params, "position.line")) ?? 0
+        const col: int = str_to_int(json_get(params, "position.character")) ?? 0
         
-        let content: str = self.get_document(uri)
-        let items: [CompletionItem] = self.get_completions(content, line, col)
+        const content: str = self.get_document(uri)
+        const items: [CompletionItem] = self.get_completions(content, line, col)
         
         return json_result(completion_items_to_json(items))
     }
     
     fn handle_hover(self, params: str) -> str {
-        let uri: str = json_get(params, "textDocument.uri")
-        let line: int = str_to_int(json_get(params, "position.line")) ?? 0
-        let col: int = str_to_int(json_get(params, "position.character")) ?? 0
+        const uri: str = json_get(params, "textDocument.uri")
+        const line: int = str_to_int(json_get(params, "position.line")) ?? 0
+        const col: int = str_to_int(json_get(params, "position.character")) ?? 0
         
-        let content: str = self.get_document(uri)
-        let hover: ?Hover = self.get_hover(content, line, col)
+        const content: str = self.get_document(uri)
+        const hover: ?Hover = self.get_hover(content, line, col)
         
         match hover {
             some(h) => return json_result(hover_to_json(h))
@@ -149,12 +149,12 @@ impl LspServer {
     }
     
     fn handle_definition(self, params: str) -> str {
-        let uri: str = json_get(params, "textDocument.uri")
-        let line: int = str_to_int(json_get(params, "position.line")) ?? 0
-        let col: int = str_to_int(json_get(params, "position.character")) ?? 0
+        const uri: str = json_get(params, "textDocument.uri")
+        const line: int = str_to_int(json_get(params, "position.line")) ?? 0
+        const col: int = str_to_int(json_get(params, "position.character")) ?? 0
         
-        let content: str = self.get_document(uri)
-        let loc: ?Location = self.find_definition(content, line, col, uri)
+        const content: str = self.get_document(uri)
+        const loc: ?Location = self.find_definition(content, line, col, uri)
         
         match loc {
             some(l) => return json_result(location_to_json(l))
@@ -163,23 +163,23 @@ impl LspServer {
     }
     
     fn handle_references(self, params: str) -> str {
-        let uri: str = json_get(params, "textDocument.uri")
-        let line: int = str_to_int(json_get(params, "position.line")) ?? 0
-        let col: int = str_to_int(json_get(params, "position.character")) ?? 0
+        const uri: str = json_get(params, "textDocument.uri")
+        const line: int = str_to_int(json_get(params, "position.line")) ?? 0
+        const col: int = str_to_int(json_get(params, "position.character")) ?? 0
         
-        let content: str = self.get_document(uri)
-        let refs: [Location] = self.find_references(content, line, col, uri)
+        const content: str = self.get_document(uri)
+        const refs: [Location] = self.find_references(content, line, col, uri)
         
         return json_result(locations_to_json(refs))
     }
     
     fn handle_formatting(self, params: str) -> str {
-        let uri: str = json_get(params, "textDocument.uri")
-        let content: str = self.get_document(uri)
-        let formatted: str = format_code(content)
+        const uri: str = json_get(params, "textDocument.uri")
+        const content: str = self.get_document(uri)
+        const formatted: str = format_code(content)
         
         // Return text edit for entire document
-        let lines: int = count_lines(content)
+        const lines: int = count_lines(content)
         return json_result("[{" +
             "\"range\": {\"start\": {\"line\": 0, \"character\": 0}, \"end\": {\"line\": " + lines.to_str() + ", \"character\": 0}}," +
             "\"newText\": " + json_escape(formatted) +
@@ -199,19 +199,19 @@ impl LspServer {
         return ""
     }
     
-    fn validate_document(mut self, uri: str, content: str) {
-        let mut diagnostics: [Diagnostic] = []
+    fn validate_document(self, uri: str, content: str) {
+        let diagnostics: [Diagnostic] = []
         
         // Lex
-        let mut lexer: Lexer = Lexer.new(content, uri)
+        let lexer: Lexer = Lexer.new(content, uri)
         let tokens = lexer.tokenize()
         
         // Parse
-        let mut parser: Parser = Parser.new(tokens)
+        let parser: Parser = Parser.new(tokens)
         let ast = parser.parse()
         
         // Type check
-        let mut checker: TypeChecker = TypeChecker.new()
+        let checker: TypeChecker = TypeChecker.new()
         let errors = checker.check_module(ast)
         
         for error in errors {
@@ -224,8 +224,8 @@ impl LspServer {
         }
         
         // Update diagnostics
-        let mut found: bool = false
-        let mut i: int = 0
+        let found: bool = false
+        let i: int = 0
         while i < self.diagnostics.len() {
             if self.diagnostics[i].0 == uri {
                 self.diagnostics[i] = (uri, diagnostics)
@@ -243,28 +243,28 @@ impl LspServer {
     }
     
     fn publish_diagnostics(self, uri: str, diagnostics: [Diagnostic]) {
-        let json: str = "{\"uri\": " + json_escape(uri) + ", \"diagnostics\": " + diagnostics_to_json(diagnostics) + "}"
+        const json: str = "{\"uri\": " + json_escape(uri) + ", \"diagnostics\": " + diagnostics_to_json(diagnostics) + "}"
         // Send notification
         send_notification("textDocument/publishDiagnostics", json)
     }
     
     fn get_completions(self, content: str, line: int, col: int) -> [CompletionItem] {
-        let mut items: [CompletionItem] = []
+        let items: [CompletionItem] = []
         
         // Keywords
-        let keywords: [str] = ["fn", "let", "mut", "if", "else", "while", "for", "in", "match", "return", "struct", "enum", "import", "pub"]
+        const keywords: [str] = ["fn", "let", "mut", "if", "else", "while", "for", "in", "match", "return", "struct", "enum", "import", "pub"]
         for kw in keywords {
             items = append(items, CompletionItem{label: kw, kind: 14, detail: "keyword", documentation: ""})
         }
         
         // Built-in types
-        let types: [str] = ["int", "float", "str", "bool", "byte"]
+        const types: [str] = ["int", "float", "str", "bool", "byte"]
         for ty in types {
             items = append(items, CompletionItem{label: ty, kind: 7, detail: "type", documentation: ""})
         }
         
         // Built-in functions
-        let builtins: [str] = ["print", "print_str", "len", "abs", "min", "max"]
+        const builtins: [str] = ["print", "print_str", "len", "abs", "min", "max"]
         for b in builtins {
             items = append(items, CompletionItem{label: b, kind: 3, detail: "builtin", documentation: ""})
         }
@@ -313,8 +313,8 @@ fn json_get(json: str, path: str) -> str {
 }
 
 fn diagnostics_to_json(diagnostics: [Diagnostic]) -> str {
-    let mut result: str = "["
-    let mut i: int = 0
+    let result: str = "["
+    let i: int = 0
     for d in diagnostics {
         if i > 0 { result = result + "," }
         result = result + "{\"range\": {\"start\": {\"line\": " + d.line.to_str() + ", \"character\": " + d.col.to_str() + "}, \"end\": {\"line\": " + d.line.to_str() + ", \"character\": " + (d.col + 1).to_str() + "}}, \"message\": " + json_escape(d.message) + ", \"severity\": " + d.severity.to_str() + "}"
@@ -324,8 +324,8 @@ fn diagnostics_to_json(diagnostics: [Diagnostic]) -> str {
 }
 
 fn completion_items_to_json(items: [CompletionItem]) -> str {
-    let mut result: str = "["
-    let mut i: int = 0
+    let result: str = "["
+    let i: int = 0
     for item in items {
         if i > 0 { result = result + "," }
         result = result + "{\"label\": " + json_escape(item.label) + ", \"kind\": " + item.kind.to_str() + ", \"detail\": " + json_escape(item.detail) + "}"
@@ -343,8 +343,8 @@ fn location_to_json(l: Location) -> str {
 }
 
 fn locations_to_json(locs: [Location]) -> str {
-    let mut result: str = "["
-    let mut i: int = 0
+    let result: str = "["
+    let i: int = 0
     for l in locs {
         if i > 0 { result = result + "," }
         result = result + location_to_json(l)
@@ -359,8 +359,8 @@ fn format_code(code: str) -> str {
 }
 
 fn count_lines(s: str) -> int {
-    let mut count: int = 1
-    let mut i: int = 0
+    let count: int = 1
+    let i: int = 0
     while i < s.len() {
         if s[i:i+1] == "\n" {
             count = count + 1
@@ -375,7 +375,7 @@ fn send_notification(method: str, params: str) {
 }
 
 fn main() {
-    let mut server: LspServer = LspServer.new()
+    let server: LspServer = LspServer.new()
     
     // Main loop: read JSON-RPC messages from stdin
     while true {

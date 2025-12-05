@@ -20,15 +20,15 @@ fn main() {
     greet("Wyn", "Welcome")  // Should print "Welcome, Wyn!"
     
     // Test numeric defaults
-    let r1: int = add(1)  // 1 + 10 + 100 = 111
+    const r1: int = add(1)  // 1 + 10 + 100 = 111
     print(r1)
     print_newline()
     
-    let r2: int = add(1, 20)  // 1 + 20 + 100 = 121
+    const r2: int = add(1, 20)  // 1 + 20 + 100 = 121
     print(r2)
     print_newline()
     
-    let r3: int = add(1, 20, 30)  // 1 + 20 + 30 = 51
+    const r3: int = add(1, 20, 30)  // 1 + 20 + 30 = 51
     print(r3)
     print_newline()
     

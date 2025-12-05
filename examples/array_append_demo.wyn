@@ -6,7 +6,7 @@ fn main() {
     # Create empty array
     print_str("Creating empty array...")
     print_newline()
-    let mut numbers: [int] = []
+    let numbers: [int] = []
     
     # Append some numbers
     print_str("Appending numbers 1-10...")
@@ -29,7 +29,7 @@ fn main() {
     print_newline()
     
     # Compute sum
-    let mut sum: int = 0
+    let sum: int = 0
     for i in 0..len(numbers) {
         sum = sum + numbers[i]
     }

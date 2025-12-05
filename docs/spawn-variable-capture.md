@@ -26,7 +26,7 @@ Wyn v1.1 introduces variable capture for `spawn` blocks, enabling threads to acc
 ### Basic Variable Capture
 ```wyn
 fn main() {
-    let mut counter: int = 0
+    let counter: int = 0
     
     spawn {
         counter = counter + 1
@@ -40,9 +40,9 @@ fn main() {
 ### Multiple Variable Capture
 ```wyn
 fn main() {
-    let mut a: int = 0
-    let mut b: int = 0
-    let mut c: int = 0
+    let a: int = 0
+    let b: int = 0
+    let c: int = 0
     
     spawn {
         a = a + 1
@@ -60,8 +60,8 @@ fn main() {
 ### Immutable Capture
 ```wyn
 fn main() {
-    let x: int = 42
-    let mut result: int = 0
+    const x: int = 42
+    let result: int = 0
     
     spawn {
         result = x
@@ -75,7 +75,7 @@ fn main() {
 ### Multiple Spawns with Shared Counter
 ```wyn
 fn main() {
-    let mut counter: int = 0
+    let counter: int = 0
     
     spawn { counter = counter + 1 }
     spawn { counter = counter + 1 }
@@ -137,7 +137,7 @@ for i in 0..10 {
 **Workaround**: Copy loop variable to a local before spawning:
 ```wyn
 for i in 0..10 {
-    let val: int = i
+    const val: int = i
     spawn {
         counter = counter + val  // Works correctly
     }

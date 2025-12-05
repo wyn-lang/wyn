@@ -12,7 +12,7 @@ Wyn includes native GUI support using platform-specific APIs for high performanc
 
 ```wyn
 fn main() {
-    let win: int = gui.create_window("Hello Wyn", 800, 600)
+    const win: int = gui.create_window("Hello Wyn", 800, 600)
     gui.show_window(win)
     gui.draw_rect(win, 100, 100, 200, 150, 16711680)  # Red rectangle
     gui.draw_text(win, 120, 180, "Hello, GUI!")
@@ -38,7 +38,7 @@ make all
 Creates a new window and returns a handle.
 
 ```wyn
-let win: int = gui.create_window("My App", 800, 600)
+const win: int = gui.create_window("My App", 800, 600)
 ```
 
 #### `gui.show_window(window: int)`
@@ -116,7 +116,7 @@ Calculate custom colors: `(R * 65536) + (G * 256) + B`
 
 ```wyn
 fn main() {
-    let win: int = gui.create_window("Simple Window", 400, 300)
+    const win: int = gui.create_window("Simple Window", 400, 300)
     gui.show_window(win)
     gui.run()
 }
@@ -126,7 +126,7 @@ fn main() {
 
 ```wyn
 fn main() {
-    let win: int = gui.create_window("Shapes", 800, 600)
+    const win: int = gui.create_window("Shapes", 800, 600)
     gui.show_window(win)
     
     # Draw colored rectangles

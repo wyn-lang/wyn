@@ -27,7 +27,7 @@ print(a + b + c)  # Waits for all three
 
 ### Shared State: Atomic by Default
 ```wyn
-let mut counter = 0
+let counter = 0
 
 spawn { counter = counter + 1 }  # Atomic increment
 spawn { counter = counter + 1 }  # Atomic increment
@@ -80,7 +80,7 @@ if (is_future(var)) {
 ### Parallel Map
 ```wyn
 fn parallel_map(arr: [int], f: fn(int) -> int) -> [int] {
-    let mut results = []
+    let results = []
     
     for item in arr {
         let future = spawn { f(item) }

@@ -1,7 +1,7 @@
 # Test float type support
 fn main() {
-    let x: float = 3.14
-    let y: float = 2.0
+    const x: float = 3.14
+    const y: float = 2.0
     
     # Float values are stored as 64-bit doubles
     # Currently we can declare and store floats

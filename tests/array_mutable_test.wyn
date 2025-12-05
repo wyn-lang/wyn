@@ -1,6 +1,6 @@
 fn main() {
     // Test 1: Basic append
-    let mut arr1: [int] = []
+    let arr1: [int] = []
     arr1.append(10)
     arr1.append(20)
     arr1.append(30)
@@ -12,7 +12,7 @@ fn main() {
     print_newline()
     
     // Test 2: Append to non-empty array
-    let mut arr2: [int] = [1, 2, 3]
+    let arr2: [int] = [1, 2, 3]
     arr2.append(4)
     arr2.append(5)
     assert(len(arr2) == 5)
@@ -22,7 +22,7 @@ fn main() {
     print_newline()
     
     // Test 3: Many appends (test capacity growth)
-    let mut arr3: [int] = []
+    let arr3: [int] = []
     for i in 0..20 {
         arr3.append(i)
     }

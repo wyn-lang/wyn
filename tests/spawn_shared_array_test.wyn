@@ -3,11 +3,11 @@ fn main() {
 }
 
 fn test_multiple_variables() {
-    let mut v0: int = 0
-    let mut v1: int = 0
-    let mut v2: int = 0
-    let mut v3: int = 0
-    let mut v4: int = 0
+    let v0: int = 0
+    let v1: int = 0
+    let v2: int = 0
+    let v3: int = 0
+    let v4: int = 0
     
     spawn {
         v0 = 0

@@ -16,8 +16,8 @@ fn main() {
     assert((16 >> 2) == 4)
     
     # Combined
-    let flags: int = 5
-    let mask: int = 3
+    const flags: int = 5
+    const mask: int = 3
     assert((flags & mask) == 1)
     assert((flags | mask) == 7)
     

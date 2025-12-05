@@ -1,7 +1,7 @@
 import std/io
 fn main() {
     # If/else
-    let x: int = 10
+    const x: int = 10
     if x > 5 {
         assert(true)
     } else {
@@ -9,12 +9,12 @@ fn main() {
     }
     
     # If expression
-    let y: int = if x > 5 then 1 else 0
+    const y: int = if x > 5 then 1 else 0
     assert(y == 1)
     
     # While loop
-    let mut sum: int = 0
-    let mut i: int = 0
+    let sum: int = 0
+    let i: int = 0
     while i < 5 {
         sum += i
         i += 1
@@ -22,21 +22,21 @@ fn main() {
     assert(sum == 10)
     
     # For loop with range
-    let mut total: int = 0
+    let total: int = 0
     for j in 0..5 {
         total += j
     }
     assert(total == 10)
     
     # Inclusive range
-    let mut count: int = 0
+    let count: int = 0
     for k in 1..=5 {
         count += 1
     }
     assert(count == 5)
     
     # Break
-    let mut n: int = 0
+    let n: int = 0
     while true {
         n += 1
         if n == 5 {
@@ -46,7 +46,7 @@ fn main() {
     assert(n == 5)
     
     # Continue
-    let mut evens: int = 0
+    let evens: int = 0
     for m in 0..10 {
         if m % 2 != 0 {
             continue

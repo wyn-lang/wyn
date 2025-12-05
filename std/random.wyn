@@ -2,7 +2,7 @@
 # Pseudo-random number generation utilities
 
 # Linear Congruential Generator state
-let mut rng_state: int = 1
+let rng_state: int = 1
 
 # Seed the random number generator
 fn seed(s: int) {
@@ -20,7 +20,7 @@ fn rand_range(min_val: int, max_val: int) -> int {
     if min_val >= max_val {
         return min_val
     }
-    let range: int = max_val - min_val
+    const range: int = max_val - min_val
     return min_val + (rand() % range)
 }
 
@@ -41,15 +41,15 @@ fn rand_bool() -> bool {
 
 # Shuffle array (Fisher-Yates algorithm)
 fn shuffle(arr: [int]) -> [int] {
-    let len: int = arr.len()
+    const len: int = arr.len()
     if len <= 1 {
         return arr
     }
-    let mut result: [int] = arr
-    let mut i: int = len - 1
+    let result: [int] = arr
+    let i: int = len - 1
     while i > 0 {
-        let j: int = rand_range(0, i + 1)
-        let temp: int = result[i]
+        const j: int = rand_range(0, i + 1)
+        const temp: int = result[i]
         result[i] = result[j]
         result[j] = temp
         i = i - 1
@@ -99,8 +99,8 @@ fn rand_chance(p: float) -> bool {
 
 # Generate array of n random integers in range
 fn rand_array(n: int, min_val: int, max_val: int) -> [int] {
-    let mut result: [int] = []
-    let mut i: int = 0
+    let result: [int] = []
+    let i: int = 0
     while i < n {
         result = result + [rand_range(min_val, max_val)]
         i = i + 1
@@ -111,23 +111,23 @@ fn rand_array(n: int, min_val: int, max_val: int) -> [int] {
 # Sample k elements from array without replacement
 fn sample(arr: [int], k: int) -> [int] {
     if k <= 0 or arr.len() == 0 { return [] }
-    let shuffled: [int] = shuffle(arr)
-    let count: int = if k > arr.len() then arr.len() else k
+    const shuffled: [int] = shuffle(arr)
+    const count: int = if k > arr.len() then arr.len() else k
     return shuffled[:count]
 }
 
 # Weighted random choice (weights must sum to positive value)
 fn weighted_choice(values: [int], weights: [int]) -> ?int {
     if values.len() == 0 or values.len() != weights.len() { return none }
-    let mut total: int = 0
-    let mut i: int = 0
+    let total: int = 0
+    let i: int = 0
     while i < weights.len() {
         total = total + weights[i]
         i = i + 1
     }
     if total <= 0 { return none }
-    let r: int = rand_range(0, total)
-    let mut cumulative: int = 0
+    const r: int = rand_range(0, total)
+    let cumulative: int = 0
     i = 0
     while i < values.len() {
         cumulative = cumulative + weights[i]
@@ -141,9 +141,9 @@ fn weighted_choice(values: [int], weights: [int]) -> ?int {
 
 # Generate random Gaussian/normal distributed value (Box-Muller transform)
 fn rand_gaussian(mean: float, std_dev: float) -> float {
-    let u1: float = rand_float()
-    let u2: float = rand_float()
-    let z0: float = sqrt(0.0 - 2.0 * ln(u1)) * cos(2.0 * 3.14159265359 * u2)
+    const u1: float = rand_float()
+    const u2: float = rand_float()
+    const z0: float = sqrt(0.0 - 2.0 * ln(u1)) * cos(2.0 * 3.14159265359 * u2)
     return mean + z0 * std_dev
 }
 
@@ -154,8 +154,8 @@ fn rand_exponential(lambda: float) -> float {
 
 # Generate random point in unit circle (rejection sampling)
 fn rand_in_circle() -> (float, float) {
-    let mut x: float = rand_float_range(0.0 - 1.0, 1.0)
-    let mut y: float = rand_float_range(0.0 - 1.0, 1.0)
+    let x: float = rand_float_range(0.0 - 1.0, 1.0)
+    let y: float = rand_float_range(0.0 - 1.0, 1.0)
     while x * x + y * y > 1.0 {
         x = rand_float_range(0.0 - 1.0, 1.0)
         y = rand_float_range(0.0 - 1.0, 1.0)
@@ -165,17 +165,17 @@ fn rand_in_circle() -> (float, float) {
 
 # Generate random point on unit circle
 fn rand_on_circle() -> (float, float) {
-    let angle: float = rand_float() * 2.0 * 3.14159265359
+    const angle: float = rand_float() * 2.0 * 3.14159265359
     return (cos(angle), sin(angle))
 }
 
 # Generate random UUID-like string (simplified)
 fn rand_uuid() -> str {
-    let hex: str = "0123456789abcdef"
-    let mut result: str = ""
-    let mut i: int = 0
+    const hex: str = "0123456789abcdef"
+    let result: str = ""
+    let i: int = 0
     while i < 32 {
-        let idx: int = rand_range(0, 16)
+        const idx: int = rand_range(0, 16)
         result = result + hex[idx:idx+1]
         if i == 7 or i == 11 or i == 15 or i == 19 {
             result = result + "-"
@@ -187,11 +187,11 @@ fn rand_uuid() -> str {
 
 # Generate random alphanumeric string of length n
 fn rand_string(n: int) -> str {
-    let chars: str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-    let mut result: str = ""
-    let mut i: int = 0
+    const chars: str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    let result: str = ""
+    let i: int = 0
     while i < n {
-        let idx: int = rand_range(0, chars.len())
+        const idx: int = rand_range(0, chars.len())
         result = result + chars[idx:idx+1]
         i = i + 1
     }
@@ -200,11 +200,11 @@ fn rand_string(n: int) -> str {
 
 # Generate random hex string of length n
 fn rand_hex(n: int) -> str {
-    let hex: str = "0123456789abcdef"
-    let mut result: str = ""
-    let mut i: int = 0
+    const hex: str = "0123456789abcdef"
+    let result: str = ""
+    let i: int = 0
     while i < n {
-        let idx: int = rand_range(0, 16)
+        const idx: int = rand_range(0, 16)
         result = result + hex[idx:idx+1]
         i = i + 1
     }
@@ -213,18 +213,18 @@ fn rand_hex(n: int) -> str {
 
 # Perlin noise helper (simplified 1D)
 fn perlin_1d(x: float) -> float {
-    let x0: int = floor(x)
-    let x1: int = x0 + 1
-    let sx: float = x - x0.to_float()
-    let n0: float = grad_1d(x0, x)
-    let n1: float = grad_1d(x1, x)
+    const x0: int = floor(x)
+    const x1: int = x0 + 1
+    const sx: float = x - x0.to_float()
+    const n0: float = grad_1d(x0, x)
+    const n1: float = grad_1d(x1, x)
     return lerp(n0, n1, sx)
 }
 
 # Gradient function for Perlin noise
 fn grad_1d(hash: int, x: float) -> float {
-    let h: int = hash & 15
-    let grad: float = 1.0 + (h & 7).to_float()
+    const h: int = hash & 15
+    const grad: float = 1.0 + (h & 7).to_float()
     if (h & 8) != 0 {
         grad = 0.0 - grad
     }
@@ -234,8 +234,8 @@ fn grad_1d(hash: int, x: float) -> float {
 # Helper functions
 fn sqrt(x: float) -> float {
     if x <= 0.0 { return 0.0 }
-    let mut guess: float = x
-    let mut i: int = 0
+    let guess: float = x
+    let i: int = 0
     while i < 10 {
         guess = (guess + x / guess) / 2.0
         i = i + 1
@@ -245,11 +245,11 @@ fn sqrt(x: float) -> float {
 
 fn ln(x: float) -> float {
     if x <= 0.0 { return 0.0 }
-    let mut result: float = 0.0
-    let mut y: float = (x - 1.0) / (x + 1.0)
-    let mut y_sq: float = y * y
-    let mut term: float = y
-    let mut i: int = 1
+    let result: float = 0.0
+    let y: float = (x - 1.0) / (x + 1.0)
+    let y_sq: float = y * y
+    let term: float = y
+    let i: int = 1
     while i < 15 {
         result = result + term / i.to_float()
         term = term * y_sq
@@ -259,9 +259,9 @@ fn ln(x: float) -> float {
 }
 
 fn cos(x: float) -> float {
-    let mut result: float = 1.0
-    let mut term: float = 1.0
-    let mut i: int = 1
+    let result: float = 1.0
+    let term: float = 1.0
+    let i: int = 1
     while i < 10 {
         term = 0.0 - term * x * x / ((2 * i - 1).to_float() * (2 * i).to_float())
         result = result + term
@@ -271,9 +271,9 @@ fn cos(x: float) -> float {
 }
 
 fn sin(x: float) -> float {
-    let mut result: float = x
-    let mut term: float = x
-    let mut i: int = 1
+    let result: float = x
+    let term: float = x
+    let i: int = 1
     while i < 10 {
         term = 0.0 - term * x * x / ((2 * i).to_float() * (2 * i + 1).to_float())
         result = result + term
@@ -287,7 +287,7 @@ fn lerp(a: float, b: float, t: float) -> float {
 }
 
 fn floor(x: float) -> int {
-    let i: int = x.to_int()
+    const i: int = x.to_int()
     if x < 0.0 and x != i.to_float() {
         return i - 1
     }

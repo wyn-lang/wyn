@@ -3,8 +3,8 @@
 
 # Simple hash function (djb2)
 fn hash_djb2(s: str) -> int {
-    let mut hash: int = 5381
-    let mut i: int = 0
+    let hash: int = 5381
+    let i: int = 0
     while i < s.len() {
         hash = ((hash << 5) + hash) + ord(s[i:i+1])
         i = i + 1
@@ -14,8 +14,8 @@ fn hash_djb2(s: str) -> int {
 
 # FNV-1a hash
 fn hash_fnv1a(s: str) -> int {
-    let mut hash: int = 2166136261
-    let mut i: int = 0
+    let hash: int = 2166136261
+    let i: int = 0
     while i < s.len() {
         hash = hash ^ ord(s[i:i+1])
         hash = hash * 16777619
@@ -26,8 +26,8 @@ fn hash_fnv1a(s: str) -> int {
 
 # Simple checksum (sum of all bytes mod 256)
 fn checksum(s: str) -> int {
-    let mut sum: int = 0
-    let mut i: int = 0
+    let sum: int = 0
+    let i: int = 0
     while i < s.len() {
         sum = sum + ord(s[i:i+1])
         i = i + 1
@@ -38,12 +38,12 @@ fn checksum(s: str) -> int {
 # XOR cipher (symmetric encryption/decryption)
 fn xor_cipher(s: str, key: str) -> str {
     if key.len() == 0 { return s }
-    let mut result: str = ""
-    let mut i: int = 0
+    let result: str = ""
+    let i: int = 0
     while i < s.len() {
-        let key_idx: int = i % key.len()
-        let s_byte: int = ord(s[i:i+1])
-        let k_byte: int = ord(key[key_idx:key_idx+1])
+        const key_idx: int = i % key.len()
+        const s_byte: int = ord(s[i:i+1])
+        const k_byte: int = ord(key[key_idx:key_idx+1])
         result = result + chr(s_byte ^ k_byte)
         i = i + 1
     }
@@ -52,11 +52,11 @@ fn xor_cipher(s: str, key: str) -> str {
 
 # Caesar cipher encryption
 fn caesar_encrypt(s: str, shift: int) -> str {
-    let mut result: str = ""
-    let mut i: int = 0
+    let result: str = ""
+    let i: int = 0
     while i < s.len() {
-        let c: str = s[i:i+1]
-        let code: int = ord(c)
+        const c: str = s[i:i+1]
+        const code: int = ord(c)
         if code >= 65 and code <= 90 {
             result = result + chr(((code - 65 + shift) % 26) + 65)
         } else if code >= 97 and code <= 122 {
@@ -82,12 +82,12 @@ fn rot13(s: str) -> str {
 # Simple substitution cipher
 fn substitute(s: str, alphabet: str, cipher: str) -> str {
     if alphabet.len() != cipher.len() { return s }
-    let mut result: str = ""
-    let mut i: int = 0
+    let result: str = ""
+    let i: int = 0
     while i < s.len() {
-        let c: str = s[i:i+1]
-        let mut j: int = 0
-        let mut found: bool = false
+        const c: str = s[i:i+1]
+        let j: int = 0
+        let found: bool = false
         while j < alphabet.len() {
             if c == alphabet[j:j+1] {
                 result = result + cipher[j:j+1]
@@ -106,8 +106,8 @@ fn substitute(s: str, alphabet: str, cipher: str) -> str {
 
 # Reverse cipher (reverse string)
 fn reverse_cipher(s: str) -> str {
-    let mut result: str = ""
-    let mut i: int = s.len() - 1
+    let result: str = ""
+    let i: int = s.len() - 1
     while i >= 0 {
         result = result + s[i:i+1]
         i = i - 1
@@ -117,11 +117,11 @@ fn reverse_cipher(s: str) -> str {
 
 # Atbash cipher (reverse alphabet)
 fn atbash(s: str) -> str {
-    let mut result: str = ""
-    let mut i: int = 0
+    let result: str = ""
+    let i: int = 0
     while i < s.len() {
-        let c: str = s[i:i+1]
-        let code: int = ord(c)
+        const c: str = s[i:i+1]
+        const code: int = ord(c)
         if code >= 65 and code <= 90 {
             result = result + chr(90 - (code - 65))
         } else if code >= 97 and code <= 122 {
@@ -136,11 +136,11 @@ fn atbash(s: str) -> str {
 
 # Generate pseudo-random byte (linear congruential generator)
 fn prng_byte(seed: int, index: int) -> int {
-    let a: int = 1103515245
-    let c: int = 12345
-    let m: int = 2147483647
-    let mut x: int = seed
-    let mut i: int = 0
+    const a: int = 1103515245
+    const c: int = 12345
+    const m: int = 2147483647
+    let x: int = seed
+    let i: int = 0
     while i <= index {
         x = (a * x + c) % m
         i = i + 1
@@ -150,11 +150,11 @@ fn prng_byte(seed: int, index: int) -> int {
 
 # Simple stream cipher using PRNG
 fn stream_cipher(s: str, seed: int) -> str {
-    let mut result: str = ""
-    let mut i: int = 0
+    let result: str = ""
+    let i: int = 0
     while i < s.len() {
-        let key_byte: int = prng_byte(seed, i)
-        let s_byte: int = ord(s[i:i+1])
+        const key_byte: int = prng_byte(seed, i)
+        const s_byte: int = ord(s[i:i+1])
         result = result + chr(s_byte ^ key_byte)
         i = i + 1
     }
@@ -163,11 +163,11 @@ fn stream_cipher(s: str, seed: int) -> str {
 
 # Compute CRC8 checksum
 fn crc8(s: str) -> int {
-    let mut crc: int = 0
-    let mut i: int = 0
+    let crc: int = 0
+    let i: int = 0
     while i < s.len() {
         crc = crc ^ ord(s[i:i+1])
-        let mut j: int = 0
+        let j: int = 0
         while j < 8 {
             if (crc & 128) != 0 {
                 crc = (crc << 1) ^ 7
@@ -189,8 +189,8 @@ fn verify_crc8(s: str, expected: int) -> bool {
 # One-time pad encryption (key must be same length as message)
 fn otp_encrypt(s: str, key: str) -> str {
     if s.len() != key.len() { return "" }
-    let mut result: str = ""
-    let mut i: int = 0
+    let result: str = ""
+    let i: int = 0
     while i < s.len() {
         result = result + chr(ord(s[i:i+1]) ^ ord(key[i:i+1]))
         i = i + 1

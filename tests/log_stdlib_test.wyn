@@ -7,7 +7,7 @@ fn main() {
     print_str("  [ERROR] Error message\n")
     
     # Test that print functions work
-    let msg: str = "test"
+    const msg: str = "test"
     assert(msg.len() > 0, "message not empty")
     
     print_str("✓ All log stdlib tests passed\n")

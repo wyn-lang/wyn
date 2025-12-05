@@ -1,8 +1,8 @@
 import std/io
 
 fn main() {
-    let mut result: str = ""
-    let mut i: int = 0
+    let result: str = ""
+    let i: int = 0
     
     while i < 10000 {
         result = str_concat(result, "x")

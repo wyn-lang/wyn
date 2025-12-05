@@ -4,9 +4,9 @@ fn main() {
 }
 
 fn test_multiple_captures() {
-    let mut a: int = 0
-    let mut b: int = 0
-    let mut c: int = 0
+    let a: int = 0
+    let b: int = 0
+    let c: int = 0
     
     spawn {
         a = a + 1
@@ -21,9 +21,9 @@ fn test_multiple_captures() {
 }
 
 fn test_mixed_types() {
-    let mut counter: int = 0
-    let x: int = 42
-    let mut result: int = 0
+    let counter: int = 0
+    const x: int = 42
+    let result: int = 0
     
     spawn {
         counter = counter + 1

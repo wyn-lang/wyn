@@ -3,7 +3,7 @@ fn main() {
 }
 
 fn test_shared_counter() {
-    let mut counter: int = 0
+    let counter: int = 0
     
     spawn {
         counter = counter + 1

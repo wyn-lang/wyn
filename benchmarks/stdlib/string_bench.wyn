@@ -1,15 +1,15 @@
 fn main() {
-    let iterations: int = 1000000
-    let mut i: int = 0
+    const iterations: int = 1000000
+    let i: int = 0
     
     # String operations
     while i < iterations {
-        let s: str = "hello world"
-        let len: int = s.len()
-        let sub: str = s[0:5]
-        let found: int = str_find(s, "world")
-        let parts: [str] = str_split(s, " ")
-        let concat: str = s + " test"
+        const s: str = "hello world"
+        const len: int = s.len()
+        const sub: str = s[0:5]
+        const found: int = str_find(s, "world")
+        const parts: [str] = str_split(s, " ")
+        const concat: str = s + " test"
         i = i + 1
     }
     

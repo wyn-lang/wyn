@@ -2,9 +2,9 @@ fn main() {
     print_str("Testing string methods...\n")
     
     # Test upper/lower
-    let s: str = "Hello"
-    let up: str = upper(s)
-    let low: str = lower(s)
+    const s: str = "Hello"
+    const up: str = upper(s)
+    const low: str = lower(s)
     assert(up == "HELLO", "upper works")
     assert(low == "hello", "lower works")
     
@@ -18,18 +18,18 @@ fn main() {
     assert(not contains("hello", "xyz"), "contains false works")
     
     # Test replace
-    let r1: str = replace_first("hello hello", "hello", "hi")
+    const r1: str = replace_first("hello hello", "hello", "hi")
     assert(r1 == "hi hello", "replace_first works")
     
-    let r2: str = replace_all("hello hello", "hello", "hi")
+    const r2: str = replace_all("hello hello", "hello", "hi")
     assert(r2 == "hi hi", "replace_all works")
     
     # Test repeat
-    let rep: str = repeat("ab", 3)
+    const rep: str = repeat("ab", 3)
     assert(rep == "ababab", "repeat works")
     
     # Test reverse
-    let rev: str = reverse("abc")
+    const rev: str = reverse("abc")
     assert(rev == "cba", "reverse works")
     
     # Test is_empty

@@ -2,7 +2,7 @@ fn main() {
     print_str("Testing net stdlib...\n")
     
     # Test URL parsing logic
-    let url: str = "https://example.com:8080/path"
+    const url: str = "https://example.com:8080/path"
     assert(url.len() > 0, "URL not empty")
     
     # Test port numbers

@@ -1,7 +1,7 @@
 # Concurrent data structures for use with spawn
 
 # Thread-safe counter
-# Use this instead of let mut counter: int when you need reliable counting
+# Use this instead of let counter: int when you need reliable counting
 struct Counter {
     value: int
 }
@@ -14,7 +14,7 @@ pub fn counter() -> Counter {
 # Increment counter (atomic)
 pub fn increment(c: Counter) -> int {
     # Note: This is a workaround until we have true mutable structs
-    # For now, use let mut counter: int with spawn (works for <100 spawns)
+    # For now, use let counter: int with spawn (works for <100 spawns)
     return c.value + 1
 }
 

@@ -14,7 +14,7 @@ impl WasmGen {
         WasmGen{output: "", indent: 0, local_count: 0}
     }
     
-    pub fn generate(mut self, module: IRModule) -> str {
+    pub fn generate(self, module: IRModule) -> str {
         self.emit("(module")
         self.indent = 1
         
@@ -25,10 +25,10 @@ impl WasmGen {
         self.emit("(memory (export \"memory\") 1)")
         
         // String data
-        let mut offset: int = 0
-        let mut i: int = 0
+        let offset: int = 0
+        let i: int = 0
         while i < module.strings.len() {
-            let s: str = module.strings[i]
+            const s: str = module.strings[i]
             self.emit("(data (i32.const " + offset.to_str() + ") \"" + escape_wasm_string(s) + "\")")
             offset = offset + s.len() + 1
             i = i + 1
@@ -48,15 +48,15 @@ impl WasmGen {
         return self.output
     }
     
-    fn emit_imports(mut self) {
+    fn emit_imports(self) {
         self.emit(";; Runtime imports")
         self.emit("(import \"env\" \"print\" (func $print (param i64)))")
         self.emit("(import \"env\" \"print_str\" (func $print_str (param i32)))")
         self.emit("")
     }
     
-    fn gen_function(mut self, func: IRFunction) {
-        let mut sig: str = "(func $" + func.name
+    fn gen_function(self, func: IRFunction) {
+        let sig: str = "(func $" + func.name
         
         // Parameters
         for param in func.params {
@@ -86,7 +86,7 @@ impl WasmGen {
         self.emit("")
     }
     
-    fn gen_block(mut self, block: IRBlock) {
+    fn gen_block(self, block: IRBlock) {
         if block.label != "entry" {
             self.emit("(block $" + block.label)
             self.indent = self.indent + 1
@@ -102,7 +102,7 @@ impl WasmGen {
         }
     }
     
-    fn gen_instr(mut self, instr: IRInstr) {
+    fn gen_instr(self, instr: IRInstr) {
         match instr.op {
             "const" => {
                 self.emit("(i64.const " + instr.args[0] + ")")
@@ -183,8 +183,8 @@ impl WasmGen {
                 }
             }
             "call" => {
-                let func_name: str = instr.args[0]
-                let mut i: int = 1
+                const func_name: str = instr.args[0]
+                let i: int = 1
                 while i < instr.args.len() {
                     self.emit("(local.get $" + instr.args[i] + ")")
                     i = i + 1
@@ -223,8 +223,8 @@ impl WasmGen {
         }
     }
     
-    fn emit(mut self, line: str) {
-        let mut i: int = 0
+    fn emit(self, line: str) {
+        let i: int = 0
         while i < self.indent {
             self.output = self.output + "  "
             i = i + 1
@@ -249,11 +249,11 @@ fn ir_type_to_wasm(ty: IRType) -> str {
 
 // Escape string for WASM
 fn escape_wasm_string(s: str) -> str {
-    let mut result: str = ""
-    let mut i: int = 0
+    let result: str = ""
+    let i: int = 0
     while i < s.len() {
-        let c: str = s[i:i+1]
-        let code: int = ord(c)
+        const c: str = s[i:i+1]
+        const code: int = ord(c)
         if code < 32 or code > 126 or c == "\"" or c == "\\" {
             result = result + "\\" + hex_byte(code)
         } else {
@@ -265,6 +265,6 @@ fn escape_wasm_string(s: str) -> str {
 }
 
 fn hex_byte(n: int) -> str {
-    let hex: str = "0123456789abcdef"
+    const hex: str = "0123456789abcdef"
     return hex[(n / 16) % 16:(n / 16) % 16 + 1] + hex[n % 16:n % 16 + 1]
 }

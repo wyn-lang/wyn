@@ -1,13 +1,13 @@
 fn main() {
     print_str("Testing regex stdlib...\n")
     
-    let text: str = "hello world"
+    const text: str = "hello world"
     
     # Test substring
-    let sub1: str = text[0:5]
+    const sub1: str = text[0:5]
     assert(sub1 == "hello", "substring 0:5")
     
-    let sub2: str = text[6:11]
+    const sub2: str = text[6:11]
     assert(sub2 == "world", "substring 6:11")
     
     # Test char_at

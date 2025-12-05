@@ -17,7 +17,7 @@ fn main() {
     assert((2 + 3) * 4 == 20)
     
     # Compound assignment
-    let mut x: int = 10
+    let x: int = 10
     x += 5
     assert(x == 15)
     x -= 3

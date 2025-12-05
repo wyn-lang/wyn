@@ -2,7 +2,7 @@ fn main() {
     print_str("Testing spawn...\n")
     
     # Simple spawn test without race conditions
-    let x: int = 42
+    const x: int = 42
     assert(x == 42, "basic test")
     
     print_str("✓ Spawn test passed\n")

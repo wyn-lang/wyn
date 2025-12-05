@@ -2,7 +2,7 @@ fn main() {
     io.print_str("Creating GUI window...")
     io.print_newline()
     
-    let win: int = gui.create_window("Wyn GUI Demo", 800, 600)
+    const win: int = gui.create_window("Wyn GUI Demo", 800, 600)
     
     gui.show_window(win)
     
@@ -24,7 +24,7 @@ fn main() {
     io.print_newline()
     
     # Poll events for 5 seconds then exit
-    let mut i: int = 0
+    let i: int = 0
     while i < 500 {
         gui.poll_events()
         sleep_ms(10)

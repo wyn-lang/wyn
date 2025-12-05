@@ -21,12 +21,12 @@
 
 **Syntax:**
 ```wyn
-let x: int = 42
+const x: int = 42
 spawn {
     print(x)  // Capture x by value
 }
 
-let mut counter: int = 0
+let counter: int = 0
 spawn {
     counter = counter + 1  // Capture by reference (atomic)
 }
@@ -41,11 +41,11 @@ spawn {
 
 **Syntax:**
 ```wyn
-let handle: SpawnHandle[int] = spawn {
+const handle: SpawnHandle[int] = spawn {
     return compute_result()
 }
 
-let result: int = handle.join()  // Wait and get result
+const result: int = handle.join()  // Wait and get result
 ```
 
 **Implementation:**
@@ -68,14 +68,14 @@ struct SpawnHandle[T] {
 
 **Syntax:**
 ```wyn
-let ch: Channel[int] = channel(10)  // Buffered channel
+const ch: Channel[int] = channel(10)  // Buffered channel
 
 spawn {
     ch.send(42)
 }
 
-let value: int = ch.recv()  // Blocking receive
-let opt_value: ?int = ch.try_recv()  // Non-blocking
+const value: int = ch.recv()  // Blocking receive
+const opt_value: ?int = ch.try_recv()  // Non-blocking
 ```
 
 **Implementation:**
@@ -98,13 +98,13 @@ struct Channel[T] {
 
 **Syntax:**
 ```wyn
-let mut counter: Atomic[int] = atomic(0)
+let counter: Atomic[int] = atomic(0)
 
 spawn {
     counter.add(1)  // Atomic increment
 }
 
-let lock: Mutex = mutex()
+const lock: Mutex = mutex()
 lock.lock()
 // Critical section
 lock.unlock()
@@ -137,7 +137,7 @@ struct Mutex {
 
 **Syntax:**
 ```wyn
-let pool: SpawnPool = spawn_pool(4)  // 4 workers
+const pool: SpawnPool = spawn_pool(4)  // 4 workers
 
 for i in 0..100 {
     pool.submit(fn() {
@@ -166,13 +166,13 @@ struct SpawnPool {
 **Syntax:**
 ```wyn
 async fn fetch_data(url: str) -> str {
-    let response: str = await http.get(url)
+    const response: str = await http.get(url)
     return response
 }
 
 fn main() {
-    let future: Future[str] = fetch_data("https://api.example.com")
-    let data: str = await future
+    const future: Future[str] = fetch_data("https://api.example.com")
+    const data: str = await future
 }
 ```
 
@@ -295,12 +295,12 @@ fn main() {
 
 ### With Variable Capture
 ```wyn
-let urls: [str] = ["url1", "url2", "url3"]
-let mut results: [str] = []
+const urls: [str] = ["url1", "url2", "url3"]
+let results: [str] = []
 
 for url in urls {
     spawn {
-        let data: str = http.get(url)
+        const data: str = http.get(url)
         results.append(data)  // Safe concurrent append
     }
 }
@@ -308,7 +308,7 @@ for url in urls {
 
 ### With Channels
 ```wyn
-let ch: Channel[int] = channel(100)
+const ch: Channel[int] = channel(100)
 
 // Producer
 spawn {
@@ -320,7 +320,7 @@ spawn {
 
 // Consumer
 while true {
-    let val: ?int = ch.try_recv()
+    const val: ?int = ch.try_recv()
     if val == none { break }
     process(val!)
 }
@@ -328,7 +328,7 @@ while true {
 
 ### With Spawn Pools
 ```wyn
-let pool: SpawnPool = spawn_pool(8)
+const pool: SpawnPool = spawn_pool(8)
 
 for file in files {
     pool.submit(fn() {
@@ -341,19 +341,19 @@ pool.wait_all()
 
 ### Parallel Test Runner (Future)
 ```wyn
-let pool: SpawnPool = spawn_pool(cpu_count())
-let results: Channel[TestResult] = channel(100)
+const pool: SpawnPool = spawn_pool(cpu_count())
+const results: Channel[TestResult] = channel(100)
 
 for test in tests {
     pool.submit(fn() {
-        let result: TestResult = run_test(test)
+        const result: TestResult = run_test(test)
         results.send(result)
     })
 }
 
-let mut passed: int = 0
+let passed: int = 0
 for i in 0..tests.len() {
-    let result: TestResult = results.recv()
+    const result: TestResult = results.recv()
     if result.passed {
         passed = passed + 1
     }

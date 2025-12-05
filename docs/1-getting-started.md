@@ -36,8 +36,8 @@ Compile and run:
 ### Variables
 
 ```wyn
-let x: int = 42           # Immutable
-let mut y: int = 0        # Mutable
+const x: int = 42           # Immutable
+let y: int = 0        # Mutable
 y = 10                    # OK
 ```
 
@@ -64,7 +64,7 @@ if x > 0 {
 }
 
 # While loop
-let mut i: int = 0
+let i: int = 0
 while i < 10 {
     print(i)
     i += 1
@@ -76,7 +76,7 @@ for i in 0..10 {
 }
 
 # For loop over array
-let arr: [int] = [1, 2, 3]
+const arr: [int] = [1, 2, 3]
 for item in arr {
     print(item)
 }
@@ -85,12 +85,12 @@ for item in arr {
 ### Arrays
 
 ```wyn
-let arr: [int] = [1, 2, 3, 4, 5]
+const arr: [int] = [1, 2, 3, 4, 5]
 print(arr[0])        # First element
 print(arr[-1])       # Last element
 print(len(arr))      # Length
 
-let slice: [int] = arr[1:3]  # [2, 3]
+const slice: [int] = arr[1:3]  # [2, 3]
 ```
 
 ### Structs
@@ -106,7 +106,7 @@ struct Point {
 }
 
 fn main() {
-    let p: Point = Point { x: 3, y: 4 }
+    const p: Point = Point { x: 3, y: 4 }
     print(p.distance_squared())  # 25
 }
 ```
@@ -124,8 +124,8 @@ fn find(arr: [int], target: int) -> ?int {
 }
 
 fn main() {
-    let result: ?int = find([1, 2, 3], 2)
-    let index: int = result ?? -1  # Default if none
+    const result: ?int = find([1, 2, 3], 2)
+    const index: int = result ?? -1  # Default if none
 }
 ```
 
@@ -141,8 +141,8 @@ fn identity[T](x: T) -> T {
 }
 
 fn main() {
-    let b: Box[int] = Box[int] { value: 42 }
-    let n: int = identity[int](10)
+    const b: Box[int] = Box[int] { value: 42 }
+    const n: int = identity[int](10)
 }
 ```
 

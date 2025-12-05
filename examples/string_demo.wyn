@@ -9,10 +9,10 @@ fn main() {
     
     # String concatenation
     print_str("String Concatenation:")
-    let greeting: str = "Hello" + " " + "World"
+    const greeting: str = "Hello" + " " + "World"
     print_str(greeting)
     
-    let name: str = "Wyn" + "Lang"
+    const name: str = "Wyn" + "Lang"
     print_str(name)
     
     # String comparison
@@ -27,9 +27,9 @@ fn main() {
     
     # Combined operations
     print_str("Combined Operations:")
-    let s1: str = "Hello"
-    let s2: str = "World"
-    let combined: str = s1 + s2
+    const s1: str = "Hello"
+    const s2: str = "World"
+    const combined: str = s1 + s2
     print_str(combined)
     print(len(combined))
     

@@ -13,13 +13,13 @@ fn main() {
     assert(abs(0) == 0, "abs zero")
     
     # Test clamp logic
-    let x: int = 5
+    const x: int = 5
     assert(x >= 0 and x <= 10, "in range")
     
-    let y: int = -5
+    const y: int = -5
     assert(y < 0, "below range")
     
-    let z: int = 15
+    const z: int = 15
     assert(z > 10, "above range")
     
     print_str("✓ All utils stdlib tests passed\n")

@@ -4,8 +4,8 @@ import std/io
 fn main() {
     println_str("Testing str_find...")
     
-    let haystack: str = "hello world"
-    let idx: int = str_find(haystack, "world")
+    const haystack: str = "hello world"
+    const idx: int = str_find(haystack, "world")
     
     if idx == 6 {
         println_str("PASS: found world at 6")
@@ -14,7 +14,7 @@ fn main() {
         exit(1)
     }
     
-    let idx2: int = str_find(haystack, "hello")
+    const idx2: int = str_find(haystack, "hello")
     if idx2 == 0 {
         println_str("PASS: found hello at 0")
     } else {
@@ -22,7 +22,7 @@ fn main() {
         exit(1)
     }
     
-    let idx3: int = str_find(haystack, "xyz")
+    const idx3: int = str_find(haystack, "xyz")
     if idx3 == -1 {
         println_str("PASS: xyz not found")
     } else {
@@ -31,7 +31,7 @@ fn main() {
     }
     
     # Test str_cmp
-    let cmp1: int = str_cmp("abc", "abc")
+    const cmp1: int = str_cmp("abc", "abc")
     if cmp1 == 0 {
         println_str("PASS: str_cmp equal")
     } else {
@@ -39,7 +39,7 @@ fn main() {
         exit(1)
     }
     
-    let cmp2: int = str_cmp("abc", "abd")
+    const cmp2: int = str_cmp("abc", "abd")
     if cmp2 < 0 {
         println_str("PASS: str_cmp less")
     } else {

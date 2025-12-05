@@ -10,7 +10,7 @@ fn main() {
     io.print_newline()
     
     # Hardcoded for now - will add args later
-    let input_file: str = "test.wyn"
+    const input_file: str = "test.wyn"
     
     # Check if file exists
     if not file_exists(input_file) {
@@ -25,7 +25,7 @@ fn main() {
     io.print_str(input_file)
     io.print_newline()
     
-    let source: str = read_file(input_file)
+    const source: str = read_file(input_file)
     if source.len() == 0 {
         io.print_str("Error: Empty file")
         io.print_newline()

@@ -1,5 +1,5 @@
 fn main() {
-    let mut arr: [int] = []
+    let arr: [int] = []
     arr.append(42)
     arr.append(99)
     arr.append(123)

@@ -12,7 +12,7 @@ fn main() {
     
     // Test text operations
     mobile.set_text(label, "Updated")
-    let text: str = mobile.get_text(textfield)
+    const text: str = mobile.get_text(textfield)
     
     // Test events
     mobile.on_tap(button, test_callback)

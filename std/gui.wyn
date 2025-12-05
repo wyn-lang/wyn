@@ -11,7 +11,7 @@ struct Color {
 
 # Create a new window
 pub fn create_window(title: str, width: int, height: int) -> Window {
-    let handle: int = gui.create_window(title, width, height)
+    const handle: int = gui.create_window(title, width, height)
     return Window { handle: handle }
 }
 

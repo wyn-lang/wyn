@@ -160,11 +160,11 @@ fn on_button_click() {
 fn main() {
     mobile.init()
     
-    let label: i64 = mobile.create_label("Welcome to Wyn iOS!", 20, 100, 350, 40)
+    const label: i64 = mobile.create_label("Welcome to Wyn iOS!", 20, 100, 350, 40)
     mobile.set_font_size(label, 24)
     mobile.add_to_root(label)
     
-    let button: i64 = mobile.create_button("Click Me", 20, 160, 350, 50)
+    const button: i64 = mobile.create_button("Click Me", 20, 160, 350, 50)
     mobile.set_background_color(button, 0, 122, 255)
     mobile.add_to_root(button)
     mobile.on_tap(button, on_button_click)

@@ -1,12 +1,12 @@
 fn main() {
-    let argv: [str] = args()
+    const argv: [str] = args()
     
     if argv.len() < 2 {
         print_help()
         return
     }
     
-    let cmd: str = argv[1]
+    const cmd: str = argv[1]
     
     if cmd == "version" {
         print_str("Wyn v0.0.1\n")
@@ -106,13 +106,13 @@ fn create_project(name: str) {
     mkdir("src")
     mkdir("build")
     
-    let line1: str = "fn main() {"
-    let line2: str = "    print_str(\"Hello World!\\n\")"
-    let line3: str = "}"
-    let main_content: str = line1 + "\n" + line2 + "\n" + line3 + "\n"
+    const line1: str = "fn main() {"
+    const line2: str = "    print_str(\"Hello World!\\n\")"
+    const line3: str = "}"
+    const main_content: str = line1 + "\n" + line2 + "\n" + line3 + "\n"
     write_file("src/main.wyn", main_content)
     
-    let toml_content: str = "[package]\nname = \"app\"\nversion = \"0.1.0\"\n"
+    const toml_content: str = "[package]\nname = \"app\"\nversion = \"0.1.0\"\n"
     write_file("wyn.toml", toml_content)
     
     print_str("✓ Created project: ")
@@ -128,10 +128,10 @@ fn build_project() {
         exit(1)
     }
     
-    let compiler: str = find_compiler()
-    let exe: str = "build/app"
-    let compile_cmd: str = compiler + " -q --stage1-tc --stage1-opt -o " + exe + " src/main.wyn"
-    let compile_result: int = system(compile_cmd)
+    const compiler: str = find_compiler()
+    const exe: str = "build/app"
+    const compile_cmd: str = compiler + " -q --stage1-tc --stage1-opt -o " + exe + " src/main.wyn"
+    const compile_result: int = system(compile_cmd)
     
     if compile_result == 0 {
         print_str("✓ Built: build/app\n")
@@ -147,10 +147,10 @@ fn build_and_run() {
 }
 
 fn exec_file(file: str) {
-    let compiler: str = find_compiler()
-    let exe: str = "/tmp/wyn_exec"
-    let compile_cmd: str = compiler + " -q --stage1-opt -o " + exe + " " + file + " 2>/dev/null"
-    let compile_result: int = system(compile_cmd)
+    const compiler: str = find_compiler()
+    const exe: str = "/tmp/wyn_exec"
+    const compile_cmd: str = compiler + " -q --stage1-opt -o " + exe + " " + file + " 2>/dev/null"
+    const compile_result: int = system(compile_cmd)
     
     if compile_result == 0 {
         system(exe)
@@ -161,12 +161,12 @@ fn exec_file(file: str) {
 }
 
 fn exec_stdin() {
-    let temp_file: str = "/tmp/wyn_stdin.wyn"
-    let nl: str = chr(10)
+    const temp_file: str = "/tmp/wyn_stdin.wyn"
+    const nl: str = chr(10)
     
     # Read all stdin
-    let mut code: str = ""
-    let mut line: str = read_line()
+    let code: str = ""
+    let line: str = read_line()
     while line.len() > 0 {
         code = code + line + nl
         line = read_line()
@@ -174,9 +174,9 @@ fn exec_stdin() {
     
     # Wrap in main if not present
     if str_find(code, "fn main") == -1 {
-        let prefix: str = "fn main() {" + nl
-        let suffix: str = nl + "}" + nl
-        let wrapped: str = prefix + code + suffix
+        const prefix: str = "fn main() {" + nl
+        const suffix: str = nl + "}" + nl
+        const wrapped: str = prefix + code + suffix
         write_file(temp_file, wrapped)
     } else {
         write_file(temp_file, code)
@@ -186,11 +186,11 @@ fn exec_stdin() {
 }
 
 fn exec_inline(code: str) {
-    let temp_file: str = "/tmp/wyn_inline.wyn"
-    let nl: str = chr(10)
-    let prefix: str = "fn main() {" + nl
-    let suffix: str = nl + "}" + nl
-    let wrapped: str = prefix + code + suffix
+    const temp_file: str = "/tmp/wyn_inline.wyn"
+    const nl: str = chr(10)
+    const prefix: str = "fn main() {" + nl
+    const suffix: str = nl + "}" + nl
+    const wrapped: str = prefix + code + suffix
     write_file(temp_file, wrapped)
     exec_file(temp_file)
 }

@@ -66,7 +66,7 @@ wyn --stage1-tc --stage1-opt -o hello hello.wyn
 
 **Mutable arrays:**
 ```wyn
-let mut arr: [int] = []
+let arr: [int] = []
 arr.append(42)
 arr.append(99)
 print(arr.len())  // 2
@@ -74,7 +74,7 @@ print(arr.len())  // 2
 
 **Spawn (concurrency):**
 ```wyn
-let mut counter: int = 0
+let counter: int = 0
 for i in 0..100 {
     spawn { counter = counter + 1 }
 }
@@ -86,7 +86,7 @@ print(counter)  // 100
 ```wyn
 # Builtins (simple)
 write_file("test.txt", "Hello")
-let content: str = read_file("test.txt")
+const content: str = read_file("test.txt")
 
 # Or use io module
 import std/io
@@ -98,10 +98,10 @@ io.write_file("test.txt", "Hello")
 import std/http
 
 # HTTP server
-let server: int = http.serve("0.0.0.0", 8080)
+const server: int = http.serve("0.0.0.0", 8080)
 
 # HTTP client
-let response: Result[Response, str] = http.get("https://api.example.com")
+const response: Result[Response, str] = http.get("https://api.example.com")
 ```
 
 ## Performance

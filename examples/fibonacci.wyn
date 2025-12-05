@@ -9,11 +9,11 @@ fn fib_iterative(n: int) -> int {
     if n <= 1 {
         return n
     }
-    mut a: int = 0
-    mut b: int = 1
-    mut i: int = 2
+    let a: int = 0
+    let b: int = 1
+    let i: int = 2
     while i <= n {
-        let temp: int = a + b
+        const temp: int = a + b
         a = b
         b = temp
         i += 1

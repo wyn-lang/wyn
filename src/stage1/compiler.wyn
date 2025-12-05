@@ -158,11 +158,11 @@ fn lexer_peek_next(lex: Lexer) -> str {
     return substring(lex.source, lex.pos + 1, 1)
 }
 
-fn lexer_advance(mut lex: Lexer) -> str {
+fn lexer_advance(let lex: Lexer) -> str {
     if lex.pos >= lex.len {
         return ""
     }
-    let c: str = substring(lex.source, lex.pos, 1)
+    const c: str = substring(lex.source, lex.pos, 1)
     lex.pos = lex.pos + 1
     if c == "\n" {
         lex.line = lex.line + 1
@@ -178,12 +178,12 @@ fn is_whitespace(c: str) -> bool {
 }
 
 fn is_digit(c: str) -> bool {
-    let code: int = ord(c)
+    const code: int = ord(c)
     return code >= 48 and code <= 57
 }
 
 fn is_alpha(c: str) -> bool {
-    let code: int = ord(c)
+    const code: int = ord(c)
     return (code >= 65 and code <= 90) or (code >= 97 and code <= 122) or c == "_"
 }
 
@@ -191,9 +191,9 @@ fn is_alnum(c: str) -> bool {
     return is_alpha(c) or is_digit(c)
 }
 
-fn lexer_skip_whitespace(mut lex: Lexer) {
+fn lexer_skip_whitespace(let lex: Lexer) {
     while lex.pos < lex.len {
-        let c: str = lexer_peek(lex)
+        const c: str = lexer_peek(lex)
         if is_whitespace(c) {
             lexer_advance(lex)
         } else if c == "#" {
@@ -238,35 +238,35 @@ fn keyword_or_ident(s: str) -> int {
     return IDENT
 }
 
-fn lexer_next(mut lex: Lexer) -> Token {
+fn lexer_next(let lex: Lexer) -> Token {
     lexer_skip_whitespace(lex)
     
     if lex.pos >= lex.len {
         return token_new(EOF, "", lex.line, lex.col)
     }
     
-    let start_line: int = lex.line
-    let start_col: int = lex.col
-    let c: str = lexer_peek(lex)
+    const start_line: int = lex.line
+    const start_col: int = lex.col
+    const c: str = lexer_peek(lex)
     
     # Identifiers and keywords
     if is_alpha(c) {
-        let start: int = lex.pos
+        const start: int = lex.pos
         while lex.pos < lex.len and is_alnum(lexer_peek(lex)) {
             lexer_advance(lex)
         }
-        let value: str = substring(lex.source, start, lex.pos - start)
-        let kind: int = keyword_or_ident(value)
+        const value: str = substring(lex.source, start, lex.pos - start)
+        const kind: int = keyword_or_ident(value)
         return token_new(kind, value, start_line, start_col)
     }
     
     # Numbers
     if is_digit(c) {
-        let start: int = lex.pos
+        const start: int = lex.pos
         while lex.pos < lex.len and is_digit(lexer_peek(lex)) {
             lexer_advance(lex)
         }
-        let mut kind: int = INT
+        let kind: int = INT
         if lexer_peek(lex) == "." and is_digit(lexer_peek_next(lex)) {
             lexer_advance(lex)
             while lex.pos < lex.len and is_digit(lexer_peek(lex)) {
@@ -274,27 +274,27 @@ fn lexer_next(mut lex: Lexer) -> Token {
             }
             kind = FLOAT
         }
-        let value: str = substring(lex.source, start, lex.pos - start)
+        const value: str = substring(lex.source, start, lex.pos - start)
         return token_new(kind, value, start_line, start_col)
     }
     
     # Strings
     if c == "\"" {
         lexer_advance(lex)
-        let start: int = lex.pos
+        const start: int = lex.pos
         while lex.pos < lex.len and lexer_peek(lex) != "\"" {
             if lexer_peek(lex) == "\\" {
                 lexer_advance(lex)
             }
             lexer_advance(lex)
         }
-        let value: str = substring(lex.source, start, lex.pos - start)
+        const value: str = substring(lex.source, start, lex.pos - start)
         lexer_advance(lex)  # consume closing "
         return token_new(STRING, value, start_line, start_col)
     }
     
     # Two-character operators
-    let c2: str = lexer_peek_next(lex)
+    const c2: str = lexer_peek_next(lex)
     
     if c == "-" and c2 == ">" {
         lexer_advance(lex)
@@ -410,7 +410,7 @@ fn lexer_next(mut lex: Lexer) -> Token {
 # Test main
 fn main() {
     println_str("Creating lexer")
-    let lex: Lexer = lexer_new("hello")
+    const lex: Lexer = lexer_new("hello")
     println_str("Checking pos < len")
     println(lex.pos)
     println(lex.len)
@@ -418,7 +418,7 @@ fn main() {
         println_str("pos >= len, returning EOF")
     } else {
         println_str("pos < len, continuing")
-        let c: str = lexer_peek(lex)
+        const c: str = lexer_peek(lex)
         println_str("Peeked char:")
         println_str(c)
         if is_alpha(c) {

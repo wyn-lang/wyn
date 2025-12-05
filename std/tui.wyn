@@ -145,7 +145,7 @@ fn text(s: str) {
 
 # Print styled text
 fn styled(s: str, style: Style) {
-    let mut codes: str = ""
+    let codes: str = ""
     
     if style.bold { codes = codes + "1;" }
     if style.italic { codes = codes + "3;" }
@@ -276,7 +276,7 @@ fn vline(row: int, col: int, height: int) {
 
 # Progress bar
 fn progress_bar(row: int, col: int, width: int, progress: float) {
-    let filled: int = int(progress * float(width - 2))
+    const filled: int = int(progress * float(width - 2))
     move_to(row, col)
     text("[")
     for i in 0..width-2 {
@@ -291,7 +291,7 @@ fn progress_bar(row: int, col: int, width: int, progress: float) {
 
 # Spinner (call repeatedly with incrementing frame)
 fn spinner(row: int, col: int, frame: int) {
-    let chars: [str] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+    const chars: [str] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
     move_to(row, col)
     text(chars[frame % chars.len()])
 }
@@ -323,7 +323,7 @@ fn input_field(row: int, col: int, width: int, value: str, cursor: int) {
     move_to(row, col)
     text("[")
     
-    let mut display: str = value
+    let display: str = value
     if display.len() > width - 2 {
         display = display[display.len() - width + 2:]
     }
@@ -338,7 +338,7 @@ fn input_field(row: int, col: int, width: int, value: str, cursor: int) {
     text("]")
     
     # Position cursor
-    let cursor_col: int = col + 1 + min(cursor, width - 2)
+    const cursor_col: int = col + 1 + min(cursor, width - 2)
     move_to(row, cursor_col)
 }
 
@@ -348,8 +348,8 @@ fn input_field(row: int, col: int, width: int, value: str, cursor: int) {
 
 # Center text in given width
 fn center_text(s: str, width: int) -> str {
-    let padding: int = (width - s.len()) / 2
-    let mut result: str = ""
+    const padding: int = (width - s.len()) / 2
+    let result: str = ""
     for i in 0..padding { result = result + " " }
     result = result + s
     for i in result.len()..width { result = result + " " }
@@ -366,7 +366,7 @@ fn truncate(s: str, max_len: int) -> str {
 
 # Pad string to width
 fn pad_right(s: str, width: int) -> str {
-    let mut result: str = s
+    let result: str = s
     while result.len() < width {
         result = result + " "
     }
@@ -374,7 +374,7 @@ fn pad_right(s: str, width: int) -> str {
 }
 
 fn pad_left(s: str, width: int) -> str {
-    let mut result: str = s
+    let result: str = s
     while result.len() < width {
         result = " " + result
     }

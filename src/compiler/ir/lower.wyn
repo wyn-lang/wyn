@@ -22,7 +22,7 @@ impl Lowerer {
         }
     }
     
-    pub fn lower(mut self, ast: Module) -> IRModule {
+    pub fn lower(self, ast: Module) -> IRModule {
         self.module.name = ast.name
         
         for item in ast.items {
@@ -36,20 +36,20 @@ impl Lowerer {
         return self.module
     }
     
-    fn lower_fn(mut self, f: FnDef) {
+    fn lower_fn(self, f: FnDef) {
         self.current_func = some(f.name)
         self.reg_count = 0
         
-        let params: [IRParam] = []
-        let mut i: int = 0
+        const params: [IRParam] = []
+        let i: int = 0
         for p in f.params {
             params = params + [IRParam{name: p.name, type_: I64, reg: i}]
             i = i + 1
         }
         
-        let entry_label: str = self.new_label()
-        let mut blocks: [IRBlock] = []
-        let mut instrs: [IRInstr] = []
+        const entry_label: str = self.new_label()
+        let blocks: [IRBlock] = []
+        let instrs: [IRInstr] = []
         
         match f.body {
             some(body) => {
@@ -60,7 +60,7 @@ impl Lowerer {
         
         blocks = blocks + [IRBlock{label: entry_label, instrs}]
         
-        let ir_func: IRFunction = IRFunction{
+        const ir_func: IRFunction = IRFunction{
             name: f.name,
             params,
             return_type: I64,
@@ -71,15 +71,15 @@ impl Lowerer {
         self.module.functions = self.module.functions + [ir_func]
     }
     
-    fn lower_block(mut self, block: Block) -> [IRInstr] {
-        let mut instrs: [IRInstr] = []
+    fn lower_block(self, block: Block) -> [IRInstr] {
+        let instrs: [IRInstr] = []
         for stmt in block.stmts {
             instrs = instrs + self.lower_stmt(stmt)
         }
         return instrs
     }
     
-    fn lower_stmt(mut self, stmt: Stmt) -> [IRInstr] {
+    fn lower_stmt(self, stmt: Stmt) -> [IRInstr] {
         match stmt {
             Let(name, _, _, value, _) => {
                 let (val_instrs, val_reg) = self.lower_expr(value)
@@ -99,9 +99,9 @@ impl Lowerer {
                 return instrs
             }
             While(cond, body, _) => {
-                let loop_label: str = self.new_label()
-                let body_label: str = self.new_label()
-                let exit_label: str = self.new_label()
+                const loop_label: str = self.new_label()
+                const body_label: str = self.new_label()
+                const exit_label: str = self.new_label()
                 
                 let (cond_instrs, cond_reg) = self.lower_expr(cond)
                 let body_instrs = self.lower_block(body)
@@ -116,32 +116,32 @@ impl Lowerer {
         }
     }
     
-    fn lower_expr(mut self, expr: Expr) -> ([IRInstr], int) {
+    fn lower_expr(self, expr: Expr) -> ([IRInstr], int) {
         match expr {
             IntLit(n, _) => {
-                let dst: int = self.new_reg()
+                const dst: int = self.new_reg()
                 return ([Const(dst, Int(n))], dst)
             }
             BoolLit(b, _) => {
-                let dst: int = self.new_reg()
+                const dst: int = self.new_reg()
                 return ([Const(dst, Bool(b))], dst)
             }
             StringLit(s, _) => {
-                let idx: int = self.add_string(s)
-                let dst: int = self.new_reg()
+                const idx: int = self.add_string(s)
+                const dst: int = self.new_reg()
                 return ([Const(dst, String(idx))], dst)
             }
             Ident(name, _) => {
                 // TODO: Look up variable in scope
-                let dst: int = self.new_reg()
+                const dst: int = self.new_reg()
                 return ([Const(dst, Int(0))], dst)
             }
             Binary(left, op, right, _) => {
                 let (left_instrs, left_reg) = self.lower_expr(left.value)
                 let (right_instrs, right_reg) = self.lower_expr(right.value)
-                let dst: int = self.new_reg()
+                const dst: int = self.new_reg()
                 
-                let instr: IRInstr = match op {
+                const instr: IRInstr = match op {
                     Add => Add(dst, left_reg, right_reg)
                     Sub => Sub(dst, left_reg, right_reg)
                     Mul => Mul(dst, left_reg, right_reg)
@@ -160,9 +160,9 @@ impl Lowerer {
             }
             Unary(op, operand, _) => {
                 let (instrs, src) = self.lower_expr(operand.value)
-                let dst: int = self.new_reg()
+                const dst: int = self.new_reg()
                 
-                let instr: IRInstr = match op {
+                const instr: IRInstr = match op {
                     Neg => Neg(dst, src)
                     Not => Not(dst, src)
                     _ => Neg(dst, src)
@@ -171,8 +171,8 @@ impl Lowerer {
                 return (instrs + [instr], dst)
             }
             Call(callee, args, _) => {
-                let mut instrs: [IRInstr] = []
-                let mut arg_regs: [int] = []
+                let instrs: [IRInstr] = []
+                let arg_regs: [int] = []
                 
                 for arg in args {
                     let (arg_instrs, arg_reg) = self.lower_expr(arg)
@@ -180,8 +180,8 @@ impl Lowerer {
                     arg_regs = arg_regs + [arg_reg]
                 }
                 
-                let dst: int = self.new_reg()
-                let func_name: str = match callee.value {
+                const dst: int = self.new_reg()
+                const func_name: str = match callee.value {
                     Ident(name, _) => name
                     _ => "unknown"
                 }
@@ -191,11 +191,11 @@ impl Lowerer {
             If(cond, then_block, else_block, _) => {
                 let (cond_instrs, cond_reg) = self.lower_expr(cond.value)
                 let then_instrs = self.lower_block(then_block)
-                let then_label: str = self.new_label()
-                let else_label: str = self.new_label()
-                let end_label: str = self.new_label()
+                const then_label: str = self.new_label()
+                const else_label: str = self.new_label()
+                const end_label: str = self.new_label()
                 
-                let mut instrs: [IRInstr] = cond_instrs + [Branch(cond_reg, then_label, else_label)]
+                let instrs: [IRInstr] = cond_instrs + [Branch(cond_reg, then_label, else_label)]
                 instrs = instrs + then_instrs + [Jump(end_label)]
                 
                 match else_block {
@@ -205,30 +205,30 @@ impl Lowerer {
                     none => {}
                 }
                 
-                let dst: int = self.new_reg()
+                const dst: int = self.new_reg()
                 return (instrs, dst)
             }
             _ => {
-                let dst: int = self.new_reg()
+                const dst: int = self.new_reg()
                 return ([Const(dst, Int(0))], dst)
             }
         }
     }
     
-    fn new_reg(mut self) -> int {
-        let r: int = self.reg_count
+    fn new_reg(self) -> int {
+        const r: int = self.reg_count
         self.reg_count = self.reg_count + 1
         return r
     }
     
-    fn new_label(mut self) -> str {
-        let l: str = ".L" + self.label_count.to_str()
+    fn new_label(self) -> str {
+        const l: str = ".L" + self.label_count.to_str()
         self.label_count = self.label_count + 1
         return l
     }
     
-    fn add_string(mut self, s: str) -> int {
-        let idx: int = self.strings.len()
+    fn add_string(self, s: str) -> int {
+        const idx: int = self.strings.len()
         self.strings = self.strings + [s]
         return idx
     }

@@ -14,7 +14,7 @@ impl TypeChecker {
         TypeChecker{env: TypeEnv.new(), errors: [], current_ret: Void}
     }
     
-    pub fn check_module(mut self, module: Module) -> [str] {
+    pub fn check_module(self, module: Module) -> [str] {
         // First pass: collect function signatures
         for item in module.items {
             match item {
@@ -32,8 +32,8 @@ impl TypeChecker {
         return self.errors
     }
     
-    fn register_func(mut self, f: FnDef) {
-        let params: [WynType] = []
+    fn register_func(self, f: FnDef) {
+        const params: [WynType] = []
         for p in f.params {
             params = params + [self.resolve_type(p.type_)]
         }
@@ -44,7 +44,7 @@ impl TypeChecker {
         self.env.define_func(f.name, FuncSig{params, ret})
     }
     
-    fn check_fn(mut self, f: FnDef) {
+    fn check_fn(self, f: FnDef) {
         self.env.push_scope()
         for p in f.params {
             self.env.define_var(p.name, self.resolve_type(p.type_))
@@ -60,13 +60,13 @@ impl TypeChecker {
         self.env.pop_scope()
     }
     
-    fn check_block(mut self, block: Block) {
+    fn check_block(self, block: Block) {
         for stmt in block.stmts {
             self.check_stmt(stmt)
         }
     }
     
-    fn check_stmt(mut self, stmt: Stmt) {
+    fn check_stmt(self, stmt: Stmt) {
         match stmt {
             Let(name, _, ty, value, _) => {
                 let val_type = self.check_expr(value)
@@ -106,7 +106,7 @@ impl TypeChecker {
         }
     }
     
-    fn check_expr(mut self, expr: Expr) -> WynType {
+    fn check_expr(self, expr: Expr) -> WynType {
         match expr {
             IntLit(_, _) => Int
             FloatLit(_, _) => Float
@@ -195,7 +195,7 @@ impl TypeChecker {
         }
     }
     
-    fn error(mut self, msg: str) {
+    fn error(self, msg: str) {
         self.errors = self.errors + [msg]
     }
 }

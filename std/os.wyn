@@ -3,7 +3,7 @@
 
 # Get command-line argument at index (0 = program name), returns none if out of bounds
 fn get_arg(index: int) -> ?str {
-    let all_args: [str] = args()
+    const all_args: [str] = args()
     if index < 0 or index >= all_args.len() {
         return none
     }
@@ -17,7 +17,7 @@ fn arg_count() -> int {
 
 # Check if environment variable exists and has a value
 fn has_env(key: str) -> bool {
-    let val: ?str = getenv(key)
+    const val: ?str = getenv(key)
     match val {
         some(_) => return true
         none => return false
@@ -26,7 +26,7 @@ fn has_env(key: str) -> bool {
 
 # Get environment variable value or return default if not set
 fn env_or(key: str, default: str) -> str {
-    let val: ?str = getenv(key)
+    const val: ?str = getenv(key)
     return val ?? default
 }
 
@@ -37,13 +37,13 @@ fn has_arg(index: int) -> bool {
 
 # Get program name (first argument, defaults to "program" if not available)
 fn program_name() -> str {
-    let name: ?str = get_arg(0)
+    const name: ?str = get_arg(0)
     return name ?? "program"
 }
 
 # Parse integer from command-line argument, returns none if invalid or missing
 fn get_arg_int(index: int) -> ?int {
-    let arg: ?str = get_arg(index)
+    const arg: ?str = get_arg(index)
     if arg == none {
         return none
     }
@@ -52,9 +52,9 @@ fn get_arg_int(index: int) -> ?int {
 
 # Check if argument matches a flag (e.g., "--help", "-v")
 fn has_flag(flag: str) -> bool {
-    let mut i: int = 1
+    let i: int = 1
     while i < arg_count() {
-        let arg: ?str = get_arg(i)
+        const arg: ?str = get_arg(i)
         if arg != none and arg! == flag {
             return true
         }
@@ -66,9 +66,9 @@ fn has_flag(flag: str) -> bool {
 # Get value after a flag (e.g., "--output file.txt" returns "file.txt")
 # Returns none if flag not found or no value follows
 fn get_flag_value(flag: str) -> ?str {
-    let mut i: int = 1
+    let i: int = 1
     while i < arg_count() - 1 {
-        let arg: ?str = get_arg(i)
+        const arg: ?str = get_arg(i)
         if arg != none and arg! == flag {
             return get_arg(i + 1)
         }
@@ -80,10 +80,10 @@ fn get_flag_value(flag: str) -> ?str {
 # Get all arguments after index (useful for collecting remaining args)
 # Stage 1: Will support dynamic array building
 fn get_args_from(start: int) -> [str] {
-    let mut result: [str] = []
-    let mut i: int = start
+    let result: [str] = []
+    let i: int = start
     while i < arg_count() {
-        let arg: ?str = get_arg(i)
+        const arg: ?str = get_arg(i)
         if arg != none {
             # Stage 1 will support: result = result + [arg!]
         }
@@ -100,7 +100,7 @@ fn get_args() -> [str] {
 
 # Check if any flag from list is present in arguments
 fn has_any_flag(flags: [str]) -> bool {
-    let mut i: int = 0
+    let i: int = 0
     while i < flags.len() {
         if has_flag(flags[i]) {
             return true
@@ -112,7 +112,7 @@ fn has_any_flag(flags: [str]) -> bool {
 
 # Get environment variable as integer, returns none if not set or invalid
 fn env_int(key: str) -> ?int {
-    let val: ?str = getenv(key)
+    const val: ?str = getenv(key)
     match val {
         some(v) => return v.to_int()
         none => return none
@@ -152,9 +152,9 @@ fn args() -> [str] {
 
 # Get environment variable value
 # Returns some(value) if set, none if not set
-# Example: let path: ?str = getenv("PATH")
+# Example: const path: ?str = getenv("PATH")
 pub fn getenv(key: str) -> ?str {
-    let val: str = getenv(key)
+    const val: str = getenv(key)
     if val.len() > 0 {
         return some(val)
     }
@@ -172,7 +172,7 @@ fn env() -> [str] {
 # Set environment variable
 # Returns ok(()) on success, err(message) on failure
 pub fn setenv(key: str, value: str) -> Result[(), str] {
-    let result: int = setenv(key, value)
+    const result: int = setenv(key, value)
     if result == 0 {
         return ok(())
     }
@@ -181,7 +181,7 @@ pub fn setenv(key: str, value: str) -> Result[(), str] {
 
 # Get current working directory
 fn cwd() -> Result[str, str] {
-    let path: str = getcwd()
+    const path: str = getcwd()
     if path == "" {
         return err("getcwd failed")
     }
@@ -190,7 +190,7 @@ fn cwd() -> Result[str, str] {
 
 # Change current working directory
 fn cd(path: str) -> Result[(), str] {
-    let r: int = chdir(path)
+    const r: int = chdir(path)
     if r != 0 {
         return err("chdir failed")
     }

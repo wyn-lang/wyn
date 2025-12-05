@@ -26,8 +26,8 @@ fn main() {
     
     // Variables
     print_str("Variables:")
-    let x: int = 10
-    let mut y: int = 20
+    const x: int = 10
+    let y: int = 20
     y = y + 5
     print(x + y)
     
@@ -47,7 +47,7 @@ fn main() {
     
     // Arrays
     print_str("Arrays:")
-    let arr: [int] = [100, 200, 300, 400]
+    const arr: [int] = [100, 200, 300, 400]
     print(len(arr))
     print(arr[0])
     print(arr[3])

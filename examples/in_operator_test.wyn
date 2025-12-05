@@ -1,7 +1,7 @@
 // Test 'in' operator for array membership
 
 fn main() {
-    let arr: [int] = [1, 2, 3, 4, 5]
+    const arr: [int] = [1, 2, 3, 4, 5]
     
     // Test element found
     if 3 in arr {
@@ -30,7 +30,7 @@ fn main() {
     assert(5 in arr)
     
     // Test not in
-    let found: bool = 99 in arr
+    const found: bool = 99 in arr
     assert(found == false)
     
     print_str("In operator: OK")

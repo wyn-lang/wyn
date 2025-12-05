@@ -2,7 +2,7 @@ fn main() {
     print_str("Creating empty array...")
     print_newline()
     
-    let mut arr: [int] = []
+    let arr: [int] = []
     
     print_str("Array created, length: ")
     print(len(arr))

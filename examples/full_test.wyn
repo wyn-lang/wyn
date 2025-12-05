@@ -47,7 +47,7 @@ fn main() {
     print_str("Comparison/Logical: OK")
     
     # Variables and compound assignment
-    let mut x: int = 10
+    let x: int = 10
     x += 5
     assert(x == 15)
     x -= 3
@@ -55,7 +55,7 @@ fn main() {
     print_str("Variables: OK")
     
     # Control flow
-    let mut sum: int = 0
+    let sum: int = 0
     for i in 0..5 {
         sum += i
     }
@@ -63,7 +63,7 @@ fn main() {
     print_str("Control flow: OK")
     
     # Break and continue
-    let mut total: int = 0
+    let total: int = 0
     for i in 0..10 {
         if i == 5 {
             break
@@ -74,8 +74,8 @@ fn main() {
     print_str("Break/Continue: OK")
     
     # Match
-    let val: int = 2
-    let mut result: int = 0
+    const val: int = 2
+    let result: int = 0
     match val {
         1 => result = 10
         2 => result = 20
@@ -89,14 +89,14 @@ fn main() {
     print_str("Functions: OK")
     
     # Structs
-    let p: Point = Point { x: 3, y: 4 }
+    const p: Point = Point { x: 3, y: 4 }
     assert(p.x == 3)
     assert(p.y == 4)
     assert(p.distance_squared() == 25)
     print_str("Structs: OK")
     
     # Arrays
-    let arr: [int] = [10, 20, 30]
+    const arr: [int] = [10, 20, 30]
     assert(len(arr) == 3)
     assert(arr[0] == 10)
     print_str("Arrays: OK")

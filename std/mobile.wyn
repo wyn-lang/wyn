@@ -87,7 +87,7 @@ fn get_device_info() -> DeviceInfo {
 }
 
 fn screen_size() -> (int, int) {
-    let info: DeviceInfo = get_device_info()
+    const info: DeviceInfo = get_device_info()
     return (info.screen_width, info.screen_height)
 }
 
@@ -191,11 +191,11 @@ fn stop_location_updates() {
 # Calculate distance between two points (meters)
 fn distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float {
     # Haversine formula
-    let R: float = 6371000.0  # Earth radius in meters
-    let dLat: float = (lat2 - lat1) * 0.0174533  # to radians
-    let dLon: float = (lon2 - lon1) * 0.0174533
-    let a: float = sin(dLat/2.0) * sin(dLat/2.0) + cos(lat1 * 0.0174533) * cos(lat2 * 0.0174533) * sin(dLon/2.0) * sin(dLon/2.0)
-    let c: float = 2.0 * atan2(sqrt(a), sqrt(1.0-a))
+    const R: float = 6371000.0  # Earth radius in meters
+    const dLat: float = (lat2 - lat1) * 0.0174533  # to radians
+    const dLon: float = (lon2 - lon1) * 0.0174533
+    const a: float = sin(dLat/2.0) * sin(dLat/2.0) + cos(lat1 * 0.0174533) * cos(lat2 * 0.0174533) * sin(dLon/2.0) * sin(dLon/2.0)
+    const c: float = 2.0 * atan2(sqrt(a), sqrt(1.0-a))
     return R * c
 }
 

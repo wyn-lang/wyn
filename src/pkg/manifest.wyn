@@ -20,7 +20,7 @@ struct Manifest {
 
 # Parse a wyn.toml file into a Manifest
 fn parse_manifest(content: str) -> Result[Manifest, str] {
-    let manifest: Manifest = Manifest{
+    const manifest: Manifest = Manifest{
         name: "",
         version: "0.1.0",
         description: "",
@@ -30,11 +30,11 @@ fn parse_manifest(content: str) -> Result[Manifest, str] {
         dependencies: []
     }
     
-    let lines: [str] = split_lines(content)
-    let section: str = ""
+    const lines: [str] = split_lines(content)
+    const section: str = ""
     
     for line in lines {
-        let trimmed: str = trim(line)
+        const trimmed: str = trim(line)
         
         # Skip empty lines and comments
         if trimmed.len() == 0 or starts_with(trimmed, "#") {
@@ -48,11 +48,11 @@ fn parse_manifest(content: str) -> Result[Manifest, str] {
         }
         
         # Key-value pairs
-        let kv: ?[str] = parse_kv(trimmed)
+        const kv: ?[str] = parse_kv(trimmed)
         match kv {
             some(pair) => {
-                let key: str = pair[0]
-                let value: str = pair[1]
+                const key: str = pair[0]
+                const value: str = pair[1]
                 
                 match section {
                     "package" => {
@@ -70,7 +70,7 @@ fn parse_manifest(content: str) -> Result[Manifest, str] {
                         }
                     }
                     "dependencies" => {
-                        let dep: Dependency = Dependency{
+                        const dep: Dependency = Dependency{
                             name: key,
                             version: value,
                             source: infer_source(key),
@@ -94,19 +94,19 @@ fn parse_manifest(content: str) -> Result[Manifest, str] {
 
 # Parse section header like [package] or [dependencies]
 fn parse_section(line: str) -> str {
-    let inner: str = line[1:line.len()-1]
+    const inner: str = line[1:line.len()-1]
     return trim(inner)
 }
 
 # Parse key = "value" or key = value
 fn parse_kv(line: str) -> ?[str] {
-    let eq_pos: int = find(line, "=")
+    const eq_pos: int = find(line, "=")
     if eq_pos < 0 {
         return none
     }
     
-    let key: str = trim(line[:eq_pos])
-    let value: str = trim(line[eq_pos+1:])
+    const key: str = trim(line[:eq_pos])
+    const value: str = trim(line[eq_pos+1:])
     
     # Remove quotes if present
     if starts_with(value, "\"") and ends_with(value, "\"") {
@@ -129,7 +129,7 @@ fn infer_source(name: str) -> str {
 
 # Generate wyn.toml content from Manifest
 fn generate_manifest(m: Manifest) -> str {
-    let out: str = "[package]\n"
+    const out: str = "[package]\n"
     out = out + "name = \"" + m.name + "\"\n"
     out = out + "version = \"" + m.version + "\"\n"
     

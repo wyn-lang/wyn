@@ -124,8 +124,8 @@ fn fail(msg: str) {
 
 # Assert two floats are approximately equal (within epsilon)
 fn assert_eq_float(a: float, b: float, epsilon: float, msg: str) {
-    let diff: float = a - b
-    let abs_diff: float = if diff < 0.0 then 0.0 - diff else diff
+    const diff: float = a - b
+    const abs_diff: float = if diff < 0.0 then 0.0 - diff else diff
     if abs_diff > epsilon {
         print_str("ASSERTION FAILED: " + msg + " (expected ")
         print_str(b.to_str())
@@ -140,7 +140,7 @@ fn assert_eq_float(a: float, b: float, epsilon: float, msg: str) {
 
 # Assert array lengths are equal
 fn assert_len_eq(arr: [int], expected: int, msg: str) {
-    let actual: int = arr.len()
+    const actual: int = arr.len()
     if actual != expected {
         print_str("ASSERTION FAILED: " + msg + " (expected length ")
         print(expected)
@@ -199,10 +199,10 @@ fn assert_ok[T, E](result: Result[T, E], msg: str) {
 # 
 # # Assert string contains substring
 # fn assert_contains(s: str, substr: str, msg: str) {
-    let mut found: bool = false
-    let slen: int = s.len()
-#     let sublen: int = substr.len()
-#     let mut i: int = 0
+    let found: bool = false
+    const slen: int = s.len()
+#     const sublen: int = substr.len()
+#     let i: int = 0
 #     while i <= slen - sublen {
 #         if s[i:i+sublen] == substr {
 #             found = true
@@ -217,10 +217,10 @@ fn assert_ok[T, E](result: Result[T, E], msg: str) {
 
 # Assert string does not contain substring
 fn assert_not_contains(s: str, substr: str, msg: str) {
-    let mut found: bool = false
-    let slen: int = s.len()
-    let sublen: int = substr.len()
-    let mut i: int = 0
+    let found: bool = false
+    const slen: int = s.len()
+    const sublen: int = substr.len()
+    let i: int = 0
     while i <= slen - sublen {
         if s[i:i+sublen] == substr {
             found = true
@@ -235,8 +235,8 @@ fn assert_not_contains(s: str, substr: str, msg: str) {
 
 # Assert array contains value
 fn assert_array_contains(arr: [int], value: int, msg: str) {
-    let mut found: bool = false
-    let mut i: int = 0
+    let found: bool = false
+    let i: int = 0
     while i < arr.len() {
         if arr[i] == value {
             found = true

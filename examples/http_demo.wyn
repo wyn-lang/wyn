@@ -20,11 +20,11 @@ fn main() {
     
     # Headers
     println_str("Headers:")
-    let header: str = http.make_header("Content-Type", "application/json")
+    const header: str = http.make_header("Content-Type", "application/json")
     println_str(header)
     
-    let parsed: ?[str] = http.parse_header(header)
-    let parts: [str] = parsed ?? []
+    const parsed: ?[str] = http.parse_header(header)
+    const parts: [str] = parsed ?? []
     if len(parts) > 0 {
         println_str(parts[0])
         println_str(parts[1])
@@ -33,7 +33,7 @@ fn main() {
     
     # URL parsing
     println_str("URL Parsing:")
-    let url: str = "https://api.example.com/users?id=123"
+    const url: str = "https://api.example.com/users?id=123"
     println_str(http.url_protocol(url))
     println_str(http.url_host(url))
     println_str(http.url_path(url))
@@ -42,28 +42,28 @@ fn main() {
     
     # Query parameters
     println_str("Query Parameters:")
-    let query: str = "id=123&name=alice&age=30"
-    let id: ?str = http.parse_query_param(query, "id")
-    let name: ?str = http.parse_query_param(query, "name")
+    const query: str = "id=123&name=alice&age=30"
+    const id: ?str = http.parse_query_param(query, "id")
+    const name: ?str = http.parse_query_param(query, "name")
     println_str(id ?? "not found")
     println_str(name ?? "not found")
     println_str("")
     
     # Response builders
     println_str("Response Builders:")
-    let resp: http.Response = http.json_response(200, "{\"status\":\"ok\"}")
+    const resp: http.Response = http.json_response(200, "{\"status\":\"ok\"}")
     println(resp.status)
     println_str(resp.body)
     println(len(resp.headers))
     
-    let err_resp: http.Response = http.error_response(404, "Not Found")
+    const err_resp: http.Response = http.error_response(404, "Not Found")
     println(err_resp.status)
     println_str(err_resp.body)
     println_str("")
     
     # Request builders
     println_str("Request Builders:")
-    let req: http.Request = http.post_request("/api/users", "{\"name\":\"alice\"}")
+    const req: http.Request = http.post_request("/api/users", "{\"name\":\"alice\"}")
     println_str(req.method)
     println_str(req.path)
     println_str(req.body)
