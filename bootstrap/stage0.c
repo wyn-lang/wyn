@@ -5170,6 +5170,31 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_emit(cg, "    callq %sgetenv", cg_sym_prefix(cg));
                     break;
                 }
+                // Handle built-in args() - get command line arguments as [str]
+                if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "args") == 0) {
+                    // Allocate array on stack: [len, capacity, elem0, elem1, ...]
+                    int arr_off = cg->stack_offset + 8;
+                    cg->stack_offset += 16 + 8 * 64;  // len + capacity + max 64 args
+                    // Load argc and argv from globals
+                    cg_emit(cg, "    movq L_.wyn_argc(%%rip), %%r8");  // r8 = argc
+                    cg_emit(cg, "    movq L_.wyn_argv(%%rip), %%r9");  // r9 = argv
+                    cg_emit(cg, "    leaq -%d(%%rbp), %%r10", arr_off);  // r10 = array base
+                    cg_emit(cg, "    movq %%r8, (%%r10)");  // store length
+                    cg_emit(cg, "    movq %%r8, 8(%%r10)");  // store capacity
+                    cg_emit(cg, "    xorq %%r11, %%r11");  // i = 0
+                    int loop_lbl = cg_new_label(cg), end_lbl = cg_new_label(cg);
+                    cg_emit(cg, "L%d:", loop_lbl);
+                    cg_emit(cg, "    cmpq %%r8, %%r11");
+                    cg_emit(cg, "    jge L%d", end_lbl);
+                    cg_emit(cg, "    movq (%%r9,%%r11,8), %%r12");  // argv[i]
+                    cg_emit(cg, "    leaq 2(%%r11), %%r13");  // +2 for len and capacity
+                    cg_emit(cg, "    movq %%r12, (%%r10,%%r13,8)");  // arr[i+2]
+                    cg_emit(cg, "    incq %%r11");
+                    cg_emit(cg, "    jmp L%d", loop_lbl);
+                    cg_emit(cg, "L%d:", end_lbl);
+                    cg_emit(cg, "    leaq -%d(%%rbp), %%rax", arr_off);  // return array ptr
+                    break;
+                }
                 // Handle built-in setenv(name, value) - set environment variable
                 if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "setenv") == 0) {
                     cg_expr(cg, e->call.args[0]);
@@ -6718,9 +6743,9 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             }
             // Handle built-in args() - get command line arguments as [str]
             if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "args") == 0) {
-                // Allocate array on stack: [len, ptr0, ptr1, ...]
+                // Allocate array on stack: [len, capacity, elem0, elem1, ...]
                 int arr_off = cg->stack_offset + 8;
-                cg->stack_offset += 8 + 8 * 64;  // max 64 args
+                cg->stack_offset += 16 + 8 * 64;  // len + capacity + max 64 args
                 // Load argc and argv from globals
                 cg_emit(cg, "    adrp x8, L_.wyn_argc@PAGE");
                 cg_emit(cg, "    add x8, x8, L_.wyn_argc@PAGEOFF");
@@ -6730,14 +6755,15 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_emit(cg, "    ldr x10, [x8]");  // x10 = argv
                 cg_emit(cg, "    add x11, x29, #%d", 16 + arr_off);  // x11 = array base
                 cg_emit(cg, "    str x9, [x11]");  // store length
+                cg_emit(cg, "    str x9, [x11, #8]");  // store capacity
                 cg_emit(cg, "    mov x12, #0");  // i = 0
                 int loop_lbl = cg_new_label(cg), end_lbl = cg_new_label(cg);
                 cg_emit(cg, "L%d:", loop_lbl);
                 cg_emit(cg, "    cmp x12, x9");
                 cg_emit(cg, "    b.ge L%d", end_lbl);
                 cg_emit(cg, "    ldr x13, [x10, x12, lsl #3]");  // argv[i]
-                cg_emit(cg, "    add x14, x12, #1");
-                cg_emit(cg, "    str x13, [x11, x14, lsl #3]");  // arr[i+1] (after len)
+                cg_emit(cg, "    add x14, x12, #2");  // +2 for len and capacity
+                cg_emit(cg, "    str x13, [x11, x14, lsl #3]");  // arr[i+2]
                 cg_emit(cg, "    add x12, x12, #1");
                 cg_emit(cg, "    b L%d", loop_lbl);
                 cg_emit(cg, "L%d:", end_lbl);
