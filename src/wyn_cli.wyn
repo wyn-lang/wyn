@@ -42,6 +42,14 @@ fn main() {
         run_benchmarks()
     } else if cmd == "clean" {
         clean_project()
+    } else if cmd == "doc" {
+        if argv.len() < 3 {
+            show_doc_index()
+        } else if argv.len() == 3 {
+            show_module_doc(argv[2])
+        } else {
+            show_function_doc(argv[2], argv[3])
+        }
     } else if cmd == "help" or cmd == "--help" or cmd == "-h" {
         print_help()
     } else {
@@ -66,6 +74,7 @@ fn print_help() {
     print_str("  inline <code>        Execute inline code\n")
     print_str("  test                 Run test suite\n")
     print_str("  bench                Run benchmarks\n")
+    print_str("  doc [module] [fn]    Show documentation\n")
     print_str("  clean                Clean build artifacts\n")
     print_str("  help                 Show this help\n\n")
     print_str("Examples:\n")
@@ -205,4 +214,79 @@ fn find_compiler() -> str {
     }
     # Try PATH
     return "wyn-compiler"
+}
+
+fn show_doc_index() {
+    print_str("Wyn Standard Library\n\n")
+    print_str("Modules:\n")
+    print_str("  io       - File I/O and console\n")
+    print_str("  fs       - Filesystem operations\n")
+    print_str("  os       - OS functions (env, args, cwd)\n")
+    print_str("  time     - Time and date\n")
+    print_str("  math     - Mathematical functions\n")
+    print_str("  string   - String manipulation\n")
+    print_str("  array    - Array operations\n")
+    print_str("  http     - HTTP utilities\n")
+    print_str("  json     - JSON handling\n")
+    print_str("  crypto   - Cryptographic functions\n")
+    print_str("  hash     - Hash functions\n")
+    print_str("  random   - Random numbers\n")
+    print_str("  regex    - Pattern matching\n")
+    print_str("\n")
+    print_str("Usage:\n")
+    print_str("  wyn doc <module>        Show module functions\n")
+    print_str("  wyn doc <module> <fn>   Show function details\n")
+}
+
+fn show_module_doc(module: str) {
+    if module == "os" {
+        print_str("Module: os\n\n")
+        print_str("Functions:\n")
+        print_str("  getenv(key: str) -> str       Get environment variable\n")
+        print_str("  setenv(key, val: str) -> Result Set environment variable\n")
+        print_str("  args() -> [str]               Get command line arguments\n")
+        print_str("  getcwd() -> str               Get current directory\n")
+        print_str("  chdir(path: str) -> bool      Change directory\n")
+        print_str("  getpid() -> int               Get process ID\n")
+    } else if module == "io" {
+        print_str("Module: io\n\n")
+        print_str("Functions:\n")
+        print_str("  read_file(path: str) -> str   Read file contents\n")
+        print_str("  write_file(path, content: str) -> bool Write to file\n")
+        print_str("  append_file(path, content: str) -> bool Append to file\n")
+        print_str("  file_exists(path: str) -> bool Check if file exists\n")
+        print_str("  delete_file(path: str) -> bool Delete file\n")
+        print_str("  read_line() -> str            Read line from stdin\n")
+    } else if module == "time" {
+        print_str("Module: time\n\n")
+        print_str("Functions:\n")
+        print_str("  time_now() -> int             Current Unix timestamp\n")
+        print_str("  sleep_ms(ms: int)             Sleep milliseconds\n")
+        print_str("  clock() -> int                CPU clock ticks\n")
+    } else {
+        print_str("Module '")
+        print_str(module)
+        print_str("' not found. Use 'wyn doc' to list modules.\n")
+    }
+}
+
+fn show_function_doc(module: str, fn_name: str) {
+    if module == "os" and fn_name == "setenv" {
+        print_str("os.setenv(key: str, value: str) -> Result[(), str]\n\n")
+        print_str("Set an environment variable.\n\n")
+        print_str("Example:\n")
+        print_str("  setenv(\"MY_VAR\", \"hello\")\n")
+        print_str("  let val: str = getenv(\"MY_VAR\")\n")
+    } else if module == "os" and fn_name == "getenv" {
+        print_str("getenv(key: str) -> str\n\n")
+        print_str("Get an environment variable value.\n\n")
+        print_str("Example:\n")
+        print_str("  let path: str = getenv(\"PATH\")\n")
+    } else {
+        print_str("Function '")
+        print_str(fn_name)
+        print_str("' not found in module '")
+        print_str(module)
+        print_str("'.\n")
+    }
 }
