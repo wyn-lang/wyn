@@ -4494,23 +4494,21 @@ static bool cg_is_shared(CodeGen* cg, const char* name) {
 // Atomic load for shared variables
 static void cg_atomic_load(CodeGen* cg, const char* name, int offset) {
     if (cg->arch == ARCH_ARM64) {
+        // Use mutex-based load for reliability
         if (cg->in_thread_context) {
-            cg_emit_ldr_offset(cg, "x9", 16 + offset);
-            cg_emit(cg, "    ldar x0, [x9]");
+            cg_emit_ldr_offset(cg, "x0", 16 + offset);
         } else {
-            cg_emit_add_offset(cg, "x9", 16 + offset);
-            cg_emit(cg, "    ldar x0, [x9]");
+            cg_emit_add_offset(cg, "x0", 16 + offset);
         }
+        cg_emit(cg, "    bl ___wyn_atomic_load");
     } else {
-        // x86_64: Use lock or $0 to force atomic read with full barrier
+        // x86_64: Use mutex-based load
         if (cg->in_thread_context) {
-            cg_emit(cg, "    movq -%d(%%rbp), %%r9", offset);
-            cg_emit(cg, "    lock orq $0, (%%r9)");  // Force memory sync
-            cg_emit(cg, "    movq (%%r9), %%rax");
+            cg_emit(cg, "    movq -%d(%%rbp), %%rdi", offset);
         } else {
-            cg_emit(cg, "    lock orq $0, -%d(%%rbp)", offset);  // Force memory sync
-            cg_emit(cg, "    movq -%d(%%rbp), %%rax", offset);
+            cg_emit(cg, "    leaq -%d(%%rbp), %%rdi", offset);
         }
+        cg_emit(cg, "    call ___wyn_atomic_load");
     }
 }
 
@@ -8283,31 +8281,19 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                     bool is_shared = cg_is_shared(cg, s->assign.target->ident);
                     
                     if (is_shared) {
-                        // Use CAS loop for atomic RMW on shared variables
-                        int retry_lbl = cg_new_label(cg);
-                        if (cg->in_thread_context) {
-                            cg_emit_ldr_offset(cg, "x19", 16 + off);  // x19 = address
-                        } else {
-                            cg_emit_add_offset(cg, "x19", 16 + off);
-                        }
-                        cg_emit(cg, "L_cas_%d:", retry_lbl);
-                        cg_emit(cg, "    ldxr x0, [x19]");  // Load current
-                        cg_emit(cg, "    str x0, [sp, #-16]!");
+                        // Use mutex-based atomic for reliability
                         cg_expr(cg, s->assign.value);
-                        cg_emit(cg, "    mov x1, x0");
-                        cg_emit(cg, "    ldr x0, [sp], #16");
-                        switch (s->assign.op) {
-                            case TOK_PLUSEQ: cg_emit(cg, "    add x2, x0, x1"); break;
-                            case TOK_MINUSEQ: cg_emit(cg, "    sub x2, x0, x1"); break;
-                            case TOK_STAREQ: cg_emit(cg, "    mul x2, x0, x1"); break;
-                            case TOK_SLASHEQ: cg_emit(cg, "    sdiv x2, x0, x1"); break;
-                            case TOK_PERCENTEQ: cg_emit(cg, "    sdiv x3, x0, x1"); cg_emit(cg, "    msub x2, x3, x1, x0"); break;
-                            default: break;
+                        cg_emit(cg, "    mov x1, x0");  // value
+                        if (s->assign.op == TOK_MINUSEQ) {
+                            cg_emit(cg, "    neg x1, x1");
                         }
-                        cg_emit(cg, "    stxr w3, x2, [x19]");
-                        cg_emit(cg, "    cbnz w3, L_cas_%d", retry_lbl);
-                        cg_emit(cg, "    mov x0, x2");
-                        break;  // Skip normal store
+                        if (cg->in_thread_context) {
+                            cg_emit_ldr_offset(cg, "x0", 16 + off);  // ptr
+                        } else {
+                            cg_emit_add_offset(cg, "x0", 16 + off);  // ptr
+                        }
+                        cg_emit(cg, "    bl ___wyn_atomic_add");
+                        break;
                     } else {
                         // Non-shared: normal operation
                         if (off) {
