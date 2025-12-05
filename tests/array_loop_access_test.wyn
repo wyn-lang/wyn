@@ -1,0 +1,22 @@
+fn main() {
+    let content: str = "line1\nline2\nline3"
+    let lines: [str] = str_split(content, "\n")
+    
+    // Direct access works
+    io.print_str("Direct: ")
+    io.print_str(lines[0])
+    io.print_newline()
+    
+    // Loop access should work
+    io.print_str("Loop:\n")
+    let mut i: int = 0
+    while i < lines.len() {
+        let line: str = lines[i]
+        io.print_str(line)
+        io.print_newline()
+        i = i + 1
+    }
+    
+    io.print_str("Test passed!")
+    io.print_newline()
+}

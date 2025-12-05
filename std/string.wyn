@@ -1516,3 +1516,166 @@ fn hash_string(s: str) -> int {
     }
     return hash
 }
+# Convert string to uppercase
+pub fn upper(s: str) -> str {
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < s.len() {
+        let c: str = s[i:i+1]
+        let code: int = ord(c)
+        if code >= 97 and code <= 122 {
+            result = result + chr(code - 32)
+        } else {
+            result = result + c
+        }
+        i = i + 1
+    }
+    return result
+}
+
+# Convert string to lowercase
+pub fn lower(s: str) -> str {
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < s.len() {
+        let c: str = s[i:i+1]
+        let code: int = ord(c)
+        if code >= 65 and code <= 90 {
+            result = result + chr(code + 32)
+        } else {
+            result = result + c
+        }
+        i = i + 1
+    }
+    return result
+}
+
+# Check if string starts with prefix
+pub fn starts_with(s: str, prefix: str) -> bool {
+    if prefix.len() > s.len() {
+        return false
+    }
+    return s[0:prefix.len()] == prefix
+}
+
+# Check if string ends with suffix
+pub fn ends_with(s: str, suffix: str) -> bool {
+    if suffix.len() > s.len() {
+        return false
+    }
+    let start: int = s.len() - suffix.len()
+    return s[start:s.len()] == suffix
+}
+
+# Trim whitespace from both ends
+pub fn trim(s: str) -> str {
+    let mut start: int = 0
+    let mut end: int = s.len()
+    
+    # Trim start
+    while start < end {
+        let c: str = s[start:start+1]
+        if c == " " or c == "\t" or c == "\n" or c == "\r" {
+            start = start + 1
+        } else {
+            start = end
+        }
+    }
+    
+    # Trim end
+    start = 0
+    while end > start {
+        let c: str = s[end-1:end]
+        if c == " " or c == "\t" or c == "\n" or c == "\r" {
+            end = end - 1
+        } else {
+            end = start
+        }
+    }
+    
+    return s[start:end]
+}
+
+# String contains substring
+pub fn contains(s: str, substr: str) -> bool {
+    return str_find(s, substr) >= 0
+}
+
+# Replace first occurrence
+pub fn replace_first(s: str, old: str, new: str) -> str {
+    let pos: int = str_find(s, old)
+    if pos < 0 {
+        return s
+    }
+    return s[0:pos] + new + s[pos + old.len():s.len()]
+}
+
+# Replace all occurrences
+pub fn replace_all(s: str, old: str, new: str) -> str {
+    let mut result: str = s
+    let mut pos: int = str_find(result, old)
+    while pos >= 0 {
+        result = result[0:pos] + new + result[pos + old.len():result.len()]
+        pos = str_find(result, old)
+    }
+    return result
+}
+
+# Repeat string n times
+pub fn repeat(s: str, n: int) -> str {
+    let mut result: str = ""
+    let mut i: int = 0
+    while i < n {
+        result = result + s
+        i = i + 1
+    }
+    return result
+}
+
+# Reverse string
+pub fn reverse(s: str) -> str {
+    let mut result: str = ""
+    let mut i: int = s.len() - 1
+    while i >= 0 {
+        result = result + s[i:i+1]
+        i = i - 1
+    }
+    return result
+}
+
+# Check if string is empty
+pub fn is_empty(s: str) -> bool {
+    return s.len() == 0
+}
+
+# Check if all characters are alphabetic
+pub fn is_alpha(s: str) -> bool {
+    if s.len() == 0 {
+        return false
+    }
+    let mut i: int = 0
+    while i < s.len() {
+        let code: int = ord(s[i:i+1])
+        if not ((code >= 65 and code <= 90) or (code >= 97 and code <= 122)) {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
+
+# Check if all characters are digits
+pub fn is_digit(s: str) -> bool {
+    if s.len() == 0 {
+        return false
+    }
+    let mut i: int = 0
+    while i < s.len() {
+        let code: int = ord(s[i:i+1])
+        if code < 48 or code > 57 {
+            return false
+        }
+        i = i + 1
+    }
+    return true
+}
