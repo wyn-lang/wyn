@@ -5668,6 +5668,16 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                         cg_emit(cg, "    callq %s_wyn_str_find", cg_sym_prefix(cg));
                         break;
                     }
+                    // .append(item) -> __wyn_array_append(obj, item)
+                    if (strcmp(method, "append") == 0 && e->call.arg_count == 1) {
+                        cg_expr(cg, obj);
+                        cg_emit(cg, "    pushq %%rax");
+                        cg_expr(cg, e->call.args[0]);
+                        cg_emit(cg, "    movq %%rax, %%rsi");
+                        cg_emit(cg, "    popq %%rdi");
+                        cg_emit(cg, "    callq __wyn_array_append");
+                        break;
+                    }
                 }
                 // Method call: obj.method(args)
                 if (e->call.func->kind == EXPR_FIELD) {
@@ -5771,11 +5781,12 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             case EXPR_ARRAY: {
                 int count = e->array.count;
                 int base_off = cg->stack_offset + 8;
-                cg->stack_offset += (count + 1) * 8;
-                cg_emit(cg, "    movq $%d, -%d(%%rbp)", count, base_off);
+                cg->stack_offset += (count + 2) * 8;  // +2 for length and capacity
+                cg_emit(cg, "    movq $%d, -%d(%%rbp)", count, base_off);  // length
+                cg_emit(cg, "    movq $%d, -%d(%%rbp)", count, base_off + 8);  // capacity = length
                 for (int i = 0; i < count; i++) {
                     cg_expr(cg, e->array.elements[i]);
-                    cg_emit(cg, "    movq %%rax, -%d(%%rbp)", base_off + (i + 1) * 8);
+                    cg_emit(cg, "    movq %%rax, -%d(%%rbp)", base_off + (i + 2) * 8);
                 }
                 cg_emit(cg, "    leaq -%d(%%rbp), %%rax", base_off);
                 break;
@@ -5792,7 +5803,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_emit(cg, "    addq (%%rax), %%rcx");  // rcx += len
                     cg_emit(cg, "1:");
                 }
-                cg_emit(cg, "    addq $1, %%rcx");
+                cg_emit(cg, "    addq $2, %%rcx");  // +2 to skip length and capacity
                 cg_emit(cg, "    movq (%%rax,%%rcx,8), %%rax");
                 break;
             }
@@ -7234,6 +7245,16 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                     cg_emit(cg, "L%d:", end_lbl);
                     break;
                 }
+                // .append(item) -> __wyn_array_append(obj, item)
+                if (strcmp(method, "append") == 0 && e->call.arg_count == 1) {
+                    cg_expr(cg, obj);
+                    cg_emit(cg, "    str x0, [sp, #-16]!");
+                    cg_expr(cg, e->call.args[0]);
+                    cg_emit(cg, "    mov x1, x0");
+                    cg_emit(cg, "    ldr x0, [sp], #16");
+                    cg_emit(cg, "    bl __wyn_array_append");
+                    break;
+                }
             }
             // Check for module.function() call first
             if (e->call.func->kind == EXPR_FIELD && 
@@ -7407,18 +7428,20 @@ static void cg_expr(CodeGen* cg, Expr* e) {
         }
         
         case EXPR_ARRAY: {
-            // Allocate array in local variable area: [count, elem0, elem1, ...]
+            // Allocate array in local variable area: [length, capacity, elem0, elem1, ...]
             int count = e->array.count;
-            // Reserve space for length + elements
+            // Reserve space for length + capacity + elements
             int base_off = cg->stack_offset + 8;  // Start after current locals
-            cg->stack_offset += (count + 1) * 8;
+            cg->stack_offset += (count + 2) * 8;  // +2 for length and capacity
             // Store length
             cg_emit(cg, "    mov x0, #%d", count);
             cg_emit_str_offset(cg, "x0", 16 + base_off);
+            // Store capacity (same as length initially)
+            cg_emit_str_offset(cg, "x0", 16 + base_off + 8);
             // Store elements
             for (int i = 0; i < count; i++) {
                 cg_expr(cg, e->array.elements[i]);
-                cg_emit_str_offset(cg, "x0", 16 + base_off + (i + 1) * 8);
+                cg_emit_str_offset(cg, "x0", 16 + base_off + (i + 2) * 8);
             }
             // Return pointer to array
             cg_emit_add_offset(cg, "x0", 16 + base_off);
@@ -7426,7 +7449,7 @@ static void cg_expr(CodeGen* cg, Expr* e) {
         }
         
         case EXPR_INDEX: {
-            // arr[idx] - array is pointer, first element is length
+            // arr[idx] - array is pointer, first element is length, second is capacity
             cg_expr(cg, e->index.index);
             cg_emit(cg, "    str x0, [sp, #-16]!");  // Save index
             cg_expr(cg, e->index.object);
@@ -7439,8 +7462,8 @@ static void cg_expr(CodeGen* cg, Expr* e) {
                 cg_emit(cg, "    add x1, x1, x2");       // idx += len
                 cg_emit(cg, "1:");
             }
-            cg_emit(cg, "    add x1, x1, #1");       // Skip length field
-            cg_emit(cg, "    ldr x0, [x0, x1, lsl #3]");  // Load arr[idx+1]
+            cg_emit(cg, "    add x1, x1, #2");       // Skip length and capacity fields
+            cg_emit(cg, "    ldr x0, [x0, x1, lsl #3]");  // Load arr[idx+2]
             break;
         }
         
@@ -7889,7 +7912,25 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                     }
                 }
                 break;
-            case STMT_EXPR: cg_expr(cg, s->expr.expr); break;
+            case STMT_EXPR: {
+                // Special handling for arr.append(x) - update the variable
+                Expr* e = s->expr.expr;
+                if (e->kind == EXPR_CALL && e->call.func->kind == EXPR_FIELD &&
+                    strcmp(e->call.func->field.field, "append") == 0 &&
+                    e->call.func->field.object->kind == EXPR_IDENT) {
+                    // This is arr.append(x) where arr is a variable
+                    const char* var_name = e->call.func->field.object->ident;
+                    cg_expr(cg, e);  // Call append, result in rax
+                    // Update the variable with the new pointer
+                    int off = cg_local_offset(cg, var_name);
+                    if (off >= 0) {
+                        cg_emit(cg, "    movq %%rax, -%d(%%rbp)", off);
+                    }
+                } else {
+                    cg_expr(cg, e);
+                }
+                break;
+            }
             case STMT_RETURN:
                 if (s->ret.value) cg_expr(cg, s->ret.value);
                 if (cg->defer_count > 0) {
@@ -8292,9 +8333,25 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
             break;
         }
         
-        case STMT_EXPR:
-            cg_expr(cg, s->expr.expr);
+        case STMT_EXPR: {
+            // Special handling for arr.append(x) - update the variable
+            Expr* e = s->expr.expr;
+            if (e->kind == EXPR_CALL && e->call.func->kind == EXPR_FIELD &&
+                strcmp(e->call.func->field.field, "append") == 0 &&
+                e->call.func->field.object->kind == EXPR_IDENT) {
+                // This is arr.append(x) where arr is a variable
+                const char* var_name = e->call.func->field.object->ident;
+                cg_expr(cg, e);  // Call append, result in x0
+                // Update the variable with the new pointer
+                int off = cg_local_offset(cg, var_name);
+                if (off >= 0) {
+                    cg_emit_str_offset(cg, "x0", 16 + off);
+                }
+            } else {
+                cg_expr(cg, e);
+            }
             break;
+        }
             
         case STMT_RETURN:
             if (s->ret.value) cg_expr(cg, s->ret.value);
@@ -10290,6 +10347,7 @@ int main(int argc, char** argv) {
             char gui_runtime_path[256];
             char gpu_runtime_path[256];
             char vulkan_runtime_path[256];
+            char array_runtime_path[256];
             
             // Try multiple locations for spawn_runtime.o
             if (access("build/spawn_runtime.o", F_OK) == 0) {
@@ -10298,6 +10356,15 @@ int main(int argc, char** argv) {
                 snprintf(runtime_path, 256, "../build/spawn_runtime.o");
             } else {
                 runtime_path[0] = '\0';  // Not found, link without it
+            }
+            
+            // Try multiple locations for array_runtime.o
+            if (access("build/array_runtime.o", F_OK) == 0) {
+                snprintf(array_runtime_path, 256, "build/array_runtime.o");
+            } else if (access("../build/array_runtime.o", F_OK) == 0) {
+                snprintf(array_runtime_path, 256, "../build/array_runtime.o");
+            } else {
+                array_runtime_path[0] = '\0';
             }
             
             // Try multiple locations for gui_runtime.o (macOS only)
@@ -10348,6 +10415,7 @@ int main(int argc, char** argv) {
             // Combine all runtime objects (use Vulkan instead of Metal for GPU)
             char runtimes[512] = "";
             if (runtime_path[0]) strcat(runtimes, runtime_path);
+            if (array_runtime_path[0]) { if (runtimes[0]) strcat(runtimes, " "); strcat(runtimes, array_runtime_path); }
             if (gui_runtime_path[0]) { if (runtimes[0]) strcat(runtimes, " "); strcat(runtimes, gui_runtime_path); }
             if (vulkan_runtime_path[0]) { if (runtimes[0]) strcat(runtimes, " "); strcat(runtimes, vulkan_runtime_path); }
             

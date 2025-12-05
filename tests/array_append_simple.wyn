@@ -1,0 +1,22 @@
+fn main() {
+    print_str("Creating empty array...")
+    print_newline()
+    
+    let mut arr: [int] = []
+    
+    print_str("Array created, length: ")
+    print(len(arr))
+    print_newline()
+    
+    print_str("Appending 42...")
+    print_newline()
+    arr.append(42)
+    
+    print_str("After append, length: ")
+    print(len(arr))
+    print_newline()
+    
+    print_str("Value at index 0: ")
+    print(arr[0])
+    print_newline()
+}

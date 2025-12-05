@@ -31,6 +31,8 @@ VULKAN_RUNTIME_SRC = $(RUNTIME_DIR)/gpu_vulkan.c
 VULKAN_RUNTIME_OBJ = $(BUILD_DIR)/gpu_vulkan.o
 SPAWN_RUNTIME_SRC = $(RUNTIME_DIR)/spawn.c
 SPAWN_RUNTIME_OBJ = $(BUILD_DIR)/spawn_runtime.o
+ARRAY_RUNTIME_SRC = $(RUNTIME_DIR)/array.c
+ARRAY_RUNTIME_OBJ = $(BUILD_DIR)/array_runtime.o
 
 MOBILE_RUNTIME_SRC = $(RUNTIME_DIR)/mobile_ios.m
 MOBILE_RUNTIME_OBJ = $(BUILD_DIR)/mobile_runtime.o
@@ -38,9 +40,9 @@ MOBILE_RUNTIME_OBJ = $(BUILD_DIR)/mobile_runtime.o
 # Default target - platform specific
 .PHONY: all
 ifeq ($(UNAME_S),Darwin)
-all: stage0 gui-runtime gpu-runtime vulkan-runtime spawn-runtime wyn-cli
+all: stage0 gui-runtime gpu-runtime vulkan-runtime spawn-runtime array-runtime wyn-cli
 else
-all: stage0 vulkan-runtime spawn-runtime wyn-cli
+all: stage0 vulkan-runtime spawn-runtime array-runtime wyn-cli
 endif
 
 # Create build directory
@@ -80,6 +82,13 @@ $(VULKAN_RUNTIME_OBJ): $(VULKAN_RUNTIME_SRC)
 spawn-runtime: $(BUILD_DIR) $(SPAWN_RUNTIME_OBJ)
 
 $(SPAWN_RUNTIME_OBJ): $(SPAWN_RUNTIME_SRC)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+# Build Array runtime
+.PHONY: array-runtime
+array-runtime: $(BUILD_DIR) $(ARRAY_RUNTIME_OBJ)
+
+$(ARRAY_RUNTIME_OBJ): $(ARRAY_RUNTIME_SRC)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 # Build Mobile runtime (iOS simulator only)
