@@ -19,7 +19,9 @@ jobs:
         run: brew install vulkan-headers vulkan-loader
 
       - name: Build All (Compiler + Runtimes)
-        run: make all
+        run: |
+          make clean
+          make all
 
       - name: Run Test Suite
         run: make test
@@ -72,7 +74,9 @@ jobs:
         run: brew install vulkan-headers vulkan-loader
 
       - name: Build All
-        run: make all
+        run: |
+          make clean
+          make all
 
       - name: Run Test Suite
         run: make test
@@ -108,7 +112,9 @@ jobs:
           sudo apt-get install -y libvulkan-dev vulkan-tools
 
       - name: Build All
-        run: make all
+        run: |
+          make clean
+          make all
 
       - name: Run Test Suite
         run: make test
