@@ -1,0 +1,45 @@
+fn main() {
+    print_str("Testing spawn comprehensively...\n")
+    
+    # Test 1: Single spawn
+    let mut t1: int = 0
+    spawn { t1 = t1 + 1 }
+    assert(t1 == 1, "Single spawn works")
+    
+    # Test 2: Multiple spawns
+    let mut t2: int = 0
+    spawn { t2 = t2 + 1 }
+    spawn { t2 = t2 + 1 }
+    spawn { t2 = t2 + 1 }
+    assert(t2 == 3, "Multiple spawns work")
+    
+    # Test 3: Spawns in loop
+    let mut t3: int = 0
+    for i in 0..10 {
+        spawn { t3 = t3 + 1 }
+    }
+    assert(t3 == 10, "Spawns in loop work")
+    
+    # Test 4: Variable capture
+    let x: int = 42
+    let mut t4: int = 0
+    spawn { t4 = x }
+    assert(t4 == 42, "Variable capture works")
+    
+    # Test 5: Multiple variables (separate spawns)
+    let mut a: int = 0
+    let mut b: int = 0
+    spawn { a = a + 1 }
+    spawn { b = b + 2 }
+    assert(a == 1, "First variable works")
+    assert(b == 2, "Second variable works")
+    
+    # Test 6: 100 spawns
+    let mut t6: int = 0
+    for i in 0..100 {
+        spawn { t6 = t6 + 1 }
+    }
+    assert(t6 == 100, "100 spawns work")
+    
+    print_str("✓ All spawn tests passed\n")
+}
