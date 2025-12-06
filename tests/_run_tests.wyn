@@ -1,109 +1,55 @@
+import io
+
 fn main() {
     print("=== Wyn Test Suite ===")
     print("")
     
     let passed: int = 0
+    let total: int = 0
     
-    # Tests in tests/ (42 tests)
-    passed = passed + run_test("tests/arithmetic_test.wyn")
-    passed = passed + run_test("tests/atomic_spawn_test.wyn")
-    passed = passed + run_test("tests/bits_stdlib_test.wyn")
-    passed = passed + run_test("tests/bitwise_test.wyn")
-    passed = passed + run_test("tests/builtins_test.wyn")
-    passed = passed + run_test("tests/collections_stdlib_test.wyn")
-    passed = passed + run_test("tests/comparison_test.wyn")
-    passed = passed + run_test("tests/compress_stdlib_test.wyn")
-    passed = passed + run_test("tests/control_flow_test.wyn")
-    passed = passed + run_test("tests/crypto_stdlib_test.wyn")
-    passed = passed + run_test("tests/encoding_stdlib_test.wyn")
-    passed = passed + run_test("tests/error_stdlib_test.wyn")
-    passed = passed + run_test("tests/for_loop_edge_test.wyn")
-    passed = passed + run_test("tests/fs_test.wyn")
-    passed = passed + run_test("tests/fs_stdlib_test.wyn")
-    passed = passed + run_test("tests/function_test.wyn")
-    passed = passed + run_test("tests/gpu_stdlib_test.wyn")
-    passed = passed + run_test("tests/hash_stdlib_test.wyn")
-    passed = passed + run_test("tests/http_stdlib_test.wyn")
-    passed = passed + run_test("tests/io_stdlib_test.wyn")
-    passed = passed + run_test("tests/json_stdlib_test.wyn")
-    passed = passed + run_test("tests/lambda_edge_test.wyn")
-    passed = passed + run_test("tests/log_stdlib_test.wyn")
-    passed = passed + run_test("tests/math_stdlib_test.wyn")
-    passed = passed + run_test("tests/nested_struct_edge_test.wyn")
-    passed = passed + run_test("tests/net_stdlib_test.wyn")
-    passed = passed + run_test("tests/optional_test.wyn")
-    passed = passed + run_test("tests/os_stdlib_test.wyn")
-    passed = passed + run_test("tests/random_stdlib_test.wyn")
-    passed = passed + run_test("tests/regex_stdlib_test.wyn")
-    passed = passed + run_test("tests/spawn_simple.wyn")
-    passed = passed + run_test("tests/spawn_capture_test.wyn")
-    passed = passed + run_test("tests/spawn_shared_counter_test.wyn")
-    passed = passed + run_test("tests/spawn_multiple_vars_test.wyn")
-    passed = passed + run_test("tests/spawn_nested_capture_test.wyn")
-    passed = passed + run_test("tests/spawn_immutable_test.wyn")
-    passed = passed + run_test("tests/spawn_minimal_test.wyn")
-    passed = passed + run_test("tests/spawn_race_condition_test.wyn")
-    passed = passed + run_test("tests/spawn_atomic_comprehensive_test.wyn")
-    passed = passed + run_test("tests/stage1_test.wyn")
-    passed = passed + run_test("tests/str_find_test.wyn")
-    passed = passed + run_test("tests/string_funcs_test.wyn")
-    passed = passed + run_test("tests/string_stdlib_test.wyn")
-    passed = passed + run_test("tests/string_test.wyn")
-    passed = passed + run_test("tests/struct_test.wyn")
-    passed = passed + run_test("tests/time_stdlib_test.wyn")
-    passed = passed + run_test("tests/utils_stdlib_test.wyn")
-    passed = passed + run_test("tests/validate_stdlib_test.wyn")
+    # Auto-discover tests in tests/
+    const test_files: [str] = io.list_dir("tests")
+    let i: int = 0
+    while i < test_files.len() {
+        const file: str = test_files[i]
+        const len: int = file.len()
+        if len > 9 {
+            const suffix: str = file[len - 9:len]
+            if suffix == "_test.wyn" {
+                passed = passed + run_test("tests/" + file, file)
+                total = total + 1
+            }
+        }
+        i = i + 1
+    }
     
-    # Tests in examples/ (34 tests)
-    passed = passed + run_test("examples/array_iter_test.wyn")
-    passed = passed + run_test("examples/assert_test.wyn")
-    passed = passed + run_test("examples/bitwise_test.wyn")
-    passed = passed + run_test("examples/break_continue_test.wyn")
-    passed = passed + run_test("examples/char_test.wyn")
-    passed = passed + run_test("examples/clock_test.wyn")
-    passed = passed + run_test("examples/compound_test.wyn")
-    passed = passed + run_test("examples/conversion_test.wyn")
-    passed = passed + run_test("examples/default_params_test.wyn")
-    passed = passed + run_test("examples/defer_test.wyn")
-    passed = passed + run_test("examples/enum_test.wyn")
-    passed = passed + run_test("examples/env_test.wyn")
-    passed = passed + run_test("examples/file_test.wyn")
-    passed = passed + run_test("examples/float_test.wyn")
-    passed = passed + run_test("examples/full_test.wyn")
-    passed = passed + run_test("examples/generic_test.wyn")
-    passed = passed + run_test("examples/gui_test.wyn")
-    passed = passed + run_test("examples/in_operator_test.wyn")
-    passed = passed + run_test("examples/input_test.wyn")
-    passed = passed + run_test("examples/lambda_test.wyn")
-    passed = passed + run_test("examples/match_binding_test.wyn")
-    passed = passed + run_test("examples/match_test.wyn")
-    passed = passed + run_test("examples/math_test.wyn")
-    passed = passed + run_test("examples/method_syntax_test.wyn")
-    passed = passed + run_test("examples/mobile_test.wyn")
-    passed = passed + run_test("examples/nested_struct_test.wyn")
-    passed = passed + run_test("examples/optional_test.wyn")
-    passed = passed + run_test("examples/random_test.wyn")
-    passed = passed + run_test("examples/range_test.wyn")
-    passed = passed + run_test("examples/result_test.wyn")
-    passed = passed + run_test("examples/slice_test.wyn")
-    passed = passed + run_test("examples/string_interp_test.wyn")
-    passed = passed + run_test("examples/string_test.wyn")
-    passed = passed + run_test("examples/write_file_test.wyn")
+    # Auto-discover tests in examples/
+    const example_files: [str] = io.list_dir("examples")
+    let j: int = 0
+    while j < example_files.len() {
+        const file: str = example_files[j]
+        const len: int = file.len()
+        if len > 9 {
+            const suffix: str = file[len - 9:len]
+            if suffix == "_test.wyn" {
+                passed = passed + run_test("examples/" + file, file)
+                total = total + 1
+            }
+        }
+        j = j + 1
+    }
     
-    const failed: int = 82 - passed
+    const failed: int = total - passed
     
     print("")
     print("=== Results ===")
-    print("Passed:", passed)
+    print("Passed: " + int_to_str(passed))
     if failed > 0 {
-        print("Failed:", failed)
+        print("Failed: " + int_to_str(failed))
     }
 }
 
-fn run_test(path: str) -> int {
-    const parts: [str] = str_split(path, "/")
-    const name: str = parts[parts.len() - 1]
-    
+fn run_test(path: str, name: str) -> int {
     const exe: str = "/tmp/wyn_test"
     const compile_cmd: str = "./build/stage0 -q -o " + exe + " " + path + " 2>/dev/null"
     const compile_result: int = system(compile_cmd)
@@ -117,12 +63,10 @@ fn run_test(path: str) -> int {
     const run_result: int = system(run_cmd)
     
     if run_result == 0 {
-//        print("PASS " + name)
         print("PASS " + name)
         return 1
     } else {
         print("FAIL " + name)
-        print(name)
         return 0
     }
 }

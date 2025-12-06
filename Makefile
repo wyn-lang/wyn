@@ -28,6 +28,8 @@ STAGE0_SRC = $(BOOTSTRAP_DIR)/stage0.c
 STAGE0_BIN = $(BUILD_DIR)/stage0
 
 # Runtime libraries
+BUILTINS_RUNTIME_SRC = $(RUNTIME_DIR)/builtins.c
+BUILTINS_RUNTIME_OBJ = $(BUILD_DIR)/builtins_runtime.o
 GUI_RUNTIME_SRC = $(RUNTIME_DIR)/gui_macos.c
 GUI_RUNTIME_OBJ = $(BUILD_DIR)/gui_runtime.o
 GPU_RUNTIME_SRC = $(RUNTIME_DIR)/gpu_metal.m
@@ -45,9 +47,9 @@ MOBILE_RUNTIME_OBJ = $(BUILD_DIR)/mobile_runtime.o
 # Default target - platform specific
 .PHONY: all
 ifeq ($(UNAME_S),Darwin)
-all: stage0 gui-runtime gpu-runtime vulkan-runtime spawn-runtime array-runtime wyn-cli
+all: stage0 builtins-runtime gui-runtime gpu-runtime vulkan-runtime spawn-runtime array-runtime wyn-cli
 else
-all: stage0 vulkan-runtime spawn-runtime array-runtime wyn-cli
+all: stage0 builtins-runtime vulkan-runtime spawn-runtime array-runtime wyn-cli
 endif
 
 # Create build directory
@@ -60,6 +62,13 @@ stage0: $(BUILD_DIR) $(STAGE0_BIN)
 
 $(STAGE0_BIN): $(STAGE0_SRC)
 	$(CC) $(CFLAGS) -o $@ $<
+
+# Build Builtins runtime
+.PHONY: builtins-runtime
+builtins-runtime: $(BUILD_DIR) $(BUILTINS_RUNTIME_OBJ)
+
+$(BUILTINS_RUNTIME_OBJ): $(BUILTINS_RUNTIME_SRC)
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 # Build GUI runtime (macOS only)
 .PHONY: gui-runtime

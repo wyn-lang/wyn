@@ -1,3 +1,5 @@
+import string
+
 fn main() {
     print("Testing regex stdlib...\n")
     
@@ -11,13 +13,13 @@ fn main() {
     assert(sub2 == "world", "substring 6:11")
     
     # Test char_at
-    assert(char_at(text, 0) == "h", "char at 0")
-    assert(char_at(text, 6) == "w", "char at 6")
+    assert(string.char_at(text, 0) == "h", "char at 0")
+    assert(string.char_at(text, 6) == "w", "char at 6")
     
     # Test str_find
-    assert(str_find(text, "world") == 6, "find world")
-    assert(str_find(text, "hello") == 0, "find hello")
-    assert(str_find(text, "xyz") == -1, "find missing")
+    assert(string.find(text, "world") == 6, "find world")
+    assert(string.find(text, "hello") == 0, "find hello")
+    assert(string.find(text, "xyz") == -1, "find missing")
     
     print("✓ All regex stdlib tests passed\n")
 }

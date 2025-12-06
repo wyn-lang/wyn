@@ -1,6 +1,6 @@
 fn main() {
-    io.print("Creating GUI window...")
-    io.print("")
+    print("Creating GUI window...")
+    print("")
     
     const win: int = gui.create_window("Wyn GUI Demo", 800, 600)
     
@@ -20,8 +20,8 @@ fn main() {
     gui.draw_text(win, 300, 200, "Green")
     gui.draw_text(win, 550, 200, "Blue")
     
-    io.print("Window displayed. Showing for 5 seconds...")
-    io.print("")
+    print("Window displayed. Showing for 5 seconds...")
+    print("")
     
     # Poll events for 5 seconds then exit
     let i: int = 0
@@ -32,6 +32,6 @@ fn main() {
     }
     
     gui.close_window(win)
-    io.print("Done")
-    io.print("")
+    print("Done")
+    print("")
 }

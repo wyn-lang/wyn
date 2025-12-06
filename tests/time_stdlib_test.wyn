@@ -1,19 +1,21 @@
+import time
+
 fn main() {
     print("Testing time stdlib...\n")
     
     # Test time_now builtin
-    const now: int = time_now()
+    const now: int = time.now()
     assert(now > 0, "time_now returns positive")
     
     # Test sleep
-    const start: int = time_now()
-    sleep_ms(10)
-    const end: int = time_now()
+    const start: int = time.now()
+    time.sleep_ms(10)
+    const end: int = time.now()
     assert(end >= start, "time advances")
     
     # Test clock
-    const c1: int = clock()
-    const c2: int = clock()
+    const c1: int = time.clock()
+    const c2: int = time.clock()
     assert(c2 >= c1, "clock advances")
     
     print("✓ All time stdlib tests passed\n")

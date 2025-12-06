@@ -1,4 +1,4 @@
-import std/io
+import io
 fn main() {
     # Basic arithmetic
     assert(1 + 2 == 3)

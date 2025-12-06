@@ -1,4 +1,4 @@
-import std/io
+import io
 fn main() {
     # AND (12 & 10 = 8)
     assert((12 & 10) == 8)

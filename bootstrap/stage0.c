@@ -804,7 +804,27 @@ static void parser_free(Parser* p) { free(p); }
 // Helper: Map module.function() to builtin function name
 // Returns the builtin name if it's a module call, NULL otherwise
 static const char* map_module_function(const char* module, const char* function) {
-    if (strcmp(module, "io") == 0) {
+    // Builtin mappings - but type checker enforces imports are required
+    if (strcmp(module, "string") == 0) {
+        if (strcmp(function, "split") == 0) return "str_split";
+        if (strcmp(function, "find") == 0) return "str_find";
+        if (strcmp(function, "concat") == 0) return "str_concat";
+        if (strcmp(function, "cmp") == 0) return "str_cmp";
+        if (strcmp(function, "substring") == 0) return "substring";
+        if (strcmp(function, "char_at") == 0) return "char_at";
+        if (strcmp(function, "chr") == 0) return "chr";
+        if (strcmp(function, "ord") == 0) return "ord";
+        if (strcmp(function, "int_to_str") == 0) return "int_to_str";
+    } else if (strcmp(module, "time") == 0) {
+        if (strcmp(function, "sleep_ms") == 0) return "sleep_ms";
+        if (strcmp(function, "now") == 0) return "time_now";
+        if (strcmp(function, "clock") == 0) return "clock";
+    } else if (strcmp(module, "os") == 0) {
+        if (strcmp(function, "getenv") == 0) return "getenv";
+        if (strcmp(function, "getpid") == 0) return "getpid";
+        if (strcmp(function, "getcwd") == 0) return "getcwd";
+        if (strcmp(function, "exit") == 0) return "exit";
+    } else if (strcmp(module, "io") == 0) {
         if (strcmp(function, "print") == 0) return "print";
         if (strcmp(function, "println") == 0) return "println";
         if (strcmp(function, "print_str") == 0) return "print_str";
@@ -813,6 +833,17 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "print_newline") == 0) return "print_newline";
         if (strcmp(function, "read_line") == 0) return "read_line";
         if (strcmp(function, "input") == 0) return "input";
+        // File operations
+        if (strcmp(function, "read_file") == 0) return "read_file";
+        if (strcmp(function, "write_file") == 0) return "write_file";
+        if (strcmp(function, "append_file") == 0) return "append_file";
+        if (strcmp(function, "delete_file") == 0) return "delete_file";
+        if (strcmp(function, "file_exists") == 0) return "file_exists";
+        if (strcmp(function, "file_size") == 0) return "file_size";
+        if (strcmp(function, "is_dir") == 0) return "is_dir";
+        if (strcmp(function, "list_dir") == 0) return "list_dir";
+        if (strcmp(function, "mkdir") == 0) return "mkdir";
+        if (strcmp(function, "rmdir") == 0) return "rmdir";
     } else if (strcmp(module, "fs") == 0) {
         if (strcmp(function, "read_file") == 0) return "read_file";
         if (strcmp(function, "write_file") == 0) return "write_file";
@@ -2179,6 +2210,15 @@ static Import* parse_import(Parser* p) {
     if (parser_check(p, TOK_IDENT)) {
         strcpy(imp->path, p->current.ident);
         parser_advance(p);
+        // Handle std/module or module/submodule syntax
+        while (parser_check(p, TOK_SLASH)) {
+            strcat(imp->path, "/");
+            parser_advance(p);
+            if (parser_check(p, TOK_IDENT)) {
+                strcat(imp->path, p->current.ident);
+                parser_advance(p);
+            }
+        }
     } else if (parser_check(p, TOK_DOT)) {
         // Relative path ./something
         int i = 0;
@@ -2397,6 +2437,16 @@ static Symbol* tc_lookup(TypeChecker* tc, const char* name) {
         if (strcmp(tc->symbols[i].name, name) == 0) return &tc->symbols[i];
     }
     return NULL;
+}
+
+static bool tc_is_module_imported(TypeChecker* tc, const char* module_name) {
+    for (int i = 0; i < tc->module->import_count; i++) {
+        const char* path = tc->module->imports[i].path;
+        // Check if import path matches module name exactly
+        // We want "import io" not "import std/io"
+        if (strcmp(path, module_name) == 0) return true;
+    }
+    return false;
 }
 
 static FnDef* tc_lookup_fn(TypeChecker* tc, const char* name) {
@@ -2635,6 +2685,11 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                 const char* function = e->call.func->field.field;
                 const char* builtin_name = map_module_function(module, function);
                 if (builtin_name) {
+                    // Check if module was imported (required for new import system)
+                    if (!tc_is_module_imported(tc, module)) {
+                        tc_error(tc, e->line, e->column, "module '%s' not imported (add 'import %s')", module, module);
+                        return new_type(TYPE_ANY);
+                    }
                     // It's a valid module.function() call - check args
                     for (int i = 0; i < e->call.arg_count; i++) {
                         tc_check_expr(tc, e->call.args[i]);
@@ -10167,27 +10222,49 @@ static void resolve_imports(Module* m, const char* base_path) {
         Import* imp = &m->imports[i];
         FILE* f = NULL;
         
+        // Skip stdlib modules - they're facades over builtins
+        // Just register the import, don't load the file
+        const char* stdlib_modules[] = {"io", "math", "string", "time", "os", "array", "test", "gui", "mobile", "gpu", "fs", NULL};
+        int is_stdlib = 0;
+        for (int j = 0; stdlib_modules[j] != NULL; j++) {
+            if (strcmp(imp->path, stdlib_modules[j]) == 0) {
+                is_stdlib = 1;
+                break;
+            }
+        }
+        if (is_stdlib) continue;
+        
         // Try relative path first
         if (imp->path[0] == '.' && imp->path[1] == '/') {
             snprintf(full_path, 512, "%s%s.wyn", dir, imp->path + 2);
             f = fopen(full_path, "rb");
         }
         
-        // Try std/ in current dir
+        // Try root-level module (new import system: import io)
+        if (!f && dir[0]) {
+            char try_path[512];
+            strcpy(try_path, dir);
+            for (int depth = 0; depth < 5 && !f; depth++) {
+                snprintf(full_path, 512, "%s%s.wyn", try_path, imp->path);
+                f = fopen(full_path, "rb");
+                if (!f) strcat(try_path, "../");
+            }
+        }
+        
+        // Try std/ in current dir (legacy)
         if (!f) {
             snprintf(full_path, 512, "%sstd/%s.wyn", dir, imp->path);
             f = fopen(full_path, "rb");
         }
         
-        // Try std/ in parent dir
+        // Try std/ in parent dir (legacy)
         if (!f) {
             snprintf(full_path, 512, "%s../std/%s.wyn", dir, imp->path);
             f = fopen(full_path, "rb");
         }
         
-        // Try absolute std path (for project root)
+        // Try absolute std path (legacy - for project root)
         if (!f && dir[0]) {
-            // Go up directories looking for std/
             char try_path[512];
             strcpy(try_path, dir);
             for (int depth = 0; depth < 5 && !f; depth++) {
@@ -10411,6 +10488,7 @@ int main(int argc, char** argv) {
         if (!compile_only) {
             // Get directory of stage0 binary for runtime path
             char runtime_path[256];
+            char builtins_runtime_path[256];
             char gui_runtime_path[256];
             char gpu_runtime_path[256];
             char vulkan_runtime_path[256];
@@ -10423,6 +10501,15 @@ int main(int argc, char** argv) {
                 snprintf(runtime_path, 256, "../build/spawn_runtime.o");
             } else {
                 runtime_path[0] = '\0';  // Not found, link without it
+            }
+            
+            // Try multiple locations for builtins_runtime.o
+            if (access("build/builtins_runtime.o", F_OK) == 0) {
+                snprintf(builtins_runtime_path, 256, "build/builtins_runtime.o");
+            } else if (access("../build/builtins_runtime.o", F_OK) == 0) {
+                snprintf(builtins_runtime_path, 256, "../build/builtins_runtime.o");
+            } else {
+                builtins_runtime_path[0] = '\0';
             }
             
             // Try multiple locations for array_runtime.o
@@ -10481,7 +10568,8 @@ int main(int argc, char** argv) {
             
             // Combine all runtime objects (use Vulkan instead of Metal for GPU)
             char runtimes[512] = "";
-            if (runtime_path[0]) strcat(runtimes, runtime_path);
+            if (builtins_runtime_path[0]) strcat(runtimes, builtins_runtime_path);
+            if (runtime_path[0]) { if (runtimes[0]) strcat(runtimes, " "); strcat(runtimes, runtime_path); }
             if (array_runtime_path[0]) { if (runtimes[0]) strcat(runtimes, " "); strcat(runtimes, array_runtime_path); }
             if (gui_runtime_path[0]) { if (runtimes[0]) strcat(runtimes, " "); strcat(runtimes, gui_runtime_path); }
             if (vulkan_runtime_path[0]) { if (runtimes[0]) strcat(runtimes, " "); strcat(runtimes, vulkan_runtime_path); }

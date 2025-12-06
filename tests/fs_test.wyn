@@ -1,18 +1,18 @@
-import std/io
+import io
 
 fn main() {
     # Test is_dir
-    assert(is_dir("tests"))
-    assert(not is_dir("Makefile"))
+    assert(io.is_dir("tests"))
+    assert(not io.is_dir("Makefile"))
     
     # Test file_size
-    const size: int = file_size("Makefile")
+    const size: int = io.file_size("Makefile")
     assert(size > 0)
     
     # Test file_exists
-    assert(file_exists("Makefile"))
-    assert(not file_exists("nonexistent_file_xyz"))
+    assert(io.file_exists("Makefile"))
+    assert(not io.file_exists("nonexistent_file_xyz"))
     
-    io.print("fs_test passed")
-    io.print("")
+    print("fs_test passed")
+    print("")
 }

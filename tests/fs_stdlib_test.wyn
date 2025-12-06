@@ -1,3 +1,6 @@
+import io
+import os
+
 fn main() {
     print("Testing fs stdlib...\n")
     
@@ -5,46 +8,46 @@ fn main() {
     const test_file: str = "fs_test_file.txt"
     const content: str = "test content"
     
-    write_file(test_file, content)
+    io.write_file(test_file, content)
     
-    const exists: bool = file_exists(test_file)
+    const exists: bool = io.file_exists(test_file)
     assert(exists, "file exists after write")
     
-    const read_content: str = read_file(test_file)
+    const read_content: str = io.read_file(test_file)
     assert(read_content == content, "read content matches")
     
-    const size: int = file_size(test_file)
+    const size: int = io.file_size(test_file)
     assert(size > 0, "file has size")
     assert(size == content.len(), "size matches content length")
     
     # Test append
-    append_file(test_file, " appended")
-    const new_content: str = read_file(test_file)
+    io.append_file(test_file, " appended")
+    const new_content: str = io.read_file(test_file)
     assert(new_content.len() > content.len(), "content grew")
     
     # Test rename
     const new_name: str = "fs_test_renamed.txt"
     rename_file(test_file, new_name)
-    assert(file_exists(new_name), "renamed file exists")
-    assert(not file_exists(test_file), "old file gone")
+    assert(io.file_exists(new_name), "renamed file exists")
+    assert(not io.file_exists(test_file), "old file gone")
     
     # Cleanup
-    delete_file(new_name)
-    assert(not file_exists(new_name), "file deleted")
+    io.delete_file(new_name)
+    assert(not io.file_exists(new_name), "file deleted")
     
     # Test directory operations
     const test_dir: str = "fs_test_dir"
-    mkdir(test_dir)
+    io.mkdir(test_dir)
     
-    const is_directory: bool = is_dir(test_dir)
+    const is_directory: bool = io.is_dir(test_dir)
     assert(is_directory, "directory created")
     
     # Test getcwd
-    const cwd: str = getcwd()
+    const cwd: str = os.getcwd()
     assert(cwd.len() > 0, "getcwd returns path")
     
     # Cleanup directory
-    rmdir(test_dir)
+    io.rmdir(test_dir)
     
     print("✓ All fs stdlib tests passed\n")
 }

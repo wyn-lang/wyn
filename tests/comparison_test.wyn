@@ -1,4 +1,4 @@
-import std/io
+import io
 fn main() {
     # Integer comparisons
     assert(5 == 5)

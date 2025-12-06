@@ -1,21 +1,23 @@
+import string
+
 fn main() {
     print("Testing encoding stdlib...\n")
     
     # Test chr and ord
-    assert(chr(65) == "A", "chr(65) is A")
-    assert(chr(97) == "a", "chr(97) is a")
-    assert(ord("A") == 65, "ord(A) is 65")
-    assert(ord("a") == 97, "ord(a) is 97")
+    assert(string.chr(65) == "A", "string.chr(65) is A")
+    assert(string.chr(97) == "a", "string.chr(97) is a")
+    assert(string.ord("A") == 65, "string.ord(A) is 65")
+    assert(string.ord("a") == 97, "string.ord(a) is 97")
     
     # Test round trip
     const c: str = "X"
-    assert(chr(ord(c)) == c, "chr/ord round trip")
+    assert(string.chr(string.ord(c)) == c, "chr/ord round trip")
     
     # Test digits
-    assert(chr(48) == "0", "chr(48) is 0")
-    assert(chr(57) == "9", "chr(57) is 9")
-    assert(ord("0") == 48, "ord(0) is 48")
-    assert(ord("9") == 57, "ord(9) is 57")
+    assert(string.chr(48) == "0", "string.chr(48) is 0")
+    assert(string.chr(57) == "9", "string.chr(57) is 9")
+    assert(string.ord("0") == 48, "string.ord(0) is 48")
+    assert(string.ord("9") == 57, "string.ord(9) is 57")
     
     print("✓ All encoding stdlib tests passed\n")
 }

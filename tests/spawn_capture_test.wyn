@@ -1,3 +1,5 @@
+import time
+
 fn main() {
     test_immutable_capture()
     test_mutable_capture()
@@ -12,7 +14,7 @@ fn test_immutable_capture() {
         result = x
     }
     
-    sleep_ms(100)
+    time.sleep_ms(100)
     assert(result == 42)
 }
 
@@ -23,7 +25,7 @@ fn test_mutable_capture() {
         counter = counter + 1
     }
     
-    sleep_ms(100)
+    time.sleep_ms(100)
     assert(counter == 1)
 }
 
@@ -38,6 +40,6 @@ fn test_multiple_spawns() {
         sum = sum + 20
     }
     
-    sleep_ms(100)
+    time.sleep_ms(100)
     assert(sum == 30)
 }

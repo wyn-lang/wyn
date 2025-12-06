@@ -1,0 +1,30 @@
+import io
+
+fn main() {
+    # Test 1: Basic concatenation
+    const a: str = "Hello"
+    const b: str = "World"
+    const result1: str = a + " " + b
+    assert(result1 == "Hello World")
+    
+    # Test 2: Concatenation with literals
+    const name: str = "Alice"
+    const result2: str = "Hello " + name
+    assert(result2 == "Hello Alice")
+    
+    # Test 3: Multiple concatenations
+    const result3: str = "A" + "B" + "C"
+    assert(result3 == "ABC")
+    
+    # Test 4: Concatenation in print (no spaces added)
+    # Note: variadic print adds spaces, concatenation doesn't
+    const something: str = "test"
+    const result4: str = "some" + something
+    assert(result4 == "sometest")
+    
+    # Test 5: Concatenation with space
+    const result5: str = "some " + something
+    assert(result5 == "some test")
+    
+    print("string_concat_test: PASS")
+}

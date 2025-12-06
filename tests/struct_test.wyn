@@ -1,4 +1,4 @@
-import std/io
+import io
 struct Point {
     x: int
     y: int

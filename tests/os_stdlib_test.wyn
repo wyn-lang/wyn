@@ -1,16 +1,18 @@
+import os
+
 fn main() {
     print("Testing os stdlib...\n")
     
     # Test getcwd
-    const cwd: str = getcwd()
+    const cwd: str = os.getcwd()
     assert(cwd.len() > 0, "getcwd returns path")
     
     # Test getpid
-    const pid: int = getpid()
+    const pid: int = os.getpid()
     assert(pid > 0, "getpid returns positive")
     
     # Test getenv
-    const path: str = getenv("PATH")
+    const path: str = os.getenv("PATH")
     assert(path.len() > 0, "PATH env var exists")
     
     # Test args

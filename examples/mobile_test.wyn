@@ -23,6 +23,6 @@ fn main() {
     mobile.hide_view(label)
     mobile.show_view(label)
     
-    io.print("Mobile API test compiled successfully")
-    io.print("")
+    print("Mobile API test compiled successfully")
+    print("")
 }

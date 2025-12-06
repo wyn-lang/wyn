@@ -1,3 +1,5 @@
+import time
+
 fn main() {
     test_multiple_captures()
     test_mixed_types()
@@ -14,7 +16,7 @@ fn test_multiple_captures() {
         c = c + 3
     }
     
-    sleep_ms(100)
+    time.sleep_ms(100)
     assert(a == 1)
     assert(b == 2)
     assert(c == 3)
@@ -30,7 +32,7 @@ fn test_mixed_types() {
         result = x
     }
     
-    sleep_ms(100)
+    time.sleep_ms(100)
     assert(counter == 1)
     assert(result == 42)
 }

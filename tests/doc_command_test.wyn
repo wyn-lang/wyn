@@ -1,3 +1,7 @@
+import string
+import io
+import os
+
 fn main() {
     print("Testing wyn doc command...\n")
     
@@ -14,14 +18,14 @@ fn main() {
     assert(result3 == 0, "wyn doc os.getenv should succeed")
     
     # Verify output contains expected text
-    const out1: str = read_file("/tmp/doc_test1.txt")
-    assert(str_find(out1, "Standard Library") >= 0, "Should show stdlib")
+    const out1: str = io.read_file("/tmp/doc_test1.txt")
+    assert(string.find(out1, "Standard Library") >= 0, "Should show stdlib")
     
-    const out2: str = read_file("/tmp/doc_test2.txt")
-    assert(str_find(out2, "package os") >= 0, "Should show package os")
+    const out2: str = io.read_file("/tmp/doc_test2.txt")
+    assert(string.find(out2, "package os") >= 0, "Should show package os")
     
-    const out3: str = read_file("/tmp/doc_test3.txt")
-    assert(str_find(out3, "getenv") >= 0, "Should show getenv")
+    const out3: str = io.read_file("/tmp/doc_test3.txt")
+    assert(string.find(out3, "getenv") >= 0, "Should show getenv")
     
     print("✓ All doc tests passed\n")
 }

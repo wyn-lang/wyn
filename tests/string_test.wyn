@@ -1,4 +1,6 @@
-import std/io
+import string
+
+import io
 
 fn main() {
     const s: str = "hello"
@@ -7,11 +9,11 @@ fn main() {
     assert(s.len() == 5)
     
     # ord
-    assert(ord("A") == 65)
-    assert(ord("a") == 97)
+    assert(string.ord("A") == 65)
+    assert(string.ord("a") == 97)
     
     # Conversions
     assert(str_to_int("123") == 123)
     
-    io.print("string_test: PASS")
+    print("string_test: PASS")
 }

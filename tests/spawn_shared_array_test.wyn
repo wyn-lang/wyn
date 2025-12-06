@@ -1,3 +1,5 @@
+import time
+
 fn main() {
     test_multiple_variables()
 }
@@ -29,7 +31,7 @@ fn test_multiple_variables() {
         v4 = 40
     }
     
-    sleep_ms(200)
+    time.sleep_ms(200)
     assert(v0 == 0)
     assert(v1 == 10)
     assert(v2 == 20)

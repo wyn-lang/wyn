@@ -1,4 +1,4 @@
-import std/io
+import io
 fn maybe_double(x: int) -> ?int {
     if x < 0 {
         return none

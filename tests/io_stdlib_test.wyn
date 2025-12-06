@@ -1,3 +1,5 @@
+import io
+
 fn main() {
     print("Testing io stdlib...\n")
     
@@ -5,34 +7,34 @@ fn main() {
     const content: str = "test content"
     
     # Test write
-    write_file(test_file, content)
+    io.write_file(test_file, content)
     
     # Test exists
-    const exists: bool = file_exists(test_file)
+    const exists: bool = io.file_exists(test_file)
     if exists {
         # Test read
-        const r: str = read_file(test_file)
+        const r: str = io.read_file(test_file)
         assert(r == content, "read matches write")
         
         # Test file_size
-        const size: int = file_size(test_file)
+        const size: int = io.file_size(test_file)
         assert(size > 0, "file has size")
         
         # Test append
-        append_file(test_file, " more")
-        const r2: str = read_file(test_file)
+        io.append_file(test_file, " more")
+        const r2: str = io.read_file(test_file)
         assert(r2.len() > content.len(), "append works")
         
         # Test delete
-        delete_file(test_file)
+        io.delete_file(test_file)
     }
     
     # Test directory operations
     const test_dir: str = "io_test_dir"
-    mkdir(test_dir)
-    const is_directory: bool = is_dir(test_dir)
+    io.mkdir(test_dir)
+    const is_directory: bool = io.is_dir(test_dir)
     if is_directory {
-        rmdir(test_dir)
+        io.rmdir(test_dir)
     }
     
     print("✓ All io stdlib tests passed\n")

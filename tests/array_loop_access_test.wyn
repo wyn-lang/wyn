@@ -1,22 +1,24 @@
+import string
+
 fn main() {
     const content: str = "line1\nline2\nline3"
-    const lines: [str] = str_split(content, "\n")
+    const lines: [str] = string.split(content, "\n")
     
     // Direct access works
-    io.print("Direct: ")
-    io.print(lines[0])
-    io.print("")
+    print("Direct: ")
+    print(lines[0])
+    print("")
     
     // Loop access should work
-    io.print("Loop:\n")
+    print("Loop:\n")
     let i: int = 0
     while i < lines.len() {
         const line: str = lines[i]
-        io.print(line)
-        io.print("")
+        print(line)
+        print("")
         i = i + 1
     }
     
-    io.print("Test passed!")
-    io.print("")
+    print("Test passed!")
+    print("")
 }

@@ -1,0 +1,26 @@
+import io
+import time
+
+# Example of new import system
+# Only print() works without import
+
+import io
+import time
+
+fn main() {
+    print("Testing new import system")
+    
+    # File operations require io module
+    io.io.write_file("test.txt", "hello")
+    const content: str = io.io.read_file("test.txt")
+    print(content)
+    
+    # Time operations require time module
+    const now: int = time.now()
+    time.time.sleep_ms(100)
+    
+    # Cleanup
+    io.io.delete_file("test.txt")
+    
+    print("✓ New import system works")
+}

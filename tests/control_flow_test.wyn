@@ -1,4 +1,4 @@
-import std/io
+import io
 fn main() {
     # If/else
     const x: int = 10

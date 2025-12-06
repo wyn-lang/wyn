@@ -1,4 +1,4 @@
-import std/io
+import math
 
 fn main() {
     # abs - using method syntax
@@ -17,5 +17,7 @@ fn main() {
     assert("hello".len() == 5)
     assert("123".to_int() == 123)
     
-    io.print("builtins_test: PASS")
+    print("builtins_test: PASS")
+    print("")
+}
 }

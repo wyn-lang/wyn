@@ -1,3 +1,5 @@
+import time
+
 fn main() {
     test_multiple_spawns()
 }
@@ -20,6 +22,6 @@ fn test_multiple_spawns() {
         sum = sum + val3
     }
     
-    sleep_ms(200)
+    time.sleep_ms(200)
     assert(sum == 30)
 }

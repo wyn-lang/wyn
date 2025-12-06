@@ -1,3 +1,5 @@
+import string
+
 fn main() {
     print("Testing string stdlib...\n")
     
@@ -19,45 +21,45 @@ fn main() {
     assert(text[0:1] == "h", "single char slice")
     
     # Test char_at
-    assert(char_at(text, 0) == "h", "char_at 0")
-    assert(char_at(text, 6) == "w", "char_at 6")
+    assert(string.char_at(text, 0) == "h", "char_at 0")
+    assert(string.char_at(text, 6) == "w", "char_at 6")
     
     # Test str_find
-    assert(str_find(text, "world") == 6, "find world")
-    assert(str_find(text, "hello") == 0, "find hello")
-    assert(str_find(text, "xyz") == -1, "find missing")
-    assert(str_find(text, "o") == 4, "find char")
+    assert(string.find(text, "world") == 6, "find world")
+    assert(string.find(text, "hello") == 0, "find hello")
+    assert(string.find(text, "xyz") == -1, "find missing")
+    assert(string.find(text, "o") == 4, "find char")
     
     # Test str_split
-    const parts: [str] = str_split("a,b,c", ",")
+    const parts: [str] = string.split("a,b,c", ",")
     assert(parts.len() == 3, "split length")
     
-    const parts2: [str] = str_split("one two three", " ")
+    const parts2: [str] = string.split("one two three", " ")
     assert(parts2.len() == 3, "split by space")
     
     # Test str_concat
-    const joined: str = str_concat("hello", " world")
+    const joined: str = string.concat("hello", " world")
     assert(joined == "hello world", "str_concat")
     
     # Test str_cmp
-    assert(str_cmp("abc", "abc") == 0, "equal strings")
-    assert(str_cmp("abc", "def") < 0, "less than")
-    assert(str_cmp("def", "abc") > 0, "greater than")
+    assert(string.cmp("abc", "abc") == 0, "equal strings")
+    assert(string.cmp("abc", "def") < 0, "less than")
+    assert(string.cmp("def", "abc") > 0, "greater than")
     
     # Test substring
-    const sub: str = substring(text, 0, 5)
+    const sub: str = string.substring(text, 0, 5)
     assert(sub == "hello", "substring")
     
     # Test chr and ord
-    assert(chr(65) == "A", "chr 65")
-    assert(chr(97) == "a", "chr 97")
-    assert(ord("A") == 65, "ord A")
-    assert(ord("a") == 97, "ord a")
+    assert(string.chr(65) == "A", "chr 65")
+    assert(string.chr(97) == "a", "chr 97")
+    assert(string.ord("A") == 65, "ord A")
+    assert(string.ord("a") == 97, "ord a")
     
     # Test int_to_str
-    assert(int_to_str(42) == "42", "int_to_str")
-    assert(int_to_str(0) == "0", "int_to_str 0")
-    assert(int_to_str(-5) == "-5", "int_to_str negative")
+    assert(string.int_to_str(42) == "42", "int_to_str")
+    assert(string.int_to_str(0) == "0", "int_to_str 0")
+    assert(string.int_to_str(-5) == "-5", "int_to_str negative")
     
     print("✓ All string stdlib tests passed\n")
 }

@@ -1,4 +1,4 @@
-import std/io
+import io
 
 fn main() {
     const arr: [int] = [1, 2, 3, 4, 5]
@@ -35,5 +35,5 @@ fn main() {
     }
     assert(sum == 15)
     
-    io.print("array_test: PASS")
+    print("array_test: PASS")
 }

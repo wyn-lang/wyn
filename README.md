@@ -22,17 +22,13 @@ This installs:
 ### Platform Support
 
 **Tier 1 (Fully Supported - CI Tested):**
-- ✅ macOS ARM64 (Apple Silicon) - Full support: compiler, GUI, Metal GPU, Vulkan
-- ✅ macOS x86_64 (Intel) - Full support: compiler, GUI, Metal GPU, Vulkan
-- ✅ Linux x86_64 - Full support: compiler, Vulkan GPU
-- ✅ Windows x86_64 - Full support: compiler, Vulkan GPU
+- ✅ macOS ARM64 (Apple Silicon)
+- ✅ macOS x86_64 (Intel)
+- ✅ Linux x86_64
+- ✅ Windows x86_64
 
 **Tier 2 (Supported - CI Tested):**
-- ✅ Linux ARM64 - Full support: compiler, Vulkan GPU
-
-**GPU Support:**
-- All platforms include Vulkan GPU support
-- macOS additionally includes Metal GPU backend for optimized performance
+- ✅ Linux ARM64
 
 **Download Pre-built Binaries:**
 - GitHub releases include binaries for all platforms
@@ -89,13 +85,13 @@ write_file("test.txt", "Hello")
 const content: str = read_file("test.txt")
 
 # Or use io module
-import std/io
+import io
 io.write_file("test.txt", "Hello")
 ```
 
 **HTTP:**
 ```wyn
-import std/http
+import http
 
 # HTTP server
 const server: int = http.serve("0.0.0.0", 8080)
@@ -128,17 +124,13 @@ See [benchmarks/FINAL_RESULTS.md](benchmarks/FINAL_RESULTS.md) for details.
 
 - **Fast** - Compiles to native code, 20-30x faster than Python
 - **Simple** - Python-like syntax, easy to learn
-- **Universal** - One language for everything: scripts, CLI, servers, systems
+- **Practical** - Built for real work: scripts, CLI tools, servers
 - **Module system** - Clean organization (io, os, time, math, http, string, array)
 - **Type safe** - Explicit types, no surprises
 - **Stage 1** - Enhanced type checking & optimizations
-- **Native GUI** - Built-in GUI support using platform APIs (macOS: Cocoa)
-- **iOS Mobile** - Native iOS apps with UIKit bindings
-- **Run anywhere** - Compile to binary OR run as script
+- **Concurrent** - Spawn-based parallelism
+- **Cross-platform** - Works on macOS, Linux, Windows
 - **No dependencies** - Single binary, no runtime needed
-- **Builtins + Modules** - Simple builtins for scripts, modules for organization
-
-**One language to rule them all.**
 
 ## Stage 1 Compiler
 
@@ -157,31 +149,28 @@ wyn --stage1-tc --stage1-opt -o output input.wyn
 
 Stage 1 provides 28-42% performance improvements and enhanced developer experience.
 
-## What Works
+## What Works Today
 
 - ✅ CLI tools
 - ✅ HTTP servers
-- ✅ TUI applications
-- ✅ GUI applications (macOS)
-- ✅ iOS mobile apps
 - ✅ File processing
+- ✅ Concurrent programs (spawn)
 - ✅ Math/science programs
 
 ## Status
 
 - **76/76 tests passing**
 - **500+ stdlib functions**
-- **Production ready**
 - **Stage 1 complete**
 - **20-30x faster than Python**
 
 ## Documentation
 
 - [Getting Started](docs/quickstart.md)
-- [Language Spec](docs/language.md)
+- [Language Reference](docs/language.md)
+- [Roadmap](docs/ROADMAP.md) - Planned features
 - [Package Manager](docs/packages.md)
 - [Stdlib Reference](docs/stdlib.md)
-- [GUI Support](docs/gui.md)
 - [iOS Mobile](docs/mobile.md)
 - [Stage 1 Type Checker](docs/compiler.md)
 - [Stage 1 Optimizations](docs/compiler.md)
