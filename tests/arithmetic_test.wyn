@@ -1,5 +1,12 @@
-
 import io
+
+fn assert(condition: bool) {
+    if not condition {
+        print("Assertion failed!")
+        syscall(1, 1, 0, 0, 0, 0, 0)
+    }
+}
+
 fn main() {
     # Basic arithmetic
     assert(1 + 2 == 3)
