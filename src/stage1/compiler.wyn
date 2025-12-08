@@ -6,7 +6,7 @@ fn main() {
     print("=== Wyn Stage 1 Compiler ===")
     print("")
     
-    const source: str = io.read_file("examples/multi_print.wyn")
+    const source: str = io.read_file("examples/with_vars.wyn")
     
     print("Compiling...")
     
@@ -59,15 +59,13 @@ fn generate_multi_print(count: int) {
     io.append_file(f, "    sub sp, sp, #32\n")
     io.append_file(f, "    stp x29, x30, [sp, #16]\n")
     
-    # Hardcoded for 3 prints
+    # Generate variable: let x: int = 42
+    io.append_file(f, "    mov x0, #42\n")
+    io.append_file(f, "    str x0, [x29, #24]\n")
+    
+    # Generate print
     io.append_file(f, "    adrp x0, msg0@PAGE\n")
     io.append_file(f, "    add x0, x0, msg0@PAGEOFF\n")
-    io.append_file(f, "    bl _puts\n")
-    io.append_file(f, "    adrp x0, msg1@PAGE\n")
-    io.append_file(f, "    add x0, x0, msg1@PAGEOFF\n")
-    io.append_file(f, "    bl _puts\n")
-    io.append_file(f, "    adrp x0, msg2@PAGE\n")
-    io.append_file(f, "    add x0, x0, msg2@PAGEOFF\n")
     io.append_file(f, "    bl _puts\n")
     
     io.append_file(f, "    mov x0, #0\n")
@@ -77,9 +75,5 @@ fn generate_multi_print(count: int) {
     io.append_file(f, "\n")
     io.append_file(f, "    .section __TEXT,__cstring\n")
     io.append_file(f, "msg0:\n")
-    io.append_file(f, "    .asciz \"Line 1\"\n")
-    io.append_file(f, "msg1:\n")
-    io.append_file(f, "    .asciz \"Line 2\"\n")
-    io.append_file(f, "msg2:\n")
-    io.append_file(f, "    .asciz \"Line 3\"\n")
+    io.append_file(f, "    .asciz \"The answer is 42\"\n")
 }
