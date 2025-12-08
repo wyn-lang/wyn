@@ -41,23 +41,22 @@ fn main() {
 
 ### Builtins
 
-**Current:** 8 builtins (temporary, due to bootstrap limitations)
+**Current:** 5 builtins (83% reduction from 30+)
 **Target:** 1 builtin (print only)
 
 **Current builtins:**
-1. `print()` - Output
-2. `assert()` - Testing (will move to `import test`)
-3. `exit()` - Process control (will move to `import os`)
-4. `args()` - Command line arguments (will move to `import os`)
-5. `int_to_str()` - String conversion (will move to `import string`)
-6. `system()` - Shell commands (will move to `import os`)
-7. `write_file()` - File writing (will move to `import io`)
-8. `substring()` - String slicing (will become string method)
-9. `ord()` - Character code (will move to `import string`)
+1. `print()` - Output (**target to keep**)
+2. `args()` - Command line arguments (Stage 1 needs)
+3. `substring()` - String slicing (Stage 1 needs)
+4. `ord()` - Character code (Stage 1 needs)
+5. `syscall()` - System calls (compiler intrinsic)
 
-**Once Stage 1 is self-hosting, all except print() will move to stdlib via syscalls.**
+**Removed (25+ builtins):**
+- File I/O, time, math, string utilities, OS functions, testing, etc.
 
-**Everything else already requires imports:**
+**All moved to stdlib via syscalls or pure Wyn implementations.**
+
+**Everything else requires imports:**
 
 - `io` - File I/O
 - `time` - Time and sleep
