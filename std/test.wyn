@@ -1,15 +1,15 @@
-# std/test.wyn
-# Testing utilities
+# Test Module - Pure Wyn
 
-# Assert a condition is true
 fn assert(condition: bool) {
-    assert(condition)
+    if not condition {
+        print("Assertion failed!")
+        syscall(1, 1, 0, 0, 0, 0, 0)  # exit(1)
+    }
 }
 
-# Assert with message
-fn assert_eq(a: int, b: int, msg: str) {
+fn assert_eq(a: int, b: int) {
     if a != b {
-        # Would print error but we can't use print yet
-        assert(false)
+        print("Assertion failed: values not equal")
+        syscall(1, 1, 0, 0, 0, 0, 0)
     }
 }
