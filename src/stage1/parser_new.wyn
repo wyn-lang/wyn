@@ -1,0 +1,98 @@
+# Stage 1 Parser - Build AST from tokens
+
+struct Token {
+    kind: int
+    value: str
+}
+
+struct ParseState {
+    tokens: [Token]
+    pos: int
+}
+
+# Token kinds
+const TOK_FN: int = 10
+const TOK_IDENT: int = 1
+const TOK_STRING: int = 7
+const TOK_LPAREN: int = 20
+const TOK_RPAREN: int = 21
+const TOK_LBRACE: int = 22
+const TOK_RBRACE: int = 23
+
+fn parse(tokens: [Token]) -> Module {
+    let state: ParseState = ParseState{tokens: tokens, pos: 0}
+    let functions: [Function] = []
+    
+    while state.pos < tokens.len() {
+        const tok: Token = tokens[state.pos]
+        if tok.kind == TOK_FN {
+            const fn: Function = parse_function(state)
+            functions.append(fn)
+        } else {
+            state.pos = state.pos + 1
+        }
+    }
+    
+    let module: Module = Module{functions: functions}
+    return module
+}
+
+fn parse_function(state: ParseState) -> Function {
+    # fn name() { body }
+    state.pos = state.pos + 1  # skip 'fn'
+    
+    const name_tok: Token = state.tokens[state.pos]
+    state.pos = state.pos + 1
+    
+    # Skip ( )
+    state.pos = state.pos + 1  # (
+    state.pos = state.pos + 1  # )
+    
+    # Skip {
+    state.pos = state.pos + 1
+    
+    # Parse body
+    let body: [Stmt] = []
+    while state.pos < state.tokens.len() {
+        const tok: Token = state.tokens[state.pos]
+        if tok.kind == TOK_RBRACE {
+            state.pos = state.pos + 1
+            break
+        }
+        const stmt: Stmt = parse_stmt(state)
+        body.append(stmt)
+    }
+    
+    let fn: Function = Function{name: name_tok.value, body: body}
+    return fn
+}
+
+fn parse_stmt(state: ParseState) -> Stmt {
+    # For now, just parse print("...")
+    const tok: Token = state.tokens[state.pos]
+    
+    if tok.kind == TOK_IDENT {
+        # Function call
+        const func_name: str = tok.value
+        state.pos = state.pos + 1
+        state.pos = state.pos + 1  # (
+        
+        # Get string arg
+        const arg_tok: Token = state.tokens[state.pos]
+        state.pos = state.pos + 1
+        state.pos = state.pos + 1  # )
+        
+        let args: [Expr] = []
+        let arg: Expr = Expr{kind: EXPR_STRING, str_val: arg_tok.value}
+        args.append(arg)
+        
+        let expr: Expr = Expr{kind: EXPR_CALL, func_name: func_name, args: args}
+        let stmt: Stmt = Stmt{kind: STMT_EXPR, expr: expr}
+        return stmt
+    }
+    
+    # Default
+    state.pos = state.pos + 1
+    let stmt: Stmt = Stmt{kind: STMT_EXPR}
+    return stmt
+}
