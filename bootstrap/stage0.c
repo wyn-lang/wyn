@@ -2570,7 +2570,7 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     strcmp(e->ident, "exit") == 0 || strcmp(e->ident, "args") == 0 ||
                     strcmp(e->ident, "int_to_str") == 0 || strcmp(e->ident, "system") == 0 ||
                     strcmp(e->ident, "write_file") == 0 || strcmp(e->ident, "substring") == 0 ||
-                    strcmp(e->ident, "ord") == 0) {
+                    strcmp(e->ident, "ord") == 0 || strcmp(e->ident, "syscall") == 0) {
                     return new_type(TYPE_FUNCTION);
                 }
                 tc_error(tc, e->line, e->column, "undefined variable '%s'", e->ident);
@@ -6808,6 +6808,27 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "system") == 0) {
                 cg_expr(cg, e->call.args[0]);
                 cg_emit(cg, "    bl %ssystem", cg_sym_prefix(cg));
+                break;
+            }
+            // Handle built-in syscall(num, arg1, arg2, arg3, arg4, arg5, arg6)
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "syscall") == 0) {
+                // Push args in reverse
+                for (int i = e->call.arg_count - 1; i >= 0; i--) {
+                    cg_expr(cg, e->call.args[i]);
+                    cg_emit(cg, "    str x0, [sp, #-16]!");
+                }
+                // Pop into registers
+                for (int i = 0; i < e->call.arg_count && i < 8; i++) {
+                    cg_emit(cg, "    ldr x%d, [sp], #16", i);
+                }
+                // Move syscall number to x16
+                cg_emit(cg, "    mov x16, x0");
+                // Shift args down
+                for (int i = 0; i < e->call.arg_count - 1 && i < 7; i++) {
+                    cg_emit(cg, "    mov x%d, x%d", i, i + 1);
+                }
+                // Make syscall
+                cg_emit(cg, "    svc #0");
                 break;
             }
             // Handle built-in str_find(haystack, needle) - returns index or -1

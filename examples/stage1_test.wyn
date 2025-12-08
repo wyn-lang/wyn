@@ -1,7 +1,6 @@
 fn main() {
-    let x: int = 0
-    while x < 3 {
-        print("Test")
-        x = x + 1
+    for i in 0..3 {
+        print("First")
+        print("Second")
     }
 }

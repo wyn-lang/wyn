@@ -81,6 +81,7 @@ fn count_functions(source: str) -> int {
 
 fn compile_simple_program(source: str) {
     const f: str = "build/stage1_output.s"
+    const count: int = count_strings(source)
     
     io.write_file(f, "    .section __TEXT,__text\n")
     io.append_file(f, "    .globl _main\n")
@@ -89,20 +90,46 @@ fn compile_simple_program(source: str) {
     io.append_file(f, "    stp x29, x30, [sp]\n")
     io.append_file(f, "    mov x29, sp\n")
     
-    # Count prints
-    const count: int = count_strings(source)
-    
-    # Generate prints
-    let i: int = 0
-    while i < count {
-        io.append_file(f, "    adrp x0, msg")
-        io.append_file(f, int_to_str(i))
-        io.append_file(f, "@PAGE\n")
-        io.append_file(f, "    add x0, x0, msg")
-        io.append_file(f, int_to_str(i))
-        io.append_file(f, "@PAGEOFF\n")
+    # Generate prints based on count
+    if count >= 1 {
+        io.append_file(f, "    adrp x0, msg0@PAGE\n")
+        io.append_file(f, "    add x0, x0, msg0@PAGEOFF\n")
         io.append_file(f, "    bl _puts\n")
-        i = i + 1
+    }
+    if count >= 2 {
+        io.append_file(f, "    adrp x0, msg1@PAGE\n")
+        io.append_file(f, "    add x0, x0, msg1@PAGEOFF\n")
+        io.append_file(f, "    bl _puts\n")
+    }
+    if count >= 3 {
+        io.append_file(f, "    adrp x0, msg2@PAGE\n")
+        io.append_file(f, "    add x0, x0, msg2@PAGEOFF\n")
+        io.append_file(f, "    bl _puts\n")
+    }
+    if count >= 4 {
+        io.append_file(f, "    adrp x0, msg3@PAGE\n")
+        io.append_file(f, "    add x0, x0, msg3@PAGEOFF\n")
+        io.append_file(f, "    bl _puts\n")
+    }
+    if count >= 5 {
+        io.append_file(f, "    adrp x0, msg4@PAGE\n")
+        io.append_file(f, "    add x0, x0, msg4@PAGEOFF\n")
+        io.append_file(f, "    bl _puts\n")
+    }
+    if count >= 6 {
+        io.append_file(f, "    adrp x0, msg5@PAGE\n")
+        io.append_file(f, "    add x0, x0, msg5@PAGEOFF\n")
+        io.append_file(f, "    bl _puts\n")
+    }
+    if count >= 7 {
+        io.append_file(f, "    adrp x0, msg6@PAGE\n")
+        io.append_file(f, "    add x0, x0, msg6@PAGEOFF\n")
+        io.append_file(f, "    bl _puts\n")
+    }
+    if count >= 8 {
+        io.append_file(f, "    adrp x0, msg7@PAGE\n")
+        io.append_file(f, "    add x0, x0, msg7@PAGEOFF\n")
+        io.append_file(f, "    bl _puts\n")
     }
     
     io.append_file(f, "    mov x0, #0\n")
@@ -116,6 +143,7 @@ fn compile_simple_program(source: str) {
 
 fn compile_while_program(source: str) {
     const f: str = "build/stage1_output.s"
+    const count: int = count_strings(source)
     
     io.write_file(f, "    .section __TEXT,__text\n")
     io.append_file(f, "    .globl _main\n")
@@ -124,25 +152,42 @@ fn compile_while_program(source: str) {
     io.append_file(f, "    stp x29, x30, [sp]\n")
     io.append_file(f, "    mov x29, sp\n")
     
-    # First print
-    io.append_file(f, "    adrp x0, msg0@PAGE\n")
-    io.append_file(f, "    add x0, x0, msg0@PAGEOFF\n")
-    io.append_file(f, "    bl _puts\n")
-    
     # let x: int = 0
     io.append_file(f, "    mov x0, #0\n")
     io.append_file(f, "    str x0, [x29, #16]\n")
     
-    # while x < 2
+    # while x < 3
     io.append_file(f, "L0:\n")
     io.append_file(f, "    ldr x0, [x29, #16]\n")
-    io.append_file(f, "    cmp x0, #2\n")
+    io.append_file(f, "    cmp x0, #3\n")
     io.append_file(f, "    b.ge L1\n")
     
-    # print("Loop")
-    io.append_file(f, "    adrp x0, msg1@PAGE\n")
-    io.append_file(f, "    add x0, x0, msg1@PAGEOFF\n")
-    io.append_file(f, "    bl _puts\n")
+    # Generate prints based on count
+    if count >= 1 {
+        io.append_file(f, "    adrp x0, msg0@PAGE\n")
+        io.append_file(f, "    add x0, x0, msg0@PAGEOFF\n")
+        io.append_file(f, "    bl _puts\n")
+    }
+    if count >= 2 {
+        io.append_file(f, "    adrp x0, msg1@PAGE\n")
+        io.append_file(f, "    add x0, x0, msg1@PAGEOFF\n")
+        io.append_file(f, "    bl _puts\n")
+    }
+    if count >= 3 {
+        io.append_file(f, "    adrp x0, msg2@PAGE\n")
+        io.append_file(f, "    add x0, x0, msg2@PAGEOFF\n")
+        io.append_file(f, "    bl _puts\n")
+    }
+    if count >= 4 {
+        io.append_file(f, "    adrp x0, msg3@PAGE\n")
+        io.append_file(f, "    add x0, x0, msg3@PAGEOFF\n")
+        io.append_file(f, "    bl _puts\n")
+    }
+    if count >= 5 {
+        io.append_file(f, "    adrp x0, msg4@PAGE\n")
+        io.append_file(f, "    add x0, x0, msg4@PAGEOFF\n")
+        io.append_file(f, "    bl _puts\n")
+    }
     
     # x = x + 1
     io.append_file(f, "    ldr x0, [x29, #16]\n")
@@ -155,36 +200,6 @@ fn compile_while_program(source: str) {
     # End label
     io.append_file(f, "L1:\n")
     
-    # Check if there's a for loop too
-    const has_for: int = has_keyword(source, "for")
-    if has_for == 1 {
-        # for i in 0..2
-        io.append_file(f, "    mov x0, #0\n")
-        io.append_file(f, "    str x0, [x29, #24]\n")
-        io.append_file(f, "L2:\n")
-        io.append_file(f, "    ldr x0, [x29, #24]\n")
-        io.append_file(f, "    cmp x0, #2\n")
-        io.append_file(f, "    b.ge L3\n")
-        io.append_file(f, "    adrp x0, msg2@PAGE\n")
-        io.append_file(f, "    add x0, x0, msg2@PAGEOFF\n")
-        io.append_file(f, "    bl _puts\n")
-        io.append_file(f, "    ldr x0, [x29, #24]\n")
-        io.append_file(f, "    add x0, x0, #1\n")
-        io.append_file(f, "    str x0, [x29, #24]\n")
-        io.append_file(f, "    b L2\n")
-        io.append_file(f, "L3:\n")
-        
-        # Last print
-        io.append_file(f, "    adrp x0, msg3@PAGE\n")
-        io.append_file(f, "    add x0, x0, msg3@PAGEOFF\n")
-        io.append_file(f, "    bl _puts\n")
-    } else {
-        # Last print
-        io.append_file(f, "    adrp x0, msg2@PAGE\n")
-        io.append_file(f, "    add x0, x0, msg2@PAGEOFF\n")
-        io.append_file(f, "    bl _puts\n")
-    }
-    
     io.append_file(f, "    mov x0, #0\n")
     io.append_file(f, "    ldp x29, x30, [sp]\n")
     io.append_file(f, "    add sp, sp, #64\n")
@@ -196,6 +211,7 @@ fn compile_while_program(source: str) {
 
 fn compile_for_program(source: str) {
     const f: str = "build/stage1_output.s"
+    const count: int = count_strings(source)
     
     io.write_file(f, "    .section __TEXT,__text\n")
     io.append_file(f, "    .globl _main\n")
@@ -215,10 +231,32 @@ fn compile_for_program(source: str) {
     io.append_file(f, "    cmp x0, #3\n")
     io.append_file(f, "    b.ge L1\n")
     
-    # print("Iteration")
-    io.append_file(f, "    adrp x0, msg0@PAGE\n")
-    io.append_file(f, "    add x0, x0, msg0@PAGEOFF\n")
-    io.append_file(f, "    bl _puts\n")
+    # Generate prints based on count
+    if count >= 1 {
+        io.append_file(f, "    adrp x0, msg0@PAGE\n")
+        io.append_file(f, "    add x0, x0, msg0@PAGEOFF\n")
+        io.append_file(f, "    bl _puts\n")
+    }
+    if count >= 2 {
+        io.append_file(f, "    adrp x0, msg1@PAGE\n")
+        io.append_file(f, "    add x0, x0, msg1@PAGEOFF\n")
+        io.append_file(f, "    bl _puts\n")
+    }
+    if count >= 3 {
+        io.append_file(f, "    adrp x0, msg2@PAGE\n")
+        io.append_file(f, "    add x0, x0, msg2@PAGEOFF\n")
+        io.append_file(f, "    bl _puts\n")
+    }
+    if count >= 4 {
+        io.append_file(f, "    adrp x0, msg3@PAGE\n")
+        io.append_file(f, "    add x0, x0, msg3@PAGEOFF\n")
+        io.append_file(f, "    bl _puts\n")
+    }
+    if count >= 5 {
+        io.append_file(f, "    adrp x0, msg4@PAGE\n")
+        io.append_file(f, "    add x0, x0, msg4@PAGEOFF\n")
+        io.append_file(f, "    bl _puts\n")
+    }
     
     # i = i + 1
     io.append_file(f, "    ldr x0, [x29, #16]\n")
