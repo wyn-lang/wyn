@@ -1,184 +1,53 @@
-# Stage 1 Parser - Recursive Descent Parser for Wyn
-# 
-# This file documents the parser design and AST structure for Stage 1.
-# Full implementation will be done in C or once Stage 1 is bootstrapped.
-#
-# Reference: bootstrap/stage0.c lines 595-1800
-#
-# ============================================================================
-# PARSER DESIGN
-# ============================================================================
-#
-# The parser uses recursive descent with precedence climbing for expressions.
-#
-# ## AST Node Types
-#
-# ### Type Kinds (TypeKind enum)
-# - INT, FLOAT, STR, BOOL, BYTE, ANY, VOID (primitives)
-# - ARRAY, MAP, TUPLE (collections)
-# - OPTIONAL, RESULT (error handling)
-# - FUNCTION, NAMED, GENERIC, POINTER (complex types)
-#
-# ### Expression Kinds (ExprKind enum)
-# - INT, FLOAT, STRING, BOOL, IDENT (literals)
-# - BINARY, UNARY (operators)
-# - CALL, INDEX, FIELD (access)
-# - ARRAY, MAP, TUPLE, STRUCT (constructors)
-# - LAMBDA (closures)
-# - IF, MATCH (control flow expressions)
-# - SOME, NONE, OK, ERR (option/result constructors)
-# - UNWRAP, TRY, DEFAULT (option/result operations)
-# - SLICE, ADDR, DEREF (advanced operations)
-#
-# ### Statement Kinds (StmtKind enum)
-# - LET, ASSIGN (variables)
-# - EXPR (expression statement)
-# - RETURN (function return)
-# - IF, WHILE, FOR, MATCH (control flow)
-# - BLOCK (statement grouping)
-# - BREAK, CONTINUE (loop control)
-# - DEFER, SPAWN (advanced control)
-#
-# ## Operator Precedence (highest to lowest)
-#
-# 11: **           (exponentiation)
-# 10: * / %        (multiplication, division, modulo)
-#  9: + -          (addition, subtraction)
-#  8: << >>        (bit shifts)
-#  7: &            (bitwise and)
-#  6: ^            (bitwise xor)
-#  5: |            (bitwise or)
-#  4: < > <= >=    (comparison)
-#  3: == !=        (equality)
-#  2: and &&       (logical and)
-#  1: or ||        (logical or)
-#  0: ??           (null coalescing)
-#
-# ## Parsing Functions
-#
-# ### Top Level
-# - parse_module() -> Module
-#   Parses imports, functions, structs, enums
-#
-# ### Declarations
-# - parse_function(is_pub: bool) -> FnDef
-#   Syntax: fn name[T](params) -> Type { body }
-#
-# - parse_struct(is_pub: bool) -> StructDef
-#   Syntax: struct Name[T] { fields }
-#
-# - parse_enum(is_pub: bool) -> EnumDef
-#   Syntax: enum Name[T] { variants }
-#
-# ### Statements
-# - parse_stmt() -> Stmt
-#   Parses: let, mut, if, while, for, match, return, break, continue, defer, block, expr
-#
-# ### Expressions (Precedence Climbing)
-# - parse_expr() -> Expr
-#   Entry point, calls parse_binary(0)
-#
-# - parse_binary(min_prec: int) -> Expr
-#   Handles binary operators with precedence
-#
-# - parse_unary() -> Expr
-#   Handles: -, not, !, &, *
-#
-# - parse_postfix() -> Expr
-#   Handles: (), [], ., !, ?
-#
-# - parse_primary() -> Expr
-#   Handles: literals, identifiers, (), [], {}, if, match
-#
-# ### Types
-# - parse_type() -> Type
-#   Handles: int, str, [T], {K:V}, ?T, Result[T,E], fn(T)->U, *T, Name[T]
-#
-# ## Token Constants (from token.wyn)
-#
-# EOF=0 IDENT=1 INT=2 FLOAT=3 STRING=4
-# LPAREN=5 RPAREN=6 LBRACE=7 RBRACE=8 LBRACKET=9 RBRACKET=10
-# COMMA=11 COLON=12 DOT=14 ARROW=15
-# PLUS=16 MINUS=17 STAR=18 SLASH=19 PERCENT=20
-# EQ=21 EQEQ=22 NOTEQ=23 LT=24 GT=25 LTEQ=26 GTEQ=27
-# AND=28 OR=29 NOT=30 QUESTION=31
-# FN=40 LET=41 MUT=42 IF=43 ELSE=44 WHILE=45 FOR=46 IN=47
-# RETURN=48 STRUCT=49 ENUM=50 MATCH=51 IMPORT=52
-# TRUE=53 FALSE=54 SOME=55 NONE=56 OK=57 ERR=58 PUB=59
-# BREAK=60 CONTINUE=61 DEFER=62
-# BANG=79 AMP=80 PIPE=81 CARET=82 LTLT=84 GTGT=85 STARSTAR=86
-# AMPAMP=77 PIPEPIPE=78 QUESTIONQUESTION=68 FATARROW=69
-# PLUSEQ=70 MINUSEQ=71 STAREQ=72 SLASHEQ=73
-#
-# ============================================================================
-# EXAMPLE USAGE
-# ============================================================================
-#
-# Input tokens for: fn add(a: int, b: int) -> int { return a + b }
-#
-# Tokens:
-#   FN IDENT("add") LPAREN IDENT("a") COLON IDENT("int") COMMA
-#   IDENT("b") COLON IDENT("int") RPAREN ARROW IDENT("int")
-#   LBRACE RETURN IDENT("a") PLUS IDENT("b") RBRACE
-#
-# Parse tree:
-#   FnDef {
-#     name: "add"
-#     params: ["a", "b"]
-#     param_types: [Type{INT}, Type{INT}]
-#     return_type: Type{INT}
-#     body: [
-#       Stmt{RETURN, ret_value: Expr{BINARY, 
-#         left: Expr{IDENT, "a"},
-#         op: PLUS,
-#         right: Expr{IDENT, "b"}
-#       }}
-#     ]
-#   }
-#
-# ============================================================================
-# ERROR REPORTING
-# ============================================================================
-#
-# Errors include:
-# - Line and column numbers
-# - Expected vs actual tokens
-# - Context-specific messages
-#
-# Example: "file.wyn:10:5: error: expected '}', got 'EOF'"
-#
-# ============================================================================
+# Stage 1 Parser
 
-struct Token {
+struct Expr {
     kind: int
     value: str
-    line: int
-    col: int
 }
 
-struct Parser {
-    tokens: [Token]
-    pos: int
-    had_error: bool
-    filename: str
+struct Stmt {
+    kind: int
+    name: str
 }
 
-fn parser_new(tokens: [Token], filename: str) -> Parser {
-    return Parser{tokens: tokens, pos: 0, had_error: false, filename: filename}
+struct Function {
+    name: str
 }
 
-fn parser_current(p: Parser) -> Token {
-    if p.pos >= p.tokens.len() {
-        return Token{kind: 0, value: "", line: 0, col: 0}
+fn parse(tokens: [Token]) -> [Function] {
+    let functions: [Function] = []
+    let pos: int = 0
+    
+    while pos < tokens.len() {
+        const tok = tokens[pos]
+        if tok.kind == 10 {  # FN
+            pos = pos + 1
+            const name_tok = tokens[pos]
+            pos = pos + 1
+            
+            let fn: Function = Function{name: name_tok.value}
+            functions.append(fn)
+            
+            # Skip to end of function
+            let depth: int = 0
+            while pos < tokens.len() {
+                const t = tokens[pos]
+                if t.kind == 22 {  # LBRACE
+                    depth = depth + 1
+                }
+                if t.kind == 23 {  # RBRACE
+                    depth = depth - 1
+                    if depth == 0 {
+                        pos = pos + 1
+                        break
+                    }
+                }
+                pos = pos + 1
+            }
+        } else {
+            pos = pos + 1
+        }
     }
-    return p.tokens[p.pos]
-}
-
-fn main() {
-    io.print("Stage 1 Parser - Design Documentation")
-    io.print("")
-    io.print("See comments above for full parser specification")
-    io.print("")
-    io.print("Reference implementation: bootstrap/stage0.c lines 595-1800")
-    io.print("")
+    
+    return functions
 }

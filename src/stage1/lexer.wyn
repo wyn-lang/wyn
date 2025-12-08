@@ -1,5 +1,4 @@
 # Stage 1 Lexer
-import std/io
 
 struct Token {
     kind: int
@@ -8,163 +7,162 @@ struct Token {
     col: int
 }
 
-struct Lexer {
-    source: str
-    pos: int
-    line: int
-    col: int
-}
-
-fn new_lexer(source: str) -> Lexer {
-    return Lexer{source: source, pos: 0, line: 1, col: 1}
-}
-
-fn peek(lex: Lexer) -> str {
-    if lex.pos >= lex.source.len() {
-        return ""
-    }
-    return str_substr(lex.source, lex.pos, 1)
-}
-
-fn advance(lex: Lexer) -> Lexer {
-    if lex.pos >= lex.source.len() {
-        return lex
-    }
+fn lex(source: str) -> [Token] {
+    let tokens: [Token] = []
+    let pos: int = 0
+    let line: int = 1
+    let col: int = 1
     
-    const c: str = str_substr(lex.source, lex.pos, 1)
-    let new_lex: Lexer = lex
-    new_lex.pos = lex.pos + 1
-    
-    if c == "\n" {
-        new_lex.line = lex.line + 1
-        new_lex.col = 1
-    } else {
-        new_lex.col = lex.col + 1
-    }
-    
-    return new_lex
-}
-
-fn skip_whitespace(lex: Lexer) -> Lexer {
-    let l: Lexer = lex
-    
-    while l.pos < l.source.len() {
-        const c: str = peek(l)
+    while pos < source.len() {
+        const c = char_at(source, pos)
+        
+        # Skip whitespace
         if c == " " or c == "\t" or c == "\n" or c == "\r" {
-            l = advance(l)
-        } else {
-            break
+            if c == "\n" {
+                line = line + 1
+                col = 1
+            } else {
+                col = col + 1
+            }
+            pos = pos + 1
+            continue
         }
+        
+        # Skip comments
+        if c == "#" {
+            while pos < source.len() and char_at(source, pos) != "\n" {
+                pos = pos + 1
+            }
+            continue
+        }
+        
+        # String literals
+        if c == "\"" {
+            let start: int = pos + 1
+            pos = pos + 1
+            while pos < source.len() and char_at(source, pos) != "\"" {
+                pos = pos + 1
+            }
+            const value = substring(source, start, pos)
+            pos = pos + 1
+            let tok: Token = Token{kind: 7, value: value, line: line, col: col}
+            tokens.append(tok)
+            continue
+        }
+        
+        # Numbers
+        if is_digit(c) {
+            let start: int = pos
+            while pos < source.len() and is_digit(char_at(source, pos)) {
+                pos = pos + 1
+            }
+            const value = substring(source, start, pos)
+            let tok: Token = Token{kind: 3, value: value, line: line, col: col}
+            tokens.append(tok)
+            continue
+        }
+        
+        # Identifiers and keywords
+        if is_alpha(c) {
+            let start: int = pos
+            while pos < source.len() and is_alnum(char_at(source, pos)) {
+                pos = pos + 1
+            }
+            const value = substring(source, start, pos)
+            
+            let kind: int = 1  # IDENT
+            if value == "fn" {
+                kind = 10
+            } else if value == "let" {
+                kind = 11
+            } else if value == "return" {
+                kind = 12
+            } else if value == "if" {
+                kind = 13
+            } else if value == "while" {
+                kind = 14
+            } else if value == "import" {
+                kind = 15
+            }
+            
+            let tok: Token = Token{kind: kind, value: value, line: line, col: col}
+            tokens.append(tok)
+            continue
+        }
+        
+        # Single char tokens
+        if c == "(" {
+            let tok: Token = Token{kind: 20, value: c, line: line, col: col}
+            tokens.append(tok)
+            pos = pos + 1
+            continue
+        }
+        if c == ")" {
+            let tok: Token = Token{kind: 21, value: c, line: line, col: col}
+            tokens.append(tok)
+            pos = pos + 1
+            continue
+        }
+        if c == "{" {
+            let tok: Token = Token{kind: 22, value: c, line: line, col: col}
+            tokens.append(tok)
+            pos = pos + 1
+            continue
+        }
+        if c == "}" {
+            let tok: Token = Token{kind: 23, value: c, line: line, col: col}
+            tokens.append(tok)
+            pos = pos + 1
+            continue
+        }
+        if c == ":" {
+            let tok: Token = Token{kind: 24, value: c, line: line, col: col}
+            tokens.append(tok)
+            pos = pos + 1
+            continue
+        }
+        if c == "," {
+            let tok: Token = Token{kind: 25, value: c, line: line, col: col}
+            tokens.append(tok)
+            pos = pos + 1
+            continue
+        }
+        if c == "=" {
+            let tok: Token = Token{kind: 26, value: c, line: line, col: col}
+            tokens.append(tok)
+            pos = pos + 1
+            continue
+        }
+        if c == "+" {
+            let tok: Token = Token{kind: 27, value: c, line: line, col: col}
+            tokens.append(tok)
+            pos = pos + 1
+            continue
+        }
+        
+        # Unknown - skip
+        pos = pos + 1
     }
     
-    return l
-}
-
-fn is_digit(c: str) -> bool {
-    return c == "0" or c == "1" or c == "2" or c == "3" or c == "4" or
-           c == "5" or c == "6" or c == "7" or c == "8" or c == "9"
+    let eof: Token = Token{kind: 0, value: "", line: line, col: col}
+    tokens.append(eof)
+    return tokens
 }
 
 fn is_alpha(c: str) -> bool {
-    const code: int = ord(c)
+    const code = ord(c)
     return (code >= 65 and code <= 90) or (code >= 97 and code <= 122) or c == "_"
 }
 
-fn lex_number(lex: Lexer) -> (Lexer, Token) {
-    const start: int = lex.pos
-    let l: Lexer = lex
-    
-    # Read digits
-    while l.pos < l.source.len() and is_digit(peek(l)) {
-        l = advance(l)
-    }
-    
-    # Check for decimal
-    if l.pos < l.source.len() and peek(l) == "." {
-        l = advance(l)
-        
-        while l.pos < l.source.len() and is_digit(peek(l)) {
-            l = advance(l)
-        }
-    }
-    
-    const value: str = str_substr(lex.source, start, l.pos - start)
-    const tok: Token = Token{kind: 2, value: value, line: lex.line, col: lex.col}
-    
-    return (l, tok)
+fn is_digit(c: str) -> bool {
+    const code = ord(c)
+    return code >= 48 and code <= 57
 }
 
-fn lex_ident(lex: Lexer) -> (Lexer, Token) {
-    const start: int = lex.pos
-    let l: Lexer = lex
-    
-    while l.pos < l.source.len() {
-        const c: str = peek(l)
-        if is_alpha(c) or is_digit(c) {
-            l = advance(l)
-        } else {
-            break
-        }
-    }
-    
-    const value: str = str_substr(lex.source, start, l.pos - start)
-    const kind: int = keyword_kind(value)
-    const tok: Token = Token{kind: kind, value: value, line: lex.line, col: lex.col}
-    
-    return (l, tok)
+fn is_alnum(c: str) -> bool {
+    return is_alpha(c) or is_digit(c)
 }
 
-fn keyword_kind(word: str) -> int {
-    if word == "fn" { return 40 }
-    if word == "let" { return 41 }
-    if word == "mut" { return 42 }
-    if word == "if" { return 43 }
-    if word == "else" { return 44 }
-    if word == "while" { return 45 }
-    if word == "for" { return 46 }
-    if word == "return" { return 47 }
-    if word == "struct" { return 48 }
-    if word == "enum" { return 49 }
-    if word == "match" { return 50 }
-    if word == "import" { return 51 }
-    if word == "true" { return 52 }
-    if word == "false" { return 53 }
-    return 1  # IDENT
-}
-
-fn next_token(lex: Lexer) -> (Lexer, Token) {
-    const l: Lexer = skip_whitespace(lex)
-    
-    if l.pos >= l.source.len() {
-        const tok: Token = Token{kind: 0, value: "", line: l.line, col: l.col}
-        return (l, tok)
-    }
-    
-    const c: str = peek(l)
-    
-    # Numbers
-    if is_digit(c) {
-        return lex_number(l)
-    }
-    
-    # Identifiers and keywords
-    if is_alpha(c) {
-        return lex_ident(l)
-    }
-    
-    # Single char tokens
-    const new_lex: Lexer = advance(l)
-    
-    if c == "(" { return (new_lex, Token{kind: 5, value: c, line: l.line, col: l.col}) }
-    if c == ")" { return (new_lex, Token{kind: 6, value: c, line: l.line, col: l.col}) }
-    if c == "," { return (new_lex, Token{kind: 11, value: c, line: l.line, col: l.col}) }
-    if c == ":" { return (new_lex, Token{kind: 12, value: c, line: l.line, col: l.col}) }
-    if c == "+" { return (new_lex, Token{kind: 16, value: c, line: l.line, col: l.col}) }
-    if c == "-" { return (new_lex, Token{kind: 17, value: c, line: l.line, col: l.col}) }
-    if c == "*" { return (new_lex, Token{kind: 18, value: c, line: l.line, col: l.col}) }
-    if c == "/" { return (new_lex, Token{kind: 19, value: c, line: l.line, col: l.col}) }
-    
-    # Unknown
-    const tok: Token = Token{kind: 99, value: c, line: l.line, col: l.col}
-    return (new_lex, tok)
+fn char_at(s: str, index: int) -> str {
+    return substring(s, index, index + 1)
 }

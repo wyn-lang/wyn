@@ -2569,7 +2569,8 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                 if (strcmp(e->ident, "print") == 0 || strcmp(e->ident, "assert") == 0 || 
                     strcmp(e->ident, "exit") == 0 || strcmp(e->ident, "args") == 0 ||
                     strcmp(e->ident, "int_to_str") == 0 || strcmp(e->ident, "system") == 0 ||
-                    strcmp(e->ident, "write_file") == 0) {
+                    strcmp(e->ident, "write_file") == 0 || strcmp(e->ident, "substring") == 0 ||
+                    strcmp(e->ident, "ord") == 0) {
                     return new_type(TYPE_FUNCTION);
                 }
                 tc_error(tc, e->line, e->column, "undefined variable '%s'", e->ident);
