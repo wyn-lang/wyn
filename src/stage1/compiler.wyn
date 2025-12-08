@@ -1,26 +1,90 @@
-# Wyn Stage 1 Compiler - Proof of Concept
-# Successfully compiles hello world programs
+# Wyn Stage 1 Compiler - With Lexer
 
 import io
+
+struct Token {
+    kind: int
+    value: str
+}
 
 fn main() {
     print("=== Wyn Stage 1 Compiler ===")
     print("")
-    print("Compiling hello.wyn...")
+    
+    # Read source
+    const source: str = io.read_file("examples/hello.wyn")
+    
+    # Lex
+    print("Lexing...")
+    const tokens: [Token] = lex(source)
+    print("Tokens: ")
+    print(int_to_str(tokens.len()))
     print("")
     
-    # Hardcoded message (parsing works but substring has bugs in stage0)
-    const message: str = "Hello from Stage 1 Compiler!"
-    
-    # Generate assembly
-    generate_and_compile(message)
+    # Generate (hardcoded for now)
+    print("Generating code...")
+    generate_and_compile()
     
     print("✅ Success! Run: ./build/hello_from_stage1")
     print("")
 }
 
-fn generate_and_compile(message: str) {
-    # Write assembly line by line (avoiding string concat bug)
+fn lex(source: str) -> [Token] {
+    let tokens: [Token] = []
+    let pos: int = 0
+    
+    while pos < source.len() {
+        const c: str = substring(source, pos, pos + 1)
+        
+        # Skip whitespace and comments
+        if c == " " or c == "\t" or c == "\n" or c == "#" {
+            pos = pos + 1
+            continue
+        }
+        
+        # String
+        if c == "\"" {
+            let tok: Token = Token{kind: 7, value: "string"}
+            tokens.append(tok)
+            pos = pos + 1
+            # Skip to closing quote
+            while pos < source.len() and substring(source, pos, pos + 1) != "\"" {
+                pos = pos + 1
+            }
+            pos = pos + 1
+            continue
+        }
+        
+        # Identifier
+        if is_alpha(c) {
+            let tok: Token = Token{kind: 1, value: "ident"}
+            tokens.append(tok)
+            while pos < source.len() and is_alnum(substring(source, pos, pos + 1)) {
+                pos = pos + 1
+            }
+            continue
+        }
+        
+        # Punctuation
+        let tok: Token = Token{kind: 20, value: c}
+        tokens.append(tok)
+        pos = pos + 1
+    }
+    
+    return tokens
+}
+
+fn is_alpha(c: str) -> bool {
+    const code: int = ord(c)
+    return (code >= 65 and code <= 90) or (code >= 97 and code <= 122)
+}
+
+fn is_alnum(c: str) -> bool {
+    const code: int = ord(c)
+    return (code >= 48 and code <= 57) or (code >= 65 and code <= 90) or (code >= 97 and code <= 122)
+}
+
+fn generate_and_compile() {
     const asm_file: str = "build/stage1_output.s"
     
     io.write_file(asm_file, "    .section __TEXT,__text\n")
@@ -38,11 +102,8 @@ fn generate_and_compile(message: str) {
     io.append_file(asm_file, "\n")
     io.append_file(asm_file, "    .section __TEXT,__cstring\n")
     io.append_file(asm_file, "msg:\n")
-    io.append_file(asm_file, "    .asciz \"")
-    io.append_file(asm_file, message)
-    io.append_file(asm_file, "\"\n")
+    io.append_file(asm_file, "    .asciz \"Hello from Stage 1!\"\n")
     
-    # Assemble
     const result: int = system("cc -o build/hello_from_stage1 build/stage1_output.s")
     if result != 0 {
         print("Assembly failed")
