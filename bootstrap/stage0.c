@@ -7161,27 +7161,15 @@ static void cg_expr(CodeGen* cg, Expr* e) {
             }
             // Handle built-in substring(str, start, len) -> str
             if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "substring") == 0) {
-                // Evaluate len
-                cg_expr(cg, e->call.args[2]);
-                cg_emit(cg, "    str x0, [sp, #-16]!");  // save len
-                // Evaluate start
-                cg_expr(cg, e->call.args[1]);
-                cg_emit(cg, "    str x0, [sp, #-16]!");  // save start
-                // Evaluate str
-                cg_expr(cg, e->call.args[0]);
-                cg_emit(cg, "    str x0, [sp, #-16]!");  // save str
-                // Allocate buffer: malloc(len + 1)
-                cg_emit(cg, "    ldr x0, [sp, #32]");  // len
-                cg_emit(cg, "    add x0, x0, #1");
-                cg_emit(cg, "    bl %smalloc", cg_sym_prefix(cg));
-                cg_emit(cg, "    str x0, [sp, #-16]!");  // save dest
-                cg_emit(cg, "    ldr x1, [sp, #16]");  // str
-                cg_emit(cg, "    ldr x8, [sp, #32]");  // start
-                cg_emit(cg, "    add x1, x1, x8");  // str + start
-                cg_emit(cg, "    ldr x2, [sp, #48]");  // len
-                cg_emit(cg, "    bl %smemcpy", cg_sym_prefix(cg));
-                cg_emit(cg, "    ldr x0, [sp], #16");  // return dest
-                cg_emit(cg, "    add sp, sp, #48");  // clean up
+                // Call runtime function instead of inline code
+                cg_expr(cg, e->call.args[2]);  // end
+                cg_emit(cg, "    str x0, [sp, #-16]!");
+                cg_expr(cg, e->call.args[1]);  // start
+                cg_emit(cg, "    str x0, [sp, #-16]!");
+                cg_expr(cg, e->call.args[0]);  // str
+                cg_emit(cg, "    ldr x1, [sp], #16");  // start
+                cg_emit(cg, "    ldr x2, [sp], #16");  // end
+                cg_emit(cg, "    bl _substring");
                 break;
             }
             // Handle built-in assert()
@@ -8290,10 +8278,14 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                     if (s->let.value->kind == EXPR_STRING) {
                         var_type = new_type(TYPE_STR);
                     } else if (s->let.value->kind == EXPR_CALL &&
-                        s->let.value->call.func->kind == EXPR_IDENT &&
-                        strcmp(s->let.value->call.func->ident, "args") == 0) {
-                        var_type = new_type(TYPE_ARRAY);
-                        var_type->inner = new_type(TYPE_STR);
+                        s->let.value->call.func->kind == EXPR_IDENT) {
+                        const char* func_name = s->let.value->call.func->ident;
+                        if (strcmp(func_name, "args") == 0) {
+                            var_type = new_type(TYPE_ARRAY);
+                            var_type->inner = new_type(TYPE_STR);
+                        } else if (strcmp(func_name, "substring") == 0) {
+                            var_type = new_type(TYPE_STR);
+                        }
                     }
                 }
                 cg_add_local(cg, s->let.name, var_type);

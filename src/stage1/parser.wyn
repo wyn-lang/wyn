@@ -1,53 +1,79 @@
-# Stage 1 Parser
+# Stage 1 Parser - Handles functions and print statements
 
-struct Expr {
+struct Token {
     kind: int
     value: str
 }
 
-struct Stmt {
-    kind: int
-    name: str
-}
-
 struct Function {
     name: str
+    statements: [str]  # Simplified - just store print messages
 }
 
-fn parse(tokens: [Token]) -> [Function] {
+struct Module {
+    functions: [Function]
+}
+
+# Token kinds
+const TOK_EOF: int = 0
+const TOK_IDENT: int = 1
+const TOK_STRING: int = 7
+const TOK_FN: int = 10
+const TOK_LPAREN: int = 20
+const TOK_RPAREN: int = 21
+const TOK_LBRACE: int = 22
+const TOK_RBRACE: int = 23
+
+fn parse(tokens: [Token]) -> Module {
     let functions: [Function] = []
     let pos: int = 0
     
     while pos < tokens.len() {
-        const tok = tokens[pos]
-        if tok.kind == 10 {  # FN
+        const tok: Token = tokens[pos]
+        
+        if tok.kind == TOK_FN {
             pos = pos + 1
-            const name_tok = tokens[pos]
+            const name_tok: Token = tokens[pos]
             pos = pos + 1
             
-            let fn: Function = Function{name: name_tok.value}
-            functions.append(fn)
+            # Skip ()
+            pos = pos + 1  # (
+            pos = pos + 1  # )
             
-            # Skip to end of function
-            let depth: int = 0
+            # Skip {
+            pos = pos + 1
+            
+            # Parse body - find print statements
+            let statements: [str] = []
             while pos < tokens.len() {
-                const t = tokens[pos]
-                if t.kind == 22 {  # LBRACE
-                    depth = depth + 1
+                const t: Token = tokens[pos]
+                if t.kind == TOK_RBRACE {
+                    pos = pos + 1
+                    break
                 }
-                if t.kind == 23 {  # RBRACE
-                    depth = depth - 1
-                    if depth == 0 {
-                        pos = pos + 1
-                        break
+                
+                # Look for print("...")
+                if t.kind == TOK_IDENT and t.value == "print" {
+                    pos = pos + 1  # skip 'print'
+                    pos = pos + 1  # skip '('
+                    const str_tok: Token = tokens[pos]
+                    if str_tok.kind == TOK_STRING {
+                        statements.append(str_tok.value)
                     }
+                    pos = pos + 1  # skip string
+                    pos = pos + 1  # skip ')'
+                } else {
+                    pos = pos + 1
                 }
-                pos = pos + 1
             }
+            
+            let fn: Function = Function{name: name_tok.value, statements: statements}
+            functions.append(fn)
         } else {
             pos = pos + 1
         }
     }
     
-    return functions
+    let module: Module = Module{functions: functions}
+    return module
 }
