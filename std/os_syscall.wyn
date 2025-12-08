@@ -1,9 +1,12 @@
 # Pure Wyn OS Module - No C dependencies
+# Uses direct syscalls (macOS ARM64)
 
 fn exit(code: int) {
-    syscall(1, code, 0, 0, 0, 0, 0)
+    # macOS syscall: exit = 1 + 0x2000000
+    syscall(33554433, code, 0, 0, 0, 0, 0)
 }
 
 fn getpid() -> int {
-    return syscall(20, 0, 0, 0, 0, 0, 0)
+    # macOS syscall: getpid = 20 + 0x2000000
+    return syscall(33554452, 0, 0, 0, 0, 0, 0)
 }
