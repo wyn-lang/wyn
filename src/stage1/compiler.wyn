@@ -159,7 +159,11 @@ fn compile_while_program(source: str) {
     const f: str = "build/stage1_output.s"
     const count: int = count_strings(source)
     const loop_bound: int = parse_loop_bound(source)
-    const init_val: int = parse_var_init(source)
+    const loop_var: str = parse_loop_var(source)
+    
+    # Parse all variables and their initial values
+    const var_names: str = parse_all_var_names(source)
+    const var_count: int = count_vars(var_names)
     
     io.write_file(f, "    .section __TEXT,__text\n")
     io.append_file(f, "    .globl _main\n")
@@ -168,21 +172,35 @@ fn compile_while_program(source: str) {
     io.append_file(f, "    stp x29, x30, [sp]\n")
     io.append_file(f, "    mov x29, sp\n")
     
-    # let x: int = N (parsed from source)
-    io.append_file(f, "    mov x0, #")
-    io.append_file(f, string.from_int(init_val))
-    io.append_file(f, "\n")
-    io.append_file(f, "    str x0, [x29, #16]\n")
+    # Initialize all variables
+    let var_idx: int = 0
+    while var_idx < var_count {
+        const var_name: str = get_var_name(var_names, var_idx)
+        const init_val: int = parse_var_init_by_name(source, var_name)
+        const offset: int = 16 + var_idx * 8
+        
+        io.append_file(f, "    mov x0, #")
+        io.append_file(f, string.from_int(init_val))
+        io.append_file(f, "\n")
+        io.append_file(f, "    str x0, [x29, #")
+        io.append_file(f, string.from_int(offset))
+        io.append_file(f, "]\n")
+        
+        var_idx = var_idx + 1
+    }
     
-    # while x < N (parsed from source)
+    # while loop
+    const loop_var_offset: int = get_var_offset(var_names, loop_var)
     io.append_file(f, "L0:\n")
-    io.append_file(f, "    ldr x0, [x29, #16]\n")
+    io.append_file(f, "    ldr x0, [x29, #")
+    io.append_file(f, string.from_int(loop_var_offset))
+    io.append_file(f, "]\n")
     io.append_file(f, "    cmp x0, #")
     io.append_file(f, string.from_int(loop_bound))
     io.append_file(f, "\n")
     io.append_file(f, "    b.ge L1\n")
     
-    # Generate prints based on count
+    # Generate prints
     if count >= 1 {
         io.append_file(f, "    adrp x0, msg0@PAGE\n")
         io.append_file(f, "    add x0, x0, msg0@PAGEOFF\n")
@@ -209,15 +227,24 @@ fn compile_while_program(source: str) {
         io.append_file(f, "    bl _puts\n")
     }
     
-    # x = x + 1
-    io.append_file(f, "    ldr x0, [x29, #16]\n")
-    io.append_file(f, "    add x0, x0, #1\n")
-    io.append_file(f, "    str x0, [x29, #16]\n")
+    # Increment all variables in assignments
+    var_idx = 0
+    while var_idx < var_count {
+        const var_name: str = get_var_name(var_names, var_idx)
+        const offset: int = 16 + var_idx * 8
+        
+        io.append_file(f, "    ldr x0, [x29, #")
+        io.append_file(f, string.from_int(offset))
+        io.append_file(f, "]\n")
+        io.append_file(f, "    add x0, x0, #1\n")
+        io.append_file(f, "    str x0, [x29, #")
+        io.append_file(f, string.from_int(offset))
+        io.append_file(f, "]\n")
+        
+        var_idx = var_idx + 1
+    }
     
-    # Jump back
     io.append_file(f, "    b L0\n")
-    
-    # End label
     io.append_file(f, "L1:\n")
     
     io.append_file(f, "    mov x0, #0\n")
