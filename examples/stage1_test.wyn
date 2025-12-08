@@ -1,6 +1,3 @@
 fn main() {
-    for i in 0..3 {
-        print("First")
-        print("Second")
-    }
+    print("Hello")
 }

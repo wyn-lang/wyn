@@ -1,128 +1,35 @@
 # Pure Wyn String Utilities - No C dependencies
 
-fn from_int(n: int) -> str {
-    # Convert integer to string in pure Wyn
-    if n == 0 {
-        return "0"
-    }
-    
-    let result: str = ""
-    let num: int = n
-    let is_negative: int = 0
-    
-    if num < 0 {
-        is_negative = 1
-        num = 0 - num
-    }
-    
-    # Build digits in reverse
-    while num > 0 {
-        const digit: int = num % 10
-        const digit_char: str = digit_to_char(digit)
-        result = digit_char + result
-        num = num / 10
-    }
-    
-    if is_negative == 1 {
-        result = "-" + result
-    }
-    
-    return result
-}
-
+# Convert single digit (0-9) to character
 fn digit_to_char(digit: int) -> str {
-    # Convert 0-9 to "0"-"9"
-    if digit == 0 {
-        return "0"
-    }
-    if digit == 1 {
-        return "1"
-    }
-    if digit == 2 {
-        return "2"
-    }
-    if digit == 3 {
-        return "3"
-    }
-    if digit == 4 {
-        return "4"
-    }
-    if digit == 5 {
-        return "5"
-    }
-    if digit == 6 {
-        return "6"
-    }
-    if digit == 7 {
-        return "7"
-    }
-    if digit == 8 {
-        return "8"
-    }
-    if digit == 9 {
-        return "9"
-    }
+    if digit == 0 { return "0" }
+    if digit == 1 { return "1" }
+    if digit == 2 { return "2" }
+    if digit == 3 { return "3" }
+    if digit == 4 { return "4" }
+    if digit == 5 { return "5" }
+    if digit == 6 { return "6" }
+    if digit == 7 { return "7" }
+    if digit == 8 { return "8" }
+    if digit == 9 { return "9" }
     return "0"
 }
 
-fn to_int(s: str) -> int {
-    # Convert string to integer in pure Wyn
-    let result: int = 0
-    let pos: int = 0
-    let is_negative: int = 0
-    
-    # Check for negative sign
-    const first: str = substring(s, 0, 1)
-    if first == "-" {
-        is_negative = 1
-        pos = 1
-    }
-    
-    while pos < s.len() {
-        const c: str = substring(s, pos, pos + 1)
-        const digit: int = char_to_digit(c)
-        result = result * 10 + digit
-        pos = pos + 1
-    }
-    
-    if is_negative == 1 {
-        result = 0 - result
-    }
-    
-    return result
-}
-
+# Convert character to digit (0-9)
 fn char_to_digit(c: str) -> int {
-    # Convert "0"-"9" to 0-9
-    if c == "0" {
-        return 0
-    }
-    if c == "1" {
-        return 1
-    }
-    if c == "2" {
-        return 2
-    }
-    if c == "3" {
-        return 3
-    }
-    if c == "4" {
-        return 4
-    }
-    if c == "5" {
-        return 5
-    }
-    if c == "6" {
-        return 6
-    }
-    if c == "7" {
-        return 7
-    }
-    if c == "8" {
-        return 8
-    }
-    if c == "9" {
-        return 9
-    }
+    if c == "0" { return 0 }
+    if c == "1" { return 1 }
+    if c == "2" { return 2 }
+    if c == "3" { return 3 }
+    if c == "4" { return 4 }
+    if c == "5" { return 5 }
+    if c == "6" { return 6 }
+    if c == "7" { return 7 }
+    if c == "8" { return 8 }
+    if c == "9" { return 9 }
     return 0
 }
+
+# Note: from_int() requires string concatenation in loops
+# which is not yet fully supported in stage0.
+# Will be implemented when stage1 is self-hosting.

@@ -2,6 +2,7 @@
 # Supports: while loops, for loops, multiple functions, imports
 
 import io
+import os
 
 fn main() {
     print("=== Wyn Stage 1 Compiler (Extended) ===")
@@ -37,13 +38,13 @@ fn main() {
         }
     }
     
-    const result: int = system("cc -o build/stage1_output build/stage1_output.s")
+    const result: int = os.system("cc -o build/stage1_output build/stage1_output.s")
     
     if result == 0 {
         print("✅ Success! Run: ./build/stage1_output")
     } else {
         print("❌ Failed")
-        exit(1)
+        os.exit(1)
     }
 }
 
