@@ -1,0 +1,9 @@
+# Pure Wyn OS Module - No C dependencies
+
+fn exit(code: int) {
+    syscall(1, code, 0, 0, 0, 0, 0)
+}
+
+fn getpid() -> int {
+    return syscall(20, 0, 0, 0, 0, 0, 0)
+}
