@@ -1,40 +1,84 @@
 # Wyn Language Roadmap
 
-This document outlines planned features for Wyn. Features are organized by priority and implementation status.
+## 🎯 Immediate Goals
+
+### 1. Reduce to 1 Builtin (Target: print only)
+
+**Current:** 4 builtins
+**Target:** 1 builtin
+
+| Builtin | Status | Action |
+|---------|--------|--------|
+| `print()` | ✅ Keep | Target builtin |
+| `assert()` | ⏳ Remove | Rename `test` keyword or use different module |
+| `args()` | ⏳ Intrinsic | Make compiler intrinsic, not exposed builtin |
+| `syscall()` | ⏳ Intrinsic | Make compiler intrinsic, not exposed builtin |
+
+**Completed:**
+- ✅ `ord()` → use `string.ord()`
+- ✅ `substring()` → use slice syntax `[start:end]`
+
+### 2. Self-Hosting Stage 1 Compiler
+
+**Current:** ~15% complete
+**Target:** Stage 1 compiles itself
+
+**Completed:**
+- ✅ Variables (let, const)
+- ✅ Expressions (arithmetic)
+- ✅ Functions (definitions)
+- ✅ Control flow (if, while, for)
+- ✅ Imports (io, os, string)
+- ✅ Dynamic parsing (loop bounds, var init)
+- ✅ Multiple variables with tracking
+
+**Needed:**
+- ⏳ Function parameters and return values
+- ⏳ Variable references in expressions (`while x < max`)
+- ⏳ String variable support
+- ⏳ Function call parsing
+- ⏳ Complex expression evaluation
+- ⏳ Full lexer/parser
 
 ---
 
 ## ✅ Implemented (v0.1)
 
 - [x] Basic types (int, float, str, bool)
-- [x] Arrays and strings
+- [x] Arrays and strings with slicing
 - [x] Functions and structs
 - [x] Control flow (if/else, for, while)
 - [x] Spawn-based concurrency
-- [x] Module system
-- [x] Standard library (io, http, time, os, string, array, math)
-- [x] Stage 1 compiler with optimizations
-- [x] Cross-platform support (macOS, Linux, Windows)
+- [x] Module system with imports
+- [x] Standard library (io, os, string, time, math, array, etc.)
+- [x] Stage 0 compiler (C bootstrap)
+- [x] Stage 1 compiler (Wyn, partial)
+- [x] ARM64 macOS native code generation
+- [x] syscall() primitive for pure Wyn stdlib
 
 ---
 
 ## 🚧 In Progress (v0.2)
 
-### Type System Enhancements
+### Builtin Reduction
+- [x] Remove ord() builtin
+- [x] Remove substring() builtin
+- [ ] Remove assert() builtin
+- [ ] Make args() compiler intrinsic
+- [ ] Make syscall() compiler intrinsic
+
+### Self-Hosting
+- [x] Basic Stage 1 compiler
+- [x] Dynamic value parsing
+- [x] Multiple variable support
+- [ ] Function parameters
+- [ ] Return statements
+- [ ] Full expression parsing
+
+### Type System
 - [ ] Optional types (`?T`)
 - [ ] Result types (`Result[T, E]`)
-- [ ] Basic enums with values
 - [ ] Type aliases
-
-### Error Handling
-- [ ] `try/catch` blocks
-- [ ] `defer` statements
-- [ ] Panic and recover
-
-### Pattern Matching
-- [ ] `match` expressions
-- [ ] Destructuring in match arms
-- [ ] Guard clauses
 
 ---
 
@@ -43,85 +87,44 @@ This document outlines planned features for Wyn. Features are organized by prior
 ### Generics
 - [ ] Generic functions `fn foo[T](x: T)`
 - [ ] Generic structs `struct Box[T]`
-- [ ] Type constraints `[T: Comparable]`
+- [ ] Type constraints
 
-### Interfaces/Traits
+### Interfaces
 - [ ] Interface definitions
-- [ ] `impl` blocks for types
-- [ ] Trait bounds on generics
+- [ ] `impl` blocks
+- [ ] Trait bounds
 
 ### Advanced Concurrency
-- [ ] Channels for communication
-- [ ] `parallel` loops
+- [ ] Channels
 - [ ] Atomic operations
-- [ ] Mutex and RWLock
+- [ ] Mutex/RWLock
 
 ---
 
 ## 🔮 Future (v0.4+)
 
-### Async/Await
-- [ ] `async` functions
-- [ ] `await` expressions
-- [ ] Async I/O runtime
-- [ ] Async iterators with `yield`
-
-### GPU Computing
-- [ ] GPU blocks and functions
-- [ ] Tensor types
-- [ ] Neural network primitives
-- [ ] Automatic differentiation
-- [ ] Metal/Vulkan/CUDA backends
-
-### Advanced Features
-- [ ] Macros and metaprogramming
-- [ ] Compile-time execution
-- [ ] Custom allocators
-- [ ] Inline assembly
-- [ ] Foreign function interface (FFI)
-
-### Tooling
-- [ ] Language server protocol (LSP)
-- [ ] Debugger integration
-- [ ] Profiler
-- [ ] Package registry
-- [ ] Documentation generator
-
-### Compilation Targets
-- [ ] WebAssembly
-- [ ] iOS/Android native
-- [ ] Embedded systems
-- [ ] LLVM backend
+- Async/await
+- GPU computing (Metal/Vulkan)
+- WebAssembly target
+- LSP server
+- Package registry
 
 ---
 
 ## 🎯 Design Principles
 
-When adding features, we prioritize:
-
-1. **Simplicity** - Keep the language easy to learn
-2. **Performance** - Maintain near-C speed
-3. **Practicality** - Solve real problems
-4. **Explicitness** - No hidden behavior
-5. **Compatibility** - Don't break existing code
+1. **Minimal** - Only `print()` as builtin, everything else via imports
+2. **Simple** - Python-like syntax, easy to learn
+3. **Fast** - Native ARM64 code, near-C performance
+4. **Self-hosting** - Compiler written in Wyn
 
 ---
 
-## 📝 Contributing
+## 📊 Current Status
 
-Want to help implement a feature? Check the [GitHub issues](https://github.com/wyn-lang/wyn/issues) for:
-- Features marked "help wanted"
-- RFCs (Request for Comments) for design discussions
-- Good first issues for newcomers
-
----
-
-## 🗓️ Release Schedule
-
-- **v0.1** - Current (Basic language working)
-- **v0.2** - Q1 2026 (Error handling, pattern matching)
-- **v0.3** - Q2 2026 (Generics, interfaces)
-- **v0.4** - Q3 2026 (Async/await)
-- **v1.0** - Q4 2026 (Stable API, production ready)
-
-*Note: Dates are estimates and subject to change based on community feedback and development progress.*
+| Metric | Value |
+|--------|-------|
+| Builtins | 4 (target: 1) |
+| Tests passing | ~65% |
+| Stage 1 progress | ~15% |
+| Platform | ARM64 macOS |

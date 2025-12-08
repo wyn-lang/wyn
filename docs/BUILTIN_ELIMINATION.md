@@ -1,73 +1,104 @@
 # Builtin Elimination Progress
 
 ## Goal
-Reduce from 8 builtins to 1 builtin (print only).
+Reduce from 30+ builtins to 1 builtin (print only).
 
-## Current Status: 4 Builtins
+## Current Status: 4 Builtins (87% reduction)
 
-**Reduced from 6 to 4 builtins!**
+### Remaining Builtins
 
-### Current Builtins:
-1. `print()` - **TARGET TO KEEP**
-2. `assert()` - Cannot move (conflicts with `test` keyword)
-3. `args()` - Compiler intrinsic (generates inline code)
-4. `syscall()` - Compiler intrinsic (needed for stdlib)
+| Builtin | Status | Path to Removal |
+|---------|--------|-----------------|
+| `print()` | ✅ KEEP | Target - only global function |
+| `assert()` | ⏳ Remove | Conflicts with `test` keyword; rename keyword or use different module |
+| `args()` | ⏳ Intrinsic | Make compiler intrinsic (generates inline asm), not exposed as builtin |
+| `syscall()` | ⏳ Intrinsic | Make compiler intrinsic, not exposed as builtin |
 
-### Eliminated Builtins:
-1. ✅ `ord()` - Use `string.ord()` instead
-2. ✅ `substring()` - Use slice syntax `[start:end]` or `string.substring()`
+### Eliminated Builtins (26+)
 
-## Completed Changes
+| Builtin | Replacement | Date |
+|---------|-------------|------|
+| `ord()` | `string.ord()` | 2025-12-09 |
+| `substring()` | Slice syntax `[start:end]` | 2025-12-08 |
+| `read_file()` | `io.read_file()` | Earlier |
+| `write_file()` | `io.write_file()` | Earlier |
+| `exit()` | `os.exit()` | Earlier |
+| `system()` | `os.system()` | Earlier |
+| `getenv()` | `os.getenv()` | Earlier |
+| `sleep_ms()` | `time.sleep_ms()` | Earlier |
+| `time_now()` | `time.now()` | Earlier |
+| `abs()` | `math.abs()` or `.abs()` | Earlier |
+| `min()` | `math.min()` | Earlier |
+| `max()` | `math.max()` | Earlier |
+| ... | ... | ... |
 
-### ord() → string.ord()
+## Remaining Work
 
-**Date:** 2025-12-09
+### 1. Remove `assert()` as Builtin
 
-**Status:** ✅ Complete
+**Problem:** `test` is a reserved keyword for test blocks, causing parser conflicts when using `import test`.
 
-**Changes Made:**
-- Updated Stage 1 compiler to use `string.ord()` instead of bare `ord()`
-- Removed `ord` from builtin list in stage0.c
-- `string.ord()` still works via module mapping
+**Solutions:**
+1. Rename the `test` keyword to something else (e.g., `testcase`)
+2. Use a different module name (e.g., `import testing`)
+3. Keep `assert()` as a special case
 
-### substring() → Slice Syntax
+**Effort:** ~2 hours
 
-**Date:** 2025-12-08
+### 2. Make `args()` a Compiler Intrinsic
 
-**Status:** ✅ Complete
+**Current:** `args()` is listed as a builtin but generates inline assembly.
 
-**Changes Made:**
-- Replaced all `substring(source, start, end)` calls with slice syntax `source[start:end]` in Stage 1 compiler
-- Removed `substring` from builtin list in stage0.c
-- `string.substring()` still works via module mapping
+**Change:** Remove from builtin list, keep codegen. Users must use `os.args()`.
 
-## Why Some Builtins Must Stay
+**Effort:** ~1 hour
 
-### args()
-The `args()` function generates inline assembly to access `argc` and `argv` from the program entry point. It cannot be implemented as a library function because it needs access to the stack frame at program start.
+### 3. Make `syscall()` a Compiler Intrinsic
 
-### syscall()
-The `syscall()` function is a compiler intrinsic that generates the actual system call instruction. It's the foundation for all stdlib I/O, OS, and time functions.
+**Current:** `syscall()` is listed as a builtin but generates inline assembly.
 
-### assert()
-The `assert()` function could theoretically move to `test.assert()`, but `test` is a reserved keyword for test blocks, causing parser conflicts.
+**Change:** Remove from builtin list, keep codegen. Only accessible via stdlib modules.
+
+**Effort:** ~1 hour
 
 ## Path to 1 Builtin
 
-To reach the goal of only `print()` as a builtin:
+```
+Current:  print, assert, args, syscall  (4 builtins)
+Step 1:   print, assert, args           (remove syscall from list)
+Step 2:   print, assert                 (remove args from list)
+Step 3:   print                         (resolve assert/test conflict)
+```
 
-1. **assert()** - Could be renamed to something like `check()` or moved to a different module name
-2. **args()** - Could become a compiler intrinsic that's not exposed as a builtin
-3. **syscall()** - Could become a compiler intrinsic that's not exposed as a builtin
+**Total estimated effort:** 4-6 hours
 
-The key insight is that `args()` and `syscall()` are really compiler intrinsics, not builtins. They generate inline code rather than calling a function.
+## Self-Hosting Dependency
+
+The Stage 1 compiler currently uses:
+- `print()` - for output
+- `string.ord()` - for parsing (already using module version)
+- `io.read_file()`, `io.write_file()`, `io.append_file()` - for file I/O
+- `os.system()`, `os.exit()` - for compilation and exit
+
+Stage 1 does NOT use:
+- `assert()` - not needed
+- `args()` - not needed (hardcoded input file)
+- `syscall()` - uses higher-level io/os modules
+
+**Conclusion:** Stage 1 is already compatible with 1-builtin goal.
 
 ## Testing
 
-All changes verified:
-- ✅ Stage 1 compiles successfully
-- ✅ Stage 1 runs and generates working output
-- ✅ Core tests pass (arithmetic, control_flow, function, builtins)
-- ✅ `string.ord()` works
-- ✅ `string.substring()` works
-- ✅ Slice syntax `[start:end]` works
+After each change, verify:
+1. Stage 1 compiles: `./build/stage0 -o build/stage1 src/stage1/compiler.wyn`
+2. Stage 1 runs: `./build/stage1 && ./build/stage1_output`
+3. Core tests pass: `make test`
+
+## Success Criteria
+
+- [ ] Only `print()` exposed as builtin
+- [ ] `args()` works via `os.args()` only
+- [ ] `syscall()` only accessible via stdlib
+- [ ] `assert()` moved to module or keyword renamed
+- [ ] All tests pass
+- [ ] Stage 1 compiles and runs

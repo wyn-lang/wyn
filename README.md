@@ -6,7 +6,7 @@ Fast, compiled systems language with Python-like syntax.
 
 - **Fast:** Compiles to native ARM64 code
 - **Simple:** Python-like syntax
-- **Library-first:** Minimal global namespace (8 builtins)
+- **Minimal:** Only 4 builtins (target: 1)
 - **Concurrent:** Spawn-based concurrency
 - **Self-hosting:** Stage 1 compiler written in Wyn
 
@@ -25,45 +25,40 @@ Fast, compiled systems language with Python-like syntax.
 
 ```wyn
 import io
-import time
+import string
 
 fn main() {
     print("Hello, Wyn!")
     
     const data = io.read_file("file.txt")
-    time.sleep_ms(1000)
+    const code = string.ord("A")  # 65
     
     print(data)
 }
 ```
 
-## Architecture
-
-### Builtins
+## Builtins
 
 **Current:** 4 builtins (87% reduction from 30+)
 **Target:** 1 builtin (print only)
 
-**Current builtins:**
-1. `print()` - Output (**target to keep**)
-2. `assert()` - Assertions (keyword conflict prevents moving)
-3. `args()` - Command line arguments (compiler intrinsic)
-4. `syscall()` - System calls (compiler intrinsic)
+| Builtin | Status | Notes |
+|---------|--------|-------|
+| `print()` | Keep | Target builtin |
+| `assert()` | Remove | Move to module |
+| `args()` | Intrinsic | Compiler generates inline |
+| `syscall()` | Intrinsic | Foundation for stdlib |
 
-**Removed (26+ builtins):**
+**Recently removed:**
 - `ord()` → use `string.ord()`
 - `substring()` → use slice syntax `[start:end]`
-- File I/O, time, math, string utilities, OS functions, etc.
-
-**All moved to stdlib via syscalls or pure Wyn implementations.**
 
 **Everything else requires imports:**
-
 - `io` - File I/O
+- `os` - Operating system
+- `string` - String utilities
 - `time` - Time and sleep
 - `math` - Mathematical functions
-- `string` - String utilities
-- `os` - Operating system
 - And 20+ more modules
 
 ## Building
@@ -76,14 +71,16 @@ make test
 
 ## Status
 
-- **Compiler:** stage0 (C bootstrap) + **Stage 1 (Wyn)** ✅
-- **Tests:** 41/64 passing (64%)
-- **Platform:** ARM64 macOS
-- **Stage 1:** **Working!** Compiles programs with variables, expressions, functions, control flow
+| Component | Status |
+|-----------|--------|
+| Stage 0 (C bootstrap) | ✅ Complete |
+| Stage 1 (Wyn compiler) | 🚧 ~15% |
+| Tests | 65% passing |
+| Platform | ARM64 macOS |
 
 ## Stage 1 Compiler
 
-**Wyn compiler written in Wyn!**
+Wyn compiler written in Wyn:
 
 ```bash
 # Compile Stage 1
@@ -91,53 +88,49 @@ make test
 
 # Run Stage 1
 ./build/stage1
-# Generates: build/hello_from_stage1
 
-# Run the output
-./build/hello_from_stage1
-# Output: Hello from Stage 1!
+# Run output
+./build/stage1_output
 ```
 
-Stage 1 successfully compiles Wyn programs with:
-- Variables and expressions
-- Function definitions and calls
-- Control flow (if statements)
-- Multiple statements
+**Working features:**
+- Variables (let, const)
+- Expressions (arithmetic)
+- Control flow (if, while, for)
+- Imports (io, os, string)
+- Multiple variables with tracking
 
-## Next Steps
+**Needed for self-hosting:**
+- Function parameters/returns
+- Variable references in expressions
+- String variables
+- Full lexer/parser
 
-1. Expand Stage 1 (full parsing, all features)
-2. Self-hosting (Stage 1 compiles itself)
-3. Add syscalls (pure Wyn, no C dependencies)
-4. **Reduce to 1 builtin** - Move all except print() to stdlib
+## Goals
 
-## The Goal
-
-**Only `print()` as a builtin. Everything else via imports.**
+1. **1 Builtin** - Only `print()` is global
+2. **Self-hosting** - Stage 1 compiles itself
+3. **Pure Wyn stdlib** - All via syscalls
 
 ```wyn
-# Future: Only print() is global
-
-import test
+# Target: Only print() is builtin
 import os
 import io
-import string
 
 fn main() {
-    print("Hello!")  # Only builtin
-    
-    const data = io.read_file("file.txt")  # Syscall
-    test.assert(data.len() > 0)  # Pure Wyn
-    os.exit(0)  # Syscall
+    print("Hello!")           # Only builtin
+    const data = io.read_file("f.txt")  # Via syscall
+    os.exit(0)                # Via syscall
 }
 ```
 
-The 8 current builtins are temporary workarounds for bootstrap limitations.
-Once Stage 1 is self-hosting, we'll implement everything in pure Wyn with syscalls.
-
 ## Documentation
 
-See `docs/` for language reference and guides.
+See [`docs/`](docs/) for:
+- [Quick Start](docs/quickstart.md)
+- [Language Reference](docs/language.md)
+- [Standard Library](docs/stdlib.md)
+- [Roadmap](docs/ROADMAP.md)
 
 ## License
 

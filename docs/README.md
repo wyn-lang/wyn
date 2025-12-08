@@ -1,17 +1,27 @@
 # Wyn Documentation
 
-**Essential guides for developers:**
-
+## Getting Started
 - **[quickstart.md](quickstart.md)** - Get started in 5 minutes
 - **[language.md](language.md)** - Language syntax and features
-- **[stdlib.md](stdlib.md)** - Standard library reference
-- **[concurrency.md](concurrency.md)** - Using spawn for parallel code
-- **[compiler.md](compiler.md)** - Compiler options and optimizations
-- **[packages.md](packages.md)** - Package management
-- **[gui.md](gui.md)** - Building GUI applications
-- **[mobile.md](mobile.md)** - iOS mobile development
 
-**Quick links:**
-- Main README: [../README.md](../README.md)
-- Examples: [../examples/](../examples/)
-- Benchmarks: [../benchmarks/](../benchmarks/)
+## Reference
+- **[stdlib.md](stdlib.md)** - Standard library reference
+- **[syscalls.md](syscalls.md)** - System call interface
+
+## Advanced
+- **[concurrency.md](concurrency.md)** - Spawn-based parallelism
+- **[compiler.md](compiler.md)** - Compiler options
+- **[packages.md](packages.md)** - Package management
+
+## Platform-Specific
+- **[gui.md](gui.md)** - GUI applications
+- **[mobile.md](mobile.md)** - iOS development
+
+## Development
+- **[ROADMAP.md](ROADMAP.md)** - Project roadmap and goals
+- **[BUILTIN_ELIMINATION.md](BUILTIN_ELIMINATION.md)** - Progress toward 1 builtin
+
+## Quick Links
+- [Main README](../README.md)
+- [Examples](../examples/)
+- [Tests](../tests/)
