@@ -12,16 +12,16 @@ fn main() {
     print("Testing new import system")
     
     # File operations require io module
-    io.io.write_file("test.txt", "hello")
-    const content: str = io.io.read_file("test.txt")
+    io.write_file("test.txt", "hello")
+    const content: str = io.read_file("test.txt")
     print(content)
     
     # Time operations require time module
     const now: int = time.now()
-    time.time.sleep_ms(100)
+    time.sleep_ms(100)
     
     # Cleanup
-    io.io.delete_file("test.txt")
+    io.delete_file("test.txt")
     
     print("✓ New import system works")
 }
