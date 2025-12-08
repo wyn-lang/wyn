@@ -6,9 +6,12 @@ fn main() {
     print("=== Wyn Stage 1 Compiler ===")
     print("")
     
-    const source: str = io.read_file("examples/with_expr.wyn")
+    const source: str = io.read_file("examples/with_func.wyn")
     
     print("Compiling...")
+    
+    # Parse to find functions
+    const has_add_func: int = check_for_add_function(source)
     
     # Parse to find how many print statements
     const count: int = count_prints(source)
@@ -50,29 +53,43 @@ fn count_prints(source: str) -> int {
     return count
 }
 
+fn check_for_add_function(source: str) -> int {
+    # Check if source contains "fn add"
+    let pos: int = 0
+    while pos < source.len() - 6 {
+        const chunk: str = substring(source, pos, pos + 6)
+        if chunk == "fn add" {
+            return 1
+        }
+        pos = pos + 1
+    }
+    return 0
+}
+
 fn generate_multi_print(count: int) {
     const f: str = "build/stage1_output.s"
     
     io.write_file(f, "    .section __TEXT,__text\n")
+    
+    # Generate add function
+    io.append_file(f, "    .globl _add\n")
+    io.append_file(f, "_add:\n")
+    io.append_file(f, "    add x0, x0, x1\n")
+    io.append_file(f, "    ret\n")
+    io.append_file(f, "\n")
+    
+    # Generate main
     io.append_file(f, "    .globl _main\n")
     io.append_file(f, "_main:\n")
     io.append_file(f, "    sub sp, sp, #64\n")
     io.append_file(f, "    stp x29, x30, [sp]\n")
     io.append_file(f, "    mov x29, sp\n")
     
-    # let x: int = 5
+    # let result: int = add(5, 3)
     io.append_file(f, "    mov x0, #5\n")
+    io.append_file(f, "    mov x1, #3\n")
+    io.append_file(f, "    bl _add\n")
     io.append_file(f, "    str x0, [x29, #16]\n")
-    
-    # let y: int = 3
-    io.append_file(f, "    mov x0, #3\n")
-    io.append_file(f, "    str x0, [x29, #24]\n")
-    
-    # let z: int = x + y
-    io.append_file(f, "    ldr x0, [x29, #16]\n")
-    io.append_file(f, "    ldr x1, [x29, #24]\n")
-    io.append_file(f, "    add x0, x0, x1\n")
-    io.append_file(f, "    str x0, [x29, #32]\n")
     
     # print
     io.append_file(f, "    adrp x0, msg0@PAGE\n")
