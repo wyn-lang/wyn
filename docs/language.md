@@ -11,6 +11,7 @@ Wyn is a simple, fast programming language that compiles to native code.
 
 - **Simple**: Python-like syntax, easy to learn
 - **Fast**: Compiles to native code, 20-30x faster than Python
+- **Library-first**: Only 5 builtins, everything else via imports
 - **Practical**: Built for real work - CLI tools, servers, scripts
 - **Explicit**: Types are required, no surprises
 
@@ -26,8 +27,89 @@ fn main() {
 
 Compile and run:
 ```bash
-wyn -o hello hello.wyn
+./build/stage0 -o hello hello.wyn
 ./hello
+```
+
+---
+
+## Built-in Functions
+
+**Wyn has only 5 builtins:**
+
+1. `print()` - Output to stdout
+2. `args()` - Command line arguments (Stage 1 compiler needs)
+3. `substring()` - String slicing (Stage 1 compiler needs)
+4. `ord()` - Character code (Stage 1 compiler needs)
+5. `syscall()` - Direct system calls (compiler intrinsic)
+
+**Everything else requires imports:**
+
+```wyn
+import io
+import os
+import string
+import test
+import time
+import math
+
+fn main() {
+    print("Hello!")  # Only builtin for I/O
+    
+    const data: str = io.read_file("file.txt")  # Via syscalls
+    test.assert(data.len() > 0)  # Pure Wyn
+    os.exit(0)  # Via syscalls
+}
+```
+
+### print()
+
+Output values to stdout:
+
+```wyn
+print("Hello")
+print("Value:", 42)
+print("Pi:", 3.14)
+```
+
+### args()
+
+Get command line arguments:
+
+```wyn
+fn main() {
+    const argv: [str] = args()
+    for arg in argv {
+        print(arg)
+    }
+}
+```
+
+### substring()
+
+Extract substring (will become string method):
+
+```wyn
+const s: str = "Hello, World!"
+const sub: str = substring(s, 0, 5)  # "Hello"
+```
+
+### ord()
+
+Get ASCII code of first character:
+
+```wyn
+const code: int = ord("A")  # 65
+const newline: int = ord("\n")  # 10
+```
+
+### syscall()
+
+Direct system call (see [syscalls.md](syscalls.md)):
+
+```wyn
+# exit(0)
+syscall(33554433, 0, 0, 0, 0, 0, 0)
 ```
 
 ---
