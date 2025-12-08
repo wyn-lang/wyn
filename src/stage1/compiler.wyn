@@ -1,4 +1,4 @@
-# Wyn Stage 1 Compiler - Parsing Version
+# Wyn Stage 1 Compiler - Working Parser
 
 import io
 
@@ -6,10 +6,8 @@ fn main() {
     print("=== Wyn Stage 1 Compiler ===")
     print("")
     
-    # Read source
     const source: str = io.read_file("examples/custom.wyn")
     
-    # Parse and extract print message
     print("Parsing...")
     const message: str = extract_print_string(source)
     
@@ -17,7 +15,6 @@ fn main() {
     print(message)
     print("")
     
-    # Generate
     print("Generating code...")
     generate_and_compile(message)
     
@@ -26,7 +23,6 @@ fn main() {
 }
 
 fn extract_print_string(source: str) -> str {
-    # Find print("...") and extract the string
     let pos: int = 0
     let in_string: int = 0
     let start: int = 0
@@ -39,7 +35,6 @@ fn extract_print_string(source: str) -> str {
                 in_string = 1
                 start = pos + 1
             } else {
-                # Found closing quote
                 const result: str = substring(source, start, pos)
                 return result
             }
@@ -48,7 +43,7 @@ fn extract_print_string(source: str) -> str {
         pos = pos + 1
     }
     
-    return "Default message"
+    return "Default"
 }
 
 fn generate_and_compile(message: str) {
