@@ -7,26 +7,44 @@ fn main() {
     print("Testing wyn doc command...\n")
     
     # Test 1: List modules
-    const result1: int = system("./build/wyn doc >/tmp/doc_test1.txt 2>&1")
-    assert(result1 == 0, "wyn doc should succeed")
+    const result1: int = os.system("./build/wyn doc >/tmp/doc_test1.txt 2>&1")
+    if result1 != 0 {
+        print("FAIL: wyn doc should succeed")
+        os.exit(1)
+    }
     
     # Test 2: Show module
-    const result2: int = system("./build/wyn doc os >/tmp/doc_test2.txt 2>&1")
-    assert(result2 == 0, "wyn doc os should succeed")
+    const result2: int = os.system("./build/wyn doc os >/tmp/doc_test2.txt 2>&1")
+    if result2 != 0 {
+        print("FAIL: wyn doc os should succeed")
+        os.exit(1)
+    }
     
     # Test 3: Show function
-    const result3: int = system("./build/wyn doc os.getenv >/tmp/doc_test3.txt 2>&1")
-    assert(result3 == 0, "wyn doc os.getenv should succeed")
+    const result3: int = os.system("./build/wyn doc os.getenv >/tmp/doc_test3.txt 2>&1")
+    if result3 != 0 {
+        print("FAIL: wyn doc os.getenv should succeed")
+        os.exit(1)
+    }
     
     # Verify output contains expected text
     const out1: str = io.read_file("/tmp/doc_test1.txt")
-    assert(string.find(out1, "Standard Library") >= 0, "Should show stdlib")
+    if string.find(out1, "Standard Library") < 0 {
+        print("FAIL: Should show stdlib")
+        os.exit(1)
+    }
     
     const out2: str = io.read_file("/tmp/doc_test2.txt")
-    assert(string.find(out2, "package os") >= 0, "Should show package os")
+    if string.find(out2, "package os") < 0 {
+        print("FAIL: Should show package os")
+        os.exit(1)
+    }
     
     const out3: str = io.read_file("/tmp/doc_test3.txt")
-    assert(string.find(out3, "getenv") >= 0, "Should show getenv")
+    if string.find(out3, "getenv") < 0 {
+        print("FAIL: Should show getenv")
+        os.exit(1)
+    }
     
     print("✓ All doc tests passed\n")
 }

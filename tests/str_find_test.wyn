@@ -15,7 +15,7 @@ fn main() {
         print("PASS: found world at 6")
     } else {
         print("FAIL: wrong index for world")
-        exit(1)
+        os.exit(1)
     }
     
     const idx2: int = string.find(haystack, "hello")
@@ -23,7 +23,7 @@ fn main() {
         print("PASS: found hello at 0")
     } else {
         print("FAIL: wrong index for hello")
-        exit(1)
+        os.exit(1)
     }
     
     const idx3: int = string.find(haystack, "xyz")
@@ -31,7 +31,7 @@ fn main() {
         print("PASS: xyz not found")
     } else {
         print("FAIL: should not find xyz")
-        exit(1)
+        os.exit(1)
     }
     
     # Test str_cmp
@@ -40,7 +40,7 @@ fn main() {
         print("PASS: str_cmp equal")
     } else {
         print("FAIL: str_cmp equal")
-        exit(1)
+        os.exit(1)
     }
     
     const cmp2: int = string.cmp("abc", "abd")
@@ -48,7 +48,7 @@ fn main() {
         print("PASS: str_cmp less")
     } else {
         print("FAIL: str_cmp less")
-        exit(1)
+        os.exit(1)
     }
     
     print("All str_find tests passed!")

@@ -46,16 +46,16 @@ fn main() {
     
     print("")
     print("=== Results ===")
-    print("Passed: " + int_to_str(passed))
+    print("Passed: " + string.int_to_str(passed))
     if failed > 0 {
-        print("Failed: " + int_to_str(failed))
+        print("Failed: " + string.int_to_str(failed))
     }
 }
 
 fn run_test(path: str, name: str) -> int {
     const exe: str = "/tmp/wyn_test"
     const compile_cmd: str = "./build/stage0 -q -o " + exe + " " + path + " 2>/dev/null"
-    const compile_result: int = system(compile_cmd)
+    const compile_result: int = os.system(compile_cmd)
     
     if compile_result != 0 {
         print("FAIL " + name)
@@ -63,7 +63,7 @@ fn run_test(path: str, name: str) -> int {
     }
     
     const run_cmd: str = exe + " >/dev/null 2>&1"
-    const run_result: int = system(run_cmd)
+    const run_result: int = os.system(run_cmd)
     
     if run_result == 0 {
         print("PASS " + name)

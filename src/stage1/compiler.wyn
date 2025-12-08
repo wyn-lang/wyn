@@ -54,7 +54,7 @@ fn has_keyword(source: str, keyword: str) -> int {
     const klen: int = keyword.len()
     
     while pos < source.len() - klen {
-        const chunk: str = substring(source, pos, pos + klen)
+        const chunk: str = source[pos:pos + klen]
         if chunk == keyword {
             return 1
         }
@@ -68,9 +68,9 @@ fn count_functions(source: str) -> int {
     let pos: int = 0
     
     while pos < source.len() - 2 {
-        const chunk: str = substring(source, pos, pos + 2)
+        const chunk: str = source[pos:pos + 2]
         if chunk == "fn" {
-            const next: str = substring(source, pos + 2, pos + 3)
+            const next: str = source[pos + 2:pos + 3]
             if next == " " {
                 count = count + 1
             }
@@ -285,11 +285,11 @@ fn count_strings(source: str) -> int {
     let pos: int = 0
     
     while pos < source.len() {
-        const c: str = substring(source, pos, pos + 1)
+        const c: str = source[pos:pos + 1]
         if c == "\"" {
             count = count + 1
             pos = pos + 1
-            while pos < source.len() and substring(source, pos, pos + 1) != "\"" {
+            while pos < source.len() and source[pos:pos + 1] != "\"" {
                 pos = pos + 1
             }
         }
@@ -306,16 +306,16 @@ fn gen_strings(source: str, f: str) {
     let msg_num: int = 0
     
     while pos < source.len() {
-        const c: str = substring(source, pos, pos + 1)
+        const c: str = source[pos:pos + 1]
         if c == "\"" {
             pos = pos + 1
             let str_start: int = pos
             
-            while pos < source.len() and substring(source, pos, pos + 1) != "\"" {
+            while pos < source.len() and source[pos:pos + 1] != "\"" {
                 pos = pos + 1
             }
             
-            const str_val: str = substring(source, str_start, pos)
+            const str_val: str = source[str_start:pos]
             
             io.append_file(f, "msg")
             io.append_file(f, string.from_int(msg_num))

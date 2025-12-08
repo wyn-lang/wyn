@@ -828,6 +828,7 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "system") == 0) return "system";
         if (strcmp(function, "chdir") == 0) return "chdir";
         if (strcmp(function, "args") == 0) return "args";
+        if (strcmp(function, "args") == 0) return "args";
     } else if (strcmp(module, "io") == 0) {
         if (strcmp(function, "print") == 0) return "print";
         if (strcmp(function, "println") == 0) return "println";
