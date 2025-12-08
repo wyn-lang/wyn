@@ -1,0 +1,7 @@
+fn main() {
+    let x: int = 0
+    while x < 3 {
+        print("Basic")
+        x = x + 1
+    }
+}

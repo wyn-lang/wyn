@@ -1,0 +1,9 @@
+# Test dynamic parsing of loop bounds and variable initialization
+fn main() {
+    let counter: int = 10
+    while counter < 15 {
+        print("Dynamic loop bound: 15")
+        print("Dynamic init value: 10")
+        counter = counter + 1
+    }
+}

@@ -1,5 +1,17 @@
 # Wyn Stage 1 Compiler - Extended
 # Supports: while loops, for loops, multiple functions, imports
+#
+# Recent improvements:
+# ✅ Dynamic loop bound parsing (while x < N) - parses N from source
+# ✅ Dynamic variable initialization (let x = N) - parses N from source  
+# ✅ Support for const declarations (const x = N)
+#
+# TODO for self-hosting:
+# - Function parameters
+# - Return statements
+# - Multiple variables
+# - Variable references in comparisons (while x < max)
+# - Assignment statements parsing
 
 import io
 import os
@@ -146,6 +158,8 @@ fn compile_simple_program(source: str) {
 fn compile_while_program(source: str) {
     const f: str = "build/stage1_output.s"
     const count: int = count_strings(source)
+    const loop_bound: int = parse_loop_bound(source)
+    const init_val: int = parse_var_init(source)
     
     io.write_file(f, "    .section __TEXT,__text\n")
     io.append_file(f, "    .globl _main\n")
@@ -154,14 +168,18 @@ fn compile_while_program(source: str) {
     io.append_file(f, "    stp x29, x30, [sp]\n")
     io.append_file(f, "    mov x29, sp\n")
     
-    # let x: int = 0
-    io.append_file(f, "    mov x0, #0\n")
+    # let x: int = N (parsed from source)
+    io.append_file(f, "    mov x0, #")
+    io.append_file(f, string.from_int(init_val))
+    io.append_file(f, "\n")
     io.append_file(f, "    str x0, [x29, #16]\n")
     
-    # while x < 3
+    # while x < N (parsed from source)
     io.append_file(f, "L0:\n")
     io.append_file(f, "    ldr x0, [x29, #16]\n")
-    io.append_file(f, "    cmp x0, #3\n")
+    io.append_file(f, "    cmp x0, #")
+    io.append_file(f, string.from_int(loop_bound))
+    io.append_file(f, "\n")
     io.append_file(f, "    b.ge L1\n")
     
     # Generate prints based on count
@@ -278,6 +296,81 @@ fn compile_for_program(source: str) {
     io.append_file(f, "\n")
     
     gen_strings(source, f)
+}
+
+fn parse_loop_bound(source: str) -> int {
+    # Find "while" keyword
+    let pos: int = 0
+    while pos < source.len() - 5 {
+        if source[pos:pos + 5] == "while" {
+            # Found while, now find the comparison number
+            pos = pos + 5
+            # Skip to '<' character
+            while pos < source.len() and source[pos:pos + 1] != "<" {
+                pos = pos + 1
+            }
+            # Skip '<' and whitespace
+            pos = pos + 1
+            while pos < source.len() and source[pos:pos + 1] == " " {
+                pos = pos + 1
+            }
+            # Parse the number digit by digit
+            let result: int = 0
+            while pos < source.len() {
+                const c: str = source[pos:pos + 1]
+                const code: int = ord(c)
+                if code >= 48 and code <= 57 {
+                    result = result * 10 + (code - 48)
+                    pos = pos + 1
+                } else {
+                    return result
+                }
+            }
+            return result
+        }
+        pos = pos + 1
+    }
+    return 3
+}
+
+fn parse_var_init(source: str) -> int {
+    # Find "let" or "const" keyword followed by "= number"
+    let pos: int = 0
+    while pos < source.len() - 3 {
+        const chunk3: str = source[pos:pos + 3]
+        const chunk5: str = source[pos:pos + 5]
+        if chunk3 == "let" or chunk5 == "const" {
+            # Found variable declaration, skip to '='
+            if chunk5 == "const" {
+                pos = pos + 5
+            } else {
+                pos = pos + 3
+            }
+            while pos < source.len() and source[pos:pos + 1] != "=" {
+                pos = pos + 1
+            }
+            # Skip '=' and whitespace
+            pos = pos + 1
+            while pos < source.len() and source[pos:pos + 1] == " " {
+                pos = pos + 1
+            }
+            # Parse the number
+            let result: int = 0
+            while pos < source.len() {
+                const c: str = source[pos:pos + 1]
+                const code: int = ord(c)
+                if code >= 48 and code <= 57 {
+                    result = result * 10 + (code - 48)
+                    pos = pos + 1
+                } else {
+                    return result
+                }
+            }
+            return result
+        }
+        pos = pos + 1
+    }
+    return 0
 }
 
 fn count_strings(source: str) -> int {
