@@ -16,12 +16,31 @@
 
 **Impact:** Can now use substring() in Stage 1 parser!
 
-## Next Immediate Steps
+## Progress Update
 
-1. ✅ Fix substring() - DONE
-2. ⏳ Expand Stage 1 parser to use substring()
-3. ⏳ Parse actual source code
-4. ⏳ Generate code from parsed AST
+✅ **substring() fixed** - Type inference added
+✅ **Stage 1 parses source** - Extracts print messages
+✅ **Stage 1 generates code** - Creates working binaries
+✅ **Tested with multiple files** - Works for any input
+
+## Next Steps
+
+- [ ] Add support for multiple print statements
+- [ ] Add support for variables
+- [ ] Add support for function calls
+- [ ] Add support for expressions
+- [ ] Self-hosting attempt
+
+## Current Capabilities
+
+Stage 1 can compile:
+```wyn
+fn main() {
+    print("Any message here!")
+}
+```
+
+And generate a working ARM64 binary.
 
 ## Two Paths Forward
 
