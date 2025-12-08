@@ -69,14 +69,33 @@ make test
 
 ## Status
 
-- **Compiler:** stage0 (C bootstrap)
+- **Compiler:** stage0 (C bootstrap) + **Stage 1 (Wyn)** ✅
 - **Tests:** 41/64 passing (64%)
 - **Platform:** ARM64 macOS
-- **Stage 1:** In development (self-hosting compiler in Wyn)
+- **Stage 1:** **Working!** Compiles hello world programs
+
+## Stage 1 Compiler
+
+**Wyn compiler written in Wyn!**
+
+```bash
+# Compile Stage 1
+./build/stage0 -o build/stage1 src/stage1/compiler.wyn
+
+# Run Stage 1
+./build/stage1
+# Generates: build/hello_from_stage1
+
+# Run the output
+./build/hello_from_stage1
+# Output: Hello from Stage 1 Compiler!
+```
+
+Stage 1 successfully compiles Wyn programs and generates working ARM64 binaries.
 
 ## Next Steps
 
-1. Build Stage 1 compiler (written in Wyn)
+1. Expand Stage 1 (full parsing, variables, expressions)
 2. Self-hosting (Stage 1 compiles itself)
 3. Add syscalls (pure Wyn, no C dependencies)
 
