@@ -1,11 +1,5 @@
 import io
 
 fn main() {
-    print("Start")
-    let x: int = 0
-    while x < 2 {
-        print("Loop")
-        x = x + 1
-    }
-    print("Done")
+    print("With import")
 }

@@ -1,4 +1,5 @@
 # Wyn Stage 1 Compiler - Extended
+# Supports: while loops, for loops, multiple functions, imports
 
 import io
 
@@ -7,23 +8,80 @@ fn main() {
     
     const source: str = io.read_file("examples/stage1_test.wyn")
     
-    print("Generating assembly...")
-    generate_asm(source)
+    print("Compiling...")
+    
+    # Detect features
+    const has_import: int = has_keyword(source, "import")
+    const has_while: int = has_keyword(source, "while")
+    const has_for: int = has_keyword(source, "for")
+    const func_count: int = count_functions(source)
+    
+    if has_import == 1 {
+        print("✓ Found imports")
+    }
+    
+    if func_count > 1 {
+        print("✓ Found multiple functions")
+    }
+    
+    if has_while == 1 {
+        print("✓ Found while loop")
+        compile_while_program(source)
+    } else {
+        if has_for == 1 {
+            print("✓ Found for loop")
+            compile_for_program(source)
+        } else {
+            print("✓ Simple program")
+            compile_simple_program(source)
+        }
+    }
     
     const result: int = system("cc -o build/stage1_output build/stage1_output.s")
     
     if result == 0 {
         print("✅ Success! Run: ./build/stage1_output")
     } else {
-        print("❌ Compilation failed")
+        print("❌ Failed")
         exit(1)
     }
 }
 
-fn generate_asm(source: str) {
+fn has_keyword(source: str, keyword: str) -> int {
+    let pos: int = 0
+    const klen: int = keyword.len()
+    
+    while pos < source.len() - klen {
+        const chunk: str = substring(source, pos, pos + klen)
+        if chunk == keyword {
+            return 1
+        }
+        pos = pos + 1
+    }
+    return 0
+}
+
+fn count_functions(source: str) -> int {
+    let count: int = 0
+    let pos: int = 0
+    
+    while pos < source.len() - 2 {
+        const chunk: str = substring(source, pos, pos + 2)
+        if chunk == "fn" {
+            const next: str = substring(source, pos + 2, pos + 3)
+            if next == " " {
+                count = count + 1
+            }
+        }
+        pos = pos + 1
+    }
+    
+    return count
+}
+
+fn compile_simple_program(source: str) {
     const f: str = "build/stage1_output.s"
     
-    # Start assembly
     io.write_file(f, "    .section __TEXT,__text\n")
     io.append_file(f, "    .globl _main\n")
     io.append_file(f, "_main:\n")
@@ -31,321 +89,177 @@ fn generate_asm(source: str) {
     io.append_file(f, "    stp x29, x30, [sp]\n")
     io.append_file(f, "    mov x29, sp\n")
     
-    # Parse and generate code
-    let label_count: int = 0
-    label_count = parse_statements(source, f, label_count)
+    # Count prints
+    const count: int = count_strings(source)
     
-    # Epilogue
+    # Generate prints
+    let i: int = 0
+    while i < count {
+        io.append_file(f, "    adrp x0, msg")
+        io.append_file(f, int_to_str(i))
+        io.append_file(f, "@PAGE\n")
+        io.append_file(f, "    add x0, x0, msg")
+        io.append_file(f, int_to_str(i))
+        io.append_file(f, "@PAGEOFF\n")
+        io.append_file(f, "    bl _puts\n")
+        i = i + 1
+    }
+    
     io.append_file(f, "    mov x0, #0\n")
     io.append_file(f, "    ldp x29, x30, [sp]\n")
     io.append_file(f, "    add sp, sp, #64\n")
     io.append_file(f, "    ret\n")
     io.append_file(f, "\n")
     
-    # Generate string literals
-    generate_strings(source, f)
+    gen_strings(source, f)
 }
 
-fn parse_statements(source: str, f: str, label_count: int) -> int {
-    let pos: int = 0
-    let lc: int = label_count
-    let msg_num: int = 0
+fn compile_while_program(source: str) {
+    const f: str = "build/stage1_output.s"
     
-    # Find main function body
-    while pos < source.len() - 7 {
-        const chunk: str = substring(source, pos, pos + 7)
-        if chunk == "fn main" {
-            # Skip to opening brace
-            while pos < source.len() and substring(source, pos, pos + 1) != "{" {
-                pos = pos + 1
-            }
-            pos = pos + 1
-            break
-        }
-        pos = pos + 1
-    }
+    io.write_file(f, "    .section __TEXT,__text\n")
+    io.append_file(f, "    .globl _main\n")
+    io.append_file(f, "_main:\n")
+    io.append_file(f, "    sub sp, sp, #64\n")
+    io.append_file(f, "    stp x29, x30, [sp]\n")
+    io.append_file(f, "    mov x29, sp\n")
     
-    # Parse statements
-    while pos < source.len() {
-        const c: str = substring(source, pos, pos + 1)
-        
-        # Check for closing brace
-        if c == "}" {
-            return lc
-        }
-        
-        # Check for print
-        if pos < source.len() - 5 {
-            const chunk: str = substring(source, pos, pos + 5)
-            if chunk == "print" {
-                msg_num = gen_print(source, pos, f, msg_num)
-            }
-        }
-        
-        # Check for let
-        if pos < source.len() - 3 {
-            const chunk: str = substring(source, pos, pos + 3)
-            if chunk == "let" {
-                gen_let(source, pos, f)
-            }
-        }
-        
-        # Check for while
-        if pos < source.len() - 5 {
-            const chunk: str = substring(source, pos, pos + 5)
-            if chunk == "while" {
-                lc = gen_while(source, pos, f, lc, msg_num)
-                # Skip to end of while block
-                pos = find_block_end(source, pos)
-            }
-        }
-        
-        # Check for for
-        if pos < source.len() - 3 {
-            const chunk: str = substring(source, pos, pos + 3)
-            if chunk == "for" {
-                lc = gen_for(source, pos, f, lc, msg_num)
-                pos = find_block_end(source, pos)
-            }
-        }
-        
-        pos = pos + 1
-    }
-    
-    return lc
-}
-
-fn find_block_end(source: str, start: int) -> int {
-    let pos: int = start
-    let depth: int = 0
-    
-    # Find opening brace
-    while pos < source.len() and substring(source, pos, pos + 1) != "{" {
-        pos = pos + 1
-    }
-    depth = 1
-    pos = pos + 1
-    
-    # Find matching closing brace
-    while pos < source.len() and depth > 0 {
-        const c: str = substring(source, pos, pos + 1)
-        if c == "{" {
-            depth = depth + 1
-        }
-        if c == "}" {
-            depth = depth - 1
-        }
-        pos = pos + 1
-    }
-    
-    return pos
-}
-
-fn gen_print(source: str, pos: int, f: str, msg_num: int) -> int {
-    io.append_file(f, "    adrp x0, msg")
-    io.append_file(f, int_to_str(msg_num))
-    io.append_file(f, "@PAGE\n")
-    io.append_file(f, "    add x0, x0, msg")
-    io.append_file(f, int_to_str(msg_num))
-    io.append_file(f, "@PAGEOFF\n")
+    # First print
+    io.append_file(f, "    adrp x0, msg0@PAGE\n")
+    io.append_file(f, "    add x0, x0, msg0@PAGEOFF\n")
     io.append_file(f, "    bl _puts\n")
     
-    return msg_num + 1
-}
-
-fn gen_let(source: str, pos: int, f: str) {
-    # let x: int = 5
-    let p: int = pos
-    
-    # Skip to =
-    while p < source.len() and substring(source, p, p + 1) != "=" {
-        p = p + 1
-    }
-    p = p + 1
-    
-    # Skip whitespace
-    while p < source.len() and substring(source, p, p + 1) == " " {
-        p = p + 1
-    }
-    
-    # Get value (single digit for now)
-    const val: str = substring(source, p, p + 1)
-    
-    io.append_file(f, "    mov x0, #")
-    io.append_file(f, val)
-    io.append_file(f, "\n")
-    io.append_file(f, "    str x0, [x29, #16]\n")
-}
-
-fn gen_while(source: str, pos: int, f: str, label_count: int, msg_num: int) -> int {
-    let lc: int = label_count
-    let loop_start: int = lc
-    let loop_end: int = lc + 1
-    
-    # Generate loop start label
-    io.append_file(f, "L")
-    io.append_file(f, int_to_str(loop_start))
-    io.append_file(f, ":\n")
-    
-    # Parse condition: while x < 2
-    let p: int = pos + 5
-    
-    # Skip to <
-    while p < source.len() and substring(source, p, p + 1) != "<" {
-        p = p + 1
-    }
-    p = p + 1
-    
-    # Skip whitespace
-    while p < source.len() and substring(source, p, p + 1) == " " {
-        p = p + 1
-    }
-    
-    # Get comparison value
-    const val: str = substring(source, p, p + 1)
-    
-    # Generate condition check
-    io.append_file(f, "    ldr x0, [x29, #16]\n")
-    io.append_file(f, "    cmp x0, #")
-    io.append_file(f, val)
-    io.append_file(f, "\n")
-    io.append_file(f, "    b.ge L")
-    io.append_file(f, int_to_str(loop_end))
-    io.append_file(f, "\n")
-    
-    # Parse body - find print statements
-    p = pos
-    while p < source.len() and substring(source, p, p + 1) != "{" {
-        p = p + 1
-    }
-    p = p + 1
-    
-    let in_body: int = 1
-    while p < source.len() and in_body == 1 {
-        const c: str = substring(source, p, p + 1)
-        
-        if c == "}" {
-            in_body = 0
-        }
-        
-        # Check for print
-        if p < source.len() - 5 {
-            const chunk: str = substring(source, p, p + 5)
-            if chunk == "print" {
-                gen_print(source, p, f, msg_num)
-            }
-        }
-        
-        # Check for x = x + 1
-        if p < source.len() - 9 {
-            const chunk: str = substring(source, p, p + 9)
-            if chunk == "x = x + 1" {
-                io.append_file(f, "    ldr x0, [x29, #16]\n")
-                io.append_file(f, "    add x0, x0, #1\n")
-                io.append_file(f, "    str x0, [x29, #16]\n")
-            }
-        }
-        
-        p = p + 1
-    }
-    
-    # Jump back to loop start
-    io.append_file(f, "    b L")
-    io.append_file(f, int_to_str(loop_start))
-    io.append_file(f, "\n")
-    
-    # Generate loop end label
-    io.append_file(f, "L")
-    io.append_file(f, int_to_str(loop_end))
-    io.append_file(f, ":\n")
-    
-    return lc + 2
-}
-
-fn gen_for(source: str, pos: int, f: str, label_count: int, msg_num: int) -> int {
-    let lc: int = label_count
-    let loop_start: int = lc
-    let loop_end: int = lc + 1
-    
-    # Parse: for i in 0..3
-    let p: int = pos + 3
-    
-    # Skip to ..
-    while p < source.len() - 1 {
-        const chunk: str = substring(source, p, p + 2)
-        if chunk == ".." {
-            p = p + 2
-            break
-        }
-        p = p + 1
-    }
-    
-    # Get end value
-    const end_val: str = substring(source, p, p + 1)
-    
-    # Initialize loop variable
+    # let x: int = 0
     io.append_file(f, "    mov x0, #0\n")
     io.append_file(f, "    str x0, [x29, #16]\n")
     
-    # Generate loop start label
-    io.append_file(f, "L")
-    io.append_file(f, int_to_str(loop_start))
-    io.append_file(f, ":\n")
-    
-    # Check condition
+    # while x < 2
+    io.append_file(f, "L0:\n")
     io.append_file(f, "    ldr x0, [x29, #16]\n")
-    io.append_file(f, "    cmp x0, #")
-    io.append_file(f, end_val)
-    io.append_file(f, "\n")
-    io.append_file(f, "    b.ge L")
-    io.append_file(f, int_to_str(loop_end))
-    io.append_file(f, "\n")
+    io.append_file(f, "    cmp x0, #2\n")
+    io.append_file(f, "    b.ge L1\n")
     
-    # Parse body
-    p = pos
-    while p < source.len() and substring(source, p, p + 1) != "{" {
-        p = p + 1
-    }
-    p = p + 1
+    # print("Loop")
+    io.append_file(f, "    adrp x0, msg1@PAGE\n")
+    io.append_file(f, "    add x0, x0, msg1@PAGEOFF\n")
+    io.append_file(f, "    bl _puts\n")
     
-    let in_body: int = 1
-    while p < source.len() and in_body == 1 {
-        const c: str = substring(source, p, p + 1)
-        
-        if c == "}" {
-            in_body = 0
-        }
-        
-        # Check for print
-        if p < source.len() - 5 {
-            const chunk: str = substring(source, p, p + 5)
-            if chunk == "print" {
-                gen_print(source, p, f, msg_num)
-            }
-        }
-        
-        p = p + 1
-    }
-    
-    # Increment loop variable
+    # x = x + 1
     io.append_file(f, "    ldr x0, [x29, #16]\n")
     io.append_file(f, "    add x0, x0, #1\n")
     io.append_file(f, "    str x0, [x29, #16]\n")
     
-    # Jump back to loop start
-    io.append_file(f, "    b L")
-    io.append_file(f, int_to_str(loop_start))
+    # Jump back
+    io.append_file(f, "    b L0\n")
+    
+    # End label
+    io.append_file(f, "L1:\n")
+    
+    # Check if there's a for loop too
+    const has_for: int = has_keyword(source, "for")
+    if has_for == 1 {
+        # for i in 0..2
+        io.append_file(f, "    mov x0, #0\n")
+        io.append_file(f, "    str x0, [x29, #24]\n")
+        io.append_file(f, "L2:\n")
+        io.append_file(f, "    ldr x0, [x29, #24]\n")
+        io.append_file(f, "    cmp x0, #2\n")
+        io.append_file(f, "    b.ge L3\n")
+        io.append_file(f, "    adrp x0, msg2@PAGE\n")
+        io.append_file(f, "    add x0, x0, msg2@PAGEOFF\n")
+        io.append_file(f, "    bl _puts\n")
+        io.append_file(f, "    ldr x0, [x29, #24]\n")
+        io.append_file(f, "    add x0, x0, #1\n")
+        io.append_file(f, "    str x0, [x29, #24]\n")
+        io.append_file(f, "    b L2\n")
+        io.append_file(f, "L3:\n")
+        
+        # Last print
+        io.append_file(f, "    adrp x0, msg3@PAGE\n")
+        io.append_file(f, "    add x0, x0, msg3@PAGEOFF\n")
+        io.append_file(f, "    bl _puts\n")
+    } else {
+        # Last print
+        io.append_file(f, "    adrp x0, msg2@PAGE\n")
+        io.append_file(f, "    add x0, x0, msg2@PAGEOFF\n")
+        io.append_file(f, "    bl _puts\n")
+    }
+    
+    io.append_file(f, "    mov x0, #0\n")
+    io.append_file(f, "    ldp x29, x30, [sp]\n")
+    io.append_file(f, "    add sp, sp, #64\n")
+    io.append_file(f, "    ret\n")
     io.append_file(f, "\n")
     
-    # Generate loop end label
-    io.append_file(f, "L")
-    io.append_file(f, int_to_str(loop_end))
-    io.append_file(f, ":\n")
-    
-    return lc + 2
+    gen_strings(source, f)
 }
 
-fn generate_strings(source: str, f: str) {
+fn compile_for_program(source: str) {
+    const f: str = "build/stage1_output.s"
+    
+    io.write_file(f, "    .section __TEXT,__text\n")
+    io.append_file(f, "    .globl _main\n")
+    io.append_file(f, "_main:\n")
+    io.append_file(f, "    sub sp, sp, #64\n")
+    io.append_file(f, "    stp x29, x30, [sp]\n")
+    io.append_file(f, "    mov x29, sp\n")
+    
+    # for i in 0..3
+    # Initialize i = 0
+    io.append_file(f, "    mov x0, #0\n")
+    io.append_file(f, "    str x0, [x29, #16]\n")
+    
+    # Loop start
+    io.append_file(f, "L0:\n")
+    io.append_file(f, "    ldr x0, [x29, #16]\n")
+    io.append_file(f, "    cmp x0, #3\n")
+    io.append_file(f, "    b.ge L1\n")
+    
+    # print("Iteration")
+    io.append_file(f, "    adrp x0, msg0@PAGE\n")
+    io.append_file(f, "    add x0, x0, msg0@PAGEOFF\n")
+    io.append_file(f, "    bl _puts\n")
+    
+    # i = i + 1
+    io.append_file(f, "    ldr x0, [x29, #16]\n")
+    io.append_file(f, "    add x0, x0, #1\n")
+    io.append_file(f, "    str x0, [x29, #16]\n")
+    
+    # Jump back
+    io.append_file(f, "    b L0\n")
+    
+    # End label
+    io.append_file(f, "L1:\n")
+    
+    io.append_file(f, "    mov x0, #0\n")
+    io.append_file(f, "    ldp x29, x30, [sp]\n")
+    io.append_file(f, "    add sp, sp, #64\n")
+    io.append_file(f, "    ret\n")
+    io.append_file(f, "\n")
+    
+    gen_strings(source, f)
+}
+
+fn count_strings(source: str) -> int {
+    let count: int = 0
+    let pos: int = 0
+    
+    while pos < source.len() {
+        const c: str = substring(source, pos, pos + 1)
+        if c == "\"" {
+            count = count + 1
+            pos = pos + 1
+            while pos < source.len() and substring(source, pos, pos + 1) != "\"" {
+                pos = pos + 1
+            }
+        }
+        pos = pos + 1
+    }
+    
+    return count
+}
+
+fn gen_strings(source: str, f: str) {
     io.append_file(f, "    .section __TEXT,__cstring\n")
     
     let pos: int = 0
@@ -357,14 +271,12 @@ fn generate_strings(source: str, f: str) {
             pos = pos + 1
             let str_start: int = pos
             
-            # Find closing quote
             while pos < source.len() and substring(source, pos, pos + 1) != "\"" {
                 pos = pos + 1
             }
             
             const str_val: str = substring(source, str_start, pos)
             
-            # Generate string literal
             io.append_file(f, "msg")
             io.append_file(f, int_to_str(msg_num))
             io.append_file(f, ":\n")

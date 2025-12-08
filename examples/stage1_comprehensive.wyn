@@ -1,0 +1,21 @@
+import io
+
+fn helper() {
+    print("Helper called")
+}
+
+fn main() {
+    print("Start")
+    
+    let x: int = 0
+    while x < 2 {
+        print("Loop")
+        x = x + 1
+    }
+    
+    for i in 0..2 {
+        print("For")
+    }
+    
+    print("Done")
+}
