@@ -293,62 +293,41 @@ fn main() {
 
 ```wyn
 import io
-import http
+import os
 import time
+import string
 
 fn main() {
+    # File I/O via syscalls
     io.write_file("test.txt", "Hello")
     const content: str = io.read_file("test.txt")
     print(content)
+    
+    # String utilities in pure Wyn
+    const upper: str = string.upper("hello")
+    const num: str = string.from_int(42)
+    
+    # OS operations via syscalls
+    os.exit(0)
 }
 ```
 
 ### Standard Library
 
-Available modules:
-- `std/io` - File I/O
-- `std/http` - HTTP client/server
-- `std/time` - Time and date
-- `std/os` - OS operations
-- `std/string` - String utilities
-- `std/array` - Array utilities
-- `std/math` - Math functions
-- `std/json` - JSON parsing
-- `std/regex` - Regular expressions
+All functionality via imports (see [stdlib.md](stdlib.md)):
 
----
-
-## Built-in Functions
-
-```wyn
-# Output
-print("Hello")
-print("Value:", 42)
-
-# Type conversion
-const s: str = to_str(42)
-const n: int = str_to_int("42")
-const f: float = str_to_float("3.14")
-
-# String operations
-const parts: [str] = str_split("a,b,c", ",")
-const upper: str = str_upper("hello")
-const lower: str = str_lower("HELLO")
-
-# Array operations
-const arr: [int] = [1, 2, 3]
-arr.append(4)
-const last: int = arr.pop()
-const size: int = arr.len()
-
-# Math
-const result: int = abs(-5)
-const root: float = sqrt(16.0)
-
-# System
-sleep_ms(1000)
-const time: int = time_ms()
-```
+- `io` - File I/O via syscalls
+- `os` - OS operations via syscalls
+- `string` - String utilities (pure Wyn)
+- `test` - Testing utilities (pure Wyn)
+- `time` - Time and sleep via syscalls
+- `math` - Mathematical functions (pure Wyn)
+- `array` - Array utilities (pure Wyn)
+- `collections` - Data structures (pure Wyn)
+- `http` - HTTP client/server
+- `json` - JSON parsing
+- `regex` - Regular expressions
+- And 20+ more modules
 
 ---
 
@@ -358,10 +337,10 @@ const time: int = time_ms()
 import io
 
 fn main() {
-    # Write
-    io.write_file("data.txt", "Hello, World!")
+    # Write file (returns bytes written or negative on error)
+    const written: int = io.write_file("data.txt", "Hello, World!")
     
-    # Read
+    # Read file
     const content: str = io.read_file("data.txt")
     print(content)
     
@@ -369,6 +348,61 @@ fn main() {
     if io.file_exists("data.txt") {
         print("File exists")
     }
+}
+```
+
+All I/O operations use syscalls directly - no C dependencies.
+
+---
+
+## System Operations
+
+```wyn
+import os
+
+fn main() {
+    # Get process ID
+    const pid: int = os.getpid()
+    print("PID:", pid)
+    
+    # Exit with code
+    os.exit(0)
+}
+```
+
+---
+
+## String Operations
+
+```wyn
+import string
+
+fn main() {
+    # Convert int to string
+    const s: str = string.from_int(42)
+    
+    # Case conversion
+    const upper: str = string.upper("hello")
+    const lower: str = string.lower("WORLD")
+    
+    # Character operations
+    const code: int = ord("A")  # 65 (builtin)
+    const c: str = string.chr(65)  # "A"
+}
+```
+
+---
+
+## Testing
+
+```wyn
+import test
+
+fn main() {
+    test.assert(2 + 2 == 4)
+    test.assert_eq(10, 5 + 5)
+    
+    print("All tests passed!")
 }
 ```
 
@@ -476,4 +510,5 @@ See [ROADMAP.md](ROADMAP.md) for planned features including:
 
 - [Quick Start Guide](quickstart.md)
 - [Standard Library Reference](stdlib.md)
+- [Syscalls Guide](syscalls.md)
 - [Package Manager](packages.md)
