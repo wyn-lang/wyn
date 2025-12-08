@@ -1,26 +1,27 @@
 
+import test
 import io
 fn main() {
     # AND (12 & 10 = 8)
-    assert((12 & 10) == 8)
+    test.assert((12 & 10) == 8)
     
     # OR (12 | 10 = 14)
-    assert((12 | 10) == 14)
+    test.assert((12 | 10) == 14)
     
     # XOR (12 ^ 10 = 6)
-    assert((12 ^ 10) == 6)
+    test.assert((12 ^ 10) == 6)
     
     # Left shift
-    assert((1 << 4) == 16)
+    test.assert((1 << 4) == 16)
     
     # Right shift
-    assert((16 >> 2) == 4)
+    test.assert((16 >> 2) == 4)
     
     # Combined
     const flags: int = 5
     const mask: int = 3
-    assert((flags & mask) == 1)
-    assert((flags | mask) == 7)
+    test.assert((flags & mask) == 1)
+    test.assert((flags | mask) == 7)
     
     print("bitwise_test: PASS")
 }

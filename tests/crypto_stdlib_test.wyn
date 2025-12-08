@@ -1,3 +1,4 @@
+import test
 import crypto
 
 
@@ -9,16 +10,16 @@ fn main() {
     const b: int = 17
     const xor1: int = a ^ b
     const xor2: int = xor1 ^ b
-    assert(xor2 == a, "XOR is reversible")
+    test.assert(xor2 == a, "XOR is reversible")
     
     # Test XOR with zero
-    assert((a ^ 0) == a, "XOR with 0")
+    test.assert((a ^ 0) == a, "XOR with 0")
     
     # Test XOR with self
-    assert((a ^ a) == 0, "XOR with self is 0")
+    test.assert((a ^ a) == 0, "XOR with self is 0")
     
     # Test XOR commutativity
-    assert((a ^ b) == (b ^ a), "XOR is commutative")
+    test.assert((a ^ b) == (b ^ a), "XOR is commutative")
     
     print("✓ All crypto stdlib tests passed\n")
 }

@@ -2569,7 +2569,7 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                 if (strcmp(e->ident, "print") == 0 ||
                     strcmp(e->ident, "args") == 0 ||
                     strcmp(e->ident, "int_to_str") == 0 ||
-                    strcmp(e->ident, "write_file") == 0 || strcmp(e->ident, "substring") == 0 ||
+                    strcmp(e->ident, "substring") == 0 ||
                     strcmp(e->ident, "ord") == 0 || strcmp(e->ident, "syscall") == 0) {
                     return new_type(TYPE_FUNCTION);
                 }
@@ -3125,7 +3125,7 @@ static bool tc1_is_builtin(const char* name) {
     return strcmp(name, "print") == 0 || 
            strcmp(name, "args") == 0 ||
            strcmp(name, "int_to_str") == 0 ||
-           strcmp(name, "write_file") == 0 || strcmp(name, "ord") == 0 ||
+           strcmp(name, "ord") == 0 ||
            strcmp(name, "substring") == 0;
 }
 

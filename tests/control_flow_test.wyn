@@ -1,17 +1,18 @@
 
+import test
 import io
 fn main() {
     # If/else
     const x: int = 10
     if x > 5 {
-        assert(true)
+        test.assert(true)
     } else {
-        assert(false)
+        test.assert(false)
     }
     
     # If expression
     const y: int = if x > 5 then 1 else 0
-    assert(y == 1)
+    test.assert(y == 1)
     
     # While loop
     let sum: int = 0
@@ -20,21 +21,21 @@ fn main() {
         sum += i
         i += 1
     }
-    assert(sum == 10)
+    test.assert(sum == 10)
     
     # For loop with range
     let total: int = 0
     for j in 0..5 {
         total += j
     }
-    assert(total == 10)
+    test.assert(total == 10)
     
     # Inclusive range
     let count: int = 0
     for k in 1..=5 {
         count += 1
     }
-    assert(count == 5)
+    test.assert(count == 5)
     
     # Break
     let n: int = 0
@@ -44,7 +45,7 @@ fn main() {
             break
         }
     }
-    assert(n == 5)
+    test.assert(n == 5)
     
     # Continue
     let evens: int = 0
@@ -54,7 +55,7 @@ fn main() {
         }
         evens += 1
     }
-    assert(evens == 5)
+    test.assert(evens == 5)
     
     print("control_flow_test: PASS")
 }

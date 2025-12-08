@@ -1,20 +1,22 @@
 
+import test
+
 fn main() {
     const arr: [int] = [1, 2, 3, 4, 5]
     
     # Length
-    assert(arr.len() == 5)
+    test.assert(arr.len() == 5)
     
     # Indexing
-    assert(arr[0] == 1)
-    assert(arr[1] == 2)
-    assert(arr[2] == 3)
-    assert(arr[3] == 4)
-    assert(arr[4] == 5)
+    test.assert(arr[0] == 1)
+    test.assert(arr[1] == 2)
+    test.assert(arr[2] == 3)
+    test.assert(arr[3] == 4)
+    test.assert(arr[4] == 5)
     
     # Negative indexing
-    assert(arr[-1] == 5)
-    assert(arr[-2] == 4)
+    test.assert(arr[-1] == 5)
+    test.assert(arr[-2] == 4)
     
     print("✓ Basic array test passed")
 }
