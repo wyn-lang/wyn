@@ -1,29 +1,57 @@
-# Wyn Stage 1 Compiler - Working Version
+# Wyn Stage 1 Compiler - Parsing Version
 
 import io
 
 fn main() {
     print("=== Wyn Stage 1 Compiler ===")
     print("")
-    print("Compiling hello.wyn...")
+    
+    # Read source
+    const source: str = io.read_file("examples/custom.wyn")
+    
+    # Parse and extract print message
+    print("Parsing...")
+    const message: str = extract_print_string(source)
+    
+    print("Found: ")
+    print(message)
     print("")
     
-    # Generate assembly directly to file (avoid string concat bug)
-    generate_hello_world()
+    # Generate
+    print("Generating code...")
+    generate_and_compile(message)
     
-    # Assemble
-    const result: int = system("cc -o build/hello_from_stage1 build/stage1_output.s")
-    
-    if result == 0 {
-        print("✅ Success! Run: ./build/hello_from_stage1")
-        print("")
-    } else {
-        print("❌ Failed")
-        exit(1)
-    }
+    print("✅ Success! Run: ./build/hello_from_stage1")
+    print("")
 }
 
-fn generate_hello_world() {
+fn extract_print_string(source: str) -> str {
+    # Find print("...") and extract the string
+    let pos: int = 0
+    let in_string: int = 0
+    let start: int = 0
+    
+    while pos < source.len() {
+        const c: str = substring(source, pos, pos + 1)
+        
+        if c == "\"" {
+            if in_string == 0 {
+                in_string = 1
+                start = pos + 1
+            } else {
+                # Found closing quote
+                const result: str = substring(source, start, pos)
+                return result
+            }
+        }
+        
+        pos = pos + 1
+    }
+    
+    return "Default message"
+}
+
+fn generate_and_compile(message: str) {
     const f: str = "build/stage1_output.s"
     
     io.write_file(f, "    .section __TEXT,__text\n")
@@ -41,5 +69,13 @@ fn generate_hello_world() {
     io.append_file(f, "\n")
     io.append_file(f, "    .section __TEXT,__cstring\n")
     io.append_file(f, "msg:\n")
-    io.append_file(f, "    .asciz \"Hello from Stage 1 Compiler!\"\n")
+    io.append_file(f, "    .asciz \"")
+    io.append_file(f, message)
+    io.append_file(f, "\"\n")
+    
+    const result: int = system("cc -o build/hello_from_stage1 build/stage1_output.s")
+    if result != 0 {
+        print("Assembly failed")
+        exit(1)
+    }
 }

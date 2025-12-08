@@ -9,12 +9,19 @@
 
 ## Critical Blocker
 
-**stage0 bugs prevent further development:**
-- substring() returns wrong values
-- String concatenation in functions crashes
-- Module-level constants not supported
+**stage0 bugs:**
+- [x] substring() - ✅ FIXED!
+- [ ] String concatenation in functions - Still crashes
+- [ ] Module-level constants - Not supported
 
-**Impact:** Cannot expand Stage 1 parser/codegen without these features.
+**Impact:** Can now use substring() in Stage 1 parser!
+
+## Next Immediate Steps
+
+1. ✅ Fix substring() - DONE
+2. ⏳ Expand Stage 1 parser to use substring()
+3. ⏳ Parse actual source code
+4. ⏳ Generate code from parsed AST
 
 ## Two Paths Forward
 
