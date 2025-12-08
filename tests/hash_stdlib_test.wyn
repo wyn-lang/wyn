@@ -1,3 +1,6 @@
+import hash
+
+
 fn main() {
     print("Testing hash stdlib...\n")
     

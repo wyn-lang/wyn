@@ -1,17 +1,18 @@
+
 fn main() {
     print("Creating empty array...")
     
     let arr: [int] = []
     
     print("Array created, length: ")
-    print(len(arr))
+    print(arr.len())
     print("")
     
     print("Appending 42...")
     arr.append(42)
     
     print("After append, length: ")
-    print(len(arr))
+    print(arr.len())
     print("")
     
     print("Value at index 0: ")

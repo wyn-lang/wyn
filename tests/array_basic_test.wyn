@@ -1,8 +1,9 @@
+
 fn main() {
     const arr: [int] = [1, 2, 3, 4, 5]
     
     # Length
-    assert(len(arr) == 5)
+    assert(arr.len() == 5)
     
     # Indexing
     assert(arr[0] == 1)

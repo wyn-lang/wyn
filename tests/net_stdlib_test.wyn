@@ -1,3 +1,6 @@
+import net
+
+
 fn main() {
     print("Testing net stdlib...\n")
     

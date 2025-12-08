@@ -1,5 +1,6 @@
 # Edge case tests for lambda/function pointer calls
 
+
 fn apply(f: fn(int) -> int, x: int) -> int {
     return f(x)
 }

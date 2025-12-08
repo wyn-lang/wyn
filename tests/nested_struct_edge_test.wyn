@@ -1,5 +1,6 @@
 # Edge case tests for nested struct field access
 
+
 struct Inner { a: int, b: int }
 struct Middle { inner: Inner, c: int }
 struct Outer { middle: Middle, d: int }

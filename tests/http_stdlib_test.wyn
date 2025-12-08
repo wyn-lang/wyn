@@ -1,3 +1,6 @@
+import http
+
+
 fn main() {
     print("Testing http stdlib...\n")
     

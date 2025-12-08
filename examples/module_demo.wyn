@@ -1,3 +1,5 @@
+import io
+
 # Module System Demo
 # Demonstrates the new module.function() syntax
 
@@ -35,11 +37,11 @@ fn main() {
     # File System Module
     print("3. File System Module:")
     print("")
-    print("   - fs.file_exists() checks files")
+    print("   - fs.io.file_exists() checks files")
     print("")
-    print("   - fs.read_file() reads content")
+    print("   - fs.io.read_file() reads content")
     print("")
-    print("   - fs.write_file() writes content")
+    print("   - fs.io.write_file() writes content")
     print("")
     print("")
     

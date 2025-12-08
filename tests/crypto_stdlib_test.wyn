@@ -1,3 +1,6 @@
+import crypto
+
+
 fn main() {
     print("Testing crypto stdlib...\n")
     

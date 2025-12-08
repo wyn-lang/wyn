@@ -1,18 +1,25 @@
-# Test read_file builtin
+import io
+import string
+
+# Test io module
+
+import io
+import string
 
 fn main() {
     # Read this source file
-    const content: str = read_file("examples/file_test.wyn")
+    const content: str = io.read_file("examples/file_test.wyn")
     
     # Check it's not empty
-    const length: int = len(content)
+    const length: int = content.len()
     print(length)
     assert(length > 0)
     
-    # Check first character is '#' (comment) using ord
-    const first_char: int = ord(content)
+    # Check first character is '#' (comment) using string.ord
+    const first_char: int = string.ord(content)
     print(first_char)  # Should be 35 (#)
     assert(first_char == 35)
     
-    print("read_file works!")
+    print("io.read_file works!")
+    print("")
 }

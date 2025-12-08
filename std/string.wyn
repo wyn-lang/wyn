@@ -1,6 +1,11 @@
 # std/string.wyn
 # String manipulation and utility functions
 
+# Convert int to string
+fn from_int(n: int) -> str {
+    return int_to_str(n)
+}
+
 # Get string length (alias for .len())
 fn str_len(s: str) -> int {
     return s.len()

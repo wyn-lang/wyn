@@ -5,28 +5,28 @@ fn main() {
     
     # Basic slice [1:3] -> [20, 30]
     const s1: [int] = arr[1:3]
-    print(len(s1))  # Should print 2
+    print(s1.len())  # Should print 2
     print(s1[0])    # Should print 20
     print(s1[1])    # Should print 30
     
     # Slice from start [:2] -> [10, 20]
     const s2: [int] = arr[:2]
-    print(len(s2))  # Should print 2
+    print(s2.len())  # Should print 2
     print(s2[0])    # Should print 10
     
     # Slice to end [3:] -> [40, 50]
     const s3: [int] = arr[3:]
-    print(len(s3))  # Should print 2
+    print(s3.len())  # Should print 2
     print(s3[0])    # Should print 40
     
     # Negative index [-2:] -> [40, 50]
     const s4: [int] = arr[-2:]
-    print(len(s4))  # Should print 2
+    print(s4.len())  # Should print 2
     print(s4[0])    # Should print 40
     
     # Full copy [:]
     const s5: [int] = arr[:]
-    print(len(s5))  # Should print 5
+    print(s5.len())  # Should print 5
     
     print(999)  # Done marker
 }

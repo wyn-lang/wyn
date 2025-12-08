@@ -1,10 +1,12 @@
-# Test write_file() builtin
+import io
+
+# Test io.write_file() builtin
 
 fn main() {
-    const result: int = write_file("/tmp/wyn_test.txt", "Hello from Wyn!")
+    const result: int = io.write_file("/tmp/wyn_test.txt", "Hello from Wyn!")
     if result == 0 {
         print("Write successful")
-        const content: str = read_file("/tmp/wyn_test.txt")
+        const content: str = io.read_file("/tmp/wyn_test.txt")
         print("Read back: ")
         print(content)
     } else {

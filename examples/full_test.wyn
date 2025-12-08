@@ -97,7 +97,7 @@ fn main() {
     
     # Arrays
     const arr: [int] = [10, 20, 30]
-    assert(len(arr) == 3)
+    assert(arr.len() == 3)
     assert(arr[0] == 10)
     print("Arrays: OK")
     

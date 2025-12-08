@@ -1,3 +1,6 @@
+import log
+
+
 fn main() {
     print("Testing log stdlib...\n")
     

@@ -1,3 +1,4 @@
+
 fn main() {
     let results: [int] = []
     
@@ -16,7 +17,7 @@ fn main() {
     sleep(1)
     
     // Check that values were appended
-    const final_len: int = len(results)
+    const final_len: int = results.len()
     assert(final_len == 3)
     
     print("✓ Array append with spawn test passed - ")

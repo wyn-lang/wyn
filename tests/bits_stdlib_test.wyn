@@ -1,3 +1,6 @@
+import bits
+
+
 fn main() {
     print("Testing bits stdlib...\n")
     

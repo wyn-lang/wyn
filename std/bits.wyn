@@ -277,7 +277,6 @@ fn byte_parity(n: int) -> int {
 }
 
 # Count consecutive 1-bits from right
-fn count_trailing_ones(n: int) -> int {
     return trailing_zeros(~n)
 }
 
@@ -287,7 +286,6 @@ fn count_leading_ones(n: int) -> int {
 }
 
 # Round up to next power of 2
-fn next_power_of_two(n: int) -> int {
     if n <= 1 { return 1 }
     let p: int = 1
     while p < n {
@@ -347,7 +345,6 @@ fn max_branchless(a: int, b: int) -> int {
 }
 
 # Check if number has alternating bit pattern
-fn has_alternating_bits(n: int) -> bool {
     const xor: int = n ^ (n >> 1)
     return (xor & (xor + 1)) == 0
 }

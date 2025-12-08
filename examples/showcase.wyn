@@ -1,3 +1,5 @@
+import string
+
 # Wyn Language Showcase
 # Demonstrates key language features
 
@@ -35,7 +37,7 @@ fn fib(n: int) -> int {
 }
 
 fn find_index(arr: [int], target: int) -> ?int {
-    for i in 0..len(arr) {
+    for i in 0..arr.len() {
         if arr[i] == target {
             return some(i)
         }
@@ -61,7 +63,7 @@ fn main() {
     # Arrays
     print("Arrays:")
     const arr: [int] = [1, 2, 3, 4, 5]
-    print(len(arr))   # 5
+    print(arr.len())   # 5
     print(arr[-1])    # 5 (last element)
     
     # Iteration
@@ -108,8 +110,8 @@ fn main() {
     # String operations
     print("String operations:")
     const s: str = "hello"
-    print(len(s))     # 5
-    print(ord("A"))   # 65
+    print(s.len())     # 5
+    print(string.ord("A"))   # 65
     
     print("")
     print("=== Done ===")

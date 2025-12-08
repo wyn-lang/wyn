@@ -1,3 +1,6 @@
+import array
+
+
 fn main() {
     print("Testing array stdlib...\n")
     

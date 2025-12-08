@@ -31,7 +31,7 @@ fn main() {
     const s2: str = "World"
     const combined: str = s1 + s2
     print(combined)
-    print(len(combined))
+    print(combined.len())
     
     print("=== Demo Complete ===")
 }

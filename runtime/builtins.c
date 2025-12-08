@@ -198,6 +198,22 @@ char* getenv_wyn(const char* name) {
     return val ? strdup(val) : strdup("");
 }
 
+// Read a line from stdin
+char* read_line() {
+    char* line = NULL;
+    size_t len = 0;
+    ssize_t read = getline(&line, &len, stdin);
+    if (read == -1) {
+        if (line) free(line);
+        return strdup("");
+    }
+    // Remove trailing newline
+    if (read > 0 && line[read-1] == '\n') {
+        line[read-1] = '\0';
+    }
+    return line;
+}
+
 long long getpid_wyn() {
     return (long long)getpid();
 }

@@ -1,3 +1,4 @@
+
 fn worker(id: int) {
     print("Worker ")
     print(id)

@@ -1,3 +1,6 @@
+import compress
+
+
 fn main() {
     print("Testing compress stdlib...\n")
     

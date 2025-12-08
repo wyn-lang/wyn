@@ -1,3 +1,6 @@
+import json
+
+
 fn main() {
     print("Testing json stdlib...\n")
     

@@ -48,7 +48,7 @@ fn main() {
     // Arrays
     print("Arrays:")
     const arr: [int] = [100, 200, 300, 400]
-    print(len(arr))
+    print(arr.len())
     print(arr[0])
     print(arr[3])
     

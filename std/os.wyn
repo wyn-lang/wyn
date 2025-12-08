@@ -1,6 +1,17 @@
 # std/os.wyn
 # Operating system interaction and command-line argument parsing
 
+# Run shell command and return exit code
+fn system(cmd: str) -> int {
+    return system(cmd)
+}
+
+# Change directory (simple wrapper, ignores errors)
+fn chdir(path: str) {
+    const result = cd(path)
+    # Ignore result for now
+}
+
 # Get command-line argument at index (0 = program name), returns none if out of bounds
 fn get_arg(index: int) -> ?str {
     const all_args: [str] = args()

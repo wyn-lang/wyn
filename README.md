@@ -1,201 +1,89 @@
 # Wyn Programming Language
 
-**One language to rule them all.**
-
-Fast, simple, universal. **20-30x faster than Python.**
-
-## Quick Install
-
-```bash
-git clone https://github.com/wyn-lang/wyn.git
-cd wyn
-make all
-sudo make install
-```
-
-This installs:
-- `wyn-compiler` - The Stage 1 compiler
-- `wyn` - The CLI tool (written in Wyn)
-
-**100% cross-platform** - No bash scripts, everything written in Wyn or built with Makefile.
-
-### Platform Support
-
-**Tier 1 (Fully Supported - CI Tested):**
-- ✅ macOS ARM64 (Apple Silicon)
-- ✅ macOS x86_64 (Intel)
-- ✅ Linux x86_64
-- ✅ Windows x86_64
-
-**Tier 2 (Supported - CI Tested):**
-- ✅ Linux ARM64
-
-**Download Pre-built Binaries:**
-- GitHub releases include binaries for all platforms
-
-**Note:** The `wyn` CLI tool is written in Wyn itself and works cross-platform. The compiler binary (`wyn-compiler`) can also be used directly.
-
-**Going forward:**
-- Development: `./build/wyn version` (use local build)
-- Installed: `wyn version` (use installed binary)
-- All features work on Windows, macOS, and Linux
-
-## Quick Start
-
-```wyn
-fn main() {
-    print("Hello, World!")
-    print("")
-}
-```
-
-```bash
-# Compile and run
-wyn -o hello hello.wyn
-./hello
-
-# With optimizations (recommended)
-wyn --stage1-tc --stage1-opt -o hello hello.wyn
-```
-
-## Quick Examples
-
-**Mutable arrays:**
-```wyn
-let arr: [int] = []
-arr.append(42)
-arr.append(99)
-print(arr.len())  // 2
-```
-
-**Spawn (concurrency):**
-```wyn
-let counter: int = 0
-for i in 0..100 {
-    spawn { counter = counter + 1 }
-}
-sleep_ms(1000)
-print(counter)  // 100
-```
-
-**File I/O:**
-```wyn
-# Builtins (simple)
-write_file("test.txt", "Hello")
-const content: str = read_file("test.txt")
-
-# Or use io module
-import io
-io.write_file("test.txt", "Hello")
-```
-
-**HTTP:**
-```wyn
-import http
-
-# HTTP server
-const server: int = http.serve("0.0.0.0", 8080)
-
-# HTTP client
-const response: Result[Response, str] = http.get("https://api.example.com")
-```
-
-## Performance
-
-**Wyn competes with C and Go, beats Java and Node.js, destroys Python:**
-
-- **vs Go**: 2.3x faster on arrays, 1.6x faster startup
-- **vs Java**: 45x faster startup, 2.5x faster on arrays
-- **vs Node.js**: 8.4x faster on math, 25.6x faster startup
-- **vs C**: Matches on arrays (0.06s), near-instant startup
-- **vs Python**: 20-30x faster with native compilation
-
-**The best of all worlds:**
-- ✅ **Fast as C/Go** - Native compilation, optimized binaries
-- ✅ **Simple as Python** - Clean syntax, easy to learn
-- ✅ **Versatile** - Scripts, CLI tools, servers, systems programming
-- ✅ **Complete** - 500+ stdlib functions, 100% test coverage
-
-**No reason to use anything else anymore.**
-
-See [benchmarks/FINAL_RESULTS.md](benchmarks/FINAL_RESULTS.md) for details.
+Fast, compiled systems language with Python-like syntax.
 
 ## Features
 
-- **Fast** - Compiles to native code, 20-30x faster than Python
-- **Simple** - Python-like syntax, easy to learn
-- **Practical** - Built for real work: scripts, CLI tools, servers
-- **Module system** - Clean organization (io, os, time, math, http, string, array)
-- **Type safe** - Explicit types, no surprises
-- **Stage 1** - Enhanced type checking & optimizations
-- **Concurrent** - Spawn-based parallelism
-- **Cross-platform** - Works on macOS, Linux, Windows
-- **No dependencies** - Single binary, no runtime needed
+- **Fast:** Compiles to native ARM64 code
+- **Simple:** Python-like syntax
+- **Library-first:** Minimal global namespace (6 builtins)
+- **Concurrent:** Spawn-based concurrency
+- **Practical:** Built for real work
 
-## Stage 1 Compiler
-
-The `wyn` compiler includes Stage 1 features (built into the binary):
+## Quick Start
 
 ```bash
-# Type inference + better errors
-wyn --stage1-tc -o output input.wyn
+# Compile a program
+./build/stage0 -o hello examples/hello.wyn
+./hello
 
-# Optimizations (constant folding, dead code elimination, inlining)
-wyn --stage1-opt -o output input.wyn
-
-# Both (recommended for production)
-wyn --stage1-tc --stage1-opt -o output input.wyn
+# Or use the CLI
+./build/wyn version
 ```
 
-Stage 1 provides 28-42% performance improvements and enhanced developer experience.
+## Example
 
-## What Works Today
+```wyn
+import io
+import time
 
-- ✅ CLI tools
-- ✅ HTTP servers
-- ✅ File processing
-- ✅ Concurrent programs (spawn)
-- ✅ Math/science programs
+fn main() {
+    print("Hello, Wyn!")
+    
+    const data = io.read_file("file.txt")
+    time.sleep_ms(1000)
+    
+    print(data)
+}
+```
+
+## Architecture
+
+### Builtins (6 only)
+
+1. `print()` - Output
+2. `assert()` - Testing
+3. `exit()` - Process control
+4. `args()` - Command line arguments
+5. `int_to_str()` - String conversion
+6. `system()` - Shell commands
+
+**Everything else requires imports.**
+
+### Standard Library
+
+- `io` - File I/O
+- `time` - Time and sleep
+- `math` - Mathematical functions
+- `string` - String utilities
+- `os` - Operating system
+- And 20+ more modules
+
+## Building
+
+```bash
+make clean
+make all
+make test
+```
 
 ## Status
 
-- **76/76 tests passing**
-- **500+ stdlib functions**
-- **Stage 1 complete**
-- **20-30x faster than Python**
+- **Compiler:** stage0 (C bootstrap)
+- **Tests:** 41/64 passing (64%)
+- **Platform:** ARM64 macOS
+- **Stage 1:** In development (self-hosting compiler in Wyn)
+
+## Next Steps
+
+1. Build Stage 1 compiler (written in Wyn)
+2. Self-hosting (Stage 1 compiles itself)
+3. Add syscalls (pure Wyn, no C dependencies)
 
 ## Documentation
 
-- [Getting Started](docs/quickstart.md)
-- [Language Reference](docs/language.md)
-- [Roadmap](docs/ROADMAP.md) - Planned features
-- [Package Manager](docs/packages.md)
-- [Stdlib Reference](docs/stdlib.md)
-- [iOS Mobile](docs/mobile.md)
-- [Stage 1 Type Checker](docs/compiler.md)
-- [Stage 1 Optimizations](docs/compiler.md)
-- [Stage 1 Inlining](docs/compiler.md)
-- [Performance Benchmarks](benchmarks/FINAL_RESULTS.md)
-
-## Examples
-
-```bash
-# Calculator
-./build/stage0 -o calc examples/calculator.wyn
-
-# HTTP server
-./build/stage0 -o server examples/http_server.wyn
-
-# TUI demo
-./build/stage0 -o tui temp/tui_demo.wyn
-
-# GUI window (macOS)
-./build/stage0 -o gui examples/gui_window.wyn
-
-# iOS mobile app (requires iOS SDK)
-./scripts/build_ios.sh examples/mobile_ios_app.wyn MyApp
-```
+See `docs/` for language reference and guides.
 
 ## License
 
-MIT
+See LICENSE file.

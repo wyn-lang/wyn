@@ -1,3 +1,5 @@
+import string
+
 # Wyn Language Demo
 # Showcases all currently supported features
 
@@ -116,12 +118,12 @@ fn main() {
     print("")
     print("--- Arrays & Slicing ---")
     const arr: [int] = [10, 20, 30, 40, 50]
-    print(len(arr))     # 5
+    print(arr.len())     # 5
     print(arr[0])       # 10
     print(arr[4])       # 50
     
     const slice: [int] = arr[1:4]
-    print(len(slice))   # 3
+    print(slice.len())   # 3
     print(slice[0])     # 20
     
     const last_two: [int] = arr[-2:]
@@ -207,9 +209,9 @@ fn main() {
     # Character operations
     print("")
     print("--- Character Codes ---")
-    print(ord("A"))       # 65
-    print(ord("a"))       # 97
-    print(chr(87))    # W
+    print(string.ord("A"))       # 65
+    print(string.ord("a"))       # 97
+    print(string.chr(87))    # W
     
     # Generics
     print("")

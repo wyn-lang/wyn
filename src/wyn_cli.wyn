@@ -1,3 +1,7 @@
+import io
+import os
+import string
+
 fn main() {
     const argv: [str] = args()
     
@@ -99,19 +103,19 @@ fn create_project(name: str) {
     print("Creating project: ")
     print(name)
     
-    mkdir(name)
-    chdir(name)
-    mkdir("src")
-    mkdir("build")
+    io.mkdir(name)
+    os.chdir(name)
+    io.mkdir("src")
+    io.mkdir("build")
     
     const line1: str = "fn main() {"
     const line2: str = "    print(\"Hello World!\\n\")"
     const line3: str = "}"
     const main_content: str = line1 + "\n" + line2 + "\n" + line3 + "\n"
-    write_file("src/main.wyn", main_content)
+    io.write_file("src/main.wyn", main_content)
     
     const toml_content: str = "[package]\nname = \"app\"\nversion = \"0.1.0\"\n"
-    write_file("wyn.toml", toml_content)
+    io.write_file("wyn.toml", toml_content)
     
     print("✓ Created project: ")
     print(name)
@@ -120,7 +124,7 @@ fn create_project(name: str) {
 fn build_project() {
     print("Building project...\n")
     
-    if not file_exists("src/main.wyn") {
+    if not io.file_exists("src/main.wyn") {
         print("✗ No src/main.wyn found\n")
         exit(1)
     }
@@ -128,7 +132,7 @@ fn build_project() {
     const compiler: str = find_compiler()
     const exe: str = "build/app"
     const compile_cmd: str = compiler + " -q --stage1-tc --stage1-opt -o " + exe + " src/main.wyn"
-    const compile_result: int = system(compile_cmd)
+    const compile_result: int = os.system(compile_cmd)
     
     if compile_result == 0 {
         print("✓ Built: build/app\n")
@@ -140,17 +144,17 @@ fn build_project() {
 
 fn build_and_run() {
     build_project()
-    system("./build/app")
+    os.system("./build/app")
 }
 
 fn exec_file(file: str) {
     const compiler: str = find_compiler()
     const exe: str = "/tmp/wyn_exec"
     const compile_cmd: str = compiler + " -q --stage1-opt -o " + exe + " " + file + " 2>/dev/null"
-    const compile_result: int = system(compile_cmd)
+    const compile_result: int = os.system(compile_cmd)
     
     if compile_result == 0 {
-        system(exe)
+        os.system(exe)
     } else {
         print("✗ Compilation failed\n")
         exit(1)
@@ -159,24 +163,24 @@ fn exec_file(file: str) {
 
 fn exec_stdin() {
     const temp_file: str = "/tmp/wyn_stdin.wyn"
-    const nl: str = chr(10)
+    const nl: str = string.chr(10)
     
     # Read all stdin
     let code: str = ""
-    let line: str = read_line()
+    let line: str = io.read_line()
     while line.len() > 0 {
         code = code + line + nl
-        line = read_line()
+        line = io.read_line()
     }
     
     # Wrap in main if not present
-    if str_find(code, "fn main") == -1 {
+    if string.find(code, "fn main") == -1 {
         const prefix: str = "fn main() {" + nl
         const suffix: str = nl + "}" + nl
         const wrapped: str = prefix + code + suffix
-        write_file(temp_file, wrapped)
+        io.write_file(temp_file, wrapped)
     } else {
-        write_file(temp_file, code)
+        io.write_file(temp_file, code)
     }
     
     exec_file(temp_file)
@@ -184,38 +188,38 @@ fn exec_stdin() {
 
 fn exec_inline(code: str) {
     const temp_file: str = "/tmp/wyn_inline.wyn"
-    const nl: str = chr(10)
+    const nl: str = string.chr(10)
     const prefix: str = "fn main() {" + nl
     const suffix: str = nl + "}" + nl
     const wrapped: str = prefix + code + suffix
-    write_file(temp_file, wrapped)
+    io.write_file(temp_file, wrapped)
     exec_file(temp_file)
 }
 
 fn run_tests() {
     print("Running tests...\n")
-    system("make test")
+    os.system("make test")
 }
 
 fn run_benchmarks() {
     print("Running benchmarks...\n")
-    system("make bench")
+    os.system("make bench")
 }
 
 fn clean_project() {
     print("Cleaning build artifacts...\n")
-    system("rm -rf build/*")
+    os.system("rm -rf build/*")
     print("✓ Clean complete\n")
 }
 
 fn find_compiler() -> str {
-    if file_exists("./build/stage0") == 1 {
+    if io.file_exists("./build/stage0") == 1 {
         return "./build/stage0"
     }
-    if file_exists("../build/stage0") == 1 {
+    if io.file_exists("../build/stage0") == 1 {
         return "../build/stage0"
     }
-    if file_exists("/usr/local/bin/wyn-compiler") == 1 {
+    if io.file_exists("/usr/local/bin/wyn-compiler") == 1 {
         return "/usr/local/bin/wyn-compiler"
     }
     return "wyn-compiler"

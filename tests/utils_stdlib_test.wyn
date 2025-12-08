@@ -1,3 +1,6 @@
+import utils
+
+
 fn main() {
     print("Testing utils stdlib...\n")
     

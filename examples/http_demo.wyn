@@ -25,7 +25,7 @@ fn main() {
     
     const parsed: ?[str] = http.parse_header(header)
     const parts: [str] = parsed ?? []
-    if len(parts) > 0 {
+    if parts.len() > 0 {
         print(parts[0])
         print(parts[1])
     }

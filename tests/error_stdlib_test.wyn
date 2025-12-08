@@ -1,3 +1,6 @@
+import error
+
+
 fn main() {
     print("Testing error stdlib...\n")
     

@@ -824,6 +824,9 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "getpid") == 0) return "getpid";
         if (strcmp(function, "getcwd") == 0) return "getcwd";
         if (strcmp(function, "exit") == 0) return "exit";
+        if (strcmp(function, "system") == 0) return "system";
+        if (strcmp(function, "chdir") == 0) return "chdir";
+        if (strcmp(function, "args") == 0) return "args";
     } else if (strcmp(module, "io") == 0) {
         if (strcmp(function, "print") == 0) return "print";
         if (strcmp(function, "println") == 0) return "println";
@@ -2562,49 +2565,11 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                 if (tc_is_enum_variant(tc, e->ident)) return new_type(TYPE_INT);
                 // Check if it's a function name
                 if (tc_lookup_fn(tc, e->ident)) return new_type(TYPE_FUNCTION);
-                // Built-in functions
-                if (strcmp(e->ident, "print") == 0 || strcmp(e->ident, "print_str") == 0 ||
-                    strcmp(e->ident, "println") == 0 || strcmp(e->ident, "println_str") == 0 ||
-                    strcmp(e->ident, "print_float") == 0 || strcmp(e->ident, "print_char") == 0 ||
-                    strcmp(e->ident, "print_newline") == 0 || strcmp(e->ident, "flush") == 0 ||
-                    strcmp(e->ident, "assert") == 0 ||
-                    strcmp(e->ident, "len") == 0 || strcmp(e->ident, "exit") == 0 ||
-                    strcmp(e->ident, "abs") == 0 || strcmp(e->ident, "min") == 0 ||
-                    strcmp(e->ident, "max") == 0 || strcmp(e->ident, "int_to_str") == 0 ||
-                    strcmp(e->ident, "str_to_int") == 0 || strcmp(e->ident, "int_to_float") == 0 ||
-                    strcmp(e->ident, "float_to_int") == 0 ||
-                    strcmp(e->ident, "read_file") == 0 || strcmp(e->ident, "write_file") == 0 ||
-                    strcmp(e->ident, "read_line") == 0 || strcmp(e->ident, "clock") == 0 ||
-                    strcmp(e->ident, "random") == 0 || strcmp(e->ident, "sleep") == 0 ||
-                    strcmp(e->ident, "getenv") == 0 || strcmp(e->ident, "setenv") == 0 ||
-                    strcmp(e->ident, "environ") == 0 || strcmp(e->ident, "system") == 0 ||
-                    strcmp(e->ident, "ord") == 0 || strcmp(e->ident, "chr") == 0 ||
-                    strcmp(e->ident, "file_exists") == 0 || strcmp(e->ident, "delete_file") == 0 ||
-                    strcmp(e->ident, "file_size") == 0 || strcmp(e->ident, "is_dir") == 0 ||
-                    strcmp(e->ident, "mkdir") == 0 || strcmp(e->ident, "rmdir") == 0 ||
-                    strcmp(e->ident, "append_file") == 0 || strcmp(e->ident, "array_append") == 0 ||
-                    strcmp(e->ident, "time_now") == 0 ||
-                    strcmp(e->ident, "sleep_ms") == 0 || strcmp(e->ident, "tcp_connect") == 0 ||
-                    strcmp(e->ident, "tcp_close") == 0 || strcmp(e->ident, "char_at") == 0 ||
-                    strcmp(e->ident, "str_find") == 0 || strcmp(e->ident, "str_cmp") == 0 ||
-                    strcmp(e->ident, "str_concat") == 0 || strcmp(e->ident, "str_substr") == 0 ||
-                    strcmp(e->ident, "str_split") == 0 ||
-                    strcmp(e->ident, "tcp_send") == 0 || strcmp(e->ident, "tcp_recv") == 0 ||
-                    strcmp(e->ident, "gpu_init") == 0 || strcmp(e->ident, "gpu_device_count") == 0 ||
-                    strcmp(e->ident, "gpu_malloc") == 0 || strcmp(e->ident, "gpu_free") == 0 ||
-                    strcmp(e->ident, "gpu_sync") == 0 ||
-                    strcmp(e->ident, "tcp_listen") == 0 || strcmp(e->ident, "tcp_accept") == 0 ||
-                    strcmp(e->ident, "getcwd") == 0 || strcmp(e->ident, "chdir") == 0 ||
-                    strcmp(e->ident, "sqrtf") == 0 || strcmp(e->ident, "sinf") == 0 ||
-                    strcmp(e->ident, "cosf") == 0 || strcmp(e->ident, "tanf") == 0 ||
-                    strcmp(e->ident, "asinf") == 0 || strcmp(e->ident, "acosf") == 0 ||
-                    strcmp(e->ident, "atanf") == 0 || strcmp(e->ident, "atan2f") == 0 ||
-                    strcmp(e->ident, "log10f") == 0 ||
-                    strcmp(e->ident, "logf") == 0 || strcmp(e->ident, "expf") == 0 ||
-                    strcmp(e->ident, "powf") == 0 || strcmp(e->ident, "floorf") == 0 ||
-                    strcmp(e->ident, "ceilf") == 0 || strcmp(e->ident, "getpid") == 0 ||
-                    strcmp(e->ident, "rename_file") == 0 || strcmp(e->ident, "to_string") == 0 ||
-                    strcmp(e->ident, "substring") == 0 || strcmp(e->ident, "args") == 0) {
+                // Minimal builtins - everything else requires imports
+                if (strcmp(e->ident, "print") == 0 || strcmp(e->ident, "assert") == 0 || 
+                    strcmp(e->ident, "exit") == 0 || strcmp(e->ident, "args") == 0 ||
+                    strcmp(e->ident, "int_to_str") == 0 || strcmp(e->ident, "system") == 0 ||
+                    strcmp(e->ident, "write_file") == 0) {
                     return new_type(TYPE_FUNCTION);
                 }
                 tc_error(tc, e->line, e->column, "undefined variable '%s'", e->ident);
@@ -2767,6 +2732,14 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
         }
         
         case EXPR_FIELD: {
+            // Check if this is a module.function reference
+            if (e->field.object->kind == EXPR_IDENT) {
+                const char* potential_module = e->field.object->ident;
+                if (tc_is_module_imported(tc, potential_module)) {
+                    // This is a module namespace, return function type
+                    return new_type(TYPE_FUNCTION);
+                }
+            }
             Type* obj = tc_check_expr(tc, e->field.object);
             if (obj->kind == TYPE_NAMED) {
                 StructDef* s = tc_lookup_struct(tc, obj->name);
@@ -3147,43 +3120,12 @@ static Symbol* tc1_lookup(TypeChecker1* tc, const char* name) {
 }
 
 static bool tc1_is_builtin(const char* name) {
-    return strcmp(name, "print") == 0 || strcmp(name, "print_str") == 0 ||
-           strcmp(name, "println") == 0 || strcmp(name, "println_str") == 0 ||
-           strcmp(name, "print_float") == 0 || strcmp(name, "print_char") == 0 ||
-           strcmp(name, "print_newline") == 0 || strcmp(name, "flush") == 0 ||
-           strcmp(name, "assert") == 0 || strcmp(name, "len") == 0 ||
-           strcmp(name, "exit") == 0 || strcmp(name, "abs") == 0 ||
-           strcmp(name, "min") == 0 || strcmp(name, "max") == 0 ||
-           strcmp(name, "int_to_str") == 0 || strcmp(name, "str_to_int") == 0 ||
-           strcmp(name, "int_to_float") == 0 || strcmp(name, "float_to_int") == 0 ||
-           strcmp(name, "read_file") == 0 || strcmp(name, "write_file") == 0 ||
-           strcmp(name, "read_line") == 0 || strcmp(name, "clock") == 0 ||
-           strcmp(name, "random") == 0 || strcmp(name, "sleep") == 0 ||
-           strcmp(name, "getenv") == 0 || strcmp(name, "setenv") == 0 ||
-           strcmp(name, "environ") == 0 || strcmp(name, "system") == 0 ||
-           strcmp(name, "ord") == 0 || strcmp(name, "chr") == 0 ||
-           strcmp(name, "file_exists") == 0 || strcmp(name, "delete_file") == 0 ||
-           strcmp(name, "file_size") == 0 || strcmp(name, "is_dir") == 0 ||
-           strcmp(name, "mkdir") == 0 || strcmp(name, "rmdir") == 0 ||
-           strcmp(name, "append_file") == 0 || strcmp(name, "array_append") == 0 ||
-           strcmp(name, "time_now") == 0 ||
-           strcmp(name, "sleep_ms") == 0 || strcmp(name, "tcp_connect") == 0 ||
-           strcmp(name, "tcp_close") == 0 || strcmp(name, "char_at") == 0 ||
-           strcmp(name, "str_find") == 0 || strcmp(name, "str_cmp") == 0 ||
-           strcmp(name, "str_concat") == 0 || strcmp(name, "str_substr") == 0 ||
-           strcmp(name, "str_split") == 0 || strcmp(name, "tcp_send") == 0 ||
-           strcmp(name, "tcp_recv") == 0 || strcmp(name, "tcp_listen") == 0 ||
-           strcmp(name, "tcp_accept") == 0 || strcmp(name, "getcwd") == 0 ||
-           strcmp(name, "chdir") == 0 || strcmp(name, "sqrtf") == 0 ||
-           strcmp(name, "sinf") == 0 || strcmp(name, "cosf") == 0 ||
-           strcmp(name, "tanf") == 0 || strcmp(name, "asinf") == 0 ||
-           strcmp(name, "acosf") == 0 || strcmp(name, "atanf") == 0 ||
-           strcmp(name, "atan2f") == 0 || strcmp(name, "log10f") == 0 ||
-           strcmp(name, "logf") == 0 || strcmp(name, "expf") == 0 ||
-           strcmp(name, "powf") == 0 || strcmp(name, "floorf") == 0 ||
-           strcmp(name, "ceilf") == 0 || strcmp(name, "getpid") == 0 ||
-           strcmp(name, "rename_file") == 0 || strcmp(name, "to_string") == 0 ||
-           strcmp(name, "substring") == 0 || strcmp(name, "args") == 0;
+    // Minimal builtins - everything else requires imports
+    return strcmp(name, "print") == 0 || strcmp(name, "assert") == 0 || 
+           strcmp(name, "exit") == 0 || strcmp(name, "args") == 0 ||
+           strcmp(name, "int_to_str") == 0 || strcmp(name, "system") == 0 ||
+           strcmp(name, "write_file") == 0 || strcmp(name, "ord") == 0 ||
+           strcmp(name, "substring") == 0;
 }
 
 static Type* tc1_infer_binary(TypeChecker1* tc, Type* left, Type* right, TokenKind op) {
@@ -3359,6 +3301,14 @@ static Type* tc1_check_expr(TypeChecker1* tc, Expr* e) {
         }
         
         case EXPR_FIELD: {
+            // Check if this is a module.function reference
+            if (e->field.object->kind == EXPR_IDENT) {
+                const char* potential_module = e->field.object->ident;
+                if (tc_is_module_imported((TypeChecker*)tc, potential_module)) {
+                    // This is a module namespace, return function type
+                    return new_type(TYPE_FUNCTION);
+                }
+            }
             Type* obj = tc1_check_expr(tc, e->field.object);
             if (obj->kind == TYPE_NAMED) {
                 StructDef* s = tc_lookup_struct((TypeChecker*)tc, obj->name);
@@ -8333,12 +8283,17 @@ static void cg_stmt(CodeGen* cg, Stmt* s) {
                 }
             } else {
                 // Non-struct: just store the value
-                // Infer type from args() call
+                // Infer type from value
                 Type* var_type = s->let.type;
-                if (!var_type && s->let.value && s->let.value->kind == EXPR_CALL &&
-                    s->let.value->call.func->kind == EXPR_IDENT &&
-                    strcmp(s->let.value->call.func->ident, "args") == 0) {
-                    var_type = new_type(TYPE_ARRAY);
+                if (!var_type && s->let.value) {
+                    if (s->let.value->kind == EXPR_STRING) {
+                        var_type = new_type(TYPE_STR);
+                    } else if (s->let.value->kind == EXPR_CALL &&
+                        s->let.value->call.func->kind == EXPR_IDENT &&
+                        strcmp(s->let.value->call.func->ident, "args") == 0) {
+                        var_type = new_type(TYPE_ARRAY);
+                        var_type->inner = new_type(TYPE_STR);
+                    }
                 }
                 cg_add_local(cg, s->let.name, var_type);
                 if (s->let.value) {

@@ -1,3 +1,6 @@
+import gpu
+
+
 fn main() {
     print("Testing gpu stdlib (Vulkan)...\n")
     

@@ -1,10 +1,21 @@
 # std/io.wyn
 # Basic I/O operations for reading and writing files
 
+# Print a string (no newline)
+fn print(s: str) {
+    print_str(s)
+}
+
 # Print a string followed by a newline
+fn println(s: str) {
+    print_str(s)
+    print_str("\n")
+}
+
+# Print a string followed by a newline (alias)
 fn print_line(s: str) {
-    print(s)
-    print("\n")
+    print_str(s)
+    print_str("\n")
 }
 
 # Read entire file contents as a string

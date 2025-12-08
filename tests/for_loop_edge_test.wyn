@@ -1,5 +1,6 @@
 # Edge case tests for for loop variable scoping
 
+
 fn main() {
     # Multiple loops with same variable name
     let sum1: int = 0

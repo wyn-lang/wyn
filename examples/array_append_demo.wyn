@@ -13,7 +13,7 @@ fn main() {
     
     # Show results
     print("Array length: ")
-    print(len(numbers))
+    print(numbers.len())
     print("")
     
     print("First element: ")
@@ -24,7 +24,7 @@ fn main() {
     
     # Compute sum
     let sum: int = 0
-    for i in 0..len(numbers) {
+    for i in 0..numbers.len() {
         sum = sum + numbers[i]
     }
     print("Sum of all elements: ")
@@ -38,7 +38,7 @@ fn main() {
     }
     
     print("New array length: ")
-    print(len(numbers))
+    print(numbers.len())
     print("")
     
     print("")

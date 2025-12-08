@@ -1,3 +1,6 @@
+import validate
+
+
 fn main() {
     print("Testing validate stdlib...\n")
     
