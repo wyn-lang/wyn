@@ -3,6 +3,7 @@
 
 import io
 import os
+import string
 
 fn main() {
     print("=== Wyn Stage 1 Compiler (Extended) ===")
@@ -317,7 +318,7 @@ fn gen_strings(source: str, f: str) {
             const str_val: str = substring(source, str_start, pos)
             
             io.append_file(f, "msg")
-            io.append_file(f, int_to_str(msg_num))
+            io.append_file(f, string.from_int(msg_num))
             io.append_file(f, ":\n")
             io.append_file(f, "    .asciz \"")
             io.append_file(f, str_val)

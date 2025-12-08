@@ -1,12 +1,10 @@
 
-import test
-
 fn main() {
     print("Testing spawn...\n")
     
     # Simple spawn test without race conditions
     const x: int = 42
-    test.assert(x == 42, "basic test")
+    assert(x == 42, "basic test")
     
     print("✓ Spawn test passed\n")
 }

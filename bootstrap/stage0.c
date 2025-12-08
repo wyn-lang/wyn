@@ -815,6 +815,7 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "chr") == 0) return "chr";
         if (strcmp(function, "ord") == 0) return "ord";
         if (strcmp(function, "int_to_str") == 0) return "int_to_str";
+        if (strcmp(function, "from_int") == 0) return "int_to_str";
     } else if (strcmp(module, "time") == 0) {
         if (strcmp(function, "sleep_ms") == 0) return "sleep_ms";
         if (strcmp(function, "now") == 0) return "time_now";
@@ -2568,9 +2569,9 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                 // Minimal builtins - everything else requires imports
                 if (strcmp(e->ident, "print") == 0 ||
                     strcmp(e->ident, "args") == 0 ||
-                    strcmp(e->ident, "int_to_str") == 0 ||
                     strcmp(e->ident, "substring") == 0 ||
-                    strcmp(e->ident, "ord") == 0 || strcmp(e->ident, "syscall") == 0) {
+                    strcmp(e->ident, "ord") == 0 ||
+                    strcmp(e->ident, "syscall") == 0) {
                     return new_type(TYPE_FUNCTION);
                 }
                 tc_error(tc, e->line, e->column, "undefined variable '%s'", e->ident);
@@ -3124,8 +3125,8 @@ static bool tc1_is_builtin(const char* name) {
     // Minimal builtins - everything else requires imports
     return strcmp(name, "print") == 0 || 
            strcmp(name, "args") == 0 ||
-           strcmp(name, "int_to_str") == 0 ||
-           strcmp(name, "ord") == 0 ||
+           
+           
            strcmp(name, "substring") == 0;
 }
 

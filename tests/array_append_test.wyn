@@ -1,16 +1,14 @@
 
-import test
-
 fn main() {
     let arr: [int] = []
     arr.append(42)
     arr.append(99)
     arr.append(123)
     
-    test.assert(arr.len() == 3)
-    test.assert(arr[0] == 42)
-    test.assert(arr[1] == 99)
-    test.assert(arr[2] == 123)
+    assert(arr.len() == 3)
+    assert(arr[0] == 42)
+    assert(arr[1] == 99)
+    assert(arr[2] == 123)
     
     print("✓ Array append test passed")
 }
