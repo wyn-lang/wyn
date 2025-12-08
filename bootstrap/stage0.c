@@ -2566,7 +2566,7 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                 // Check if it's a function name
                 if (tc_lookup_fn(tc, e->ident)) return new_type(TYPE_FUNCTION);
                 // Minimal builtins - everything else requires imports
-                if (strcmp(e->ident, "print") == 0 || strcmp(e->ident, "assert") == 0 || 
+                if (strcmp(e->ident, "print") == 0 ||
                     strcmp(e->ident, "args") == 0 ||
                     strcmp(e->ident, "int_to_str") == 0 ||
                     strcmp(e->ident, "write_file") == 0 || strcmp(e->ident, "substring") == 0 ||
@@ -3122,7 +3122,7 @@ static Symbol* tc1_lookup(TypeChecker1* tc, const char* name) {
 
 static bool tc1_is_builtin(const char* name) {
     // Minimal builtins - everything else requires imports
-    return strcmp(name, "print") == 0 || strcmp(name, "assert") == 0 || 
+    return strcmp(name, "print") == 0 || 
            strcmp(name, "args") == 0 ||
            strcmp(name, "int_to_str") == 0 ||
            strcmp(name, "write_file") == 0 || strcmp(name, "ord") == 0 ||
