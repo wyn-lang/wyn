@@ -345,7 +345,7 @@ fn parse_loop_bound(source: str) -> int {
             let result: int = 0
             while pos < source.len() {
                 const c: str = source[pos:pos + 1]
-                const code: int = ord(c)
+                const code: int = string.ord(c)
                 if code >= 48 and code <= 57 {
                     result = result * 10 + (code - 48)
                     pos = pos + 1
@@ -358,6 +358,183 @@ fn parse_loop_bound(source: str) -> int {
         pos = pos + 1
     }
     return 3
+}
+
+fn parse_loop_var(source: str) -> str {
+    # Find "while" keyword and extract variable name
+    let pos: int = 0
+    while pos < source.len() - 5 {
+        if source[pos:pos + 5] == "while" {
+            pos = pos + 5
+            # Skip whitespace
+            while pos < source.len() and source[pos:pos + 1] == " " {
+                pos = pos + 1
+            }
+            # Extract variable name
+            let start: int = pos
+            while pos < source.len() {
+                const c: str = source[pos:pos + 1]
+                if c == " " or c == "<" {
+                    return source[start:pos]
+                }
+                pos = pos + 1
+            }
+        }
+        pos = pos + 1
+    }
+    return "x"
+}
+
+fn parse_all_var_names(source: str) -> str {
+    # Returns comma-separated list of variable names
+    let result: str = ""
+    let pos: int = 0
+    
+    while pos < source.len() - 3 {
+        const chunk3: str = source[pos:pos + 3]
+        const chunk5: str = source[pos:pos + 5]
+        
+        if chunk3 == "let" or chunk5 == "const" {
+            if chunk5 == "const" {
+                pos = pos + 5
+            } else {
+                pos = pos + 3
+            }
+            
+            # Skip whitespace
+            while pos < source.len() and source[pos:pos + 1] == " " {
+                pos = pos + 1
+            }
+            
+            # Extract variable name
+            let start: int = pos
+            while pos < source.len() {
+                const c: str = source[pos:pos + 1]
+                if c == ":" or c == " " or c == "=" {
+                    const var_name: str = source[start:pos]
+                    if result == "" {
+                        result = var_name
+                    } else {
+                        result = result + "," + var_name
+                    }
+                    break
+                }
+                pos = pos + 1
+            }
+        }
+        pos = pos + 1
+    }
+    
+    return result
+}
+
+fn count_vars(var_names: str) -> int {
+    if var_names == "" {
+        return 0
+    }
+    let count: int = 1
+    let pos: int = 0
+    while pos < var_names.len() {
+        if var_names[pos:pos + 1] == "," {
+            count = count + 1
+        }
+        pos = pos + 1
+    }
+    return count
+}
+
+fn get_var_name(var_names: str, idx: int) -> str {
+    let current_idx: int = 0
+    let start: int = 0
+    let pos: int = 0
+    
+    while pos < var_names.len() {
+        if var_names[pos:pos + 1] == "," {
+            if current_idx == idx {
+                return var_names[start:pos]
+            }
+            current_idx = current_idx + 1
+            start = pos + 1
+        }
+        pos = pos + 1
+    }
+    
+    if current_idx == idx {
+        return var_names[start:var_names.len()]
+    }
+    
+    return ""
+}
+
+fn get_var_offset(var_names: str, var_name: str) -> int {
+    let idx: int = 0
+    let count: int = count_vars(var_names)
+    
+    while idx < count {
+        const name: str = get_var_name(var_names, idx)
+        if name == var_name {
+            return 16 + idx * 8
+        }
+        idx = idx + 1
+    }
+    
+    return 16
+}
+
+fn parse_var_init_by_name(source: str, var_name: str) -> int {
+    # Find variable declaration and parse its initial value
+    let pos: int = 0
+    
+    while pos < source.len() - var_name.len() {
+        const chunk3: str = source[pos:pos + 3]
+        const chunk5: str = source[pos:pos + 5]
+        
+        if chunk3 == "let" or chunk5 == "const" {
+            let decl_pos: int = pos
+            if chunk5 == "const" {
+                decl_pos = decl_pos + 5
+            } else {
+                decl_pos = decl_pos + 3
+            }
+            
+            # Skip whitespace
+            while decl_pos < source.len() and source[decl_pos:decl_pos + 1] == " " {
+                decl_pos = decl_pos + 1
+            }
+            
+            # Check if this is our variable
+            const name_chunk: str = source[decl_pos:decl_pos + var_name.len()]
+            if name_chunk == var_name {
+                # Find '='
+                while decl_pos < source.len() and source[decl_pos:decl_pos + 1] != "=" {
+                    decl_pos = decl_pos + 1
+                }
+                decl_pos = decl_pos + 1
+                
+                # Skip whitespace
+                while decl_pos < source.len() and source[decl_pos:decl_pos + 1] == " " {
+                    decl_pos = decl_pos + 1
+                }
+                
+                # Parse number
+                let result: int = 0
+                while decl_pos < source.len() {
+                    const c: str = source[decl_pos:decl_pos + 1]
+                    const code: int = string.ord(c)
+                    if code >= 48 and code <= 57 {
+                        result = result * 10 + (code - 48)
+                        decl_pos = decl_pos + 1
+                    } else {
+                        return result
+                    }
+                }
+                return result
+            }
+        }
+        pos = pos + 1
+    }
+    
+    return 0
 }
 
 fn parse_var_init(source: str) -> int {
@@ -385,7 +562,7 @@ fn parse_var_init(source: str) -> int {
             let result: int = 0
             while pos < source.len() {
                 const c: str = source[pos:pos + 1]
-                const code: int = ord(c)
+                const code: int = string.ord(c)
                 if code >= 48 and code <= 57 {
                     result = result * 10 + (code - 48)
                     pos = pos + 1

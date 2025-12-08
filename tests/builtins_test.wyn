@@ -21,4 +21,3 @@ fn main() {
     print("builtins_test: PASS")
     print("")
 }
-}

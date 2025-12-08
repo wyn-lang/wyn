@@ -2570,8 +2570,6 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                 // Minimal builtins - everything else requires imports
                 if (strcmp(e->ident, "print") == 0 || strcmp(e->ident, "assert") == 0 ||
                     strcmp(e->ident, "args") == 0 ||
-                    strcmp(e->ident, "substring") == 0 ||
-                    strcmp(e->ident, "ord") == 0 ||
                     strcmp(e->ident, "syscall") == 0) {
                     return new_type(TYPE_FUNCTION);
                 }

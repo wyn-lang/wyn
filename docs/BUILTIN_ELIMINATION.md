@@ -3,60 +3,71 @@
 ## Goal
 Reduce from 8 builtins to 1 builtin (print only).
 
+## Current Status: 4 Builtins
+
+**Reduced from 6 to 4 builtins!**
+
+### Current Builtins:
+1. `print()` - **TARGET TO KEEP**
+2. `assert()` - Cannot move (conflicts with `test` keyword)
+3. `args()` - Compiler intrinsic (generates inline code)
+4. `syscall()` - Compiler intrinsic (needed for stdlib)
+
+### Eliminated Builtins:
+1. ✅ `ord()` - Use `string.ord()` instead
+2. ✅ `substring()` - Use slice syntax `[start:end]` or `string.substring()`
+
 ## Completed Changes
 
-### substring() → String Slice Syntax [start:end]
+### ord() → string.ord()
+
+**Date:** 2025-12-09
+
+**Status:** ✅ Complete
+
+**Changes Made:**
+- Updated Stage 1 compiler to use `string.ord()` instead of bare `ord()`
+- Removed `ord` from builtin list in stage0.c
+- `string.ord()` still works via module mapping
+
+### substring() → Slice Syntax
 
 **Date:** 2025-12-08
 
 **Status:** ✅ Complete
 
 **Changes Made:**
+- Replaced all `substring(source, start, end)` calls with slice syntax `source[start:end]` in Stage 1 compiler
+- Removed `substring` from builtin list in stage0.c
+- `string.substring()` still works via module mapping
 
-Replaced all `substring(source, start, end)` calls with slice syntax `source[start:end]` in Stage 1 compiler (`src/stage1/compiler.wyn`):
+## Why Some Builtins Must Stay
 
-1. **has_keyword()** - Line 57
-   - Before: `substring(source, pos, pos + klen)`
-   - After: `source[pos:pos + klen]`
+### args()
+The `args()` function generates inline assembly to access `argc` and `argv` from the program entry point. It cannot be implemented as a library function because it needs access to the stack frame at program start.
 
-2. **count_functions()** - Lines 71, 73
-   - Before: `substring(source, pos, pos + 2)` and `substring(source, pos + 2, pos + 3)`
-   - After: `source[pos:pos + 2]` and `source[pos + 2:pos + 3]`
+### syscall()
+The `syscall()` function is a compiler intrinsic that generates the actual system call instruction. It's the foundation for all stdlib I/O, OS, and time functions.
 
-3. **count_strings()** - Lines 288, 292
-   - Before: `substring(source, pos, pos + 1)` (2 occurrences)
-   - After: `source[pos:pos + 1]` (2 occurrences)
+### assert()
+The `assert()` function could theoretically move to `test.assert()`, but `test` is a reserved keyword for test blocks, causing parser conflicts.
 
-4. **gen_strings()** - Lines 309, 314, 318
-   - Before: `substring(source, pos, pos + 1)` (2 occurrences) and `substring(source, str_start, pos)`
-   - After: `source[pos:pos + 1]` (2 occurrences) and `source[str_start:pos]`
+## Path to 1 Builtin
 
-**Total Replacements:** 8 occurrences across 4 functions
+To reach the goal of only `print()` as a builtin:
 
-**Testing:**
-- ✅ Stage 1 compiles successfully with stage0
+1. **assert()** - Could be renamed to something like `check()` or moved to a different module name
+2. **args()** - Could become a compiler intrinsic that's not exposed as a builtin
+3. **syscall()** - Could become a compiler intrinsic that's not exposed as a builtin
+
+The key insight is that `args()` and `syscall()` are really compiler intrinsics, not builtins. They generate inline code rather than calling a function.
+
+## Testing
+
+All changes verified:
+- ✅ Stage 1 compiles successfully
 - ✅ Stage 1 runs and generates working output
-- ✅ Generated program executes correctly
-
-**Result:** `substring()` is no longer used in Stage 1 compiler and can be removed as a builtin once Stage 1 is self-hosting.
-
-### ord() Status
-
-**Status:** ✅ Not Used
-
-The `ord()` builtin is not used anywhere in the Stage 1 compiler, so no changes were needed.
-
-## Remaining Builtins to Eliminate
-
-Once Stage 1 is self-hosting, these can be moved to stdlib:
-
-1. ✅ `substring()` - Replaced with slice syntax `[start:end]`
-2. ✅ `ord()` - Not used in Stage 1
-3. ⏳ `assert()` - Move to `import test`
-4. ⏳ `exit()` - Move to `import os`
-5. ⏳ `args()` - Move to `import os`
-6. ⏳ `int_to_str()` - Move to `import string`
-7. ⏳ `system()` - Move to `import os`
-8. ⏳ `write_file()` - Move to `import io`
-
-**Target:** Only `print()` remains as a builtin.
+- ✅ Core tests pass (arithmetic, control_flow, function, builtins)
+- ✅ `string.ord()` works
+- ✅ `string.substring()` works
+- ✅ Slice syntax `[start:end]` works

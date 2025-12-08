@@ -41,18 +41,19 @@ fn main() {
 
 ### Builtins
 
-**Current:** 5 builtins (83% reduction from 30+)
+**Current:** 4 builtins (87% reduction from 30+)
 **Target:** 1 builtin (print only)
 
 **Current builtins:**
 1. `print()` - Output (**target to keep**)
-2. `args()` - Command line arguments (Stage 1 needs)
-3. `substring()` - String slicing (Stage 1 needs)
-4. `ord()` - Character code (Stage 1 needs)
-5. `syscall()` - System calls (compiler intrinsic)
+2. `assert()` - Assertions (keyword conflict prevents moving)
+3. `args()` - Command line arguments (compiler intrinsic)
+4. `syscall()` - System calls (compiler intrinsic)
 
-**Removed (25+ builtins):**
-- File I/O, time, math, string utilities, OS functions, testing, etc.
+**Removed (26+ builtins):**
+- `ord()` → use `string.ord()`
+- `substring()` → use slice syntax `[start:end]`
+- File I/O, time, math, string utilities, OS functions, etc.
 
 **All moved to stdlib via syscalls or pure Wyn implementations.**
 

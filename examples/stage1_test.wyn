@@ -1,7 +1,9 @@
 fn main() {
-    const x: int = 7
-    while x < 9 {
-        print("Const")
+    let x: int = 0
+    let y: int = 10
+    while x < 5 {
+        print("x and y")
         x = x + 1
+        y = y + 1
     }
 }

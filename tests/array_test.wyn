@@ -1,6 +1,4 @@
 
-import io
-
 fn main() {
     const arr: [int] = [1, 2, 3, 4, 5]
     
