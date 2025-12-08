@@ -6,7 +6,7 @@ fn main() {
     print("=== Wyn Stage 1 Compiler ===")
     print("")
     
-    const source: str = io.read_file("examples/with_func.wyn")
+    const source: str = io.read_file("examples/with_if.wyn")
     
     print("Compiling...")
     
@@ -70,32 +70,27 @@ fn generate_multi_print(count: int) {
     const f: str = "build/stage1_output.s"
     
     io.write_file(f, "    .section __TEXT,__text\n")
-    
-    # Generate add function
-    io.append_file(f, "    .globl _add\n")
-    io.append_file(f, "_add:\n")
-    io.append_file(f, "    add x0, x0, x1\n")
-    io.append_file(f, "    ret\n")
-    io.append_file(f, "\n")
-    
-    # Generate main
     io.append_file(f, "    .globl _main\n")
     io.append_file(f, "_main:\n")
     io.append_file(f, "    sub sp, sp, #64\n")
     io.append_file(f, "    stp x29, x30, [sp]\n")
     io.append_file(f, "    mov x29, sp\n")
     
-    # let result: int = add(5, 3)
+    # let x: int = 5
     io.append_file(f, "    mov x0, #5\n")
-    io.append_file(f, "    mov x1, #3\n")
-    io.append_file(f, "    bl _add\n")
     io.append_file(f, "    str x0, [x29, #16]\n")
     
-    # print
+    # if x > 0
+    io.append_file(f, "    ldr x0, [x29, #16]\n")
+    io.append_file(f, "    cmp x0, #0\n")
+    io.append_file(f, "    b.le L1\n")
+    
+    # print("Positive")
     io.append_file(f, "    adrp x0, msg0@PAGE\n")
     io.append_file(f, "    add x0, x0, msg0@PAGEOFF\n")
     io.append_file(f, "    bl _puts\n")
     
+    io.append_file(f, "L1:\n")
     io.append_file(f, "    mov x0, #0\n")
     io.append_file(f, "    ldp x29, x30, [sp]\n")
     io.append_file(f, "    add sp, sp, #64\n")
@@ -103,5 +98,5 @@ fn generate_multi_print(count: int) {
     io.append_file(f, "\n")
     io.append_file(f, "    .section __TEXT,__cstring\n")
     io.append_file(f, "msg0:\n")
-    io.append_file(f, "    .asciz \"Result is 8\"\n")
+    io.append_file(f, "    .asciz \"Positive\"\n")
 }
