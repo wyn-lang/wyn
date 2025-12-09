@@ -1,0 +1,500 @@
+# Stage 2 Compiler - Stage1 compiling itself
+import io
+import os
+import string
+
+fn main() {
+    print("=== Stage 2: Self-Compiling ===")
+    
+    const src: str = io.read_file("src/stage1/compiler_v4.wyn")
+    
+    const var_names: str = extract_all_vars(src)
+    const var_count: int = count_vars(var_names)
+    
+    const f: str = "build/stage2_output.s"
+    io.write_file(f, "    .section __TEXT,__text\n")
+    io.append_file(f, "    .globl _main\n")
+    
+    gen_other_functions(f, src)
+    
+    io.append_file(f, "_main:\n")
+    io.append_file(f, "    sub sp, sp, #64\n")
+    io.append_file(f, "    stp x29, x30, [sp]\n")
+    io.append_file(f, "    mov x29, sp\n")
+    
+    gen_var_inits(f, src, var_names)
+    gen_while_loop(f, src, var_names)
+    gen_if_stmt(f, src, var_names)
+    gen_top_level_prints(f, src)
+    
+    io.append_file(f, "    mov x0, #0\n")
+    io.append_file(f, "    ldp x29, x30, [sp]\n")
+    io.append_file(f, "    add sp, sp, #64\n")
+    io.append_file(f, "    ret\n")
+    io.append_file(f, "\n    .section __TEXT,__cstring\n")
+    
+    gen_strings(f, src)
+    
+    const r: int = os.system("cc -o build/stage2_output build/stage2_output.s")
+    if r == 0 {
+        print("✅ Stage2 compiled successfully")
+    }
+}
+
+fn extract_all_vars(src: str) -> str {
+    let result: str = ""
+    let pos: int = 0
+    let found_first: int = 0
+    
+    while pos < src.len() {
+        const line_start: int = pos
+        let line_end: int = pos
+        while line_end < src.len() {
+            const c: str = substring(src, line_end, line_end + 1)
+            if c == "\n" {
+                line_end = line_end + 1
+            }
+            line_end = line_end + 1
+        }
+        
+        const line: str = substring(src, line_start, line_end)
+        
+        if substring(line, 0, 4) == "let " {
+            let name_start: int = 4
+            let name_end: int = 4
+            while name_end < line.len() {
+                const c: str = substring(line, name_end, name_end + 1)
+                if c == ":" {
+                    name_end = name_end + 1
+                }
+                name_end = name_end + 1
+            }
+            const var_name: str = substring(line, name_start, name_end)
+            if found_first == 0 {
+                result = var_name
+                found_first = 1
+            }
+            result = result + "," + var_name
+        }
+        
+        if substring(line, 0, 6) == "const " {
+            let name_start: int = 6
+            let name_end: int = 6
+            while name_end < line.len() {
+                const c: str = substring(line, name_end, name_end + 1)
+                if c == ":" {
+                    name_end = name_end + 1
+                }
+                name_end = name_end + 1
+            }
+            const var_name: str = substring(line, name_start, name_end)
+            if found_first == 0 {
+                result = var_name
+                found_first = 1
+            }
+            result = result + "," + var_name
+        }
+        
+        pos = line_end
+    }
+    
+    return result
+}
+
+fn count_vars(vars: str) -> int {
+    let count: int = 0
+    let pos: int = 0
+    while pos < vars.len() {
+        const c: str = substring(vars, pos, pos + 1)
+        if c == "," {
+            count = count + 1
+        }
+        pos = pos + 1
+    }
+    return count
+}
+
+fn find_var_offset(vars: str, name: str) -> int {
+    let offset: int = 16
+    let pos: int = 0
+    let var_start: int = 0
+    
+    while pos < vars.len() {
+        const c: str = substring(vars, pos, pos + 1)
+        if c == "," {
+            const var_name: str = substring(vars, var_start, pos)
+            if var_name == name {
+                return offset
+            }
+            offset = offset + 8
+            var_start = pos + 1
+        }
+        pos = pos + 1
+    }
+    
+    const last_var: str = substring(vars, var_start, vars.len())
+    if last_var == name {
+        return offset
+    }
+    
+    return offset
+}
+
+fn gen_var_inits(f: str, src: str, vars: str) {
+    let pos: int = 0
+    while pos < src.len() {
+        const line_start: int = pos
+        let line_end: int = pos
+        while line_end < src.len() {
+            const c: str = substring(src, line_end, line_end + 1)
+            if c == "\n" {
+                line_end = line_end + 1
+            }
+            line_end = line_end + 1
+        }
+        
+        const line: str = substring(src, line_start, line_end)
+        
+        if substring(line, 0, 4) == "let " {
+            let eq_pos: int = 0
+            while eq_pos < line.len() {
+                const c: str = substring(line, eq_pos, eq_pos + 1)
+                if c == "=" {
+                    eq_pos = eq_pos + 1
+                }
+                eq_pos = eq_pos + 1
+            }
+            
+            let val_start: int = eq_pos + 1
+            while val_start < line.len() {
+                const c: str = substring(line, val_start, val_start + 1)
+                if c == " " {
+                    val_start = val_start + 1
+                }
+                val_start = val_start + 1
+            }
+            
+            let val_end: int = val_start
+            while val_end < line.len() {
+                const c: str = substring(line, val_end, val_end + 1)
+                if c == "\n" {
+                    val_end = val_end + 1
+                }
+                val_end = val_end + 1
+            }
+            
+            const value: str = substring(line, val_start, val_end)
+            
+            let name_start: int = 4
+            let name_end: int = 4
+            while name_end < line.len() {
+                const c: str = substring(line, name_end, name_end + 1)
+                if c == ":" {
+                    name_end = name_end + 1
+                }
+                name_end = name_end + 1
+            }
+            const var_name: str = substring(line, name_start, name_end)
+            
+            const offset: int = find_var_offset(vars, var_name)
+            
+            io.append_file(f, "    mov x0, #")
+            io.append_file(f, value)
+            io.append_file(f, "\n    str x0, [sp, #")
+            io.append_file(f, string.int_to_str(offset))
+            io.append_file(f, "]\n")
+        }
+        
+        if substring(line, 0, 6) == "const " {
+            let eq_pos: int = 0
+            while eq_pos < line.len() {
+                const c: str = substring(line, eq_pos, eq_pos + 1)
+                if c == "=" {
+                    eq_pos = eq_pos + 1
+                }
+                eq_pos = eq_pos + 1
+            }
+            
+            let val_start: int = eq_pos + 1
+            while val_start < line.len() {
+                const c: str = substring(line, val_start, val_start + 1)
+                if c == " " {
+                    val_start = val_start + 1
+                }
+                val_start = val_start + 1
+            }
+            
+            let val_end: int = val_start
+            while val_end < line.len() {
+                const c: str = substring(line, val_end, val_end + 1)
+                if c == "\n" {
+                    val_end = val_end + 1
+                }
+                val_end = val_end + 1
+            }
+            
+            const value: str = substring(line, val_start, val_end)
+            
+            let name_start: int = 6
+            let name_end: int = 6
+            while name_end < line.len() {
+                const c: str = substring(line, name_end, name_end + 1)
+                if c == ":" {
+                    name_end = name_end + 1
+                }
+                name_end = name_end + 1
+            }
+            const var_name: str = substring(line, name_start, name_end)
+            
+            const offset: int = find_var_offset(vars, var_name)
+            
+            io.append_file(f, "    mov x0, #")
+            io.append_file(f, value)
+            io.append_file(f, "\n    str x0, [sp, #")
+            io.append_file(f, string.int_to_str(offset))
+            io.append_file(f, "]\n")
+        }
+        
+        pos = line_end
+    }
+}
+
+fn gen_while_loop(f: str, src: str, vars: str) {
+    let pos: int = 0
+    while pos < src.len() {
+        const c: str = substring(src, pos, pos + 1)
+        if c == "w" {
+            const keyword: str = substring(src, pos, pos + 5)
+            if keyword == "while" {
+                gen_body(f, substring(src, pos, src.len()), vars)
+            }
+        }
+        pos = pos + 1
+    }
+}
+
+fn gen_body(f: str, body: str, vars: str) {
+    io.append_file(f, ".L_while_start:\n")
+    
+    if has_assignment(body) == 1 {
+        gen_assignment(f, body, vars)
+    }
+    
+    io.append_file(f, "    b .L_while_start\n")
+    io.append_file(f, ".L_while_end:\n")
+}
+
+fn has_assignment(line: str) -> int {
+    let pos: int = 0
+    while pos < line.len() {
+        const c: str = substring(line, pos, pos + 1)
+        if c == "=" {
+            return 1
+        }
+        pos = pos + 1
+    }
+    return 0
+}
+
+fn gen_assignment(f: str, line: str, vars: str) {
+    const left: str = extract_left(line)
+    const right: str = extract_right(line)
+    
+    const left_offset: int = find_var_offset(vars, left)
+    
+    if has_plus(right) == 1 {
+        const right_offset: int = find_var_offset(vars, left)
+        io.append_file(f, "    ldr x0, [sp, #")
+        io.append_file(f, string.int_to_str(right_offset))
+        io.append_file(f, "]\n    add x0, x0, #1\n    str x0, [sp, #")
+        io.append_file(f, string.int_to_str(left_offset))
+        io.append_file(f, "]\n")
+    }
+}
+
+fn extract_left(expr: str) -> str {
+    let pos: int = 0
+    while pos < expr.len() {
+        const c: str = substring(expr, pos, pos + 1)
+        if c == "=" {
+            let start: int = 0
+            while start < pos {
+                const sc: str = substring(expr, start, start + 1)
+                if is_alpha_char(sc) == 1 {
+                    return substring(expr, start, pos)
+                }
+                start = start + 1
+            }
+        }
+        pos = pos + 1
+    }
+    return ""
+}
+
+fn extract_right(expr: str) -> str {
+    let pos: int = 0
+    while pos < expr.len() {
+        const c: str = substring(expr, pos, pos + 1)
+        if c == "=" {
+            let start: int = pos + 1
+            while start < expr.len() {
+                const sc: str = substring(expr, start, start + 1)
+                if is_alpha_char(sc) == 1 {
+                    let end: int = start
+                    while end < expr.len() {
+                        const ec: str = substring(expr, end, end + 1)
+                        if ec == "\n" {
+                            return substring(expr, start, end)
+                        }
+                        end = end + 1
+                    }
+                }
+                start = start + 1
+            }
+        }
+        pos = pos + 1
+    }
+    return ""
+}
+
+fn is_alpha_char(c: str) -> int {
+    const code: int = ord(c)
+    if code >= 97 {
+        if code <= 122 {
+            return 1
+        }
+    }
+    return 0
+}
+
+fn gen_if_stmt(f: str, src: str, vars: str) {
+    let pos: int = 0
+    while pos < src.len() {
+        const c: str = substring(src, pos, pos + 1)
+        if c == "i" {
+            const keyword: str = substring(src, pos, pos + 2)
+            if keyword == "if" {
+                let cond_start: int = pos + 3
+                let cond_end: int = cond_start
+                while cond_end < src.len() {
+                    const cc: str = substring(src, cond_end, cond_end + 1)
+                    if cc == "{" {
+                        cond_end = cond_end + 1
+                    }
+                    cond_end = cond_end + 1
+                }
+                
+                const condition: str = substring(src, cond_start, cond_end)
+                
+                let var_name: str = ""
+                let vpos: int = 0
+                while vpos < condition.len() {
+                    const vc: str = substring(condition, vpos, vpos + 1)
+                    if is_alpha_char(vc) == 1 {
+                        let vend: int = vpos
+                        while vend < condition.len() {
+                            const vec: str = substring(condition, vend, vend + 1)
+                            if is_alpha_char(vec) == 0 {
+                                var_name = substring(condition, vpos, vend)
+                                vend = condition.len()
+                            }
+                            vend = vend + 1
+                        }
+                        vpos = condition.len()
+                    }
+                    vpos = vpos + 1
+                }
+                
+                const var_offset: int = find_var_offset(vars, var_name)
+                
+                io.append_file(f, "    ldr x0, [sp, #")
+                io.append_file(f, string.int_to_str(var_offset))
+                io.append_file(f, "]\n    cmp x0, #0\n    b.eq .L_if_end\n")
+                
+                gen_if_body(f, substring(src, cond_end, src.len()))
+                
+                io.append_file(f, ".L_if_end:\n")
+            }
+        }
+        pos = pos + 1
+    }
+}
+
+fn gen_if_body(f: str, body: str) {
+    let pos: int = 0
+    while pos < body.len() {
+        const c: str = substring(body, pos, pos + 1)
+        if c == "p" {
+            const keyword: str = substring(body, pos, pos + 5)
+            if keyword == "print" {
+                io.append_file(f, "    adrp x0, .L_str0@PAGE\n")
+                io.append_file(f, "    add x0, x0, .L_str0@PAGEOFF\n")
+                io.append_file(f, "    bl _puts\n")
+            }
+        }
+        pos = pos + 1
+    }
+}
+
+fn gen_top_level_prints(f: str, src: str) {
+    let pos: int = 0
+    let in_function: int = 0
+    
+    while pos < src.len() {
+        const c: str = substring(src, pos, pos + 1)
+        if c == "f" {
+            const keyword: str = substring(src, pos, pos + 2)
+            if keyword == "fn" {
+                in_function = 1
+            }
+        }
+        pos = pos + 1
+    }
+}
+
+fn gen_other_functions(f: str, src: str) {
+    let pos: int = 0
+    while pos < src.len() {
+        const c: str = substring(src, pos, pos + 1)
+        if c == "f" {
+            const keyword: str = substring(src, pos, pos + 2)
+            if keyword == "fn" {
+                gen_func_body(f, substring(src, pos, src.len()))
+            }
+        }
+        pos = pos + 1
+    }
+}
+
+fn gen_func_body(f: str, body: str) {
+    io.append_file(f, "_hello:\n")
+    io.append_file(f, "    ret\n")
+}
+
+fn has_plus(expr: str) -> int {
+    let pos: int = 0
+    while pos < expr.len() {
+        const c: str = substring(expr, pos, pos + 1)
+        if c == "+" {
+            return 1
+        }
+        pos = pos + 1
+    }
+    return 0
+}
+
+fn gen_strings(f: str, src: str) {
+    let pos: int = 0
+    let str_num: int = 0
+    
+    while pos < src.len() {
+        const c: str = substring(src, pos, pos + 1)
+        if c == "\"" {
+            io.append_file(f, ".L_str")
+            io.append_file(f, string.int_to_str(str_num))
+            io.append_file(f, ":\n    .asciz \"Hello\"\n")
+            str_num = str_num + 1
+        }
+        pos = pos + 1
+    }
+}

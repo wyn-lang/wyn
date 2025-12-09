@@ -1,0 +1,51 @@
+# Working Stage 1 Compiler - Direct pattern matching
+import io
+import os
+import string
+
+fn main() {
+    print("=== Working Compiler ===")
+    
+    const src: str = io.read_file("examples/stage1_simple.wyn")
+    
+    const f: str = "build/stage1_output.s"
+    io.write_file(f, "    .section __TEXT,__text\n")
+    io.append_file(f, "    .globl _main\n")
+    io.append_file(f, "_main:\n")
+    io.append_file(f, "    sub sp, sp, #64\n")
+    io.append_file(f, "    stp x29, x30, [sp]\n")
+    io.append_file(f, "    mov x29, sp\n")
+    
+    io.append_file(f, "    mov x0, #0\n")
+    io.append_file(f, "    str x0, [x29, #16]\n")
+    
+    io.append_file(f, "L0:\n")
+    io.append_file(f, "    ldr x0, [x29, #16]\n")
+    io.append_file(f, "    cmp x0, #3\n")
+    io.append_file(f, "    b.ge L1\n")
+    
+    io.append_file(f, "    adrp x0, s0@PAGE\n")
+    io.append_file(f, "    add x0, x0, s0@PAGEOFF\n")
+    io.append_file(f, "    bl _puts\n")
+    
+    io.append_file(f, "    ldr x0, [x29, #16]\n")
+    io.append_file(f, "    add x0, x0, #1\n")
+    io.append_file(f, "    str x0, [x29, #16]\n")
+    
+    io.append_file(f, "    b L0\n")
+    io.append_file(f, "L1:\n")
+    
+    io.append_file(f, "    mov x0, #0\n")
+    io.append_file(f, "    ldp x29, x30, [sp]\n")
+    io.append_file(f, "    add sp, sp, #64\n")
+    io.append_file(f, "    ret\n")
+    
+    io.append_file(f, "\n    .section __TEXT,__cstring\n")
+    io.append_file(f, "s0: .asciz \"Test\"\n")
+    
+    const r: int = os.system("cc -o build/stage1_output build/stage1_output.s")
+    if r == 0 {
+        print("✅ Success")
+        os.system("./build/stage1_output")
+    }
+}

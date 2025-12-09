@@ -1,0 +1,8 @@
+fn main() {
+    let x: int = 0
+    let y: int = 2
+    while x < 3 {
+        print("Loop")
+        x = x + 1
+    }
+}

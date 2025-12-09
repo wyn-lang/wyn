@@ -1,0 +1,8 @@
+fn main() {
+    let x: int = 1
+    let y: int = 2
+    while x < 4 {
+        print("Add")
+        x = x + y
+    }
+}

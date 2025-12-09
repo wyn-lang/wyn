@@ -1,9 +1,8 @@
 fn main() {
-    let max: int = 5
+    const max: int = 5
     let x: int = 0
     while x < max {
-        print("x and max")
+        print("Counting to max")
         x = x + 1
-        max = max + 1
     }
 }

@@ -1,0 +1,4 @@
+fn main() {
+    const msg: str = "Hello from string var"
+    print(msg)
+}

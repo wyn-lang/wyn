@@ -626,3 +626,95 @@ fn gen_strings(source: str, f: str) {
         pos = pos + 1
     }
 }
+
+# === Expression Evaluation for Self-Hosting ===
+
+fn resolve_var_ref(var_names: str, name: str) -> int {
+    return get_var_offset(var_names, name)
+}
+
+fn codegen_binary_op(op: str, left_val: int, right_val: int, is_left_var: int, is_right_var: int, var_names: str) -> str {
+    let asm: str = ""
+    
+    # Load left operand into x0
+    if is_left_var == 1 {
+        const offset: int = resolve_var_ref(var_names, string.from_int(left_val))
+        asm = asm + "    ldr x0, [x29, #" + string.from_int(offset) + "]\n"
+    } else {
+        asm = asm + "    mov x0, #" + string.from_int(left_val) + "\n"
+    }
+    
+    # Load right operand into x1
+    if is_right_var == 1 {
+        const offset: int = resolve_var_ref(var_names, string.from_int(right_val))
+        asm = asm + "    ldr x1, [x29, #" + string.from_int(offset) + "]\n"
+    } else {
+        asm = asm + "    mov x1, #" + string.from_int(right_val) + "\n"
+    }
+    
+    # Perform operation
+    if op == "+" {
+        asm = asm + "    add x0, x0, x1\n"
+    } else {
+        if op == "-" {
+            asm = asm + "    sub x0, x0, x1\n"
+        } else {
+            if op == "*" {
+                asm = asm + "    mul x0, x0, x1\n"
+            } else {
+                if op == "/" {
+                    asm = asm + "    udiv x0, x0, x1\n"
+                } else {
+                    if op == "<" {
+                        asm = asm + "    cmp x0, x1\n"
+                    } else {
+                        if op == ">" {
+                            asm = asm + "    cmp x0, x1\n"
+                        } else {
+                            if op == "==" {
+                                asm = asm + "    cmp x0, x1\n"
+                            } else {
+                                if op == "!=" {
+                                    asm = asm + "    cmp x0, x1\n"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    return asm
+}
+
+fn eval_expr_to_register(expr: str, reg: str, var_names: str) -> str {
+    let asm: str = ""
+    
+    # Check if expr is a number
+    const first_char: str = expr[0:1]
+    const code: int = string.ord(first_char)
+    
+    if code >= 48 and code <= 57 {
+        # It's a number
+        let val: int = 0
+        let pos: int = 0
+        while pos < expr.len() {
+            const c: str = expr[pos:pos + 1]
+            const digit_code: int = string.ord(c)
+            if digit_code >= 48 and digit_code <= 57 {
+                val = val * 10 + (digit_code - 48)
+                pos = pos + 1
+            } else {
+                break
+            }
+        }
+        asm = asm + "    mov " + reg + ", #" + string.from_int(val) + "\n"
+    } else {
+        # It's a variable reference
+        const offset: int = resolve_var_ref(var_names, expr)
+        asm = asm + "    ldr " + reg + ", [x29, #" + string.from_int(offset) + "]\n"
+    }
+    
+    return asm
+}

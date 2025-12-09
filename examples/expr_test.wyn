@@ -1,0 +1,21 @@
+import io
+
+fn main() {
+    let x: int = 5
+    let y: int = 10
+    const max: int = 15
+    
+    # Test binary operations
+    # x + y should be 15
+    # x * 2 should be 10
+    # y - x should be 5
+    
+    print("Testing expressions")
+    
+    while x < max {
+        print("Loop iteration")
+        x = x + 1
+    }
+    
+    print("Done")
+}

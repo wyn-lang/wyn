@@ -1,0 +1,8 @@
+fn add(a: int, b: int) -> int {
+    return a + b
+}
+
+fn main() {
+    const result: int = add(3, 5)
+    print("Result: 8")
+}

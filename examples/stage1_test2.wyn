@@ -1,0 +1,7 @@
+fn main() {
+    let y: int = 0
+    while y < 5 {
+        print("Loop")
+        y = y + 1
+    }
+}

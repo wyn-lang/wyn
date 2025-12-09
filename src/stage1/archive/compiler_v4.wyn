@@ -1,0 +1,633 @@
+# Stage 1 Compiler v4 - With assignments and multiple variables
+import io
+import os
+import string
+
+fn main() {
+    print("=== Compiler v4 ===")
+    
+    const src: str = io.read_file("examples/stage1_func.wyn")
+    
+    const var_names: str = extract_all_vars(src)
+    const var_count: int = count_vars(var_names)
+    
+    const f: str = "build/stage1_output.s"
+    io.write_file(f, "    .section __TEXT,__text\n")
+    io.append_file(f, "    .globl _main\n")
+    
+    gen_other_functions(f, src)
+    
+    io.append_file(f, "_main:\n")
+    io.append_file(f, "    sub sp, sp, #64\n")
+    io.append_file(f, "    stp x29, x30, [sp]\n")
+    io.append_file(f, "    mov x29, sp\n")
+    
+    gen_var_inits(f, src, var_names)
+    gen_while_loop(f, src, var_names)
+    gen_if_stmt(f, src, var_names)
+    gen_top_level_prints(f, src)
+    
+    io.append_file(f, "    mov x0, #0\n")
+    io.append_file(f, "    ldp x29, x30, [sp]\n")
+    io.append_file(f, "    add sp, sp, #64\n")
+    io.append_file(f, "    ret\n")
+    io.append_file(f, "\n    .section __TEXT,__cstring\n")
+    
+    gen_strings(f, src)
+    
+    const r: int = os.system("cc -o build/stage1_output build/stage1_output.s")
+    if r == 0 {
+        print("✅ Success")
+        os.system("./build/stage1_output")
+    }
+}
+
+fn extract_all_vars(src: str) -> str {
+    let result: str = ""
+    let pos: int = 0
+    let found_first: int = 0
+    
+    while pos < src.len() {
+        if pos + 3 < src.len() and src[pos:pos + 3] == "let" {
+            pos = pos + 3
+            while pos < src.len() and src[pos:pos + 1] == " " {
+                pos = pos + 1
+            }
+            let start: int = pos
+            while pos < src.len() and src[pos:pos + 1] != ":" {
+                pos = pos + 1
+            }
+            
+            if found_first == 0 {
+                result = src[start:pos]
+                found_first = 1
+            } else {
+                const name: str = src[start:pos]
+                let temp: str = result
+                result = temp + "," + name
+            }
+        }
+        pos = pos + 1
+    }
+    return result
+}
+
+fn count_vars(vars: str) -> int {
+    if vars == "" {
+        return 0
+    }
+    let count: int = 1
+    let pos: int = 0
+    while pos < vars.len() {
+        if vars[pos:pos + 1] == "," {
+            count = count + 1
+        }
+        pos = pos + 1
+    }
+    return count
+}
+
+fn find_var_offset(vars: str, name: str) -> int {
+    let idx: int = 0
+    let pos: int = 0
+    let start: int = 0
+    
+    while pos <= vars.len() {
+        if pos == vars.len() or vars[pos:pos + 1] == "," {
+            const var_name: str = vars[start:pos]
+            if var_name == name {
+                return 16 + idx * 8
+            }
+            idx = idx + 1
+            start = pos + 1
+        }
+        pos = pos + 1
+    }
+    return 16
+}
+
+fn gen_var_inits(f: str, src: str, vars: str) {
+    let pos: int = 0
+    let var_idx: int = 0
+    
+    while pos < src.len() {
+        if pos + 3 < src.len() and src[pos:pos + 3] == "let" {
+            let name_start: int = pos + 3
+            while name_start < src.len() and src[name_start:name_start + 1] == " " {
+                name_start = name_start + 1
+            }
+            let name_end: int = name_start
+            while name_end < src.len() and src[name_end:name_end + 1] != ":" {
+                name_end = name_end + 1
+            }
+            const name: str = src[name_start:name_end]
+            
+            let eq_pos: int = name_end
+            while eq_pos < src.len() and src[eq_pos:eq_pos + 1] != "=" {
+                eq_pos = eq_pos + 1
+            }
+            eq_pos = eq_pos + 1
+            while eq_pos < src.len() and src[eq_pos:eq_pos + 1] == " " {
+                eq_pos = eq_pos + 1
+            }
+            
+            const val_char: str = src[eq_pos:eq_pos + 1]
+            const val: int = string.ord(val_char) - 48
+            
+            const offset: int = 16 + var_idx * 8
+            io.append_file(f, "    mov x0, #")
+            io.append_file(f, string.from_int(val))
+            io.append_file(f, "\n")
+            io.append_file(f, "    str x0, [x29, #")
+            io.append_file(f, string.from_int(offset))
+            io.append_file(f, "]\n")
+            
+            var_idx = var_idx + 1
+            pos = eq_pos
+        }
+        pos = pos + 1
+    }
+}
+
+fn gen_while_loop(f: str, src: str, vars: str) {
+    let pos: int = 0
+    while pos < src.len() and src[pos:pos + 5] != "while" {
+        pos = pos + 1
+    }
+    if pos >= src.len() {
+        return
+    }
+    
+    pos = pos + 5
+    while pos < src.len() and src[pos:pos + 1] == " " {
+        pos = pos + 1
+    }
+    
+    let var_start: int = pos
+    while pos < src.len() and src[pos:pos + 1] != " " {
+        pos = pos + 1
+    }
+    const loop_var: str = src[var_start:pos]
+    
+    while pos < src.len() and src[pos:pos + 1] != "<" {
+        pos = pos + 1
+    }
+    pos = pos + 1
+    while pos < src.len() and src[pos:pos + 1] == " " {
+        pos = pos + 1
+    }
+    
+    const limit_char: str = src[pos:pos + 1]
+    const limit: int = string.ord(limit_char) - 48
+    
+    while pos < src.len() and src[pos:pos + 1] != "{" {
+        pos = pos + 1
+    }
+    pos = pos + 1
+    
+    let body_start: int = pos
+    let depth: int = 1
+    while pos < src.len() and depth > 0 {
+        const c: str = src[pos:pos + 1]
+        if c == "{" {
+            depth = depth + 1
+        }
+        if c == "}" {
+            depth = depth - 1
+        }
+        pos = pos + 1
+    }
+    const body: str = src[body_start:pos - 1]
+    
+    const offset: int = 16
+    
+    io.append_file(f, "L0:\n")
+    io.append_file(f, "    ldr x0, [x29, #")
+    io.append_file(f, string.from_int(offset))
+    io.append_file(f, "]\n")
+    io.append_file(f, "    cmp x0, #")
+    io.append_file(f, string.from_int(limit))
+    io.append_file(f, "\n")
+    io.append_file(f, "    b.ge L1\n")
+    
+    gen_body(f, body, vars)
+    
+    io.append_file(f, "    b L0\n")
+    io.append_file(f, "L1:\n")
+}
+
+fn gen_body(f: str, body: str, vars: str) {
+    let pos: int = 0
+    
+    while pos < body.len() {
+        if pos + 5 < body.len() and body[pos:pos + 5] == "print" {
+            pos = pos + 5
+            while pos < body.len() and body[pos:pos + 1] != "\"" {
+                pos = pos + 1
+            }
+            pos = pos + 1
+            let str_start: int = pos
+            while pos < body.len() and body[pos:pos + 1] != "\"" {
+                pos = pos + 1
+            }
+            const str_val: str = body[str_start:pos]
+            
+            io.append_file(f, "    adrp x0, s0@PAGE\n")
+            io.append_file(f, "    add x0, x0, s0@PAGEOFF\n")
+            io.append_file(f, "    bl _puts\n")
+            continue
+        }
+        
+        if body[pos:pos + 1] != " " and body[pos:pos + 1] != "\n" and body[pos:pos + 1] != "\t" {
+            let line_start: int = pos
+            while pos < body.len() and body[pos:pos + 1] != "\n" {
+                pos = pos + 1
+            }
+            const line: str = body[line_start:pos]
+            
+            if has_assignment(line) == 1 {
+                gen_assignment(f, line, vars)
+            }
+        }
+        
+        pos = pos + 1
+    }
+}
+
+fn has_assignment(line: str) -> int {
+    let pos: int = 0
+    while pos < line.len() {
+        if line[pos:pos + 1] == "=" {
+            if pos > 0 and line[pos - 1:pos] != "=" and line[pos - 1:pos] != "!" and line[pos - 1:pos] != "<" and line[pos - 1:pos] != ">" {
+                return 1
+            }
+        }
+        pos = pos + 1
+    }
+    return 0
+}
+
+fn gen_assignment(f: str, line: str, vars: str) {
+    let pos: int = 0
+    while pos < line.len() and line[pos:pos + 1] == " " {
+        pos = pos + 1
+    }
+    
+    let var_start: int = pos
+    while pos < line.len() and line[pos:pos + 1] != " " and line[pos:pos + 1] != "=" {
+        pos = pos + 1
+    }
+    const var_name: str = line[var_start:pos]
+    
+    while pos < line.len() and line[pos:pos + 1] != "=" {
+        pos = pos + 1
+    }
+    pos = pos + 1
+    while pos < line.len() and line[pos:pos + 1] == " " {
+        pos = pos + 1
+    }
+    
+    const expr: str = line[pos:line.len()]
+    
+    const offset: int = 16
+    
+    if has_plus(expr) == 1 {
+        const left: str = extract_left(expr)
+        const right: str = extract_right(expr)
+        
+        const left_is_var: int = is_alpha_char(left[0:1])
+        const right_is_var: int = is_alpha_char(right[0:1])
+        
+        if left_is_var == 1 {
+            io.append_file(f, "    ldr x0, [x29, #16]\n")
+        } else {
+            const left_val: int = string.ord(left[0:1]) - 48
+            io.append_file(f, "    mov x0, #")
+            io.append_file(f, string.from_int(left_val))
+            io.append_file(f, "\n")
+        }
+        
+        if right_is_var == 1 {
+            io.append_file(f, "    ldr x1, [x29, #24]\n")
+        } else {
+            const right_val: int = string.ord(right[0:1]) - 48
+            io.append_file(f, "    mov x1, #")
+            io.append_file(f, string.from_int(right_val))
+            io.append_file(f, "\n")
+        }
+        
+        io.append_file(f, "    add x0, x0, x1\n")
+        io.append_file(f, "    str x0, [x29, #")
+        io.append_file(f, string.from_int(offset))
+        io.append_file(f, "]\n")
+    }
+}
+
+fn extract_left(expr: str) -> str {
+    let pos: int = 0
+    while pos < expr.len() and expr[pos:pos + 1] != "+" {
+        pos = pos + 1
+    }
+    
+    let left_end: int = pos
+    while left_end > 0 and expr[left_end - 1:left_end] == " " {
+        left_end = left_end - 1
+    }
+    let left_start: int = 0
+    while left_start < left_end and expr[left_start:left_start + 1] == " " {
+        left_start = left_start + 1
+    }
+    return expr[left_start:left_end]
+}
+
+fn extract_right(expr: str) -> str {
+    let pos: int = 0
+    while pos < expr.len() and expr[pos:pos + 1] != "+" {
+        pos = pos + 1
+    }
+    
+    pos = pos + 1
+    while pos < expr.len() and expr[pos:pos + 1] == " " {
+        pos = pos + 1
+    }
+    let right_start: int = pos
+    while pos < expr.len() and expr[pos:pos + 1] != " " and expr[pos:pos + 1] != "\n" {
+        pos = pos + 1
+    }
+    return expr[right_start:pos]
+}
+
+fn is_alpha_char(c: str) -> int {
+    const code: int = string.ord(c)
+    if code >= 97 and code <= 122 {
+        return 1
+    }
+    if code >= 65 and code <= 90 {
+        return 1
+    }
+    return 0
+}
+
+fn gen_if_stmt(f: str, src: str, vars: str) {
+    let pos: int = 0
+    while pos < src.len() and src[pos:pos + 2] != "if" {
+        pos = pos + 1
+    }
+    if pos >= src.len() {
+        return
+    }
+    
+    pos = pos + 2
+    while pos < src.len() and src[pos:pos + 1] == " " {
+        pos = pos + 1
+    }
+    
+    let var_start: int = pos
+    while pos < src.len() and src[pos:pos + 1] != " " {
+        pos = pos + 1
+    }
+    const if_var: str = src[var_start:pos]
+    
+    while pos < src.len() and src[pos:pos + 1] != "<" {
+        pos = pos + 1
+    }
+    pos = pos + 1
+    while pos < src.len() and src[pos:pos + 1] == " " {
+        pos = pos + 1
+    }
+    
+    const limit_char: str = src[pos:pos + 1]
+    const limit: int = string.ord(limit_char) - 48
+    
+    while pos < src.len() and src[pos:pos + 1] != "{" {
+        pos = pos + 1
+    }
+    pos = pos + 1
+    
+    let body_start: int = pos
+    let depth: int = 1
+    while pos < src.len() and depth > 0 {
+        const c: str = src[pos:pos + 1]
+        if c == "{" {
+            depth = depth + 1
+        }
+        if c == "}" {
+            depth = depth - 1
+        }
+        pos = pos + 1
+    }
+    const body: str = src[body_start:pos - 1]
+    
+    const offset: int = 16
+    
+    io.append_file(f, "    ldr x0, [x29, #")
+    io.append_file(f, string.from_int(offset))
+    io.append_file(f, "]\n")
+    io.append_file(f, "    cmp x0, #")
+    io.append_file(f, string.from_int(limit))
+    io.append_file(f, "\n")
+    io.append_file(f, "    b.ge L2\n")
+    
+    gen_if_body(f, body)
+    
+    io.append_file(f, "L2:\n")
+}
+
+fn gen_if_body(f: str, body: str) {
+    let pos: int = 0
+    
+    while pos < body.len() {
+        if pos + 5 < body.len() and body[pos:pos + 5] == "print" {
+            pos = pos + 5
+            while pos < body.len() and body[pos:pos + 1] != "\"" {
+                pos = pos + 1
+            }
+            pos = pos + 1
+            let str_start: int = pos
+            while pos < body.len() and body[pos:pos + 1] != "\"" {
+                pos = pos + 1
+            }
+            
+            io.append_file(f, "    adrp x0, s0@PAGE\n")
+            io.append_file(f, "    add x0, x0, s0@PAGEOFF\n")
+            io.append_file(f, "    bl _puts\n")
+            return
+        }
+        pos = pos + 1
+    }
+}
+
+fn gen_top_level_prints(f: str, src: str) {
+    let pos: int = 0
+    let in_block: int = 0
+    let depth: int = 0
+    let found_main: int = 0
+    
+    while pos < src.len() {
+        const c: str = src[pos:pos + 1]
+        
+        if pos + 4 < src.len() and src[pos:pos + 4] == "main" {
+            found_main = 1
+        }
+        
+        if c == "{" {
+            depth = depth + 1
+            if found_main == 1 and depth == 1 {
+                in_block = 1
+            }
+        }
+        
+        if c == "}" {
+            depth = depth - 1
+        }
+        
+        if in_block == 1 and depth == 1 {
+            if pos + 5 < src.len() and src[pos:pos + 5] == "print" {
+                let before_pos: int = pos - 1
+                while before_pos > 0 and src[before_pos:before_pos + 1] == " " {
+                    before_pos = before_pos - 1
+                }
+                
+                if src[before_pos:before_pos + 1] == "}" or src[before_pos:before_pos + 1] == "\n" {
+                    io.append_file(f, "    adrp x0, s1@PAGE\n")
+                    io.append_file(f, "    add x0, x0, s1@PAGEOFF\n")
+                    io.append_file(f, "    bl _puts\n")
+                    return
+                }
+            }
+            
+            if c != " " and c != "\n" and c != "\t" and c != "{" and c != "}" {
+                let name_start: int = pos
+                while pos < src.len() {
+                    const ch: str = src[pos:pos + 1]
+                    if ch == "(" or ch == " " or ch == "\n" or ch == "{" {
+                        break
+                    }
+                    pos = pos + 1
+                }
+                const name: str = src[name_start:pos]
+                
+                if pos < src.len() and src[pos:pos + 1] == "(" {
+                    if name != "print" and name != "if" and name != "while" and name != "let" and name != "const" {
+                        io.append_file(f, "    bl _")
+                        io.append_file(f, name)
+                        io.append_file(f, "\n")
+                    }
+                }
+            }
+        }
+        
+        pos = pos + 1
+    }
+}
+
+fn gen_other_functions(f: str, src: str) {
+    let pos: int = 0
+    
+    while pos < src.len() {
+        if pos + 2 < src.len() and src[pos:pos + 2] == "fn" {
+            const next: str = src[pos + 2:pos + 3]
+            if next == " " {
+                pos = pos + 3
+                while pos < src.len() and src[pos:pos + 1] == " " {
+                    pos = pos + 1
+                }
+                
+                let name_start: int = pos
+                while pos < src.len() and src[pos:pos + 1] != "(" {
+                    pos = pos + 1
+                }
+                const name: str = src[name_start:pos]
+                
+                if name != "main" {
+                    while pos < src.len() and src[pos:pos + 1] != "{" {
+                        pos = pos + 1
+                    }
+                    pos = pos + 1
+                    
+                    let body_start: int = pos
+                    let depth: int = 1
+                    while pos < src.len() and depth > 0 {
+                        const c: str = src[pos:pos + 1]
+                        if c == "{" {
+                            depth = depth + 1
+                        }
+                        if c == "}" {
+                            depth = depth - 1
+                        }
+                        pos = pos + 1
+                    }
+                    const body: str = src[body_start:pos - 1]
+                    
+                    io.append_file(f, "_")
+                    io.append_file(f, name)
+                    io.append_file(f, ":\n")
+                    io.append_file(f, "    sub sp, sp, #64\n")
+                    io.append_file(f, "    stp x29, x30, [sp]\n")
+                    io.append_file(f, "    mov x29, sp\n")
+                    
+                    gen_func_body(f, body)
+                    
+                    io.append_file(f, "    mov x0, #0\n")
+                    io.append_file(f, "    ldp x29, x30, [sp]\n")
+                    io.append_file(f, "    add sp, sp, #64\n")
+                    io.append_file(f, "    ret\n\n")
+                }
+            }
+        }
+        pos = pos + 1
+    }
+}
+
+fn gen_func_body(f: str, body: str) {
+    let pos: int = 0
+    
+    while pos < body.len() {
+        if pos + 5 < body.len() and body[pos:pos + 5] == "print" {
+            io.append_file(f, "    adrp x0, s0@PAGE\n")
+            io.append_file(f, "    add x0, x0, s0@PAGEOFF\n")
+            io.append_file(f, "    bl _puts\n")
+            return
+        }
+        pos = pos + 1
+    }
+}
+
+fn has_plus(expr: str) -> int {
+    let pos: int = 0
+    while pos < expr.len() {
+        if expr[pos:pos + 1] == "+" {
+            return 1
+        }
+        pos = pos + 1
+    }
+    return 0
+}
+
+fn gen_strings(f: str, src: str) {
+    let pos: int = 0
+    let str_idx: int = 0
+    
+    while pos < src.len() {
+        if pos + 5 < src.len() and src[pos:pos + 5] == "print" {
+            while pos < src.len() and src[pos:pos + 1] != "\"" {
+                pos = pos + 1
+            }
+            pos = pos + 1
+            let str_start: int = pos
+            while pos < src.len() and src[pos:pos + 1] != "\"" {
+                pos = pos + 1
+            }
+            const str_val: str = src[str_start:pos]
+            
+            io.append_file(f, "s")
+            io.append_file(f, string.from_int(str_idx))
+            io.append_file(f, ": .asciz \"")
+            io.append_file(f, str_val)
+            io.append_file(f, "\"\n")
+            
+            str_idx = str_idx + 1
+        }
+        pos = pos + 1
+    }
+}

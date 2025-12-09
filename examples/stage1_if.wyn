@@ -1,0 +1,7 @@
+fn main() {
+    let x: int = 2
+    if x < 5 {
+        print("Small")
+    }
+    print("Done")
+}

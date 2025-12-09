@@ -11,8 +11,11 @@ cd wyn-lang
 make clean
 make all
 
-# Verify installation
-./build/stage0 --version
+# Run tests
+make test
+
+# See all available targets
+make help
 ```
 
 ## Your First Program
@@ -32,11 +35,21 @@ Compile and run:
 ./hello
 ```
 
+## Test Self-Hosting
+
+```bash
+# Test that the compiler compiles itself
+make test-self-hosting
+
+# Test infinite compilation
+make test-infinite
+```
+
 ---
 
 ## Built-in Functions
 
-**Wyn has only 5 builtins:**
+**Wyn has only 4 builtins:**
 
 ### 1. print()
 

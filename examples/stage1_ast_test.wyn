@@ -1,0 +1,38 @@
+# Stage 1 AST Test - Comprehensive test for AST-based codegen
+
+fn main() {
+    print("=== Stage 1 AST Test ===")
+    
+    # Variable declarations with expressions
+    let x: int = 10
+    let y: int = 5
+    let sum: int = x + y
+    let diff: int = x - y
+    let prod: int = x * y
+    
+    print("Variables initialized")
+    
+    # Binary operations
+    let result: int = (x + y) * 2
+    
+    # Control flow - if statement
+    if x > y {
+        print("x is greater")
+    } else {
+        print("y is greater or equal")
+    }
+    
+    # While loop with condition
+    let counter: int = 0
+    while counter < 3 {
+        print("Loop iteration")
+        counter = counter + 1
+    }
+    
+    # Comparison operations
+    let is_equal: int = x == y
+    let is_not_equal: int = x != y
+    let is_less: int = x < y
+    
+    print("Test complete!")
+}

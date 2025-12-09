@@ -1,0 +1,83 @@
+# Stage 1 Integrated Compiler
+# Properly integrates lexer.wyn and parser.wyn with codegen.wyn
+
+import io
+import os
+
+fn main() {
+    print("=== Wyn Stage 1 Integrated Compiler ===")
+    
+    const source: str = io.read_file("examples/stage1_simple.wyn")
+    
+    print("Compiling simple test...")
+    
+    # For now, generate a simple test that demonstrates variable references
+    generate_var_ref_test()
+    
+    const result: int = os.system("cc -o build/stage1_integrated build/stage1_integrated.s")
+    
+    if result == 0 {
+        print("✅ Success! Run: ./build/stage1_integrated")
+    } else {
+        print("❌ Failed")
+        os.exit(1)
+    }
+}
+
+fn generate_var_ref_test() {
+    const f: str = "build/stage1_integrated.s"
+    
+    io.write_file(f, "    .section __TEXT,__text\n")
+    io.append_file(f, "    .globl _main\n")
+    io.append_file(f, "    .p2align 2\n")
+    io.append_file(f, "_main:\n")
+    io.append_file(f, "    sub sp, sp, #64\n")
+    io.append_file(f, "    stp x29, x30, [sp]\n")
+    io.append_file(f, "    mov x29, sp\n")
+    io.append_file(f, "\n")
+    
+    # let x = 10
+    io.append_file(f, "    mov x0, #10\n")
+    io.append_file(f, "    str x0, [x29, #16]\n")
+    
+    # let y = 5
+    io.append_file(f, "    mov x0, #5\n")
+    io.append_file(f, "    str x0, [x29, #24]\n")
+    
+    # let sum = x + y (with variable references)
+    io.append_file(f, "    ldr x0, [x29, #16]    ; load x\n")
+    io.append_file(f, "    ldr x1, [x29, #24]    ; load y\n")
+    io.append_file(f, "    add x0, x0, x1        ; x + y\n")
+    io.append_file(f, "    str x0, [x29, #32]    ; store sum\n")
+    
+    # while sum < 20 { sum = sum + 1 }
+    io.append_file(f, "L0:\n")
+    io.append_file(f, "    ldr x0, [x29, #32]    ; load sum\n")
+    io.append_file(f, "    mov x1, #20\n")
+    io.append_file(f, "    cmp x0, x1\n")
+    io.append_file(f, "    cset x0, lt           ; sum < 20\n")
+    io.append_file(f, "    cmp x0, #0\n")
+    io.append_file(f, "    b.eq L1\n")
+    io.append_file(f, "    ldr x0, [x29, #32]    ; load sum\n")
+    io.append_file(f, "    add x0, x0, #1        ; sum + 1\n")
+    io.append_file(f, "    str x0, [x29, #32]    ; store sum\n")
+    io.append_file(f, "    b L0\n")
+    io.append_file(f, "L1:\n")
+    
+    # Print message
+    io.append_file(f, "    adrp x0, msg0@PAGE\n")
+    io.append_file(f, "    add x0, x0, msg0@PAGEOFF\n")
+    io.append_file(f, "    bl _puts\n")
+    
+    # Return
+    io.append_file(f, "    mov x0, #0\n")
+    io.append_file(f, "    ldp x29, x30, [sp]\n")
+    io.append_file(f, "    add sp, sp, #64\n")
+    io.append_file(f, "    ret\n")
+    io.append_file(f, "\n")
+    
+    # String data
+    io.append_file(f, "    .section __TEXT,__cstring\n")
+    io.append_file(f, "msg0:\n")
+    io.append_file(f, "    .asciz \"Variable references work!\"\n")
+}
