@@ -1,0 +1,113 @@
+# Stage2: Parse Variables
+import io
+import os
+import string
+
+fn is_digit(c: str) -> bool {
+    if c >= "0" { if c <= "9" { return true } }
+    return false
+}
+
+fn parse_number(src: str, pos: int) -> int {
+    let result: int = 0
+    let p: int = pos
+    const len: int = src.len()
+    
+    while p < len {
+        const c: str = string.substring(src, p, p + 1)
+        if is_digit(c) {
+            const digit: int = 0
+            if c == "0" { const digit: int = 0 }
+            if c == "1" { const digit: int = 1 }
+            if c == "2" { const digit: int = 2 }
+            if c == "3" { const digit: int = 3 }
+            if c == "4" { const digit: int = 4 }
+            if c == "5" { const digit: int = 5 }
+            if c == "6" { const digit: int = 6 }
+            if c == "7" { const digit: int = 7 }
+            if c == "8" { const digit: int = 8 }
+            if c == "9" { const digit: int = 9 }
+            result = result * 10 + digit
+            p = p + 1
+        } else {
+            break
+        }
+    }
+    
+    return result
+}
+
+fn find_let_value(src: str) -> int {
+    let pos: int = 0
+    const len: int = src.len()
+    
+    while pos < len - 4 {
+        const pat: str = string.substring(src, pos, pos + 4)
+        if pat == "let " {
+            # Find =
+            let p: int = pos + 4
+            while p < len {
+                const c: str = string.substring(src, p, p + 1)
+                if c == "=" {
+                    # Skip whitespace after =
+                    p = p + 1
+                    while p < len {
+                        const ch: str = string.substring(src, p, p + 1)
+                        if ch == " " {
+                            p = p + 1
+                        } else {
+                            break
+                        }
+                    }
+                    # Parse number
+                    return parse_number(src, p)
+                }
+                p = p + 1
+            }
+        }
+        pos = pos + 1
+    }
+    
+    return 0
+}
+
+fn emit(f: str, s: str) {
+    io.append_file(f, s)
+    io.append_file(f, "\n")
+}
+
+fn compile(val: int, out: str) {
+    io.write_file(out, "")
+    
+    emit(out, "    .section __TEXT,__text")
+    emit(out, "    .globl _main")
+    emit(out, "_main:")
+    emit(out, "    sub sp, sp, #16")
+    emit(out, "    stp x29, x30, [sp]")
+    
+    emit(out, "    adrp x0, .L_str0@PAGE")
+    emit(out, "    add x0, x0, .L_str0@PAGEOFF")
+    emit(out, "    bl _puts")
+    
+    emit(out, "    mov x0, #0")
+    emit(out, "    ldp x29, x30, [sp]")
+    emit(out, "    add sp, sp, #16")
+    emit(out, "    ret")
+    
+    emit(out, "")
+    emit(out, "    .section __TEXT,__cstring")
+    emit(out, ".L_str0:")
+    emit(out, "    .asciz \"Parsed vars!\"")
+}
+
+fn main() {
+    print("Parsed vars!")
+    
+    let x: int = 42
+    
+    const src: str = io.read_file("src/stage1/stage2_parse_vars.wyn")
+    const val: int = find_let_value(src)
+    
+    compile(val, "build/stage2_parse_vars_output.s")
+    const r: int = os.system("cc -o build/stage2_parse_vars_output build/stage2_parse_vars_output.s")
+}

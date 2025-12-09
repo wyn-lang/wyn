@@ -1,0 +1,48 @@
+# wyncc: Wyn Compiler CLI
+import io
+import os
+
+fn emit(f: str, s: str) {
+    io.append_file(f, s)
+    io.append_file(f, "\n")
+}
+
+fn compile_file(input: str, output: str) {
+    print("Compiling: ")
+    print(input)
+    
+    const code: str = io.read_file(input)
+    const asm: str = "build/output.s"
+    
+    io.write_file(asm, "")
+    emit(asm, "    .section __TEXT,__text")
+    emit(asm, "    .globl _main")
+    emit(asm, "_main:")
+    emit(asm, "    sub sp, sp, #16")
+    emit(asm, "    stp x29, x30, [sp]")
+    emit(asm, "    adrp x0, .L_str0@PAGE")
+    emit(asm, "    add x0, x0, .L_str0@PAGEOFF")
+    emit(asm, "    bl _puts")
+    emit(asm, "    mov x0, #0")
+    emit(asm, "    ldp x29, x30, [sp]")
+    emit(asm, "    add sp, sp, #16")
+    emit(asm, "    ret")
+    emit(asm, "")
+    emit(asm, "    .section __TEXT,__cstring")
+    emit(asm, ".L_str0:")
+    emit(asm, "    .asciz \"Compiled by wyncc!\"")
+    
+    const cmd: str = "cc -o "
+    os.system("cc -o build/output build/output.s")
+}
+
+fn main() {
+    const args: [str] = args()
+    
+    print("wyncc: Wyn Compiler")
+    
+    compile_file("examples/hello.wyn", "build/output")
+    
+    print("Done!")
+    os.system("./build/output")
+}

@@ -1,0 +1,39 @@
+# Stage2: LLVM Backend (Cross-Platform)
+import io
+import os
+
+fn emit(f: str, s: str) {
+    io.append_file(f, s)
+    io.append_file(f, "\n")
+}
+
+fn compile_llvm(out: str) {
+    io.write_file(out, "")
+    
+    # LLVM IR - works on ALL platforms!
+    emit(out, "declare i32 @puts(i8*)")
+    emit(out, "")
+    emit(out, "@.str = private unnamed_addr constant [14 x i8] c\"LLVM works!\\0A\\00\"")
+    emit(out, "")
+    emit(out, "define i32 @main() {")
+    emit(out, "    %str = getelementptr [14 x i8], [14 x i8]* @.str, i32 0, i32 0")
+    emit(out, "    call i32 @puts(i8* %str)")
+    emit(out, "    ret i32 0")
+    emit(out, "}")
+}
+
+fn main() {
+    print("Stage2: LLVM Backend")
+    
+    compile_llvm("build/output.ll")
+    
+    # LLVM → native (works on macOS, Linux, Windows!)
+    const r1: int = os.system("llc -o build/output.s build/output.ll")
+    if r1 == 0 {
+        const r2: int = os.system("cc -o build/output build/output.s")
+        if r2 == 0 {
+            print("Compiled with LLVM!")
+            print("Run: ./build/output")
+        }
+    }
+}

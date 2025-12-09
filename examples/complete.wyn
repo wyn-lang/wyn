@@ -1,0 +1,70 @@
+# Complete Wyn Program
+# Demonstrates all 12 Stage2 features
+
+fn add(a: int, b: int) -> int {
+    return a + b
+}
+
+fn check(x: int) -> int {
+    if x < 10 {
+        return 0
+    } else if x < 20 {
+        return 1
+    } else {
+        return 2
+    }
+}
+
+struct Point {
+    x: int
+    y: int
+}
+
+fn main() {
+    print("Complete Program")
+    
+    # 1. Variables
+    let x: int = 5
+    let name: str = "Wyn"
+    
+    # 2. Expressions + 5. Functions
+    let y: int = add(x, 3)
+    
+    # 6. Arrays
+    let numbers: [int] = [10, 20, 30]
+    let first: int = numbers[0]
+    
+    # 7. Structs
+    let p: Point = Point{x: 100, y: 200}
+    
+    # 3. If + 11. Else-if
+    let result: int = check(y)
+    if result == 0 {
+        print("Small")
+    } else if result == 1 {
+        print("Medium")
+    } else {
+        print("Large")
+    }
+    
+    # 4. While + 10. Break
+    let i: int = 0
+    while i < 10 {
+        if i == 3 {
+            break
+        }
+        print("While")
+        i = i + 1
+    }
+    
+    # 8. For + 10. Continue
+    for j in 0..5 {
+        if j == 2 {
+            continue
+        }
+        print("For")
+    }
+    
+    # 12. Strings
+    print(name)
+}

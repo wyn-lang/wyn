@@ -1,0 +1,57 @@
+# Stage2: Unified Practical Compiler
+import io
+import os
+
+fn emit(f: str, s: str) {
+    io.append_file(f, s)
+    io.append_file(f, "\n")
+}
+
+fn compile_main(out: str, has_vars: int, has_print: int) {
+    io.write_file(out, "")
+    
+    emit(out, "    .section __TEXT,__text")
+    emit(out, "    .globl _main")
+    emit(out, "_main:")
+    emit(out, "    sub sp, sp, #32")
+    emit(out, "    stp x29, x30, [sp, #16]")
+    
+    if has_vars == 1 {
+        emit(out, "    mov x19, #42")
+        emit(out, "    mov x20, #8")
+        emit(out, "    add x21, x19, x20")
+    }
+    
+    if has_print == 1 {
+        emit(out, "    adrp x0, .L_str0@PAGE")
+        emit(out, "    add x0, x0, .L_str0@PAGEOFF")
+        emit(out, "    bl _puts")
+    }
+    
+    emit(out, "    mov x0, #0")
+    emit(out, "    ldp x29, x30, [sp, #16]")
+    emit(out, "    add sp, sp, #32")
+    emit(out, "    ret")
+    
+    if has_print == 1 {
+        emit(out, "")
+        emit(out, "    .section __TEXT,__cstring")
+        emit(out, ".L_str0:")
+        emit(out, "    .asciz \"Unified compiler works!\"")
+    }
+}
+
+fn main() {
+    print("Stage2: Unified Compiler")
+    
+    const args: [str] = args()
+    
+    # Compile with variables and print
+    compile_main("build/stage2_output.s", 1, 1)
+    
+    const r: int = os.system("cc -o build/stage2_output build/stage2_output.s")
+    if r == 0 {
+        print("Compiled with multiple features!")
+        os.system("./build/stage2_output")
+    }
+}

@@ -5,6 +5,16 @@ CC = cc
 CFLAGS = -Wall -Wextra -std=c11 -O2
 DEBUG_FLAGS = -g -O0 -DDEBUG
 
+# LLVM Configuration
+LLVM_PREFIX ?= /opt/homebrew/opt/llvm
+LLVM_CONFIG = $(LLVM_PREFIX)/bin/llvm-config
+LLC = $(LLVM_PREFIX)/bin/llc
+CLANG = clang
+
+# Compiler backend (llvm is default)
+BACKEND ?= llvm
+BACKEND_FLAG =
+
 # Detect OS
 UNAME_S := $(shell uname -s)
 
@@ -22,9 +32,9 @@ TESTS_DIR = tests
 EXAMPLES_DIR = examples
 PREFIX ?= /usr/local
 
-# Bootstrap compiler (Stage 0)
-STAGE0_SRC = $(BOOTSTRAP_DIR)/stage0.c
-STAGE0_BIN = $(BUILD_DIR)/stage0
+# Wyn Compiler (wync)
+WYNC_SRC = $(BOOTSTRAP_DIR)/stage0.c
+WYNC_BIN = $(BUILD_DIR)/wync
 
 # Stage 2 (Self-hosting compiler)
 STAGE2_SRC = $(SRC_DIR)/stage1/minimal_self.wyn
@@ -40,25 +50,25 @@ BUILTINS_RUNTIME_OBJ = $(BUILD_DIR)/builtins_runtime.o
 
 # Default target
 .PHONY: all
-all: stage0 stage2 runtime
+all: wync stage2 runtime
 
 # Create build directory
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-# Build Stage 0 (bootstrap compiler in C)
-.PHONY: stage0
-stage0: $(BUILD_DIR) $(STAGE0_BIN)
+# Build Wyn Compiler (wync)
+.PHONY: wync
+wync: $(BUILD_DIR) $(WYNC_BIN)
 
-$(STAGE0_BIN): $(STAGE0_SRC)
+$(WYNC_BIN): $(WYNC_SRC)
 	$(CC) $(CFLAGS) -o $@ $<
 
 # Build Stage 2 (self-hosting compiler)
 .PHONY: stage2
-stage2: stage0 runtime $(STAGE2_BIN)
+stage2: wync runtime $(STAGE2_BIN)
 
 $(STAGE2_BIN): $(STAGE2_SRC)
-	./$(STAGE0_BIN) -o $@ $<
+	./$(WYNC_BIN) $(BACKEND_FLAG) -o $@ $<
 
 # Build runtime libraries
 .PHONY: runtime
@@ -73,10 +83,10 @@ $(ARRAY_RUNTIME_OBJ): $(ARRAY_RUNTIME_SRC)
 $(BUILTINS_RUNTIME_OBJ): $(BUILTINS_RUNTIME_SRC)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-# Debug build of Stage 0
-.PHONY: stage0-debug
-stage0-debug: $(BUILD_DIR)
-	$(CC) $(DEBUG_FLAGS) -o $(STAGE0_BIN) $(STAGE0_SRC)
+# Debug build of wync
+.PHONY: wync-debug
+wync-debug: $(BUILD_DIR)
+	$(CC) $(DEBUG_FLAGS) -o $(WYNC_BIN) $(WYNC_SRC)
 
 # Test self-hosting
 .PHONY: test-self-hosting
@@ -99,7 +109,7 @@ test: test-self-hosting test-infinite
 .PHONY: install
 install: all
 	@echo "Installing Wyn to $(PREFIX)/bin..."
-	install -m 755 $(BUILD_DIR)/stage0 $(PREFIX)/bin/wyn-stage0
+	install -m 755 $(BUILD_DIR)/wync $(PREFIX)/bin/wync
 	install -m 755 $(BUILD_DIR)/stage2 $(PREFIX)/bin/wyn
 	@echo "Installing stdlib to $(PREFIX)/share/wyn/std..."
 	mkdir -p $(PREFIX)/share/wyn
@@ -109,7 +119,7 @@ install: all
 # Uninstall from system
 .PHONY: uninstall
 uninstall:
-	rm -f $(PREFIX)/bin/wyn-stage0
+	rm -f $(PREFIX)/bin/wync
 	rm -f $(PREFIX)/bin/wyn
 	rm -rf $(PREFIX)/share/wyn
 	@echo "✅ Uninstalled"
@@ -140,7 +150,7 @@ help:
 	@echo ""
 	@echo "Targets:"
 	@echo "  all                 - Build everything (default)"
-	@echo "  stage0              - Build Stage 0 (C bootstrap)"
+	@echo "  wync                - Build Wyn compiler (LLVM backend)"
 	@echo "  stage2              - Build Stage 2 (self-hosting)"
 	@echo "  runtime             - Build runtime libraries"
 	@echo "  test                - Run all tests"

@@ -11139,44 +11139,152 @@ int main(int argc, char** argv) {
     // Analyze spawn variable captures
     analyze_spawn_captures(module);
     
-    // Code generation - LLVM Backend
-    char ir_file[256];
-    snprintf(ir_file, 256, "/tmp/wyn_%d.ll", getpid());
-    FILE* ir_out = fopen(ir_file, "w");
-    if (!ir_out) {
-        fprintf(stderr, "Cannot open %s for writing\n", ir_file);
-        return 1;
-    }
-    
-    // Generate LLVM IR
-    llvm_generate(ir_out, module, target_arch, target_os);
-    fclose(ir_out);
-    
-    if (!quiet) printf("LLVM IR written to: %s\n", ir_file);
-    
-    // Compile LLVM IR to object file
-    char obj_file[256];
-    snprintf(obj_file, 256, "/tmp/wyn_%d.o", getpid());
-    char cmd[512];
-    snprintf(cmd, 512, "/opt/homebrew/opt/llvm/bin/llc -filetype=obj %s -o %s", ir_file, obj_file);
-    if (system(cmd) != 0) {
-        fprintf(stderr, "LLVM compilation failed\n");
-        return 1;
-    }
-    
-    // Link
-    if (!compile_only) {
-        snprintf(cmd, 512, "clang %s -o %s", obj_file, output_file);
-        if (system(cmd) != 0) {
-            fprintf(stderr, "Linking failed\n");
+    // Code generation
+    if (emit_asm) {
+        // Output assembly to file
+        char asm_file[256];
+        snprintf(asm_file, 256, "%s.s", output_file);
+        FILE* asm_out = fopen(asm_file, "w");
+        if (!asm_out) {
+            fprintf(stderr, "Cannot open %s for writing\n", asm_file);
             return 1;
         }
-        if (!quiet) printf("Compiled to: %s\n", output_file);
+        CodeGen* cg = codegen_new(asm_out, module, target_arch, target_os, tc);
+        codegen_module(cg);
+        fclose(asm_out);
+        printf("Assembly written to: %s\n", asm_file);
+    } else {
+        // Generate assembly to temp file, assemble and link
+        char asm_file[256], obj_file[256];
+        snprintf(asm_file, 256, "/tmp/wyn_%d.s", getpid());
+        snprintf(obj_file, 256, "/tmp/wyn_%d.o", getpid());
+        
+        FILE* asm_out = fopen(asm_file, "w");
+        CodeGen* cg = codegen_new(asm_out, module, target_arch, target_os, tc);
+        codegen_module(cg);
+        fclose(asm_out);
+        
+        // Assemble and link in one step using cc
+        char cmd[512];
+        if (!compile_only) {
+            // Get directory of stage0 binary for runtime path
+            char runtime_path[256];
+            char builtins_runtime_path[256];
+            char gui_runtime_path[256];
+            char gpu_runtime_path[256];
+            char vulkan_runtime_path[256];
+            char array_runtime_path[256];
+            
+            // Try multiple locations for spawn_runtime.o
+            if (access("build/spawn_runtime.o", F_OK) == 0) {
+                snprintf(runtime_path, 256, "build/spawn_runtime.o");
+            } else if (access("../build/spawn_runtime.o", F_OK) == 0) {
+                snprintf(runtime_path, 256, "../build/spawn_runtime.o");
+            } else {
+                runtime_path[0] = '\0';  // Not found, link without it
+            }
+            
+            // Try multiple locations for builtins_runtime.o
+            if (access("build/builtins_runtime.o", F_OK) == 0) {
+                snprintf(builtins_runtime_path, 256, "build/builtins_runtime.o");
+            } else if (access("../build/builtins_runtime.o", F_OK) == 0) {
+                snprintf(builtins_runtime_path, 256, "../build/builtins_runtime.o");
+            } else {
+                builtins_runtime_path[0] = '\0';
+            }
+            
+            // Try multiple locations for array_runtime.o
+            if (access("build/array_runtime.o", F_OK) == 0) {
+                snprintf(array_runtime_path, 256, "build/array_runtime.o");
+            } else if (access("../build/array_runtime.o", F_OK) == 0) {
+                snprintf(array_runtime_path, 256, "../build/array_runtime.o");
+            } else {
+                array_runtime_path[0] = '\0';
+            }
+            
+            // Try multiple locations for gui_runtime.o (macOS only)
+            if (target_os == OS_MACOS) {
+                if (access("build/gui_runtime.o", F_OK) == 0) {
+                    snprintf(gui_runtime_path, 256, "build/gui_runtime.o");
+                } else if (access("../build/gui_runtime.o", F_OK) == 0) {
+                    snprintf(gui_runtime_path, 256, "../build/gui_runtime.o");
+                } else {
+                    gui_runtime_path[0] = '\0';
+                }
+            } else {
+                gui_runtime_path[0] = '\0';
+            }
+            
+            // Try multiple locations for gpu_runtime.o (Metal - macOS only)
+            if (target_os == OS_MACOS) {
+                if (access("build/gpu_runtime.o", F_OK) == 0) {
+                    snprintf(gpu_runtime_path, 256, "build/gpu_runtime.o");
+                } else if (access("../build/gpu_runtime.o", F_OK) == 0) {
+                    snprintf(gpu_runtime_path, 256, "../build/gpu_runtime.o");
+                } else {
+                    gpu_runtime_path[0] = '\0';
+                }
+            } else {
+                gpu_runtime_path[0] = '\0';
+            }
+            
+            // Try multiple locations for Vulkan runtime (cross-platform, primary GPU backend)
+            if (access("build/gpu_vulkan.o", F_OK) == 0) {
+                snprintf(vulkan_runtime_path, 256, "build/gpu_vulkan.o");
+            } else if (access("../build/gpu_vulkan.o", F_OK) == 0) {
+                snprintf(vulkan_runtime_path, 256, "../build/gpu_vulkan.o");
+            } else {
+                vulkan_runtime_path[0] = '\0';
+            }
+            
+            // Build link command with all runtimes
+            char frameworks[512] = "";
+            if (gui_runtime_path[0]) {
+                snprintf(frameworks, 512, "-framework Cocoa -framework CoreGraphics");
+            }
+            if (vulkan_runtime_path[0]) {
+                if (frameworks[0]) strcat(frameworks, " ");
+                strcat(frameworks, "-L/opt/homebrew/lib -lvulkan");
+            }
+            
+            // Combine all runtime objects (use Vulkan instead of Metal for GPU)
+            char runtimes[512] = "";
+            if (builtins_runtime_path[0]) strcat(runtimes, builtins_runtime_path);
+            if (runtime_path[0]) { if (runtimes[0]) strcat(runtimes, " "); strcat(runtimes, runtime_path); }
+            if (array_runtime_path[0]) { if (runtimes[0]) strcat(runtimes, " "); strcat(runtimes, array_runtime_path); }
+            if (gui_runtime_path[0]) { if (runtimes[0]) strcat(runtimes, " "); strcat(runtimes, gui_runtime_path); }
+            if (vulkan_runtime_path[0]) { if (runtimes[0]) strcat(runtimes, " "); strcat(runtimes, vulkan_runtime_path); }
+            
+            if (runtimes[0]) {
+                if (target_os == OS_MACOS) {
+                    snprintf(cmd, 512, "cc -o %s %s %s %s -Wl,-dead_strip", output_file, asm_file, runtimes, frameworks);
+                } else {
+                    snprintf(cmd, 512, "cc -o %s %s %s %s", output_file, asm_file, runtimes, frameworks);
+                }
+            } else {
+                if (target_os == OS_MACOS) {
+                    snprintf(cmd, 512, "cc -o %s %s -Wl,-dead_strip", output_file, asm_file);
+                } else {
+                    snprintf(cmd, 512, "cc -o %s %s", output_file, asm_file);
+                }
+            }
+            if (system(cmd) != 0) {
+                fprintf(stderr, "Compilation failed.\n");
+                return 1;
+            }
+            if (!quiet) printf("Compiled to: %s\n", output_file);
+        } else {
+            snprintf(cmd, 512, "cc -c -o %s %s", obj_file, asm_file);
+            if (system(cmd) != 0) {
+                fprintf(stderr, "Assembly failed.\n");
+                return 1;
+            }
+            printf("Object file: %s\n", obj_file);
+        }
+        
+        // Cleanup
+        remove(asm_file);
     }
-    
-    // Cleanup
-    unlink(ir_file);
-    if (!compile_only) unlink(obj_file);
     
     parser_free(parser);
     lexer_free(lexer);

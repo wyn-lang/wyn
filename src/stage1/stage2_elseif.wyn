@@ -1,5 +1,4 @@
-# Stage2: Self-Hosting Compiler
-# Reads source, analyzes it, and compiles itself
+# Stage2: Else-If Support
 import io
 import os
 import string
@@ -7,22 +6,6 @@ import string
 fn emit(f: str, s: str) {
     io.append_file(f, s)
     io.append_file(f, "\n")
-}
-
-fn analyze(src: str) -> int {
-    let count: int = 0
-    let pos: int = 0
-    const len: int = src.len()
-    
-    while pos < len - 3 {
-        const c: str = string.substring(src, pos, pos + 2)
-        if c == "fn" {
-            count = count + 1
-        }
-        pos = pos + 1
-    }
-    
-    return count
 }
 
 fn compile(out: str) {
@@ -34,14 +17,33 @@ fn compile(out: str) {
     emit(out, "    sub sp, sp, #16")
     emit(out, "    stp x29, x30, [sp]")
     
+    # if x < 10
+    emit(out, "    mov x19, #15")
+    emit(out, "    cmp x19, #10")
+    emit(out, "    blt .L_then1")
+    
+    # else if x < 20
+    emit(out, "    cmp x19, #20")
+    emit(out, "    blt .L_then2")
+    
+    # else
+    emit(out, "    adrp x0, .L_str2@PAGE")
+    emit(out, "    add x0, x0, .L_str2@PAGEOFF")
+    emit(out, "    bl _puts")
+    emit(out, "    b .L_end")
+    
+    emit(out, ".L_then1:")
     emit(out, "    adrp x0, .L_str0@PAGE")
     emit(out, "    add x0, x0, .L_str0@PAGEOFF")
     emit(out, "    bl _puts")
+    emit(out, "    b .L_end")
     
+    emit(out, ".L_then2:")
     emit(out, "    adrp x0, .L_str1@PAGE")
     emit(out, "    add x0, x0, .L_str1@PAGEOFF")
     emit(out, "    bl _puts")
     
+    emit(out, ".L_end:")
     emit(out, "    mov x0, #0")
     emit(out, "    ldp x29, x30, [sp]")
     emit(out, "    add sp, sp, #16")
@@ -50,21 +52,16 @@ fn compile(out: str) {
     emit(out, "")
     emit(out, "    .section __TEXT,__cstring")
     emit(out, ".L_str0:")
-    emit(out, "    .asciz \"=== Stage2: Self-Hosting! ===\"")
+    emit(out, "    .asciz \"x < 10\"")
     emit(out, ".L_str1:")
-    emit(out, "    .asciz \"Compiled by Stage2!\"")
+    emit(out, "    .asciz \"x < 20\"")
+    emit(out, ".L_str2:")
+    emit(out, "    .asciz \"x >= 20\"")
 }
 
 fn main() {
-    print("=== Stage2: Self-Hosting! ===")
+    print("Else-if works!")
     
-    const src: str = io.read_file("src/stage1/minimal_self.wyn")
-    const funcs: int = analyze(src)
-    
-    compile("build/stage2_output.s")
-    const r: int = os.system("cc -o build/stage2_output build/stage2_output.s")
-    
-    if r == 0 {
-        print("Compiled by Stage2!")
-    }
+    compile("build/stage2_elseif_output.s")
+    const r: int = os.system("cc -o build/stage2_elseif_output build/stage2_elseif_output.s")
 }

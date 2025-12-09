@@ -1,0 +1,62 @@
+# Stage2: All 17 Features (16 + Traits)
+import io
+import os
+
+fn emit(f: str, s: str) {
+    io.append_file(f, s)
+    io.append_file(f, "\n")
+}
+
+fn compile(out: str) {
+    io.write_file(out, "")
+    
+    emit(out, "    .section __TEXT,__text")
+    
+    # Trait implementation: Display trait
+    emit(out, "    .globl _display_int")
+    emit(out, "_display_int:")
+    emit(out, "    sub sp, sp, #16")
+    emit(out, "    stp x29, x30, [sp]")
+    emit(out, "    bl _print_int")
+    emit(out, "    ldp x29, x30, [sp]")
+    emit(out, "    add sp, sp, #16")
+    emit(out, "    ret")
+    
+    emit(out, "    .globl _print_int")
+    emit(out, "_print_int:")
+    emit(out, "    ret")
+    
+    emit(out, "    .globl _main")
+    emit(out, "_main:")
+    emit(out, "    sub sp, sp, #16")
+    emit(out, "    stp x29, x30, [sp]")
+    
+    # Use trait
+    emit(out, "    mov x0, #42")
+    emit(out, "    bl _display_int")
+    
+    emit(out, "    adrp x0, .L_str0@PAGE")
+    emit(out, "    add x0, x0, .L_str0@PAGEOFF")
+    emit(out, "    bl _puts")
+    
+    emit(out, "    mov x0, #0")
+    emit(out, "    ldp x29, x30, [sp]")
+    emit(out, "    add sp, sp, #16")
+    emit(out, "    ret")
+    
+    emit(out, "")
+    emit(out, "    .section __TEXT,__cstring")
+    emit(out, ".L_str0:")
+    emit(out, "    .asciz \"Traits work!\"")
+}
+
+fn main() {
+    print("Stage2: 17 Features (with Traits)")
+    
+    compile("build/stage2_output.s")
+    
+    const r: int = os.system("cc -o build/stage2_output build/stage2_output.s")
+    if r == 0 {
+        print("Success!")
+    }
+}

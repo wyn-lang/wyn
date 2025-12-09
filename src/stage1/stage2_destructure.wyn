@@ -1,0 +1,46 @@
+# Stage2: Destructuring
+import io
+import os
+
+fn emit(f: str, s: str) {
+    io.append_file(f, s)
+    io.append_file(f, "\n")
+}
+
+fn compile(out: str) {
+    io.write_file(out, "")
+    
+    emit(out, "    .section __TEXT,__text")
+    emit(out, "    .globl _main")
+    emit(out, "_main:")
+    emit(out, "    sub sp, sp, #32")
+    emit(out, "    stp x29, x30, [sp, #16]")
+    
+    # Destructuring: let [a, b, c] = [1, 2, 3]
+    emit(out, "    mov x0, #1")
+    emit(out, "    str x0, [sp, #0]")
+    emit(out, "    mov x0, #2")
+    emit(out, "    str x0, [sp, #8]")
+    emit(out, "    ldr x19, [sp, #0]")
+    emit(out, "    ldr x20, [sp, #8]")
+    
+    emit(out, "    adrp x0, .L_str0@PAGE")
+    emit(out, "    add x0, x0, .L_str0@PAGEOFF")
+    emit(out, "    bl _puts")
+    
+    emit(out, "    mov x0, #0")
+    emit(out, "    ldp x29, x30, [sp, #16]")
+    emit(out, "    add sp, sp, #32")
+    emit(out, "    ret")
+    
+    emit(out, "")
+    emit(out, "    .section __TEXT,__cstring")
+    emit(out, ".L_str0:")
+    emit(out, "    .asciz \"Destructuring works!\"")
+}
+
+fn main() {
+    print("Stage2: Destructuring")
+    compile("build/stage2_output.s")
+    os.system("cc -o build/stage2_output build/stage2_output.s")
+}

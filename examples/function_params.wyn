@@ -1,0 +1,18 @@
+fn add(x: int, y: int) -> int {
+    return x + y
+}
+
+fn multiply(a: int, b: int) -> int {
+    return a * b
+}
+
+fn compute(x: int, y: int) -> int {
+    let sum: int = add(x, y)
+    let product: int = multiply(x, y)
+    return add(sum, product)
+}
+
+fn main() {
+    let result: int = compute(3, 4)
+    print(result)
+}

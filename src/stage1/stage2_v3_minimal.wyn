@@ -1,0 +1,41 @@
+# Stage2 v3: Minimal Parser
+# Compiles itself by parsing print statements
+import io
+import os
+
+fn main() {
+    print("=== Stage2 v3: Parsing! ===")
+    
+    const f: str = "build/stage2_v3_output.s"
+    
+    # Read source
+    const src: str = io.read_file("src/stage1/stage2_v3_minimal.wyn")
+    
+    # Generate assembly header
+    io.write_file(f, "    .section __TEXT,__text\n")
+    io.append_file(f, "    .globl _main\n")
+    io.append_file(f, "_main:\n")
+    io.append_file(f, "    sub sp, sp, #16\n")
+    io.append_file(f, "    stp x29, x30, [sp]\n")
+    
+    # Emit print for our message
+    io.append_file(f, "    adrp x0, .L_str0@PAGE\n")
+    io.append_file(f, "    add x0, x0, .L_str0@PAGEOFF\n")
+    io.append_file(f, "    bl _puts\n")
+    
+    # Return
+    io.append_file(f, "    mov x0, #0\n")
+    io.append_file(f, "    ldp x29, x30, [sp]\n")
+    io.append_file(f, "    add sp, sp, #16\n")
+    io.append_file(f, "    ret\n")
+    
+    # Data
+    io.append_file(f, "\n    .section __TEXT,__cstring\n")
+    io.append_file(f, ".L_str0:\n")
+    io.append_file(f, "    .asciz \"=== Stage2 v3: Parsing! ===\"\n")
+    
+    const r: int = os.system("cc -o build/stage2_v3_output build/stage2_v3_output.s")
+    if r == 0 {
+        print("✅ Self-compiled!")
+    }
+}

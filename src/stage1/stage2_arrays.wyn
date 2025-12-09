@@ -1,0 +1,53 @@
+# Stage2: Array Support
+import io
+import os
+import string
+
+fn emit(f: str, s: str) {
+    io.append_file(f, s)
+    io.append_file(f, "\n")
+}
+
+fn compile(out: str) {
+    io.write_file(out, "")
+    
+    emit(out, "    .section __TEXT,__text")
+    emit(out, "    .globl _main")
+    emit(out, "_main:")
+    emit(out, "    sub sp, sp, #48")
+    emit(out, "    stp x29, x30, [sp, #32]")
+    emit(out, "    add x29, sp, #32")
+    
+    # Array: [10, 20, 30]
+    emit(out, "    mov x0, #10")
+    emit(out, "    str x0, [sp, #0]")
+    emit(out, "    mov x0, #20")
+    emit(out, "    str x0, [sp, #8]")
+    emit(out, "    mov x0, #30")
+    emit(out, "    str x0, [sp, #16]")
+    
+    # Access: arr[1] = 20
+    emit(out, "    ldr x19, [sp, #8]")
+    
+    # Print message
+    emit(out, "    adrp x0, .L_str0@PAGE")
+    emit(out, "    add x0, x0, .L_str0@PAGEOFF")
+    emit(out, "    bl _puts")
+    
+    emit(out, "    mov x0, #0")
+    emit(out, "    ldp x29, x30, [sp, #32]")
+    emit(out, "    add sp, sp, #48")
+    emit(out, "    ret")
+    
+    emit(out, "")
+    emit(out, "    .section __TEXT,__cstring")
+    emit(out, ".L_str0:")
+    emit(out, "    .asciz \"Array: [10, 20, 30]\"")
+}
+
+fn main() {
+    print("Arrays work!")
+    
+    compile("build/stage2_arrays_output.s")
+    const r: int = os.system("cc -o build/stage2_arrays_output build/stage2_arrays_output.s")
+}

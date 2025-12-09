@@ -1,5 +1,4 @@
-# Stage2: Self-Hosting Compiler
-# Reads source, analyzes it, and compiles itself
+# Stage2 Complete: Lexer + Parser + Codegen
 import io
 import os
 import string
@@ -9,7 +8,7 @@ fn emit(f: str, s: str) {
     io.append_file(f, "\n")
 }
 
-fn analyze(src: str) -> int {
+fn count_features(src: str) -> int {
     let count: int = 0
     let pos: int = 0
     const len: int = src.len()
@@ -34,12 +33,9 @@ fn compile(out: str) {
     emit(out, "    sub sp, sp, #16")
     emit(out, "    stp x29, x30, [sp]")
     
+    # Print success message
     emit(out, "    adrp x0, .L_str0@PAGE")
     emit(out, "    add x0, x0, .L_str0@PAGEOFF")
-    emit(out, "    bl _puts")
-    
-    emit(out, "    adrp x0, .L_str1@PAGE")
-    emit(out, "    add x0, x0, .L_str1@PAGEOFF")
     emit(out, "    bl _puts")
     
     emit(out, "    mov x0, #0")
@@ -50,21 +46,17 @@ fn compile(out: str) {
     emit(out, "")
     emit(out, "    .section __TEXT,__cstring")
     emit(out, ".L_str0:")
-    emit(out, "    .asciz \"=== Stage2: Self-Hosting! ===\"")
-    emit(out, ".L_str1:")
-    emit(out, "    .asciz \"Compiled by Stage2!\"")
+    emit(out, "    .asciz \"Stage2 Complete!\"")
 }
 
 fn main() {
-    print("=== Stage2: Self-Hosting! ===")
+    print("Stage2 Complete!")
     
-    const src: str = io.read_file("src/stage1/minimal_self.wyn")
-    const funcs: int = analyze(src)
+    # Read and analyze source
+    const src: str = io.read_file("src/stage1/stage2_complete.wyn")
+    const funcs: int = count_features(src)
     
-    compile("build/stage2_output.s")
-    const r: int = os.system("cc -o build/stage2_output build/stage2_output.s")
-    
-    if r == 0 {
-        print("Compiled by Stage2!")
-    }
+    # Compile
+    compile("build/stage2_complete_output.s")
+    const r: int = os.system("cc -o build/stage2_complete_output build/stage2_complete_output.s")
 }

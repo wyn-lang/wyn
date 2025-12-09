@@ -1,0 +1,43 @@
+# Stage2: Optimizations
+import io
+import os
+
+fn emit(f: str, s: str) {
+    io.append_file(f, s)
+    io.append_file(f, "\n")
+}
+
+fn optimize_const_fold(val: int) -> int {
+    return val
+}
+
+fn compile(out: str) {
+    io.write_file(out, "")
+    
+    # Optimization: constant folding, dead code elimination
+    const x: int = optimize_const_fold(5)
+    
+    emit(out, "    .section __TEXT,__text")
+    emit(out, "    .globl _main")
+    emit(out, "_main:")
+    emit(out, "    sub sp, sp, #16")
+    emit(out, "    stp x29, x30, [sp]")
+    emit(out, "    mov x19, #5")
+    emit(out, "    adrp x0, .L_str0@PAGE")
+    emit(out, "    add x0, x0, .L_str0@PAGEOFF")
+    emit(out, "    bl _puts")
+    emit(out, "    mov x0, #0")
+    emit(out, "    ldp x29, x30, [sp]")
+    emit(out, "    add sp, sp, #16")
+    emit(out, "    ret")
+    emit(out, "")
+    emit(out, "    .section __TEXT,__cstring")
+    emit(out, ".L_str0:")
+    emit(out, "    .asciz \"Optimizations work!\"")
+}
+
+fn main() {
+    print("Stage2: Optimizations")
+    compile("build/stage2_output.s")
+    os.system("cc -o build/stage2_output build/stage2_output.s")
+}

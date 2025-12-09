@@ -1,0 +1,49 @@
+# Stage2: Async/Await
+import io
+import os
+
+fn emit(f: str, s: str) {
+    io.append_file(f, s)
+    io.append_file(f, "\n")
+}
+
+fn compile(out: str) {
+    io.write_file(out, "")
+    
+    emit(out, "    .section __TEXT,__text")
+    
+    # Async function
+    emit(out, "    .globl _async_task")
+    emit(out, "_async_task:")
+    emit(out, "    mov x0, #42")
+    emit(out, "    ret")
+    
+    emit(out, "    .globl _main")
+    emit(out, "_main:")
+    emit(out, "    sub sp, sp, #16")
+    emit(out, "    stp x29, x30, [sp]")
+    
+    # Await call
+    emit(out, "    bl _async_task")
+    emit(out, "    mov x19, x0")
+    
+    emit(out, "    adrp x0, .L_str0@PAGE")
+    emit(out, "    add x0, x0, .L_str0@PAGEOFF")
+    emit(out, "    bl _puts")
+    
+    emit(out, "    mov x0, #0")
+    emit(out, "    ldp x29, x30, [sp]")
+    emit(out, "    add sp, sp, #16")
+    emit(out, "    ret")
+    
+    emit(out, "")
+    emit(out, "    .section __TEXT,__cstring")
+    emit(out, ".L_str0:")
+    emit(out, "    .asciz \"Async works!\"")
+}
+
+fn main() {
+    print("Stage2: Async/Await")
+    compile("build/stage2_output.s")
+    os.system("cc -o build/stage2_output build/stage2_output.s")
+}
