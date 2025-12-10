@@ -2588,7 +2588,11 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     strcmp(e->ident, "int_to_str") == 0 || strcmp(e->ident, "str_substr") == 0 ||
                     strcmp(e->ident, "read_file") == 0 || strcmp(e->ident, "write_file") == 0 ||
                     strcmp(e->ident, "append_file") == 0 || strcmp(e->ident, "file_exists") == 0 ||
-                    strcmp(e->ident, "file_size") == 0 || strcmp(e->ident, "read_stdin_line") == 0) {
+                    strcmp(e->ident, "file_size") == 0 || strcmp(e->ident, "read_stdin_line") == 0 ||
+                    strcmp(e->ident, "mkdir") == 0 || strcmp(e->ident, "rmdir") == 0 ||
+                    strcmp(e->ident, "rename_file") == 0 || strcmp(e->ident, "getcwd") == 0 ||
+                    strcmp(e->ident, "getpid") == 0 || strcmp(e->ident, "time_now") == 0 ||
+                    strcmp(e->ident, "sleep_ms") == 0) {
                     return new_type(TYPE_FUNCTION);
                 }
                 tc_error(tc, e->line, e->column, "undefined variable '%s'", e->ident);
@@ -3149,11 +3153,19 @@ static bool tc1_is_builtin(const char* name) {
     if (strcmp(name, "char_at") == 0 || strcmp(name, "int_to_str") == 0) return true;
     if (strcmp(name, "str_substr") == 0) return true;
     
-    // Utility builtins
+    // File/IO builtins
     if (strcmp(name, "len") == 0 || strcmp(name, "syscall") == 0) return true;
     if (strcmp(name, "read_file") == 0 || strcmp(name, "write_file") == 0) return true;
     if (strcmp(name, "append_file") == 0 || strcmp(name, "file_exists") == 0) return true;
     if (strcmp(name, "file_size") == 0 || strcmp(name, "read_stdin_line") == 0) return true;
+    if (strcmp(name, "mkdir") == 0 || strcmp(name, "rmdir") == 0) return true;
+    if (strcmp(name, "rename_file") == 0) return true;
+    
+    // OS builtins
+    if (strcmp(name, "getcwd") == 0 || strcmp(name, "getpid") == 0) return true;
+    
+    // Time builtins
+    if (strcmp(name, "time_now") == 0 || strcmp(name, "sleep_ms") == 0) return true;
     
     return false;
 }

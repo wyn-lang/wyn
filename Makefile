@@ -72,7 +72,7 @@ $(WYNC_BIN): $(WYNC_SRC)
 stage2: wync runtime $(STAGE2_BIN)
 
 $(STAGE2_BIN): $(STAGE2_SRC)
-	./$(WYNC_BIN) $(BACKEND_FLAG) -o $@ $<
+	./$(WYNC_BIN) --stage1-tc $(BACKEND_FLAG) -o $@ $<
 
 # Build runtime libraries
 .PHONY: runtime
