@@ -1344,8 +1344,18 @@ static Expr* parse_primary(Parser* p) {
         return e;
     }
     
-    // Parenthesized expr or tuple
+    // Parenthesized expr or tuple or unit type
     if (parser_match(p, TOK_LPAREN)) {
+        // Check for unit type ()
+        if (parser_check(p, TOK_RPAREN)) {
+            parser_advance(p);
+            // Return empty tuple as unit type
+            Expr* e = new_expr(EXPR_TUPLE, line, col);
+            e->array.elements = NULL;
+            e->array.count = 0;
+            return e;
+        }
+        
         Expr* first = parse_expr(p);
         if (parser_match(p, TOK_COMMA)) {
             // Tuple
@@ -1790,6 +1800,8 @@ static Stmt* parse_stmt(Parser* p) {
         // let = mutable, const = immutable
         if (parser_match(p, TOK_LET)) {
             s->let.is_mut = true;
+            // Check for explicit mut keyword: let mut x
+            parser_match(p, TOK_MUT);  // Optional, consume if present
         } else if (parser_match(p, TOK_CONST)) {
             s->let.is_mut = false;
         }
@@ -2568,13 +2580,17 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                 // Check if it's a function name
                 if (tc_lookup_fn(tc, e->ident)) return new_type(TYPE_FUNCTION);
                 // Check if it's a builtin function
-                if (strcmp(e->ident, "print") == 0 || strcmp(e->ident, "assert") == 0 ||
-                    strcmp(e->ident, "args") == 0 || strcmp(e->ident, "syscall") == 0 ||
+                if (strcmp(e->ident, "print") == 0 || strcmp(e->ident, "print_str") == 0 ||
+                    strcmp(e->ident, "assert") == 0 || strcmp(e->ident, "args") == 0 || 
+                    strcmp(e->ident, "syscall") == 0 || strcmp(e->ident, "len") == 0 ||
                     strcmp(e->ident, "ord") == 0 || strcmp(e->ident, "chr") == 0 ||
                     strcmp(e->ident, "substring") == 0 || strcmp(e->ident, "str_split") == 0 ||
                     strcmp(e->ident, "str_find") == 0 || strcmp(e->ident, "str_concat") == 0 ||
                     strcmp(e->ident, "str_cmp") == 0 || strcmp(e->ident, "char_at") == 0 ||
-                    strcmp(e->ident, "int_to_str") == 0 || strcmp(e->ident, "str_substr") == 0) {
+                    strcmp(e->ident, "int_to_str") == 0 || strcmp(e->ident, "str_substr") == 0 ||
+                    strcmp(e->ident, "read_file") == 0 || strcmp(e->ident, "write_file") == 0 ||
+                    strcmp(e->ident, "append_file") == 0 || strcmp(e->ident, "file_exists") == 0 ||
+                    strcmp(e->ident, "file_size") == 0 || strcmp(e->ident, "read_stdin_line") == 0) {
                     return new_type(TYPE_FUNCTION);
                 }
                 tc_error(tc, e->line, e->column, "undefined variable '%s'", e->ident);
@@ -3126,7 +3142,7 @@ static Symbol* tc1_lookup(TypeChecker1* tc, const char* name) {
 
 static bool tc1_is_builtin(const char* name) {
     // Core builtins
-    if (strcmp(name, "print") == 0 || strcmp(name, "assert") == 0 || strcmp(name, "args") == 0) return true;
+    if (strcmp(name, "print") == 0 || strcmp(name, "print_str") == 0 || strcmp(name, "assert") == 0 || strcmp(name, "args") == 0) return true;
     
     // String builtins
     if (strcmp(name, "ord") == 0 || strcmp(name, "chr") == 0 || strcmp(name, "substring") == 0) return true;
@@ -3134,6 +3150,12 @@ static bool tc1_is_builtin(const char* name) {
     if (strcmp(name, "str_concat") == 0 || strcmp(name, "str_cmp") == 0) return true;
     if (strcmp(name, "char_at") == 0 || strcmp(name, "int_to_str") == 0) return true;
     if (strcmp(name, "str_substr") == 0) return true;
+    
+    // Utility builtins
+    if (strcmp(name, "len") == 0 || strcmp(name, "syscall") == 0) return true;
+    if (strcmp(name, "read_file") == 0 || strcmp(name, "write_file") == 0) return true;
+    if (strcmp(name, "append_file") == 0 || strcmp(name, "file_exists") == 0) return true;
+    if (strcmp(name, "file_size") == 0 || strcmp(name, "read_stdin_line") == 0) return true;
     
     return false;
 }
@@ -11505,11 +11527,10 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
                     int var_idx = llvm_find_var(lg, s->spawn.captured_vars[i]);
                     if (var_idx >= 0) {
                         int addr_t = llvm_new_temp(lg);
-                        int store_t = llvm_new_temp(lg);
-                        llvm_emit(lg, "  %%%d = getelementptr i64, i64* %%var_%d, i32 0", addr_t, var_idx);
-                        llvm_emit(lg, "  %%%d = getelementptr i8, i8* %%%d, i64 %d", store_t, ctx_t, i * 8);
-                        llvm_emit(lg, "  %%%d = bitcast i8* %%%d to i64**", llvm_new_temp(lg), store_t);
-                        llvm_emit(lg, "  store i64* %%%d, i64** %%%d", addr_t, llvm_new_temp(lg) - 1);
+                        int cast_t = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = getelementptr i8, i8* %%%d, i64 %d", addr_t, ctx_t, i * 8);
+                        llvm_emit(lg, "  %%%d = bitcast i8* %%%d to i64**", cast_t, addr_t);
+                        llvm_emit(lg, "  store i64* %%%d, i64** %%%d", var_idx, cast_t);
                     }
                 }
                 
@@ -11634,6 +11655,7 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     
     // External declarations
     llvm_emit(&lg, "declare i32 @printf(i8*, ...)");
+    llvm_emit(&lg, "declare i8* @malloc(i64)");
     
     // Spawn runtime declarations
     llvm_emit(&lg, "declare i64 @__wyn_spawn(i8*, i8*)");
@@ -11662,14 +11684,36 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     // Generate spawn functions
     for (int i = 0; i < lg.spawn_count; i++) {
         Stmt* s = lg.spawn_blocks[i];
-        fprintf(lg.out, "define void @__spawn_%d() {\n", i);
+        int cap_count = s->spawn.captured_count;
+        
+        fprintf(lg.out, "define void @__spawn_%d(i8* %%ctx) {\n", i);
         fprintf(lg.out, "entry:\n");
         
         // Generate spawn body with fresh temp counter but keep string table
         int saved_temp = lg.temp_count;
         int saved_var = lg.var_count;
-        lg.temp_count = 0;
+        lg.temp_count = 1;  // Start from 1 since %ctx is %0
         lg.var_count = 0;  // Spawn blocks have their own scope
+        
+        // Load captured variables from context
+        if (cap_count > 0) {
+            for (int j = 0; j < cap_count; j++) {
+                // Add variable to spawn function scope
+                strcpy(lg.vars[lg.var_count], s->spawn.captured_vars[j]);
+                
+                // Load variable address from context
+                int addr_t = llvm_new_temp(&lg);
+                int cast_t = llvm_new_temp(&lg);
+                int var_t = llvm_new_temp(&lg);
+                lg.var_regs[lg.var_count] = var_t;
+                
+                fprintf(lg.out, "  %%%d = getelementptr i8, i8* %%ctx, i64 %d\n", addr_t, j * 8);
+                fprintf(lg.out, "  %%%d = bitcast i8* %%%d to i64**\n", cast_t, addr_t);
+                fprintf(lg.out, "  %%%d = load i64*, i64** %%%d\n", var_t, cast_t);
+                
+                lg.var_count++;
+            }
+        }
         
         for (int j = 0; j < s->spawn.body_count; j++) {
             llvm_stmt(&lg, s->spawn.body[j]);
