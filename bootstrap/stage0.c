@@ -2587,13 +2587,16 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     strcmp(e->ident, "str_cmp") == 0 || strcmp(e->ident, "char_at") == 0 ||
                     strcmp(e->ident, "int_to_str") == 0 || strcmp(e->ident, "str_substr") == 0 ||
                     strcmp(e->ident, "str_to_int") == 0 || strcmp(e->ident, "abs") == 0 ||
+                    strcmp(e->ident, "sqrtf") == 0 || strcmp(e->ident, "int_to_float") == 0 ||
+                    strcmp(e->ident, "float_to_int") == 0 ||
                     strcmp(e->ident, "read_file") == 0 || strcmp(e->ident, "write_file") == 0 ||
                     strcmp(e->ident, "append_file") == 0 || strcmp(e->ident, "file_exists") == 0 ||
                     strcmp(e->ident, "file_size") == 0 || strcmp(e->ident, "read_stdin_line") == 0 ||
                     strcmp(e->ident, "mkdir") == 0 || strcmp(e->ident, "rmdir") == 0 ||
                     strcmp(e->ident, "rename_file") == 0 || strcmp(e->ident, "getcwd") == 0 ||
                     strcmp(e->ident, "getpid") == 0 || strcmp(e->ident, "time_now") == 0 ||
-                    strcmp(e->ident, "sleep_ms") == 0) {
+                    strcmp(e->ident, "sleep_ms") == 0 || strcmp(e->ident, "sleep") == 0 ||
+                    strcmp(e->ident, "gpu_device_count") == 0) {
                     return new_type(TYPE_FUNCTION);
                 }
                 tc_error(tc, e->line, e->column, "undefined variable '%s'", e->ident);
@@ -3155,7 +3158,8 @@ static bool tc1_is_builtin(const char* name) {
     if (strcmp(name, "str_substr") == 0 || strcmp(name, "str_to_int") == 0) return true;
     
     // Math builtins
-    if (strcmp(name, "abs") == 0) return true;
+    if (strcmp(name, "abs") == 0 || strcmp(name, "sqrtf") == 0) return true;
+    if (strcmp(name, "int_to_float") == 0 || strcmp(name, "float_to_int") == 0) return true;
     
     // File/IO builtins
     if (strcmp(name, "len") == 0 || strcmp(name, "syscall") == 0) return true;
@@ -3169,7 +3173,10 @@ static bool tc1_is_builtin(const char* name) {
     if (strcmp(name, "getcwd") == 0 || strcmp(name, "getpid") == 0) return true;
     
     // Time builtins
-    if (strcmp(name, "time_now") == 0 || strcmp(name, "sleep_ms") == 0) return true;
+    if (strcmp(name, "time_now") == 0 || strcmp(name, "sleep_ms") == 0 || strcmp(name, "sleep") == 0) return true;
+    
+    // GPU builtins
+    if (strcmp(name, "gpu_device_count") == 0) return true;
     
     return false;
 }
