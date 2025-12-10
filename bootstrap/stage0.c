@@ -11017,16 +11017,55 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                 const char* method_name = e->call.func->field.field;
                 
                 if (strcmp(method_name, "len") == 0) {
-                    // Handle arr.len() - get array length
+                    // Handle .len() for strings and arrays
                     int obj_reg;
                     llvm_expr(lg, e->call.func->field.object, &obj_reg);
                     
-                    // Load length from array (first element)
-                    int len_ptr = llvm_new_temp(lg);
-                    llvm_emit(lg, "  %%%d = getelementptr i64, i64* %%%d, i64 0", len_ptr, obj_reg);
+                    // Check if it's a string
+                    Type* obj_type = NULL;
+                    if (e->call.func->field.object->kind == EXPR_IDENT) {
+                        obj_type = llvm_get_var_type(lg, e->call.func->field.object->ident);
+                    } else if (e->call.func->field.object->kind == EXPR_STRING) {
+                        obj_type = new_type(TYPE_STR);
+                    }
                     
+                    if (obj_type && obj_type->kind == TYPE_STR) {
+                        // String: call str_len
+                        int t = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = call i64 @str_len(i8* %%%d)", t, obj_reg);
+                        *result_reg = t;
+                    } else {
+                        // Array: load length from first element
+                        int len_ptr = llvm_new_temp(lg);
+                        int t = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = getelementptr i64, i64* %%%d, i64 0", len_ptr, obj_reg);
+                        llvm_emit(lg, "  %%%d = load i64, i64* %%%d", t, len_ptr);
+                        *result_reg = t;
+                    }
+                } else if (strcmp(method_name, "abs") == 0) {
+                    // Handle num.abs()
+                    int obj_reg;
+                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                    int cmp = llvm_new_temp(lg);
+                    int neg = llvm_new_temp(lg);
                     int t = llvm_new_temp(lg);
-                    llvm_emit(lg, "  %%%d = load i64, i64* %%%d", t, len_ptr);
+                    llvm_emit(lg, "  %%%d = icmp slt i64 %%%d, 0", cmp, obj_reg);
+                    llvm_emit(lg, "  %%%d = sub i64 0, %%%d", neg, obj_reg);
+                    llvm_emit(lg, "  %%%d = select i1 %%%d, i64 %%%d, i64 %%%d", t, cmp, neg, obj_reg);
+                    *result_reg = t;
+                } else if (strcmp(method_name, "to_int") == 0) {
+                    // Handle str.to_int()
+                    int obj_reg;
+                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                    int t = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = call i64 @str_to_int(i8* %%%d)", t, obj_reg);
+                    *result_reg = t;
+                } else if (strcmp(method_name, "to_str") == 0) {
+                    // Handle num.to_str()
+                    int obj_reg;
+                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                    int t = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = call i8* @int_to_str(i64 %%%d)", t, obj_reg);
                     *result_reg = t;
                 } else {
                     // Unknown method - generate zero register
@@ -11919,6 +11958,7 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i8* @char_at(i8*, i64)");
     llvm_emit(&lg, "declare i8* @int_to_str(i64)");
     llvm_emit(&lg, "declare i64 @str_to_int(i8*)");
+    llvm_emit(&lg, "declare i64 @str_len(i8*)");
     llvm_emit(&lg, "declare i64 @clock_wyn()");
     llvm_emit(&lg, "declare i64 @random_wyn()");
     llvm_emit(&lg, "declare void @sleep_ms(i64)");
