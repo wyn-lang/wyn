@@ -624,7 +624,7 @@ typedef enum {
     EXPR_BINARY, EXPR_UNARY, EXPR_CALL, EXPR_INDEX, EXPR_FIELD,
     EXPR_ARRAY, EXPR_MAP, EXPR_TUPLE, EXPR_LAMBDA, EXPR_STRUCT,
     EXPR_IF, EXPR_MATCH, EXPR_SOME, EXPR_NONE, EXPR_OK, EXPR_ERR,
-    EXPR_UNWRAP, EXPR_TRY, EXPR_DEFAULT, EXPR_SLICE, EXPR_ADDR, EXPR_DEREF
+    EXPR_UNWRAP, EXPR_TRY, EXPR_DEFAULT, EXPR_SLICE, EXPR_ADDR, EXPR_DEREF, EXPR_AWAIT
 } ExprKind;
 
 struct Expr {
@@ -650,6 +650,7 @@ struct Expr {
         struct { Expr* value; Expr* default_val; } default_expr;
         struct { Expr* object; Expr* start; Expr* end; Expr* step; } slice;
         struct { char params[8][MAX_IDENT_LEN]; Type* param_types[8]; int param_count; Type* return_type; Stmt** body; int body_count; int id; } lambda;
+        struct { Expr* future; } await_expr;
     };
 };
 
@@ -1689,6 +1690,13 @@ static Expr* parse_postfix(Parser* p) {
 
 static Expr* parse_unary(Parser* p) {
     int line = p->current.line, col = p->current.column;
+    
+    // Await: await expr
+    if (parser_match(p, TOK_AWAIT)) {
+        Expr* e = new_expr(EXPR_AWAIT, line, col);
+        e->await_expr.future = parse_unary(p);
+        return e;
+    }
     
     // Address-of: &expr
     if (parser_match(p, TOK_AMPERSAND)) {
@@ -2756,6 +2764,14 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
             if (e->slice.step) tc_check_expr(tc, e->slice.step);
             // Slice returns same type as object (array or string)
             return obj;
+        }
+        
+        case EXPR_AWAIT: {
+            // Await unwraps a Future<T> to T
+            // For now, just return the inner type (simplified)
+            Type* future_type = tc_check_expr(tc, e->await_expr.future);
+            // TODO: Proper Future type handling
+            return future_type;
         }
         
         case EXPR_FIELD: {
@@ -10879,41 +10895,89 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                 
                 // Build arguments
                 char args[1024] = "";
-                for (int i = 0; i < e->call.arg_count; i++) {
-                    int arg_reg;
-                    llvm_expr(lg, e->call.args[i], &arg_reg);
-                    
-                    char arg_str[128];
-                    // Check if argument should be i8* (string)
-                    bool is_string_arg = (e->call.args[i]->kind == EXPR_STRING ||
-                                         (e->call.args[i]->kind == EXPR_IDENT &&
-                                          llvm_get_var_type(lg, e->call.args[i]->ident) &&
-                                          llvm_get_var_type(lg, e->call.args[i]->ident)->kind == TYPE_STR));
-                    
-                    if (is_string_arg || is_string_builtin || is_int_builtin) {
-                        if (e->call.args[i]->kind == EXPR_STRING || is_string_arg) {
-                            snprintf(arg_str, 128, "i8* %%%d", arg_reg);
+                if (strcmp(func_name, "assert") != 0) {
+                    // Normal argument processing for non-assert functions
+                    for (int i = 0; i < e->call.arg_count; i++) {
+                        int arg_reg;
+                        llvm_expr(lg, e->call.args[i], &arg_reg);
+                        
+                        char arg_str[128];
+                        // Check if argument should be i8* (string)
+                        bool is_string_arg = (e->call.args[i]->kind == EXPR_STRING ||
+                                             (e->call.args[i]->kind == EXPR_IDENT &&
+                                              llvm_get_var_type(lg, e->call.args[i]->ident) &&
+                                              llvm_get_var_type(lg, e->call.args[i]->ident)->kind == TYPE_STR));
+                        
+                        if (is_string_arg || is_string_builtin || is_int_builtin) {
+                            if (e->call.args[i]->kind == EXPR_STRING || is_string_arg) {
+                                snprintf(arg_str, 128, "i8* %%%d", arg_reg);
+                            } else if (arg_reg <= -1000000) {
+                                snprintf(arg_str, 128, "i64 %lld", (long long)(-arg_reg - 1000000));
+                            } else {
+                                snprintf(arg_str, 128, "i64 %%%d", arg_reg);
+                            }
                         } else if (arg_reg <= -1000000) {
                             snprintf(arg_str, 128, "i64 %lld", (long long)(-arg_reg - 1000000));
                         } else {
                             snprintf(arg_str, 128, "i64 %%%d", arg_reg);
                         }
-                    } else if (arg_reg <= -1000000) {
-                        snprintf(arg_str, 128, "i64 %lld", (long long)(-arg_reg - 1000000));
-                    } else {
-                        snprintf(arg_str, 128, "i64 %%%d", arg_reg);
+                        if (i > 0) strcat(args, ", ");
+                        strcat(args, arg_str);
                     }
-                    if (i > 0) strcat(args, ", ");
-                    strcat(args, arg_str);
-                }
-                
-                int t = llvm_new_temp(lg);
-                if (is_string_builtin) {
-                    llvm_emit(lg, "  %%%d = call i8* @%s(%s)", t, func_name, args);
+                    
+                    int t = llvm_new_temp(lg);
+                    if (is_string_builtin) {
+                        llvm_emit(lg, "  %%%d = call i8* @%s(%s)", t, func_name, args);
+                    } else {
+                        llvm_emit(lg, "  %%%d = call i64 @%s(%s)", t, func_name, args);
+                    }
+                    *result_reg = t;
                 } else {
-                    llvm_emit(lg, "  %%%d = call i64 @%s(%s)", t, func_name, args);
+                    // Special handling for assert - convert i1 arguments to i64
+                    char converted_args[1024] = "";
+                    for (int i = 0; i < e->call.arg_count; i++) {
+                        int arg_reg;
+                        llvm_expr(lg, e->call.args[i], &arg_reg);
+                        
+                        char arg_str[128];
+                        if (arg_reg <= -1000000) {
+                            snprintf(arg_str, 128, "i64 %lld", (long long)(-arg_reg - 1000000));
+                        } else {
+                            // Check if this is a comparison result (i1) and convert to i64
+                            int conv_reg = llvm_new_temp(lg);
+                            llvm_emit(lg, "  %%%d = zext i1 %%%d to i64", conv_reg, arg_reg);
+                            snprintf(arg_str, 128, "i64 %%%d", conv_reg);
+                        }
+                        if (i > 0) strcat(converted_args, ", ");
+                        strcat(converted_args, arg_str);
+                    }
+                    
+                    int t = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = call i64 @%s(%s)", t, func_name, converted_args);
+                    *result_reg = t;
                 }
-                *result_reg = t;
+            } else if (e->call.func->kind == EXPR_FIELD) {
+                // Method call: obj.method()
+                const char* method_name = e->call.func->field.field;
+                
+                if (strcmp(method_name, "len") == 0) {
+                    // Handle arr.len() - get array length
+                    int obj_reg;
+                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                    
+                    // Load length from array (first element)
+                    int len_ptr = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = getelementptr i64, i64* %%%d, i64 0", len_ptr, obj_reg);
+                    
+                    int t = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = load i64, i64* %%%d", t, len_ptr);
+                    *result_reg = t;
+                } else {
+                    // Unknown method - generate zero register
+                    int t = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = add i64 0, 0", t);
+                    *result_reg = t;
+                }
             } else {
                 // Unknown function call - generate zero register
                 int t = llvm_new_temp(lg);
@@ -10971,13 +11035,49 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
             llvm_expr(lg, e->index.object, &arr_reg);
             llvm_expr(lg, e->index.index, &idx_reg);
             
+            int final_idx;
+            if (idx_reg <= -1000000) {
+                // Constant index
+                long long idx_val = -idx_reg - 1000000;
+                if (idx_val < 0) {
+                    // Negative constant index: convert to positive
+                    // Load array length
+                    int len_ptr = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = getelementptr i64, i64* %%%d, i64 0", len_ptr, arr_reg);
+                    int len_reg = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = load i64, i64* %%%d", len_reg, len_ptr);
+                    
+                    // Calculate positive index: len + idx
+                    final_idx = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = add i64 %%%d, %lld", final_idx, len_reg, idx_val);
+                } else {
+                    // Positive constant index
+                    final_idx = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = add i64 %lld, 0", final_idx, idx_val);
+                }
+            } else {
+                // Variable index - need runtime check for negative
+                int len_ptr = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = getelementptr i64, i64* %%%d, i64 0", len_ptr, arr_reg);
+                int len_reg = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = load i64, i64* %%%d", len_reg, len_ptr);
+                
+                // Check if index is negative
+                int is_neg = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = icmp slt i64 %%%d, 0", is_neg, idx_reg);
+                
+                // Calculate len + idx for negative case
+                int pos_idx = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = add i64 %%%d, %%%d", pos_idx, len_reg, idx_reg);
+                
+                // Select between original index and positive index
+                final_idx = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = select i1 %%%d, i64 %%%d, i64 %%%d", final_idx, is_neg, pos_idx, idx_reg);
+            }
+            
             // Add 2 to skip length and capacity
             int adj_idx = llvm_new_temp(lg);
-            if (idx_reg <= -1000000) {
-                llvm_emit(lg, "  %%%d = add i64 %lld, 2", adj_idx, (long long)(-idx_reg - 1000000));
-            } else {
-                llvm_emit(lg, "  %%%d = add i64 %%%d, 2", adj_idx, idx_reg);
-            }
+            llvm_emit(lg, "  %%%d = add i64 %%%d, 2", adj_idx, final_idx);
             
             // Get element pointer
             int elem_ptr = llvm_new_temp(lg);
@@ -11080,6 +11180,23 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
             
             // Just return the object for now (no actual slicing)
             *result_reg = obj_reg;
+            break;
+        }
+        
+        case EXPR_AWAIT: {
+            // Await expression: await future
+            // Evaluate the future expression
+            int future_reg;
+            llvm_expr(lg, e->await_expr.future, &future_reg);
+            
+            // Call __wyn_await to wait for result
+            int t = llvm_new_temp(lg);
+            if (future_reg <= -1000000) {
+                llvm_emit(lg, "  %%%d = call i64 @__wyn_await(i64 %lld)", t, (long long)(-future_reg - 1000000));
+            } else {
+                llvm_emit(lg, "  %%%d = call i64 @__wyn_await(i64 %%%d)", t, future_reg);
+            }
+            *result_reg = t;
             break;
         }
         
@@ -11683,8 +11800,10 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare void @__wyn_runtime_init()");
     llvm_emit(&lg, "declare void @__wyn_runtime_shutdown()");
     llvm_emit(&lg, "declare void @__wyn_yield()");
+    llvm_emit(&lg, "declare i64 @__wyn_await(i64)");
     
     // Builtin function declarations for stdlib
+    llvm_emit(&lg, "declare i64 @assert(i64)");
     llvm_emit(&lg, "declare i64 @ord(i8*)");
     llvm_emit(&lg, "declare i8* @chr(i64)");
     llvm_emit(&lg, "declare i8* @substring(i8*, i64, i64)");
@@ -11932,7 +12051,7 @@ int main(int argc, char** argv) {
     
     // Link
     if (!compile_only) {
-        snprintf(cmd, 512, "clang %s runtime/builtins.c runtime/array.c runtime/spawn.c -lpthread -o %s", obj_file, output_file);
+        snprintf(cmd, 512, "clang %s build/builtins_runtime.o build/array_runtime.o build/spawn_runtime.o -lpthread -o %s", obj_file, output_file);
         if (system(cmd) != 0) {
             fprintf(stderr, "Linking failed\n");
             return 1;

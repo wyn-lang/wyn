@@ -1,0 +1,28 @@
+# Test async/await functionality
+
+async fn compute(x: int) -> int {
+    return x * 2
+}
+
+async fn fetch_data() -> int {
+    return 42
+}
+
+fn main() {
+    print("Testing async/await...")
+    
+    # Call async function (returns immediately)
+    let future1: int = compute(21)
+    
+    # Await the result
+    let result1: int = await future1
+    print("Result 1: ")
+    print(result1)
+    
+    # Direct await
+    let result2: int = await fetch_data()
+    print("Result 2: ")
+    print(result2)
+    
+    print("Async/await test complete!")
+}

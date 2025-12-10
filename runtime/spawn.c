@@ -249,9 +249,13 @@ void __wyn_yield() {
     usleep(1);
 }
 
-// Wait for async result (placeholder)
-void __wyn_await(void* future) {
-    // Future implementation for async/await
+// Wait for async result
+// For now, just yield to allow other tasks to run
+long long __wyn_await(long long future_id) {
+    // Simple implementation: yield and return the value
+    // Full implementation would track futures and wait for completion
+    __wyn_yield();
+    return future_id;  // Return the value (simplified)
 }
 
 // Join all tasks (compatibility with existing API)
