@@ -2586,7 +2586,7 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                 // Check if it's a function name
                 if (tc_lookup_fn(tc, e->ident)) return new_type(TYPE_FUNCTION);
                 // Check if it's a builtin function
-                if (strcmp(e->ident, "print") == 0 || strcmp(e->ident, "print_str") == 0 ||
+                if (strcmp(e->ident, "print") == 0 || strcmp(e->ident, "println") == 0 || strcmp(e->ident, "print_str") == 0 ||
                     strcmp(e->ident, "assert") == 0 || strcmp(e->ident, "args") == 0 || 
                     strcmp(e->ident, "syscall") == 0 || strcmp(e->ident, "len") == 0 ||
                     strcmp(e->ident, "ord") == 0 || strcmp(e->ident, "chr") == 0 ||
@@ -3166,7 +3166,7 @@ static Symbol* tc1_lookup(TypeChecker1* tc, const char* name) {
 
 static bool tc1_is_builtin(const char* name) {
     // Core builtins
-    if (strcmp(name, "print") == 0 || strcmp(name, "print_str") == 0 || strcmp(name, "assert") == 0 || strcmp(name, "args") == 0) return true;
+    if (strcmp(name, "print") == 0 || strcmp(name, "println") == 0 || strcmp(name, "print_str") == 0 || strcmp(name, "assert") == 0 || strcmp(name, "args") == 0) return true;
     if (strcmp(name, "min") == 0 || strcmp(name, "max") == 0) return true;
     
     // String builtins
@@ -10883,6 +10883,38 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                 int t = llvm_new_temp(lg);
                 llvm_emit(lg, "  %%%d = add i64 0, 0", t);
                 *result_reg = t;
+                break;
+            }
+            
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "println") == 0) {
+                // println: same as print but add newline
+                for (int i = 0; i < e->call.arg_count; i++) {
+                    int arg_reg;
+                    llvm_expr(lg, e->call.args[i], &arg_reg);
+                    
+                    int t = llvm_new_temp(lg);
+                    if (e->call.args[i]->kind == EXPR_STRING) {
+                        llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* %%%d)", t, arg_reg);
+                    } else if (e->call.args[i]->kind == EXPR_INT) {
+                        llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([4 x i8], [4 x i8]* @.fmt.int, i32 0, i32 0), i64 %lld)", 
+                                 t, e->call.args[i]->int_val);
+                    } else if (e->call.args[i]->kind == EXPR_IDENT) {
+                        Type* var_type = llvm_get_var_type(lg, e->call.args[i]->ident);
+                        if (var_type && var_type->kind == TYPE_STR) {
+                            llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* %%%d)", t, arg_reg);
+                        } else {
+                            llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([4 x i8], [4 x i8]* @.fmt.int, i32 0, i32 0), i64 %%%d)", t, arg_reg);
+                        }
+                    } else {
+                        llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([4 x i8], [4 x i8]* @.fmt.int, i32 0, i32 0), i64 %%%d)", t, arg_reg);
+                    }
+                }
+                // Print newline
+                int nl = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([2 x i8], [2 x i8]* @.fmt.newline, i32 0, i32 0))", nl);
+                int t = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = add i64 0, 0", t);
+                *result_reg = t;
             } else if (e->call.func->kind == EXPR_IDENT) {
                 const char* func_name = e->call.func->ident;
                 
@@ -11841,6 +11873,7 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     // Format strings
     llvm_emit(&lg, "@.fmt.int = private unnamed_addr constant [3 x i8] c\"%%d\\00\", align 1");
     llvm_emit(&lg, "@.fmt.float = private unnamed_addr constant [3 x i8] c\"%%f\\00\", align 1");
+    llvm_emit(&lg, "@.fmt.newline = private unnamed_addr constant [2 x i8] c\"\\0A\\00\", align 1");
     llvm_emit(&lg, "");
     
     // Struct type declarations
