@@ -1,22 +1,24 @@
 
+import string
+
 fn main() {
     print("Testing string methods...\n")
     
     # Test upper/lower
     const s: str = "Hello"
-    const up: str = upper(s)
-    const low: str = lower(s)
+    const up: str = string.upper(s)
+    const low: str = string.lower(s)
     assert(up == "HELLO", "upper works")
     assert(low == "hello", "lower works")
     
     # Test starts_with/ends_with
-    assert(starts_with("hello world", "hello"), "starts_with works")
-    assert(ends_with("hello world", "world"), "ends_with works")
-    assert(not starts_with("hello", "world"), "starts_with false works")
+    assert(string.starts_with("hello world", "hello"), "starts_with works")
+    assert(string.ends_with("hello world", "world"), "ends_with works")
+    assert(not string.starts_with("hello", "world"), "starts_with false works")
     
     # Test contains
-    assert(contains("hello world", "lo wo"), "contains works")
-    assert(not contains("hello", "xyz"), "contains false works")
+    assert(string.contains("hello world", "lo wo"), "contains works")
+    assert(not string.contains("hello", "xyz"), "contains false works")
     
     # Test replace
     const r1: str = replace_first("hello hello", "hello", "hi")
@@ -34,16 +36,16 @@ fn main() {
     assert(rev == "cba", "reverse works")
     
     # Test is_empty
-    assert(is_empty(""), "is_empty works")
-    assert(not is_empty("x"), "is_empty false works")
+    assert(string.is_empty(""), "is_empty works")
+    assert(not string.is_empty("x"), "is_empty false works")
     
     # Test is_alpha
-    assert(is_alpha("abc"), "is_alpha works")
-    assert(not is_alpha("abc123"), "is_alpha false works")
+    assert(string.is_alpha("abc"), "is_alpha works")
+    assert(not string.is_alpha("abc123"), "is_alpha false works")
     
     # Test is_digit
-    assert(is_digit("123"), "is_digit works")
-    assert(not is_digit("12a"), "is_digit false works")
+    assert(string.is_digit("123"), "is_digit works")
+    assert(not string.is_digit("12a"), "is_digit false works")
     
     print("✓ All string method tests passed\n")
 }

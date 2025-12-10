@@ -2909,7 +2909,16 @@ static void tc_check_stmt(TypeChecker* tc, Stmt* s) {
             Type* init_type = s->let.value ? tc_check_expr(tc, s->let.value) : NULL;
             Type* decl_type = s->let.type;
             
-            if (decl_type && init_type && !types_equal(decl_type, init_type) && 
+            // Allow Result[T, E] where T is expected (auto-unwrap)
+            bool types_compatible = types_equal(decl_type, init_type);
+            if (!types_compatible && init_type && init_type->kind == TYPE_RESULT && decl_type) {
+                // Check if Result's inner type matches declared type
+                if (init_type->inner && types_equal(decl_type, init_type->inner)) {
+                    types_compatible = true;
+                }
+            }
+            
+            if (decl_type && init_type && !types_compatible && 
                 init_type->kind != TYPE_ANY && decl_type->kind != TYPE_ANY) {
                 tc_error(tc, s->line, s->column, "type mismatch in let: expected %s, got %s",
                          type_name(decl_type), type_name(init_type));
@@ -2954,7 +2963,12 @@ static void tc_check_stmt(TypeChecker* tc, Stmt* s) {
         
         case STMT_IF: {
             Type* cond = tc_check_expr(tc, s->if_stmt.cond);
-            if (cond->kind != TYPE_BOOL) tc_error(tc, s->line, s->column, "condition must be bool");
+            // Allow Result[bool, E] in conditions (auto-unwrap)
+            bool is_bool = (cond->kind == TYPE_BOOL);
+            if (!is_bool && cond->kind == TYPE_RESULT && cond->inner && cond->inner->kind == TYPE_BOOL) {
+                is_bool = true;
+            }
+            if (!is_bool) tc_error(tc, s->line, s->column, "condition must be bool");
             tc_enter_scope(tc);
             for (int i = 0; i < s->if_stmt.then_count; i++) tc_check_stmt(tc, s->if_stmt.then_block[i]);
             tc_exit_scope(tc);
@@ -2968,7 +2982,12 @@ static void tc_check_stmt(TypeChecker* tc, Stmt* s) {
         
         case STMT_WHILE: {
             Type* cond = tc_check_expr(tc, s->while_stmt.cond);
-            if (cond->kind != TYPE_BOOL) tc_error(tc, s->line, s->column, "condition must be bool");
+            // Allow Result[bool, E] in conditions (auto-unwrap)
+            bool is_bool = (cond->kind == TYPE_BOOL);
+            if (!is_bool && cond->kind == TYPE_RESULT && cond->inner && cond->inner->kind == TYPE_BOOL) {
+                is_bool = true;
+            }
+            if (!is_bool) tc_error(tc, s->line, s->column, "condition must be bool");
             tc_enter_scope(tc);
             for (int i = 0; i < s->while_stmt.body_count; i++) tc_check_stmt(tc, s->while_stmt.body[i]);
             tc_exit_scope(tc);
