@@ -5,7 +5,7 @@
 # - Support for const declarations
 
 fn main() {
-    const start: int = 42
+    let start: int = 42
     while start < 47 {
         print("Stage 1 now parses loop bounds dynamically!")
         print("Initial value: 42 (parsed from source)")
