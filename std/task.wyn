@@ -1,0 +1,30 @@
+# std/task.wyn
+# Task channels for communication between spawn blocks
+
+# Task channel type (opaque pointer to Channel*)
+# Use for sending/receiving values between concurrent tasks
+
+# Create a new task channel
+pub fn new() -> int {
+    return __wyn_channel_new()
+}
+
+# Send value to channel (blocks until received)
+pub fn send(ch: int, value: int) {
+    __wyn_channel_send(ch, value)
+}
+
+# Receive value from channel (blocks until available)
+pub fn recv(ch: int) -> int {
+    return __wyn_channel_recv(ch)
+}
+
+# Close channel
+pub fn close(ch: int) {
+    __wyn_channel_close(ch)
+}
+
+# Free channel resources
+pub fn free(ch: int) {
+    __wyn_channel_free(ch)
+}

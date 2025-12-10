@@ -43,6 +43,8 @@ ARRAY_RUNTIME_SRC = $(RUNTIME_DIR)/array.c
 ARRAY_RUNTIME_OBJ = $(BUILD_DIR)/array_runtime.o
 BUILTINS_RUNTIME_SRC = $(RUNTIME_DIR)/builtins.c
 BUILTINS_RUNTIME_OBJ = $(BUILD_DIR)/builtins_runtime.o
+CHANNELS_RUNTIME_SRC = $(RUNTIME_DIR)/channels.c
+CHANNELS_RUNTIME_OBJ = $(BUILD_DIR)/channels_runtime.o
 
 # Default target - build compiler and runtime
 .PHONY: all
@@ -61,7 +63,7 @@ $(WYNC_BIN): $(WYNC_SRC)
 
 # Build runtime libraries
 .PHONY: runtime
-runtime: $(BUILD_DIR) $(SPAWN_RUNTIME_OBJ) $(ARRAY_RUNTIME_OBJ) $(BUILTINS_RUNTIME_OBJ)
+runtime: $(BUILD_DIR) $(SPAWN_RUNTIME_OBJ) $(ARRAY_RUNTIME_OBJ) $(BUILTINS_RUNTIME_OBJ) $(CHANNELS_RUNTIME_OBJ)
 
 $(SPAWN_RUNTIME_OBJ): $(SPAWN_RUNTIME_SRC)
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -70,6 +72,9 @@ $(ARRAY_RUNTIME_OBJ): $(ARRAY_RUNTIME_SRC)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(BUILTINS_RUNTIME_OBJ): $(BUILTINS_RUNTIME_SRC)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(CHANNELS_RUNTIME_OBJ): $(CHANNELS_RUNTIME_SRC)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 # Debug build of wync

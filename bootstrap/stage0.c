@@ -11802,6 +11802,13 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare void @__wyn_yield()");
     llvm_emit(&lg, "declare i64 @__wyn_await(i64)");
     
+    // Channel/Task declarations
+    llvm_emit(&lg, "declare i8* @__wyn_channel_new()");
+    llvm_emit(&lg, "declare void @__wyn_channel_send(i8*, i64)");
+    llvm_emit(&lg, "declare i64 @__wyn_channel_recv(i8*)");
+    llvm_emit(&lg, "declare void @__wyn_channel_close(i8*)");
+    llvm_emit(&lg, "declare void @__wyn_channel_free(i8*)");
+    
     // Builtin function declarations for stdlib
     llvm_emit(&lg, "declare i64 @assert(i64)");
     llvm_emit(&lg, "declare i64 @ord(i8*)");
@@ -12051,7 +12058,7 @@ int main(int argc, char** argv) {
     
     // Link
     if (!compile_only) {
-        snprintf(cmd, 512, "clang %s build/builtins_runtime.o build/array_runtime.o build/spawn_runtime.o -lpthread -o %s", obj_file, output_file);
+        snprintf(cmd, 512, "clang %s build/builtins_runtime.o build/array_runtime.o build/spawn_runtime.o build/channels_runtime.o -lpthread -o %s", obj_file, output_file);
         if (system(cmd) != 0) {
             fprintf(stderr, "Linking failed\n");
             return 1;
