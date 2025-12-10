@@ -48,9 +48,13 @@ ARRAY_RUNTIME_OBJ = $(BUILD_DIR)/array_runtime.o
 BUILTINS_RUNTIME_SRC = $(RUNTIME_DIR)/builtins.c
 BUILTINS_RUNTIME_OBJ = $(BUILD_DIR)/builtins_runtime.o
 
-# Default target
+# Default target - just build the compiler
 .PHONY: all
-all: wync stage2 runtime
+all: wync runtime
+
+# Build everything including stage2 (currently broken)
+.PHONY: all-full
+all-full: wync stage2 runtime
 
 # Create build directory
 $(BUILD_DIR):
