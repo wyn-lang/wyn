@@ -1,0 +1,18 @@
+# Test spawn-based concurrency
+# Should support millions of concurrent tasks
+
+fn main() {
+    print("=== Spawn Test ===")
+    
+    # Spawn 10 tasks
+    let i: int = 0
+    while i < 10 {
+        spawn {
+            print("Task ")
+            print(i)
+        }
+        i = i + 1
+    }
+    
+    print("=== All tasks spawned ===")
+}

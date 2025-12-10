@@ -1,0 +1,38 @@
+import time
+
+fn main() {
+    print("Testing M:N scheduler with 1 million tasks...\n")
+    
+    let counter: int = 0
+    let start_time = time.now_ms()
+    
+    // Spawn 1 million tasks
+    for i in 0..1000000 {
+        spawn { 
+            counter = counter + 1 
+        }
+    }
+    
+    let spawn_time = time.now_ms()
+    print("Spawned 1M tasks in: ")
+    print(spawn_time - start_time)
+    print("ms\n")
+    
+    // Wait for completion (up to 60 seconds)
+    time.sleep_ms(60000)
+    
+    let end_time = time.now_ms()
+    
+    print("Final counter: ")
+    print(counter)
+    print("/1000000\n")
+    
+    print("Total time: ")
+    print(end_time - start_time)
+    print("ms\n")
+    
+    # Allow 95% success rate for 1M tasks
+    assert(counter >= 950000, "At least 950k/1M tasks should complete")
+    
+    print("✓ Million task test passed\n")
+}

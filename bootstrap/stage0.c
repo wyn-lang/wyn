@@ -10391,6 +10391,11 @@ static void collect_strings_stmt(StringTable* st, Stmt* s) {
                 collect_strings_stmt(st, s->block.stmts[i]);
             }
             break;
+        case STMT_SPAWN:
+            for (int i = 0; i < s->spawn.body_count; i++) {
+                collect_strings_stmt(st, s->spawn.body[i]);
+            }
+            break;
         default:
             break;
     }
@@ -10409,6 +10414,8 @@ typedef struct {
     int var_regs[256];
     Type* var_types[256];  // Track variable types
     int var_count;
+    Stmt* spawn_blocks[256];  // Track spawn blocks to emit later
+    int spawn_count;
 } LLVMGen;
 
 static void llvm_emit(LLVMGen* lg, const char* fmt, ...) {
@@ -11482,6 +11489,17 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
             break;
         }
         
+        case STMT_SPAWN: {
+            // Store spawn block for later emission
+            int spawn_id = lg->spawn_count;
+            lg->spawn_blocks[lg->spawn_count++] = s;
+            
+            // Call __wyn_spawn with function pointer
+            int t = llvm_new_temp(lg);
+            llvm_emit(lg, "  %%%d = call i64 @__wyn_spawn(i8* bitcast (void ()* @__spawn_%d to i8*), i8* null)", t, spawn_id);
+            break;
+        }
+        
         default:
             break;
     }
@@ -11491,6 +11509,11 @@ static void llvm_function(LLVMGen* lg, FnDef* f) {
     // Generate function signature
     if (strcmp(f->name, "main") == 0) {
         llvm_emit(lg, "define i32 @%s() {", f->name);
+        llvm_emit(lg, "entry:");
+        
+        // Initialize runtime for spawn support
+        int t = llvm_new_temp(lg);
+        llvm_emit(lg, "  %%%d = call i64 @__wyn_runtime_init()", t);
     } else {
         // Build parameter list
         char params[1024] = "";
@@ -11501,8 +11524,8 @@ static void llvm_function(LLVMGen* lg, FnDef* f) {
             strcat(params, param);
         }
         llvm_emit(lg, "define i64 @%s(%s) {", f->name, params);
+        llvm_emit(lg, "entry:");
     }
-    llvm_emit(lg, "entry:");
     
     // Allocate and store parameters
     for (int i = 0; i < f->param_count; i++) {
@@ -11518,6 +11541,9 @@ static void llvm_function(LLVMGen* lg, FnDef* f) {
     
     // Add default return statement
     if (strcmp(f->name, "main") == 0) {
+        // Shutdown runtime before returning
+        int t = llvm_new_temp(lg);
+        llvm_emit(lg, "  %%%d = call i64 @__wyn_runtime_shutdown()", t);
         llvm_emit(lg, "  ret i32 0");
     } else {
         // Check if the last statement is a return
@@ -11585,6 +11611,12 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     // External declarations
     llvm_emit(&lg, "declare i32 @printf(i8*, ...)");
     
+    // Spawn runtime declarations
+    llvm_emit(&lg, "declare i64 @__wyn_spawn(i8*, i8*)");
+    llvm_emit(&lg, "declare void @__wyn_runtime_init()");
+    llvm_emit(&lg, "declare void @__wyn_runtime_shutdown()");
+    llvm_emit(&lg, "declare void @__wyn_yield()");
+    
     // Builtin function declarations for stdlib
     llvm_emit(&lg, "declare i64 @ord(i8*)");
     llvm_emit(&lg, "declare i8* @chr(i64)");
@@ -11601,6 +11633,29 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     for (int i = 0; i < m->function_count; i++) {
         llvm_function(&lg, &m->functions[i]);
         llvm_emit(&lg, "");
+    }
+    
+    // Generate spawn functions
+    for (int i = 0; i < lg.spawn_count; i++) {
+        Stmt* s = lg.spawn_blocks[i];
+        fprintf(lg.out, "define void @__spawn_%d() {\n", i);
+        fprintf(lg.out, "entry:\n");
+        
+        // Generate spawn body with fresh temp counter but keep string table
+        int saved_temp = lg.temp_count;
+        int saved_var = lg.var_count;
+        lg.temp_count = 0;
+        lg.var_count = 0;  // Spawn blocks have their own scope
+        
+        for (int j = 0; j < s->spawn.body_count; j++) {
+            llvm_stmt(&lg, s->spawn.body[j]);
+        }
+        
+        lg.temp_count = saved_temp;
+        lg.var_count = saved_var;
+        
+        fprintf(lg.out, "  ret void\n");
+        fprintf(lg.out, "}\n\n");
     }
 }
 
@@ -11788,7 +11843,7 @@ int main(int argc, char** argv) {
     
     // Link
     if (!compile_only) {
-        snprintf(cmd, 512, "clang %s runtime/builtins.c runtime/array.c -o %s", obj_file, output_file);
+        snprintf(cmd, 512, "clang %s runtime/builtins.c runtime/array.c runtime/spawn_stub.c -o %s", obj_file, output_file);
         if (system(cmd) != 0) {
             fprintf(stderr, "Linking failed\n");
             return 1;
