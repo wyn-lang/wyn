@@ -2586,6 +2586,7 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     strcmp(e->ident, "str_find") == 0 || strcmp(e->ident, "str_concat") == 0 ||
                     strcmp(e->ident, "str_cmp") == 0 || strcmp(e->ident, "char_at") == 0 ||
                     strcmp(e->ident, "int_to_str") == 0 || strcmp(e->ident, "str_substr") == 0 ||
+                    strcmp(e->ident, "str_to_int") == 0 || strcmp(e->ident, "abs") == 0 ||
                     strcmp(e->ident, "read_file") == 0 || strcmp(e->ident, "write_file") == 0 ||
                     strcmp(e->ident, "append_file") == 0 || strcmp(e->ident, "file_exists") == 0 ||
                     strcmp(e->ident, "file_size") == 0 || strcmp(e->ident, "read_stdin_line") == 0 ||
@@ -3151,7 +3152,10 @@ static bool tc1_is_builtin(const char* name) {
     if (strcmp(name, "str_split") == 0 || strcmp(name, "str_find") == 0) return true;
     if (strcmp(name, "str_concat") == 0 || strcmp(name, "str_cmp") == 0) return true;
     if (strcmp(name, "char_at") == 0 || strcmp(name, "int_to_str") == 0) return true;
-    if (strcmp(name, "str_substr") == 0) return true;
+    if (strcmp(name, "str_substr") == 0 || strcmp(name, "str_to_int") == 0) return true;
+    
+    // Math builtins
+    if (strcmp(name, "abs") == 0) return true;
     
     // File/IO builtins
     if (strcmp(name, "len") == 0 || strcmp(name, "syscall") == 0) return true;
