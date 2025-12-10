@@ -16,7 +16,7 @@ fn fib_iterative(n: int) -> int {
         const temp: int = a + b
         a = b
         b = temp
-        i += 1
+        i = i + 1
     }
     return b
 }

@@ -20,6 +20,15 @@ int64_t assert(int64_t condition) {
     return 0;
 }
 
+// Assert function with message
+int64_t assert_msg(int64_t condition, const char* message) {
+    if (!condition) {
+        fprintf(stderr, "Assertion failed: %s\n", message);
+        exit(1);
+    }
+    return 0;
+}
+
 // Note: print_str, print_newline, print_int, print_float are generated inline
 // by the compiler's codegen, so we don't define them here.
 
@@ -131,6 +140,14 @@ void sleep_ms(long long ms) {
     usleep(ms * 1000);
 }
 
+long long clock_wyn() {
+    return (long long)clock();
+}
+
+long long random_wyn() {
+    return (long long)rand();
+}
+
 long long clock_ms() {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -202,6 +219,10 @@ char* int_to_str(long long n) {
     return result;
 }
 
+long long str_to_int(const char* s) {
+    return atoll(s);
+}
+
 // OS functions
 char* getenv_wyn(const char* name) {
     char* val = getenv(name);
@@ -228,13 +249,13 @@ long long getpid_wyn() {
     return (long long)getpid();
 }
 
+void exit_wyn(long long code) {
+    exit((int)code);
+}
+
 char* getcwd_wyn() {
     char buf[1024];
     return getcwd(buf, sizeof(buf)) ? strdup(buf) : strdup("");
-}
-
-void exit_wyn(long long code) {
-    exit((int)code);
 }
 
 // Math functions (these are provided by libm, just declare them)

@@ -4,7 +4,7 @@ fn main() {
     
     # Simple spawn test without race conditions
     const x: int = 42
-    assert(x == 42, "basic test")
+    assert(x == 42)
     
     print("✓ Spawn test passed\n")
 }

@@ -8,13 +8,13 @@ fn main() {
         print("Found 3: OK")
     } else {
         print("FAIL: 3 should be in array")
-        exit(1)
+        assert(false)
     }
     
     // Test element not found
     if 10 in arr {
         print("FAIL: 10 should not be in array")
-        exit(1)
+        assert(false)
     } else {
         print("Not found 10: OK")
     }

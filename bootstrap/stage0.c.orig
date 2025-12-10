@@ -2604,7 +2604,6 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     strcmp(e->ident, "rename_file") == 0 || strcmp(e->ident, "getcwd") == 0 ||
                     strcmp(e->ident, "getpid") == 0 || strcmp(e->ident, "time_now") == 0 ||
                     strcmp(e->ident, "sleep_ms") == 0 || strcmp(e->ident, "sleep") == 0 ||
-                    strcmp(e->ident, "clock") == 0 || strcmp(e->ident, "random") == 0 || strcmp(e->ident, "exit") == 0 ||
                     strcmp(e->ident, "gpu_device_count") == 0) {
                     return new_type(TYPE_FUNCTION);
                 }
@@ -3187,11 +3186,10 @@ static bool tc1_is_builtin(const char* name) {
     if (strcmp(name, "rename_file") == 0) return true;
     
     // OS builtins
-    if (strcmp(name, "getcwd") == 0 || strcmp(name, "getpid") == 0 || strcmp(name, "exit") == 0) return true;
+    if (strcmp(name, "getcwd") == 0 || strcmp(name, "getpid") == 0) return true;
     
     // Time builtins
     if (strcmp(name, "time_now") == 0 || strcmp(name, "sleep_ms") == 0 || strcmp(name, "sleep") == 0) return true;
-    if (strcmp(name, "clock") == 0 || strcmp(name, "random") == 0) return true;
     
     // GPU builtins
     if (strcmp(name, "gpu_device_count") == 0) return true;
@@ -10384,7 +10382,6 @@ static void collect_strings_expr(StringTable* st, Expr* e) {
             collect_strings_expr(st, e->unary.operand);
             break;
         case EXPR_CALL:
-            collect_strings_expr(st, e->call.func);
             for (int i = 0; i < e->call.arg_count; i++) {
                 collect_strings_expr(st, e->call.args[i]);
             }
@@ -10894,9 +10891,7 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                 
                 bool is_int_builtin = (strcmp(func_name, "ord") == 0 ||
                                       strcmp(func_name, "str_find") == 0 ||
-                                      strcmp(func_name, "str_cmp") == 0 ||
-                                      strcmp(func_name, "clock") == 0 ||
-                                      strcmp(func_name, "random") == 0);
+                                      strcmp(func_name, "str_cmp") == 0);
                 
                 // Build arguments
                 char args[1024] = "";
@@ -10913,13 +10908,8 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                               llvm_get_var_type(lg, e->call.args[i]->ident) &&
                                               llvm_get_var_type(lg, e->call.args[i]->ident)->kind == TYPE_STR));
                         
-                        // Special case: ord() first arg is always i8*, str_find/str_cmp first two args are i8*
-                        bool force_string_arg = false;
-                        if (strcmp(func_name, "ord") == 0 && i == 0) force_string_arg = true;
-                        if ((strcmp(func_name, "str_find") == 0 || strcmp(func_name, "str_cmp") == 0) && i < 2) force_string_arg = true;
-                        
-                        if (is_string_arg || is_string_builtin || force_string_arg) {
-                            if (e->call.args[i]->kind == EXPR_STRING || is_string_arg || force_string_arg) {
+                        if (is_string_arg || is_string_builtin || is_int_builtin) {
+                            if (e->call.args[i]->kind == EXPR_STRING || is_string_arg) {
                                 snprintf(arg_str, 128, "i8* %%%d", arg_reg);
                             } else if (arg_reg <= -1000000) {
                                 snprintf(arg_str, 128, "i64 %lld", (long long)(-arg_reg - 1000000));
@@ -10936,16 +10926,10 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     }
                     
                     int t = llvm_new_temp(lg);
-                    // Map function names to C runtime names
-                    const char* runtime_name = func_name;
-                    if (strcmp(func_name, "clock") == 0) runtime_name = "clock_wyn";
-                    if (strcmp(func_name, "random") == 0) runtime_name = "random_wyn";
-                    if (strcmp(func_name, "exit") == 0) runtime_name = "exit_wyn";
-                    
                     if (is_string_builtin) {
-                        llvm_emit(lg, "  %%%d = call i8* @%s(%s)", t, runtime_name, args);
+                        llvm_emit(lg, "  %%%d = call i8* @%s(%s)", t, func_name, args);
                     } else {
-                        llvm_emit(lg, "  %%%d = call i64 @%s(%s)", t, runtime_name, args);
+                        llvm_emit(lg, "  %%%d = call i64 @%s(%s)", t, func_name, args);
                     }
                     *result_reg = t;
                 } else {
@@ -11836,11 +11820,6 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i8** @str_split(i8*, i8*)");
     llvm_emit(&lg, "declare i8* @char_at(i8*, i64)");
     llvm_emit(&lg, "declare i8* @int_to_str(i64)");
-    llvm_emit(&lg, "declare i64 @str_to_int(i8*)");
-    llvm_emit(&lg, "declare i64 @clock_wyn()");
-    llvm_emit(&lg, "declare i64 @random_wyn()");
-    llvm_emit(&lg, "declare void @sleep_ms(i64)");
-    llvm_emit(&lg, "declare void @exit_wyn(i64)");
     llvm_emit(&lg, "");
     
     // Generate functions

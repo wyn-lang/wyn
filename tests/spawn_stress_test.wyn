@@ -1,6 +1,4 @@
 
-import time
-
 fn main() {
     print("Testing spawn with 1000 concurrent operations...\n")
     
@@ -10,14 +8,14 @@ fn main() {
         spawn { counter = counter + 1 }
     }
     
-    time.sleep_ms(10000)
+    sleep_ms(10000)
     
     print("Result: ")
     print(counter)
     print("/1000\n")
     
     # Allow 99.5% success rate (995+/1000)
-    assert(counter >= 995, "At least 995/1000 spawns should complete")
+    assert(counter >= 995)
     
     print("✓ Spawn stress test passed\n")
 }

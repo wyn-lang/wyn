@@ -1,6 +1,4 @@
 
-import time
-
 fn main() {
     test_50_spawns()
 }
@@ -59,6 +57,6 @@ fn test_50_spawns() {
     spawn { counter = counter + 1 }
     spawn { counter = counter + 1 }
     
-    time.sleep_ms(500)
+    sleep_ms(500)
     assert(counter == 50)
 }

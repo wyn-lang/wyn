@@ -1,6 +1,4 @@
 
-import time
-
 fn main() {
     test_shared_counter()
 }
@@ -48,6 +46,6 @@ fn test_shared_counter() {
         counter = counter + 1
     }
     
-    time.sleep_ms(200)
+    sleep_ms(200)
     assert(counter == 10)
 }

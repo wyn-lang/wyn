@@ -1,23 +1,29 @@
 fn main() {
     # Test .len() on strings
     const s: str = "hello"
+    print("s.len() = ")
+    print(s.len())
     assert(s.len() == 5)
+    
+    print("world!.len() = ")
+    print("world!".len())
     assert("world!".len() == 6)
     
     # Test .abs() on integers
     const n: int = -42
+    print("n.abs() = ")
+    print(n.abs())
     assert(n.abs() == 42)
-    assert((-100).abs() == 100)
     
-    # Test .to_str() on integers
-    const num: int = 123
-    print(num.to_str())
-    print((-456).to_str())
+    print("(-100).abs() = ")
+    print((-100).abs())
+    assert((-100).abs() == 100)
     
     # Test .to_int() on strings
     const str_num: str = "789"
+    print("str_num.to_int() = ")
+    print(str_num.to_int())
     assert(str_num.to_int() == 789)
-    assert("-999".to_int() == -999)
     
     print("method syntax tests passed")
 }

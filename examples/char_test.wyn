@@ -1,31 +1,29 @@
-import string
-
-# Test string.ord() and string.chr() builtins
+# Test ord() and chr() builtins
 
 fn main() {
-    # Test string.ord() - get ASCII code
-    const code: int = string.ord("A")
+    # Test ord() - get ASCII code
+    const code: int = ord("A")
     print(code)  # Should print 65
     assert(code == 65)
     
-    const code2: int = string.ord("a")
+    const code2: int = ord("a")
     print(code2)  # Should print 97
     assert(code2 == 97)
     
-    const code3: int = string.ord("0")
+    const code3: int = ord("0")
     print(code3)  # Should print 48
     assert(code3 == 48)
     
-    # Test string.chr() - create char from code
-    const ch: str = string.chr(65)
+    # Test chr() - create char from code
+    const ch: str = chr(65)
     print(ch)  # Should print A
     
-    const ch2: str = string.chr(97)
+    const ch2: str = chr(97)
     print(ch2)  # Should print a
     
     # Test round-trip
     const original: str = "X"
-    const roundtrip: str = string.chr(string.ord(original))
+    const roundtrip: str = chr(ord(original))
     print(roundtrip)  # Should print X
     
     print("ord/chr tests passed!")

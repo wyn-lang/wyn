@@ -1,6 +1,4 @@
 
-import time
-
 fn main() {
     test_multiple_operations()
 }
@@ -21,7 +19,7 @@ fn test_multiple_operations() {
     spawn { mul_counter = mul_counter * 2 }
     spawn { mul_counter = mul_counter * 3 }
     
-    time.sleep_ms(200)
+    sleep_ms(200)
     
     assert(add_counter == 30)
     assert(sub_counter == 70)

@@ -14,7 +14,7 @@ fn main() {
     }
     
     // Wait for threads
-    sleep(1)
+    sleep_ms(1000)
     
     // Check that values were appended
     const final_len: int = results.len()
