@@ -11494,9 +11494,33 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
             int spawn_id = lg->spawn_count;
             lg->spawn_blocks[lg->spawn_count++] = s;
             
-            // Call __wyn_spawn with function pointer
-            int t = llvm_new_temp(lg);
-            llvm_emit(lg, "  %%%d = call i64 @__wyn_spawn(i8* bitcast (void ()* @__spawn_%d to i8*), i8* null)", t, spawn_id);
+            int cap_count = s->spawn.captured_count;
+            if (cap_count > 0) {
+                // Allocate context struct
+                int ctx_t = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = call i8* @malloc(i64 %d)", ctx_t, cap_count * 8);
+                
+                // Store captured variable addresses in context
+                for (int i = 0; i < cap_count; i++) {
+                    int var_idx = llvm_find_var(lg, s->spawn.captured_vars[i]);
+                    if (var_idx >= 0) {
+                        int addr_t = llvm_new_temp(lg);
+                        int store_t = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = getelementptr i64, i64* %%var_%d, i32 0", addr_t, var_idx);
+                        llvm_emit(lg, "  %%%d = getelementptr i8, i8* %%%d, i64 %d", store_t, ctx_t, i * 8);
+                        llvm_emit(lg, "  %%%d = bitcast i8* %%%d to i64**", llvm_new_temp(lg), store_t);
+                        llvm_emit(lg, "  store i64* %%%d, i64** %%%d", addr_t, llvm_new_temp(lg) - 1);
+                    }
+                }
+                
+                // Call __wyn_spawn with function and context
+                int t = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = call i64 @__wyn_spawn(i8* bitcast (void (i8*)* @__spawn_%d to i8*), i8* %%%d)", t, spawn_id, ctx_t);
+            } else {
+                // Call __wyn_spawn with function pointer only
+                int t = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = call i64 @__wyn_spawn(i8* bitcast (void (i8*)* @__spawn_%d to i8*), i8* null)", t, spawn_id);
+            }
             break;
         }
         
