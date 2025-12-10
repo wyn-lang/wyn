@@ -77,31 +77,45 @@ $(BUILTINS_RUNTIME_OBJ): $(BUILTINS_RUNTIME_SRC)
 wync-debug: $(BUILD_DIR)
 	$(CC) $(DEBUG_FLAGS) -o $(WYNC_BIN) $(WYNC_SRC)
 
-# Test core examples with stage0
+# Test all examples
 .PHONY: test-examples
 test-examples: wync
-	@echo "Testing core examples..."
-	@for f in examples/loops.wyn examples/functions.wyn examples/recursion.wyn examples/comprehensive.wyn; do \
+	@echo "Testing examples..."
+	@passed=0; failed=0; \
+	for f in examples/*.wyn; do \
 		echo "  Testing $$f..."; \
-		./$(WYNC_BIN) $$f -o /tmp/wyn_test 2>&1 | grep -q "Compiled to:" && /tmp/wyn_test > /dev/null 2>&1 && echo "    ✅ PASS" || echo "    ❌ FAIL"; \
-	done
+		if ./$(WYNC_BIN) $$f -o /tmp/wyn_test 2>&1 | grep -q "Compiled to:" && timeout 2 /tmp/wyn_test > /dev/null 2>&1; then \
+			echo "    ✅ PASS"; \
+			passed=$$((passed + 1)); \
+		else \
+			echo "    ❌ FAIL"; \
+			failed=$$((failed + 1)); \
+		fi; \
+	done; \
+	echo "Examples: $$passed passed, $$failed failed"
 
-# Test spawn functionality
-.PHONY: test-spawn
-test-spawn: wync
-	@echo "Testing spawn blocks..."
-	@./$(WYNC_BIN) temp/spawn_simple.wyn -o /tmp/wyn_spawn 2>&1 | grep -q "Compiled to:" && timeout 2 /tmp/wyn_spawn > /dev/null 2>&1 && echo "  ✅ Spawn working" || echo "  ❌ Spawn failed"
-
-# Test match statements
-.PHONY: test-match
-test-match: wync
-	@echo "Testing match statements..."
-	@./$(WYNC_BIN) tests/match_enum_test.wyn -o /tmp/wyn_match 2>&1 | grep -q "Compiled to:" && /tmp/wyn_match > /dev/null 2>&1 && echo "  ✅ Match working" || echo "  ❌ Match failed"
+# Test all test files
+.PHONY: test-all-tests
+test-all-tests: wync
+	@echo "Testing test files..."
+	@passed=0; failed=0; \
+	for f in tests/*_test.wyn; do \
+		[ -f "$$f" ] || continue; \
+		echo "  Testing $$f..."; \
+		if ./$(WYNC_BIN) $$f -o /tmp/wyn_test 2>&1 | grep -q "Compiled to:" && timeout 5 /tmp/wyn_test > /dev/null 2>&1; then \
+			echo "    ✅ PASS"; \
+			passed=$$((passed + 1)); \
+		else \
+			echo "    ❌ FAIL"; \
+			failed=$$((failed + 1)); \
+		fi; \
+	done; \
+	echo "Tests: $$passed passed, $$failed failed"
 
 # Run all tests
 .PHONY: test
-test: test-examples test-spawn test-match
-	@echo "✅ All tests passed!"
+test: test-examples test-all-tests
+	@echo "✅ Test suite complete!"
 
 # Install to system
 .PHONY: install
