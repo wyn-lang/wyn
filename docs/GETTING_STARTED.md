@@ -1,27 +1,47 @@
 # Getting Started with Wyn
 
-## What is Wyn?
+Welcome to Wyn! This guide will get you up and running in 5 minutes.
 
-Wyn is a **fast, compiled systems language with Python-like syntax**. It compiles to native code and runs at C-level speeds while being easy to write.
+## Installation
 
-### Key Features
-- **Fast:** Compiles to native ARM64/x86 code
-- **Simple:** Python-like syntax, easy to learn
-- **Self-hosting:** Compiler written in Wyn
-- **Modern:** Traits, generics, pattern matching, async/await
+### Prerequisites
+- macOS or Linux
+- LLVM 14+ (for LLVM backend)
+- GCC or Clang
+- Make
 
-## Quick Start (5 minutes)
-
-### 1. Build the Compiler
-
+### Install LLVM (macOS)
 ```bash
-cd wyn-lang
-make stage0
+brew install llvm
 ```
 
-This builds the bootstrap compiler in ~5 seconds.
+### Install LLVM (Linux)
+```bash
+# Ubuntu/Debian
+sudo apt install llvm-14 clang
 
-### 2. Write Your First Program
+# Fedora
+sudo dnf install llvm clang
+```
+
+### Build Wyn
+```bash
+git clone https://github.com/yourusername/wyn-lang.git
+cd wyn-lang
+make
+```
+
+This builds the `wync` compiler in `build/wync`.
+
+### Verify Installation
+```bash
+./build/wync --version
+# Output: wyn 0.2.0
+```
+
+## Your First Program
+
+### Hello World
 
 Create `hello.wyn`:
 ```wyn
@@ -30,87 +50,287 @@ fn main() {
 }
 ```
 
-### 3. Compile and Run
-
+Compile and run:
 ```bash
-./build/stage0 hello.wyn
-./hello
+./build/wync hello.wyn
+./a.out
+# Output: Hello, Wyn!
 ```
 
-That's it! Your program is compiled and running.
+### Variables and Arithmetic
 
-## Basic Syntax
-
-### Variables
+Create `calc.wyn`:
 ```wyn
-let x: int = 5
-const name: str = "Wyn"
-let y = 10  # type inference
+fn main() {
+    let x: int = 42
+    let y: int = 10
+    let sum: int = x + y
+    
+    print("Sum: ")
+    print(sum)
+}
+```
+
+Run it:
+```bash
+./build/wync calc.wyn && ./a.out
+# Output: Sum: 52
 ```
 
 ### Functions
+
+Create `functions.wyn`:
 ```wyn
 fn add(a: int, b: int) -> int {
     return a + b
 }
 
-fn greet(name: str) {
-    print("Hello, ", name)
+fn multiply(a: int, b: int) -> int {
+    return a * b
+}
+
+fn main() {
+    let result: int = add(10, 20)
+    print("10 + 20 = ")
+    print(result)
+    
+    let product: int = multiply(5, 6)
+    print("5 * 6 = ")
+    print(product)
 }
 ```
 
-### Control Flow
+## Core Concepts
+
+### Variables
+
 ```wyn
-# If statements
+// Mutable variable
+let x: int = 10
+x = 20  // OK
+
+// Immutable variable
+const y: int = 10
+y = 20  // Error: cannot assign to const
+```
+
+### Types
+
+```wyn
+let i: int = 42          // Integer
+let f: float = 3.14      // Float
+let s: str = "hello"     // String
+let b: bool = true       // Boolean
+let arr: [int] = [1,2,3] // Array
+```
+
+### Control Flow
+
+```wyn
+// If/else
 if x > 10 {
-    print("Big")
-} else if x > 5 {
-    print("Medium")
+    print("Large")
 } else {
     print("Small")
 }
 
-# While loops
-let i = 0
+// While loop
+let i: int = 0
 while i < 5 {
     print(i)
     i = i + 1
 }
 
-# For loops
+// For loop
 for i in 0..10 {
     print(i)
 }
 ```
 
-### Data Structures
-```wyn
-# Arrays
-let numbers: [int] = [1, 2, 3, 4, 5]
-print(numbers[0])
+### Arrays
 
-# Structs
+```wyn
+let arr: [int] = [10, 20, 30, 40, 50]
+
+// Indexing
+print(arr[0])   // 10
+print(arr[2])   // 30
+print(arr[-1])  // 50 (negative indexing)
+
+// Length
+print(arr.len())  // 5
+
+// Iteration
+for x in arr {
+    print(x)
+}
+```
+
+### Structs
+
+```wyn
 struct Point {
     x: int
     y: int
 }
 
-let p = Point{x: 10, y: 20}
-print(p.x)
-```
-
-### Pattern Matching
-```wyn
-match x {
-    0 => print("Zero")
-    1..10 => print("Small")
-    _ => print("Large")
+fn main() {
+    let p: Point = Point { x: 5, y: 10 }
+    print(p.x)  // 5
+    
+    p.x = 15
+    print(p.x)  // 15
 }
 ```
 
-## Example Programs
+### Enums and Match
 
-### Fibonacci
+```wyn
+enum Status {
+    Success,
+    Error,
+    Pending
+}
+
+fn main() {
+    let status: int = 0  // Success
+    
+    match status {
+        0 => print("Success")
+        1 => print("Error")
+        2 => print("Pending")
+        _ => print("Unknown")
+    }
+}
+```
+
+## Concurrency
+
+### Spawn Blocks
+
+```wyn
+fn main() {
+    print("Main thread")
+    
+    // Spawn concurrent task
+    spawn {
+        print("Task 1")
+    }
+    
+    spawn {
+        print("Task 2")
+    }
+    
+    print("Done spawning")
+}
+```
+
+Output (concurrent):
+```
+Main thread
+Done spawning
+Task 1
+Task 2
+```
+
+### Variable Capture
+
+```wyn
+fn main() {
+    let counter: int = 0
+    
+    // Spawn 1000 tasks that increment counter
+    for i in 0..1000 {
+        spawn {
+            counter = counter + 1  // Captures counter
+        }
+    }
+    
+    print("Spawned 1000 tasks")
+}
+```
+
+### Async/Await
+
+```wyn
+async fn compute(x: int) -> int {
+    return x * 2
+}
+
+fn main() {
+    let result: int = await compute(21)
+    print(result)  // 42
+}
+```
+
+## Modules
+
+### Using Stdlib
+
+```wyn
+import string
+
+fn main() {
+    let s: str = int_to_str(42)
+    print(s)  // "42"
+}
+```
+
+### Available Modules
+
+- `string` - String manipulation
+- `io` - File I/O
+- `os` - OS operations
+- `test` - Testing utilities
+- `task` - Task channels
+- `math` - Mathematical functions
+- `time` - Time operations
+- ...and 22 more!
+
+See `std/` directory for all modules.
+
+## Compilation
+
+### Basic Usage
+
+```bash
+# Compile
+./build/wync program.wyn
+
+# Specify output
+./build/wync -o myapp program.wyn
+
+# Run
+./myapp
+```
+
+### Optimization
+
+```bash
+# No optimization (default)
+./build/wync -O0 program.wyn
+
+# Basic optimization
+./build/wync -O1 program.wyn
+
+# Full optimization
+./build/wync -O2 program.wyn
+```
+
+### Cross-Compilation
+
+```bash
+# Target x86_64 Linux
+./build/wync --target x86_64 --target-os linux program.wyn
+
+# Target ARM64 macOS
+./build/wync --target arm64 --target-os macos program.wyn
+```
+
+## Common Patterns
+
+### Fibonacci (Recursion)
+
 ```wyn
 fn fib(n: int) -> int {
     if n <= 1 {
@@ -120,197 +340,162 @@ fn fib(n: int) -> int {
 }
 
 fn main() {
-    print(fib(10))  # 55
+    print(fib(10))  // 55
 }
 ```
 
-### FizzBuzz
+### Concurrent Counter
+
 ```wyn
 fn main() {
-    for i in 1..101 {
-        if i % 15 == 0 {
-            print("FizzBuzz")
-        } else if i % 3 == 0 {
-            print("Fizz")
-        } else if i % 5 == 0 {
-            print("Buzz")
-        } else {
-            print(i)
+    let counter: int = 0
+    
+    for i in 0..100000 {
+        spawn {
+            counter = counter + 1
         }
     }
+    
+    print("Spawned 100k tasks")
 }
 ```
 
-### File I/O
-```wyn
-import io
-
-fn main() {
-    const data = io.read_file("input.txt")
-    io.write_file("output.txt", data)
-    print("Done!")
-}
-```
-
-## Available Compilers
-
-Wyn has multiple compilers for different use cases:
-
-### wyncc - CLI Compiler
-```bash
-./build/stage0 -o build/wyncc src/stage1/wyncc.wyn
-./build/wyncc your_program.wyn
-```
-
-### stage2_unified - Feature-Rich
-```bash
-./build/stage0 -o build/compiler src/stage1/stage2_unified.wyn
-./build/compiler
-```
-
-## Standard Library
-
-Import modules as needed:
+### Pattern Matching
 
 ```wyn
-import io      # File I/O
-import os      # Operating system
-import string  # String utilities
-import time    # Time and sleep
-import math    # Math functions
-```
-
-Example:
-```wyn
-import io
-import os
-
-fn main() {
-    const data = io.read_file("config.txt")
-    print(data)
-    os.exit(0)
-}
-```
-
-## Advanced Features
-
-### Traits
-```wyn
-trait Display {
-    fn display(self)
+enum Result {
+    Ok,
+    Error
 }
 
-impl Display for Point {
-    fn display(self) {
-        print("Point(", self.x, ", ", self.y, ")")
+fn process(status: int) {
+    match status {
+        0 => print("Success!")
+        1 => print("Failed!")
+        _ => print("Unknown")
     }
 }
 ```
 
-### Generics
-```wyn
-fn swap<T>(a: T, b: T) -> (T, T) {
-    return (b, a)
-}
+## Debugging
 
-let (x, y) = swap(5, 10)
+### Compilation Errors
+
+```bash
+# Verbose output
+./build/wync program.wyn
+
+# Check LLVM IR
+./build/wync --emit-ir program.wyn
+cat /tmp/wyn_*.ll
 ```
 
-### Error Handling
+### Runtime Debugging
+
+```bash
+# The M:N scheduler prints debug info
+./a.out
+# [Runtime] Initializing M:N scheduler...
+# [Runtime] Using 12 worker threads
+# [Runtime] M:N scheduler initialized
+```
+
+## Performance Tips
+
+### Concurrency
+
 ```wyn
-fn divide(a: int, b: int) -> (int, int) {
-    if b == 0 {
-        return (0, 1)  # error
-    }
-    return (a / b, 0)  # ok
+// ✅ Good: Spawn many lightweight tasks
+for i in 0..1000000 {
+    spawn { /* minimal work */ }
 }
 
-let (result, err) = divide(10, 2)
-if err == 0 {
-    print("Result: ", result)
+// ❌ Bad: Heavy work in each task
+for i in 0..1000 {
+    spawn { /* expensive computation */ }
+}
+```
+
+### Arrays
+
+```wyn
+// ✅ Good: Use for loops
+for i in 0..arr.len() {
+    print(arr[i])
+}
+
+// ✅ Good: Direct iteration
+for x in arr {
+    print(x)
 }
 ```
 
 ## Next Steps
 
 ### Learn More
-- Read [Language Reference](language.md)
-- Explore [Standard Library](stdlib.md)
-- Check [Examples](../examples/)
+- [Examples](EXAMPLES.md) - More code examples
+- [Concurrency](CONCURRENCY.md) - Deep dive into spawn/async
+- [M:N Scheduler](MN_SCHEDULER.md) - Runtime architecture
 
-### Build Something
-- Start with simple programs
-- Use the standard library
-- Experiment with features
-
-### Get Help
-- Read the documentation
-- Check example programs
-- Review test files in `tests/`
-
-## Tips
-
-1. **Start Simple:** Begin with basic programs
-2. **Use Examples:** Check `examples/` directory
-3. **Read Tests:** Look at `tests/` for feature usage
-4. **Experiment:** Try different features
-5. **Build Fast:** Compilation is instant
-
-## Common Patterns
-
-### Reading Command-Line Arguments
-```wyn
-fn main() {
-    const args: [str] = args()
-    if len(args) > 1 {
-        print("First arg: ", args[1])
-    }
-}
+### Try Examples
+```bash
+# Run example programs
+./build/wync examples/loops.wyn && ./a.out
+./build/wync examples/spawn_demo.wyn && ./a.out
+./build/wync examples/match_test.wyn && ./a.out
 ```
 
-### Working with Files
-```wyn
-import io
-
-fn main() {
-    const lines = io.read_file("data.txt")
-    io.write_file("output.txt", "Processed")
-}
+### Run Tests
+```bash
+make test
 ```
 
-### Simple HTTP Server (Future)
-```wyn
-import http
-
-fn main() {
-    http.serve(8080, fn(req) {
-        return "Hello, World!"
-    })
-}
+### Explore Stdlib
+```bash
+ls std/
+# array.wyn  io.wyn  math.wyn  os.wyn  string.wyn  task.wyn  time.wyn  ...
 ```
 
-## Why Wyn?
+## Getting Help
 
-- **Fast:** Native compilation, C-level performance
-- **Simple:** Python-like syntax, easy to learn
-- **Modern:** All modern language features
-- **Small:** Minimal runtime, small binaries
-- **Self-hosting:** Compiler written in Wyn
+### Documentation
+- `docs/` - Full documentation
+- `examples/` - Working examples
+- `STATUS.md` - Current status
+
+### Common Issues
+
+**Issue:** `undefined variable 'some_function'`  
+**Solution:** Add `import module_name` at top of file
+
+**Issue:** `LLVM compilation failed`  
+**Solution:** Check for unsupported features (lambdas, generics)
+
+**Issue:** Segmentation fault  
+**Solution:** Report as bug (some edge cases still being fixed)
+
+## Contributing
+
+Wyn is under active development. Core features are stable.
+
+**Areas needing work:**
+- Result type handling
+- Lambdas
+- Generics
+- Advanced stdlib modules
+
+See [STATUS.md](../STATUS.md) for detailed status.
 
 ## Summary
 
-```bash
-# 1. Build compiler
-make stage0
+You now know how to:
+- ✅ Install and build Wyn
+- ✅ Write basic programs
+- ✅ Use variables, functions, arrays
+- ✅ Use spawn for concurrency
+- ✅ Import stdlib modules
+- ✅ Compile and run programs
 
-# 2. Write program
-echo 'fn main() { print("Hello!") }' > hello.wyn
+**Next:** Explore `examples/` directory for more advanced usage!
 
-# 3. Compile
-./build/stage0 hello.wyn
-
-# 4. Run
-./hello
-```
-
-**Welcome to Wyn! Start coding in 5 minutes.** 🚀
+Welcome to Wyn! 🎉
