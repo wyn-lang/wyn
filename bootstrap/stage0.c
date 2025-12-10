@@ -2590,6 +2590,7 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     strcmp(e->ident, "assert") == 0 || strcmp(e->ident, "args") == 0 || 
                     strcmp(e->ident, "syscall") == 0 || strcmp(e->ident, "len") == 0 ||
                     strcmp(e->ident, "ord") == 0 || strcmp(e->ident, "chr") == 0 ||
+                    strcmp(e->ident, "min") == 0 || strcmp(e->ident, "max") == 0 ||
                     strcmp(e->ident, "substring") == 0 || strcmp(e->ident, "str_split") == 0 ||
                     strcmp(e->ident, "str_find") == 0 || strcmp(e->ident, "str_concat") == 0 ||
                     strcmp(e->ident, "str_cmp") == 0 || strcmp(e->ident, "char_at") == 0 ||
@@ -3166,6 +3167,7 @@ static Symbol* tc1_lookup(TypeChecker1* tc, const char* name) {
 static bool tc1_is_builtin(const char* name) {
     // Core builtins
     if (strcmp(name, "print") == 0 || strcmp(name, "print_str") == 0 || strcmp(name, "assert") == 0 || strcmp(name, "args") == 0) return true;
+    if (strcmp(name, "min") == 0 || strcmp(name, "max") == 0) return true;
     
     // String builtins
     if (strcmp(name, "ord") == 0 || strcmp(name, "chr") == 0 || strcmp(name, "substring") == 0) return true;
@@ -10896,7 +10898,10 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                       strcmp(func_name, "str_find") == 0 ||
                                       strcmp(func_name, "str_cmp") == 0 ||
                                       strcmp(func_name, "clock") == 0 ||
-                                      strcmp(func_name, "random") == 0);
+                                      strcmp(func_name, "random") == 0 ||
+                                      strcmp(func_name, "min") == 0 ||
+                                      strcmp(func_name, "max") == 0 ||
+                                      strcmp(func_name, "abs") == 0);
                 
                 // Build arguments
                 char args[1024] = "";
@@ -10941,6 +10946,9 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     if (strcmp(func_name, "clock") == 0) runtime_name = "clock_wyn";
                     if (strcmp(func_name, "random") == 0) runtime_name = "random_wyn";
                     if (strcmp(func_name, "exit") == 0) runtime_name = "exit_wyn";
+                    if (strcmp(func_name, "min") == 0) runtime_name = "min_int";
+                    if (strcmp(func_name, "max") == 0) runtime_name = "max_int";
+                    if (strcmp(func_name, "abs") == 0) runtime_name = "abs_int";
                     
                     if (is_string_builtin) {
                         llvm_emit(lg, "  %%%d = call i8* @%s(%s)", t, runtime_name, args);
@@ -11841,6 +11849,9 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i64 @random_wyn()");
     llvm_emit(&lg, "declare void @sleep_ms(i64)");
     llvm_emit(&lg, "declare void @exit_wyn(i64)");
+    llvm_emit(&lg, "declare i64 @min_int(i64, i64)");
+    llvm_emit(&lg, "declare i64 @max_int(i64, i64)");
+    llvm_emit(&lg, "declare i64 @abs_int(i64)");
     llvm_emit(&lg, "");
     
     // Generate functions
