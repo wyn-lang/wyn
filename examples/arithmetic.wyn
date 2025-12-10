@@ -1,0 +1,9 @@
+fn main() {
+    let x: int = 10
+    let y: int = 5
+    
+    print(x + y)
+    print(x - y)
+    print(x * y)
+    print(x / y)
+}

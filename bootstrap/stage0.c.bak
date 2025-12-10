@@ -2567,14 +2567,10 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                 if (tc_is_enum_variant(tc, e->ident)) return new_type(TYPE_INT);
                 // Check if it's a function name
                 if (tc_lookup_fn(tc, e->ident)) return new_type(TYPE_FUNCTION);
-                // Check if it's a builtin function
+                // Minimal builtins - everything else requires imports
                 if (strcmp(e->ident, "print") == 0 || strcmp(e->ident, "assert") == 0 ||
-                    strcmp(e->ident, "args") == 0 || strcmp(e->ident, "syscall") == 0 ||
-                    strcmp(e->ident, "ord") == 0 || strcmp(e->ident, "chr") == 0 ||
-                    strcmp(e->ident, "substring") == 0 || strcmp(e->ident, "str_split") == 0 ||
-                    strcmp(e->ident, "str_find") == 0 || strcmp(e->ident, "str_concat") == 0 ||
-                    strcmp(e->ident, "str_cmp") == 0 || strcmp(e->ident, "char_at") == 0 ||
-                    strcmp(e->ident, "int_to_str") == 0 || strcmp(e->ident, "str_substr") == 0) {
+                    strcmp(e->ident, "args") == 0 ||
+                    strcmp(e->ident, "syscall") == 0) {
                     return new_type(TYPE_FUNCTION);
                 }
                 tc_error(tc, e->line, e->column, "undefined variable '%s'", e->ident);
@@ -3125,17 +3121,12 @@ static Symbol* tc1_lookup(TypeChecker1* tc, const char* name) {
 }
 
 static bool tc1_is_builtin(const char* name) {
-    // Core builtins
-    if (strcmp(name, "print") == 0 || strcmp(name, "assert") == 0 || strcmp(name, "args") == 0) return true;
-    
-    // String builtins
-    if (strcmp(name, "ord") == 0 || strcmp(name, "chr") == 0 || strcmp(name, "substring") == 0) return true;
-    if (strcmp(name, "str_split") == 0 || strcmp(name, "str_find") == 0) return true;
-    if (strcmp(name, "str_concat") == 0 || strcmp(name, "str_cmp") == 0) return true;
-    if (strcmp(name, "char_at") == 0 || strcmp(name, "int_to_str") == 0) return true;
-    if (strcmp(name, "str_substr") == 0) return true;
-    
-    return false;
+    // Minimal builtins - everything else requires imports
+    return strcmp(name, "print") == 0 || strcmp(name, "assert") == 0 || 
+           strcmp(name, "args") == 0 ||
+           
+           
+           strcmp(name, "substring") == 0;
 }
 
 static Type* tc1_infer_binary(TypeChecker1* tc, Type* left, Type* right, TokenKind op) {
@@ -3729,10 +3720,6 @@ static bool stmt_has_return(Stmt* s) {
         return then_returns && else_returns;
     }
     return false;
-}
-
-static bool block_ends_with_return(Stmt** stmts, int count) {
-    return count > 0 && stmts[count - 1]->kind == STMT_RETURN;
 }
 
 static int eliminate_dead_code(Stmt** stmts, int count) {
@@ -10204,29 +10191,31 @@ static void resolve_imports(Module* m, const char* base_path) {
         Import* imp = &m->imports[i];
         FILE* f = NULL;
         
+        // Skip stdlib modules - they're facades over builtins
+        // Just register the import, don't load the file
+        const char* stdlib_modules[] = {"io", "math", "string", "time", "os", "array", "test", "gui", "mobile", "gpu", "fs", NULL};
+        int is_stdlib = 0;
+        for (int j = 0; stdlib_modules[j] != NULL; j++) {
+            if (strcmp(imp->path, stdlib_modules[j]) == 0) {
+                is_stdlib = 1;
+                break;
+            }
+        }
+        if (is_stdlib) continue;
+        
         // Try relative path first
         if (imp->path[0] == '.' && imp->path[1] == '/') {
             snprintf(full_path, 512, "%s%s.wyn", dir, imp->path + 2);
             f = fopen(full_path, "rb");
         }
         
-        // Try std/ directory for stdlib modules
-        if (!f) {
-            snprintf(full_path, 512, "std/%s.wyn", imp->path);
-            f = fopen(full_path, "rb");
-        }
-        
-        // Try root-level module
+        // Try root-level module (new import system: import io)
         if (!f && dir[0]) {
             char try_path[512];
             strcpy(try_path, dir);
             for (int depth = 0; depth < 5 && !f; depth++) {
                 snprintf(full_path, 512, "%s%s.wyn", try_path, imp->path);
                 f = fopen(full_path, "rb");
-                if (!f) {
-                    snprintf(full_path, 512, "%sstd/%s.wyn", try_path, imp->path);
-                    f = fopen(full_path, "rb");
-                }
                 if (!f) strcat(try_path, "../");
             }
         }
@@ -10407,7 +10396,6 @@ typedef struct {
     int loop_end_label;
     char vars[256][MAX_IDENT_LEN];
     int var_regs[256];
-    Type* var_types[256];  // Track variable types
     int var_count;
 } LLVMGen;
 
@@ -10429,68 +10417,10 @@ static int llvm_find_var(LLVMGen* lg, const char* name) {
     return -1;
 }
 
-static int llvm_find_enum_variant(LLVMGen* lg, const char* name) {
-    for (int i = 0; i < lg->module->enum_count; i++) {
-        for (int j = 0; j < lg->module->enums[i].variant_count; j++) {
-            if (strcmp(lg->module->enums[i].variants[j].name, name) == 0) {
-                // If variant has explicit value, use it; otherwise use index
-                return lg->module->enums[i].variants[j].has_value ? 
-                       lg->module->enums[i].variants[j].value : j;
-            }
-        }
-    }
-    return -1; // Not found
-}
-
-static void llvm_add_var(LLVMGen* lg, const char* name, int reg, Type* type) {
+static void llvm_add_var(LLVMGen* lg, const char* name, int reg) {
     strcpy(lg->vars[lg->var_count], name);
     lg->var_regs[lg->var_count] = reg;
-    lg->var_types[lg->var_count] = type;
     lg->var_count++;
-}
-
-static Type* llvm_get_var_type(LLVMGen* lg, const char* name) {
-    for (int i = lg->var_count - 1; i >= 0; i--) {
-        if (strcmp(lg->vars[i], name) == 0) return lg->var_types[i];
-    }
-    return NULL;
-}
-
-// Helper to detect if expression should use float operations
-static bool llvm_is_float_expr(LLVMGen* lg, Expr* e) {
-    if (!e) return false;
-    switch (e->kind) {
-        case EXPR_FLOAT: return true;
-        case EXPR_INT: return false;
-        case EXPR_IDENT: {
-            // Check if variable is float type using conservative heuristic
-            return strstr(e->ident, "float") != NULL || 
-                   (strlen(e->ident) > 0 && e->ident[strlen(e->ident)-1] == 'f');
-        }
-        case EXPR_BINARY:
-            return llvm_is_float_expr(lg, e->binary.left) || llvm_is_float_expr(lg, e->binary.right);
-        default: return false;
-    }
-}
-
-// Helper function to find struct definition
-static StructDef* llvm_lookup_struct(LLVMGen* lg, const char* name) {
-    for (int i = 0; i < lg->module->struct_count; i++) {
-        if (strcmp(lg->module->structs[i].name, name) == 0) {
-            return &lg->module->structs[i];
-        }
-    }
-    return NULL;
-}
-
-// Helper function to get field offset in struct
-static int llvm_struct_field_offset(StructDef* s, const char* field) {
-    for (int i = 0; i < s->field_count; i++) {
-        if (strcmp(s->fields[i].name, field) == 0) {
-            return i;
-        }
-    }
-    return -1;
 }
 
 static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg);
@@ -10507,10 +10437,10 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
             break;
             
         case EXPR_FLOAT: {
-            // Generate proper double constant
-            int t = llvm_new_temp(lg);
-            llvm_emit(lg, "  %%%d = fadd double 0.0, %f", t, e->float_val);
-            *result_reg = t;
+            // Store float as bitcast to i64
+            union { double d; int64_t i; } u;
+            u.d = e->float_val;
+            *result_reg = -u.i - 3000000;
             break;
         }
             
@@ -10527,45 +10457,11 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
         case EXPR_IDENT: {
             int var_reg = llvm_find_var(lg, e->ident);
             if (var_reg >= 0) {
-                Type* var_type = llvm_get_var_type(lg, e->ident);
-                
-                // Check if this is a struct variable
-                bool is_struct_var = var_type && var_type->kind == TYPE_NAMED;
-                
-                if (is_struct_var) {
-                    // For struct variables, return the pointer directly (no load)
-                    *result_reg = var_reg;
-                } else {
-                    int t = llvm_new_temp(lg);
-                    
-                    if (var_type) {
-                        if (var_type->kind == TYPE_FLOAT) {
-                            llvm_emit(lg, "  %%%d = load double, double* %%%d", t, var_reg);
-                        } else if (var_type->kind == TYPE_ARRAY) {
-                            llvm_emit(lg, "  %%%d = load i64*, i64** %%%d", t, var_reg);
-                        } else if (var_type->kind == TYPE_STR) {
-                            llvm_emit(lg, "  %%%d = load i8*, i8** %%%d", t, var_reg);
-                        } else {
-                            llvm_emit(lg, "  %%%d = load i64, i64* %%%d", t, var_reg);
-                        }
-                    } else {
-                        // Fallback to i64 if type unknown
-                        llvm_emit(lg, "  %%%d = load i64, i64* %%%d", t, var_reg);
-                    }
-                    *result_reg = t;
-                }
+                int t = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = load i64, i64* %%%d", t, var_reg);
+                *result_reg = t;
             } else {
-                // Check if it's an enum variant
-                int enum_value = llvm_find_enum_variant(lg, e->ident);
-                if (enum_value >= 0) {
-                    // Encode enum value as constant
-                    *result_reg = -enum_value - 1000000;
-                } else {
-                    // Variable not found - generate zero register
-                    int t = llvm_new_temp(lg);
-                    llvm_emit(lg, "  %%%d = add i64 0, 0", t);
-                    *result_reg = t;
-                }
+                *result_reg = -1;
             }
             break;
         }
@@ -10575,120 +10471,56 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
             llvm_expr(lg, e->binary.left, &left_reg);
             llvm_expr(lg, e->binary.right, &right_reg);
             
-            // Check if this should be float arithmetic
-            bool is_float_op = llvm_is_float_expr(lg, e->binary.left) || llvm_is_float_expr(lg, e->binary.right);
-            
             // Handle constants
             char left_str[64], right_str[64];
-            if (left_reg <= -1000000) {
-                if (is_float_op) {
-                    // Convert integer constant to float
-                    int conv_reg = llvm_new_temp(lg);
-                    llvm_emit(lg, "  %%%d = sitofp i64 %lld to double", conv_reg, (long long)(-left_reg - 1000000));
-                    snprintf(left_str, 64, "%%%d", conv_reg);
-                } else {
-                    snprintf(left_str, 64, "%lld", (long long)(-left_reg - 1000000));
-                }
+            if (left_reg < -1000000) {
+                snprintf(left_str, 64, "%lld", (long long)(-left_reg - 1000000));
             } else {
                 snprintf(left_str, 64, "%%%d", left_reg);
             }
-            if (right_reg <= -1000000) {
-                if (is_float_op) {
-                    // Convert integer constant to float
-                    int conv_reg = llvm_new_temp(lg);
-                    llvm_emit(lg, "  %%%d = sitofp i64 %lld to double", conv_reg, (long long)(-right_reg - 1000000));
-                    snprintf(right_str, 64, "%%%d", conv_reg);
-                } else {
-                    snprintf(right_str, 64, "%lld", (long long)(-right_reg - 1000000));
-                }
+            if (right_reg < -1000000) {
+                snprintf(right_str, 64, "%lld", (long long)(-right_reg - 1000000));
             } else {
                 snprintf(right_str, 64, "%%%d", right_reg);
             }
             
             int t = llvm_new_temp(lg);
-            if (is_float_op) {
-                // Float arithmetic
-                switch (e->binary.op) {
-                    case TOK_PLUS:
-                        llvm_emit(lg, "  %%%d = fadd double %s, %s", t, left_str, right_str);
-                        break;
-                    case TOK_MINUS:
-                        llvm_emit(lg, "  %%%d = fsub double %s, %s", t, left_str, right_str);
-                        break;
-                    case TOK_STAR:
-                        llvm_emit(lg, "  %%%d = fmul double %s, %s", t, left_str, right_str);
-                        break;
-                    case TOK_SLASH:
-                        llvm_emit(lg, "  %%%d = fdiv double %s, %s", t, left_str, right_str);
-                        break;
-                    case TOK_LT:
-                        llvm_emit(lg, "  %%%d = fcmp olt double %s, %s", t, left_str, right_str);
-                        break;
-                    case TOK_GT:
-                        llvm_emit(lg, "  %%%d = fcmp ogt double %s, %s", t, left_str, right_str);
-                        break;
-                    case TOK_LTEQ:
-                        llvm_emit(lg, "  %%%d = fcmp ole double %s, %s", t, left_str, right_str);
-                        break;
-                    case TOK_GTEQ:
-                        llvm_emit(lg, "  %%%d = fcmp oge double %s, %s", t, left_str, right_str);
-                        break;
-                    case TOK_EQEQ:
-                        llvm_emit(lg, "  %%%d = fcmp oeq double %s, %s", t, left_str, right_str);
-                        break;
-                    case TOK_NOTEQ:
-                        llvm_emit(lg, "  %%%d = fcmp one double %s, %s", t, left_str, right_str);
-                        break;
-                    default:
-                        // Unsupported float operation - generate zero register
-                        t = llvm_new_temp(lg);
-                        llvm_emit(lg, "  %%%d = fadd double 0.0, 0.0", t);
-                        *result_reg = t;
-                        return;
-                }
-            } else {
-                // Integer arithmetic
-                switch (e->binary.op) {
-                    case TOK_PLUS:
-                        llvm_emit(lg, "  %%%d = add i64 %s, %s", t, left_str, right_str);
-                        break;
-                    case TOK_MINUS:
-                        llvm_emit(lg, "  %%%d = sub i64 %s, %s", t, left_str, right_str);
-                        break;
-                    case TOK_STAR:
-                        llvm_emit(lg, "  %%%d = mul i64 %s, %s", t, left_str, right_str);
-                        break;
-                    case TOK_SLASH:
-                        llvm_emit(lg, "  %%%d = sdiv i64 %s, %s", t, left_str, right_str);
-                        break;
-                    case TOK_PERCENT:
-                        llvm_emit(lg, "  %%%d = srem i64 %s, %s", t, left_str, right_str);
-                        break;
-                    case TOK_LT:
-                        llvm_emit(lg, "  %%%d = icmp slt i64 %s, %s", t, left_str, right_str);
-                        break;
-                    case TOK_GT:
-                        llvm_emit(lg, "  %%%d = icmp sgt i64 %s, %s", t, left_str, right_str);
-                        break;
-                    case TOK_LTEQ:
-                        llvm_emit(lg, "  %%%d = icmp sle i64 %s, %s", t, left_str, right_str);
-                        break;
-                    case TOK_GTEQ:
-                        llvm_emit(lg, "  %%%d = icmp sge i64 %s, %s", t, left_str, right_str);
-                        break;
-                    case TOK_EQEQ:
-                        llvm_emit(lg, "  %%%d = icmp eq i64 %s, %s", t, left_str, right_str);
-                        break;
-                    case TOK_NOTEQ:
-                        llvm_emit(lg, "  %%%d = icmp ne i64 %s, %s", t, left_str, right_str);
-                        break;
-                    default:
-                        // Unsupported integer operation - generate zero register
-                        t = llvm_new_temp(lg);
-                        llvm_emit(lg, "  %%%d = add i64 0, 0", t);
-                        *result_reg = t;
-                        return;
-                }
+            switch (e->binary.op) {
+                case TOK_PLUS:
+                    llvm_emit(lg, "  %%%d = add i64 %s, %s", t, left_str, right_str);
+                    break;
+                case TOK_MINUS:
+                    llvm_emit(lg, "  %%%d = sub i64 %s, %s", t, left_str, right_str);
+                    break;
+                case TOK_STAR:
+                    llvm_emit(lg, "  %%%d = mul i64 %s, %s", t, left_str, right_str);
+                    break;
+                case TOK_SLASH:
+                    llvm_emit(lg, "  %%%d = sdiv i64 %s, %s", t, left_str, right_str);
+                    break;
+                case TOK_PERCENT:
+                    llvm_emit(lg, "  %%%d = srem i64 %s, %s", t, left_str, right_str);
+                    break;
+                case TOK_LT:
+                    llvm_emit(lg, "  %%%d = icmp slt i64 %s, %s", t, left_str, right_str);
+                    break;
+                case TOK_GT:
+                    llvm_emit(lg, "  %%%d = icmp sgt i64 %s, %s", t, left_str, right_str);
+                    break;
+                case TOK_LTEQ:
+                    llvm_emit(lg, "  %%%d = icmp sle i64 %s, %s", t, left_str, right_str);
+                    break;
+                case TOK_GTEQ:
+                    llvm_emit(lg, "  %%%d = icmp sge i64 %s, %s", t, left_str, right_str);
+                    break;
+                case TOK_EQEQ:
+                    llvm_emit(lg, "  %%%d = icmp eq i64 %s, %s", t, left_str, right_str);
+                    break;
+                case TOK_NOTEQ:
+                    llvm_emit(lg, "  %%%d = icmp ne i64 %s, %s", t, left_str, right_str);
+                    break;
+                default:
+                    t = -1;
             }
             *result_reg = t;
             break;
@@ -10699,7 +10531,7 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
             llvm_expr(lg, e->unary.operand, &operand_reg);
             
             char operand_str[64];
-            if (operand_reg <= -1000000) {
+            if (operand_reg < -1000000) {
                 snprintf(operand_str, 64, "%lld", (long long)(-operand_reg - 1000000));
             } else {
                 snprintf(operand_str, 64, "%%%d", operand_reg);
@@ -10716,55 +10548,6 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
         }
         
         case EXPR_CALL: {
-            // Check for module.function() calls
-            if (e->call.func->kind == EXPR_FIELD && e->call.func->field.object->kind == EXPR_IDENT) {
-                const char* module = e->call.func->field.object->ident;
-                const char* function = e->call.func->field.field;
-                const char* builtin_name = map_module_function(module, function);
-                
-                if (builtin_name) {
-                    // Map to builtin function call with proper types
-                    char args[1024] = "";
-                    for (int i = 0; i < e->call.arg_count; i++) {
-                        int arg_reg;
-                        llvm_expr(lg, e->call.args[i], &arg_reg);
-                        
-                        char arg_str[128];
-                        // Check if argument is a string (use i8* type)
-                        bool is_string_arg = (e->call.args[i]->kind == EXPR_STRING) ||
-                                            (e->call.args[i]->kind == EXPR_IDENT && 
-                                             (strstr(e->call.args[i]->ident, "str") != NULL ||
-                                              strstr(e->call.args[i]->ident, "s") != NULL));
-                        
-                        if (is_string_arg) {
-                            snprintf(arg_str, 128, "i8* %%%d", arg_reg);
-                        } else if (arg_reg <= -1000000) {
-                            snprintf(arg_str, 128, "i64 %lld", (long long)(-arg_reg - 1000000));
-                        } else {
-                            snprintf(arg_str, 128, "i64 %%%d", arg_reg);
-                        }
-                        if (i > 0) strcat(args, ", ");
-                        strcat(args, arg_str);
-                    }
-                    
-                    // Determine return type based on function
-                    bool returns_string = (strcmp(function, "chr") == 0 || 
-                                          strcmp(function, "substring") == 0 ||
-                                          strcmp(function, "concat") == 0 ||
-                                          strcmp(function, "char_at") == 0 ||
-                                          strcmp(function, "int_to_str") == 0);
-                    
-                    int t = llvm_new_temp(lg);
-                    if (returns_string) {
-                        llvm_emit(lg, "  %%%d = call i8* @%s(%s)", t, builtin_name, args);
-                    } else {
-                        llvm_emit(lg, "  %%%d = call i64 @%s(%s)", t, builtin_name, args);
-                    }
-                    *result_reg = t;
-                    break;
-                }
-            }
-            
             if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "print") == 0) {
                 for (int i = 0; i < e->call.arg_count; i++) {
                     int arg_reg;
@@ -10773,34 +10556,15 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     int t = llvm_new_temp(lg);  // Capture printf return value
                     if (e->call.args[i]->kind == EXPR_STRING) {
                         llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* %%%d)", t, arg_reg);
-                    } else if (e->call.args[i]->kind == EXPR_FLOAT) {
-                        llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.float, i32 0, i32 0), double %f)", 
-                                 t, e->call.args[i]->float_val);
                     } else if (e->call.args[i]->kind == EXPR_INT) {
                         llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.int, i32 0, i32 0), i64 %lld)", 
                                  t, e->call.args[i]->int_val);
-                    } else if (e->call.args[i]->kind == EXPR_IDENT) {
-                        // Check actual type from type tracking
-                        Type* var_type = llvm_get_var_type(lg, e->call.args[i]->ident);
-                        if (var_type && var_type->kind == TYPE_FLOAT) {
-                            llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.float, i32 0, i32 0), double %%%d)", t, arg_reg);
-                        } else if (var_type && var_type->kind == TYPE_STR) {
-                            llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* %%%d)", t, arg_reg);
-                        } else {
-                            llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.int, i32 0, i32 0), i64 %%%d)", t, arg_reg);
-                        }
-                    } else if (llvm_is_float_expr(lg, e->call.args[i])) {
-                        // Float expression
-                        char arg_str[64];
-                        if (arg_reg <= -1000000) {
-                            snprintf(arg_str, 64, "%lld", (long long)(-arg_reg - 1000000));
-                        } else {
-                            snprintf(arg_str, 64, "%%%d", arg_reg);
-                        }
-                        llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.float, i32 0, i32 0), double %s)", t, arg_str);
+                    } else if (e->call.args[i]->kind == EXPR_FLOAT) {
+                        llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.float, i32 0, i32 0), double %f)", 
+                                 t, e->call.args[i]->float_val);
                     } else {
                         char arg_str[64];
-                        if (arg_reg <= -1000000) {
+                        if (arg_reg < -1000000) {
                             snprintf(arg_str, 64, "%lld", (long long)(-arg_reg - 1000000));
                         } else {
                             snprintf(arg_str, 64, "%%%d", arg_reg);
@@ -10808,47 +10572,16 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                         llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.int, i32 0, i32 0), i64 %s)", t, arg_str);
                     }
                 }
-                // Print returns void, generate zero register for consistency
-                int t = llvm_new_temp(lg);
-                llvm_emit(lg, "  %%%d = add i64 0, 0", t);
-                *result_reg = t;
+                *result_reg = -1;
             } else if (e->call.func->kind == EXPR_IDENT) {
-                const char* func_name = e->call.func->ident;
-                
-                // Check if it's a builtin function
-                bool is_string_builtin = (strcmp(func_name, "chr") == 0 ||
-                                         strcmp(func_name, "substring") == 0 ||
-                                         strcmp(func_name, "str_concat") == 0 ||
-                                         strcmp(func_name, "char_at") == 0 ||
-                                         strcmp(func_name, "int_to_str") == 0 ||
-                                         strcmp(func_name, "str_substr") == 0);
-                
-                bool is_int_builtin = (strcmp(func_name, "ord") == 0 ||
-                                      strcmp(func_name, "str_find") == 0 ||
-                                      strcmp(func_name, "str_cmp") == 0);
-                
-                // Build arguments
+                // User-defined function call
                 char args[1024] = "";
                 for (int i = 0; i < e->call.arg_count; i++) {
                     int arg_reg;
                     llvm_expr(lg, e->call.args[i], &arg_reg);
                     
                     char arg_str[128];
-                    // Check if argument should be i8* (string)
-                    bool is_string_arg = (e->call.args[i]->kind == EXPR_STRING ||
-                                         (e->call.args[i]->kind == EXPR_IDENT &&
-                                          llvm_get_var_type(lg, e->call.args[i]->ident) &&
-                                          llvm_get_var_type(lg, e->call.args[i]->ident)->kind == TYPE_STR));
-                    
-                    if (is_string_arg || is_string_builtin || is_int_builtin) {
-                        if (e->call.args[i]->kind == EXPR_STRING || is_string_arg) {
-                            snprintf(arg_str, 128, "i8* %%%d", arg_reg);
-                        } else if (arg_reg <= -1000000) {
-                            snprintf(arg_str, 128, "i64 %lld", (long long)(-arg_reg - 1000000));
-                        } else {
-                            snprintf(arg_str, 128, "i64 %%%d", arg_reg);
-                        }
-                    } else if (arg_reg <= -1000000) {
+                    if (arg_reg < -1000000) {
                         snprintf(arg_str, 128, "i64 %lld", (long long)(-arg_reg - 1000000));
                     } else {
                         snprintf(arg_str, 128, "i64 %%%d", arg_reg);
@@ -10858,17 +10591,10 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                 }
                 
                 int t = llvm_new_temp(lg);
-                if (is_string_builtin) {
-                    llvm_emit(lg, "  %%%d = call i8* @%s(%s)", t, func_name, args);
-                } else {
-                    llvm_emit(lg, "  %%%d = call i64 @%s(%s)", t, func_name, args);
-                }
+                llvm_emit(lg, "  %%%d = call i64 @%s(%s)", t, e->call.func->ident, args);
                 *result_reg = t;
             } else {
-                // Unknown function call - generate zero register
-                int t = llvm_new_temp(lg);
-                llvm_emit(lg, "  %%%d = add i64 0, 0", t);
-                *result_reg = t;
+                *result_reg = -1;
             }
             break;
         }
@@ -10904,7 +10630,7 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                 int elem_ptr = llvm_new_temp(lg);
                 llvm_emit(lg, "  %%%d = getelementptr i64, i64* %%%d, i64 %d", elem_ptr, ptr_reg, i + 2);
                 
-                if (elem_reg <= -1000000) {
+                if (elem_reg < -1000000) {
                     llvm_emit(lg, "  store i64 %lld, i64* %%%d", (long long)(-elem_reg - 1000000), elem_ptr);
                 } else {
                     llvm_emit(lg, "  store i64 %%%d, i64* %%%d", elem_reg, elem_ptr);
@@ -10923,7 +10649,7 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
             
             // Add 2 to skip length and capacity
             int adj_idx = llvm_new_temp(lg);
-            if (idx_reg <= -1000000) {
+            if (idx_reg < -1000000) {
                 llvm_emit(lg, "  %%%d = add i64 %lld, 2", adj_idx, (long long)(-idx_reg - 1000000));
             } else {
                 llvm_emit(lg, "  %%%d = add i64 %%%d, 2", adj_idx, idx_reg);
@@ -10940,107 +10666,6 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
             break;
         }
         
-        case EXPR_STRUCT: {
-            // Struct literal creation: Point { x: 10, y: 20 }
-            StructDef* s = llvm_lookup_struct(lg, e->struct_lit.name);
-            if (!s) {
-                *result_reg = -1;
-                break;
-            }
-            
-            // Allocate struct on stack
-            int struct_reg = llvm_new_temp(lg);
-            llvm_emit(lg, "  %%%d = alloca %%struct.%s", struct_reg, s->name);
-            
-            // Initialize fields
-            for (int i = 0; i < e->struct_lit.count; i++) {
-                int field_offset = llvm_struct_field_offset(s, e->struct_lit.fields[i]);
-                if (field_offset >= 0) {
-                    // Get field value
-                    int val_reg;
-                    llvm_expr(lg, e->struct_lit.values[i], &val_reg);
-                    
-                    // Get field pointer
-                    int field_ptr = llvm_new_temp(lg);
-                    llvm_emit(lg, "  %%%d = getelementptr %%struct.%s, %%struct.%s* %%%d, i32 0, i32 %d", 
-                             field_ptr, s->name, s->name, struct_reg, field_offset);
-                    
-                    // Store value
-                    if (val_reg <= -1000000) {
-                        llvm_emit(lg, "  store i64 %lld, i64* %%%d", (long long)(-val_reg - 1000000), field_ptr);
-                    } else {
-                        llvm_emit(lg, "  store i64 %%%d, i64* %%%d", val_reg, field_ptr);
-                    }
-                }
-            }
-            
-            *result_reg = struct_reg;
-            break;
-        }
-        
-        case EXPR_FIELD: {
-            // Field access: obj.field
-            int obj_reg;
-            llvm_expr(lg, e->field.object, &obj_reg);
-            
-            // Find struct type - for now assume it's from variable name
-            StructDef* s = NULL;
-            if (e->field.object->kind == EXPR_IDENT) {
-                // Look through all structs to find one with this field
-                for (int i = 0; i < lg->module->struct_count; i++) {
-                    for (int j = 0; j < lg->module->structs[i].field_count; j++) {
-                        if (strcmp(lg->module->structs[i].fields[j].name, e->field.field) == 0) {
-                            s = &lg->module->structs[i];
-                            break;
-                        }
-                    }
-                    if (s) break;
-                }
-            }
-            
-            if (s) {
-                int field_offset = llvm_struct_field_offset(s, e->field.field);
-                if (field_offset >= 0) {
-                    // Get field pointer
-                    int field_ptr = llvm_new_temp(lg);
-                    llvm_emit(lg, "  %%%d = getelementptr %%struct.%s, %%struct.%s* %%%d, i32 0, i32 %d", 
-                             field_ptr, s->name, s->name, obj_reg, field_offset);
-                    
-                    // Load field value
-                    int t = llvm_new_temp(lg);
-                    llvm_emit(lg, "  %%%d = load i64, i64* %%%d", t, field_ptr);
-                    *result_reg = t;
-                } else {
-                    *result_reg = -1;
-                }
-            } else {
-                // Unknown struct - generate zero register
-                int t = llvm_new_temp(lg);
-                llvm_emit(lg, "  %%%d = add i64 0, 0", t);
-                *result_reg = t;
-            }
-            break;
-        }
-        
-        case EXPR_SLICE: {
-            // String/array slicing: obj[start:end]
-            // For now, generate a placeholder (full implementation would require runtime support)
-            int obj_reg;
-            llvm_expr(lg, e->slice.object, &obj_reg);
-            
-            // Just return the object for now (no actual slicing)
-            *result_reg = obj_reg;
-            break;
-        }
-        
-        default:
-            // Unhandled expression type - generate zero register
-            {
-                int t = llvm_new_temp(lg);
-                llvm_emit(lg, "  %%%d = add i64 0, 0", t);
-                *result_reg = t;
-            }
-            break;
     }
 }
 
@@ -11048,91 +10673,16 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
     switch (s->kind) {
         case STMT_LET: {
             int alloca_reg = llvm_new_temp(lg);
-            
-            // Check if this is a struct variable
-            bool is_struct_var = false;
-            StructDef* struct_def = NULL;
-            
-            // Check explicit type annotation
-            if (s->let.type && s->let.type->kind == TYPE_NAMED) {
-                struct_def = llvm_lookup_struct(lg, s->let.type->name);
-                is_struct_var = (struct_def != NULL);
-            }
-            
-            // Check inferred type from struct literal
-            if (!is_struct_var && s->let.value && s->let.value->kind == EXPR_STRUCT) {
-                struct_def = llvm_lookup_struct(lg, s->let.value->struct_lit.name);
-                is_struct_var = (struct_def != NULL);
-            }
-            
-            // Check if this is a float variable
-            bool is_float_var = (s->let.type && s->let.type->kind == TYPE_FLOAT) ||
-                               (s->let.value && llvm_is_float_expr(lg, s->let.value));
-            
-            // Check if this is an array variable
-            bool is_array_var = (s->let.type && s->let.type->kind == TYPE_ARRAY) ||
-                               (s->let.value && s->let.value->kind == EXPR_ARRAY);
-            
-            // Check if this is a string variable
-            bool is_string_var = (s->let.type && s->let.type->kind == TYPE_STR) ||
-                                (s->let.value && s->let.value->kind == EXPR_STRING);
-            
-            if (is_struct_var) {
-                llvm_emit(lg, "  %%%d = alloca %%struct.%s", alloca_reg, struct_def->name);
-            } else if (is_float_var) {
-                llvm_emit(lg, "  %%%d = alloca double", alloca_reg);
-            } else if (is_array_var) {
-                llvm_emit(lg, "  %%%d = alloca i64*", alloca_reg);
-            } else if (is_string_var) {
-                llvm_emit(lg, "  %%%d = alloca i8*", alloca_reg);
-            } else {
-                llvm_emit(lg, "  %%%d = alloca i64", alloca_reg);
-            }
-            llvm_add_var(lg, s->let.name, alloca_reg, s->let.type);
+            llvm_emit(lg, "  %%%d = alloca i64", alloca_reg);
+            llvm_add_var(lg, s->let.name, alloca_reg);
             
             if (s->let.value) {
-                if (is_struct_var && s->let.value->kind == EXPR_STRUCT) {
-                    // Handle struct literal assignment - initialize fields directly in the allocated struct
-                    for (int i = 0; i < s->let.value->struct_lit.count; i++) {
-                        int field_offset = llvm_struct_field_offset(struct_def, s->let.value->struct_lit.fields[i]);
-                        if (field_offset >= 0) {
-                            int val_reg;
-                            llvm_expr(lg, s->let.value->struct_lit.values[i], &val_reg);
-                            
-                            int field_ptr = llvm_new_temp(lg);
-                            llvm_emit(lg, "  %%%d = getelementptr %%struct.%s, %%struct.%s* %%%d, i32 0, i32 %d", 
-                                     field_ptr, struct_def->name, struct_def->name, alloca_reg, field_offset);
-                            
-                            if (val_reg <= -1000000) {
-                                llvm_emit(lg, "  store i64 %lld, i64* %%%d", (long long)(-val_reg - 1000000), field_ptr);
-                            } else {
-                                llvm_emit(lg, "  store i64 %%%d, i64* %%%d", val_reg, field_ptr);
-                            }
-                        }
-                    }
-                } else if (!is_struct_var) {
-                    // Regular variable assignment (only for non-struct variables)
-                    int val_reg;
-                    llvm_expr(lg, s->let.value, &val_reg);
-                    if (is_float_var) {
-                        if (val_reg <= -1000000) {
-                            int conv_reg = llvm_new_temp(lg);
-                            llvm_emit(lg, "  %%%d = sitofp i64 %lld to double", conv_reg, (long long)(-val_reg - 1000000));
-                            llvm_emit(lg, "  store double %%%d, double* %%%d", conv_reg, alloca_reg);
-                        } else {
-                            llvm_emit(lg, "  store double %%%d, double* %%%d", val_reg, alloca_reg);
-                        }
-                    } else if (is_array_var) {
-                        llvm_emit(lg, "  store i64* %%%d, i64** %%%d", val_reg, alloca_reg);
-                    } else if (is_string_var) {
-                        llvm_emit(lg, "  store i8* %%%d, i8** %%%d", val_reg, alloca_reg);
-                    } else {
-                        if (val_reg <= -1000000) {
-                            llvm_emit(lg, "  store i64 %lld, i64* %%%d", (long long)(-val_reg - 1000000), alloca_reg);
-                        } else {
-                            llvm_emit(lg, "  store i64 %%%d, i64* %%%d", val_reg, alloca_reg);
-                        }
-                    }
+                int val_reg;
+                llvm_expr(lg, s->let.value, &val_reg);
+                if (val_reg < -1000000) {
+                    llvm_emit(lg, "  store i64 %lld, i64* %%%d", (long long)(-val_reg - 1000000), alloca_reg);
+                } else {
+                    llvm_emit(lg, "  store i64 %%%d, i64* %%%d", val_reg, alloca_reg);
                 }
             }
             break;
@@ -11140,67 +10690,14 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
         
         case STMT_ASSIGN: {
             if (s->assign.target->kind == EXPR_IDENT) {
-                // Regular variable assignment
                 int var_reg = llvm_find_var(lg, s->assign.target->ident);
                 if (var_reg >= 0) {
                     int val_reg;
                     llvm_expr(lg, s->assign.value, &val_reg);
-                    
-                    // Check if this is likely a float variable (same heuristic as EXPR_IDENT)
-                    bool is_float_var = strstr(s->assign.target->ident, "float") != NULL || 
-                                       (strlen(s->assign.target->ident) > 0 && s->assign.target->ident[strlen(s->assign.target->ident)-1] == 'f');
-                    
-                    if (val_reg <= -1000000) {
-                        if (is_float_var) {
-                            // Convert integer constant to float if needed
-                            int conv_reg = llvm_new_temp(lg);
-                            llvm_emit(lg, "  %%%d = sitofp i64 %lld to double", conv_reg, (long long)(-val_reg - 1000000));
-                            llvm_emit(lg, "  store double %%%d, double* %%%d", conv_reg, var_reg);
-                        } else {
-                            llvm_emit(lg, "  store i64 %lld, i64* %%%d", (long long)(-val_reg - 1000000), var_reg);
-                        }
+                    if (val_reg < -1000000) {
+                        llvm_emit(lg, "  store i64 %lld, i64* %%%d", (long long)(-val_reg - 1000000), var_reg);
                     } else {
-                        if (is_float_var) {
-                            llvm_emit(lg, "  store double %%%d, double* %%%d", val_reg, var_reg);
-                        } else {
-                            llvm_emit(lg, "  store i64 %%%d, i64* %%%d", val_reg, var_reg);
-                        }
-                    }
-                }
-            } else if (s->assign.target->kind == EXPR_FIELD) {
-                // Struct field assignment: obj.field = value
-                int obj_reg;
-                llvm_expr(lg, s->assign.target->field.object, &obj_reg);
-                
-                int val_reg;
-                llvm_expr(lg, s->assign.value, &val_reg);
-                
-                // Find struct type
-                StructDef* struct_def = NULL;
-                if (s->assign.target->field.object->kind == EXPR_IDENT) {
-                    for (int i = 0; i < lg->module->struct_count; i++) {
-                        for (int j = 0; j < lg->module->structs[i].field_count; j++) {
-                            if (strcmp(lg->module->structs[i].fields[j].name, s->assign.target->field.field) == 0) {
-                                struct_def = &lg->module->structs[i];
-                                break;
-                            }
-                        }
-                        if (struct_def) break;
-                    }
-                }
-                
-                if (struct_def) {
-                    int field_offset = llvm_struct_field_offset(struct_def, s->assign.target->field.field);
-                    if (field_offset >= 0) {
-                        int field_ptr = llvm_new_temp(lg);
-                        llvm_emit(lg, "  %%%d = getelementptr %%struct.%s, %%struct.%s* %%%d, i32 0, i32 %d", 
-                                 field_ptr, struct_def->name, struct_def->name, obj_reg, field_offset);
-                        
-                        if (val_reg <= -1000000) {
-                            llvm_emit(lg, "  store i64 %lld, i64* %%%d", (long long)(-val_reg - 1000000), field_ptr);
-                        } else {
-                            llvm_emit(lg, "  store i64 %%%d, i64* %%%d", val_reg, field_ptr);
-                        }
+                        llvm_emit(lg, "  store i64 %%%d, i64* %%%d", val_reg, var_reg);
                     }
                 }
             }
@@ -11217,7 +10714,7 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
             if (s->ret.value) {
                 int val_reg;
                 llvm_expr(lg, s->ret.value, &val_reg);
-                if (val_reg <= -1000000) {
+                if (val_reg < -1000000) {
                     llvm_emit(lg, "  ret i64 %lld", (long long)(-val_reg - 1000000));
                 } else {
                     llvm_emit(lg, "  ret i64 %%%d", val_reg);
@@ -11242,20 +10739,14 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
             for (int i = 0; i < s->if_stmt.then_count; i++) {
                 llvm_stmt(lg, s->if_stmt.then_block[i]);
             }
-            bool then_returns = block_ends_with_return(s->if_stmt.then_block, s->if_stmt.then_count);
-            if (!then_returns) {
-                llvm_emit(lg, "  br label %%L%d", end_label);
-            }
+            llvm_emit(lg, "  br label %%L%d", end_label);
             
             if (s->if_stmt.else_count > 0) {
                 llvm_emit(lg, "L%d:", else_label);
                 for (int i = 0; i < s->if_stmt.else_count; i++) {
                     llvm_stmt(lg, s->if_stmt.else_block[i]);
                 }
-                bool else_returns = block_ends_with_return(s->if_stmt.else_block, s->if_stmt.else_count);
-                if (!else_returns) {
-                    llvm_emit(lg, "  br label %%L%d", end_label);
-                }
+                llvm_emit(lg, "  br label %%L%d", end_label);
             }
             
             llvm_emit(lg, "L%d:", end_label);
@@ -11305,7 +10796,7 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
                 // Allocate loop variable
                 int var_reg = llvm_new_temp(lg);
                 llvm_emit(lg, "  %%%d = alloca i64", var_reg);
-                llvm_add_var(lg, s->for_stmt.var, var_reg, new_type(TYPE_INT));
+                llvm_add_var(lg, s->for_stmt.var, var_reg);
                 
                 // Allocate end value
                 int end_reg = llvm_new_temp(lg);
@@ -11314,7 +10805,7 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
                 // Initialize start
                 int start_val;
                 llvm_expr(lg, s->for_stmt.iter->binary.left, &start_val);
-                if (start_val <= -1000000) {
+                if (start_val < -1000000) {
                     llvm_emit(lg, "  store i64 %lld, i64* %%%d", (long long)(-start_val - 1000000), var_reg);
                 } else {
                     llvm_emit(lg, "  store i64 %%%d, i64* %%%d", start_val, var_reg);
@@ -11323,7 +10814,7 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
                 // Initialize end
                 int end_val;
                 llvm_expr(lg, s->for_stmt.iter->binary.right, &end_val);
-                if (end_val <= -1000000) {
+                if (end_val < -1000000) {
                     llvm_emit(lg, "  store i64 %lld, i64* %%%d", (long long)(-end_val - 1000000), end_reg);
                 } else {
                     llvm_emit(lg, "  store i64 %%%d, i64* %%%d", end_val, end_reg);
@@ -11367,8 +10858,8 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
                 
                 // Continue: increment
                 llvm_emit(lg, "L%d:", cont_label);
-                int loaded = llvm_new_temp(lg);
                 int next_val = llvm_new_temp(lg);
+                int loaded = llvm_new_temp(lg);
                 llvm_emit(lg, "  %%%d = load i64, i64* %%%d", loaded, var_reg);
                 llvm_emit(lg, "  %%%d = add i64 %%%d, 1", next_val, loaded);
                 llvm_emit(lg, "  store i64 %%%d, i64* %%%d", next_val, var_reg);
@@ -11402,86 +10893,6 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
             }
             break;
         
-        case STMT_MATCH: {
-            int end_label = llvm_new_label(lg);
-            
-            // Evaluate match value once
-            int match_reg;
-            llvm_expr(lg, s->match_stmt.value, &match_reg);
-            
-            for (int i = 0; i < s->match_stmt.arm_count; i++) {
-                int next_label = llvm_new_label(lg);
-                Expr* pat = s->match_stmt.patterns[i];
-                
-                // Check if pattern is wildcard (_)
-                bool is_wildcard = pat->kind == EXPR_IDENT && strcmp(pat->ident, "_") == 0;
-                
-                if (!is_wildcard) {
-                    // Generate pattern comparison
-                    int pat_reg;
-                    llvm_expr(lg, pat, &pat_reg);
-                    
-                    int cmp_reg = llvm_new_temp(lg);
-                    int arm_label = llvm_new_label(lg);
-                    
-                    if (match_reg <= -1000000 && pat_reg <= -1000000) {
-                        // Both constants - compare directly
-                        long long match_val = -match_reg - 1000000;
-                        long long pat_val = -pat_reg - 1000000;
-                        if (match_val != pat_val) {
-                            llvm_emit(lg, "  br label %%L%d", next_label);
-                            goto next_arm;
-                        } else {
-                            // Pattern matches, go to arm
-                            llvm_emit(lg, "  br label %%L%d", arm_label);
-                        }
-                    } else if (match_reg <= -1000000) {
-                        // Match value is constant
-                        llvm_emit(lg, "  %%%d = icmp eq i64 %%%d, %lld", cmp_reg, pat_reg, (long long)(-match_reg - 1000000));
-                        llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cmp_reg, arm_label, next_label);
-                    } else if (pat_reg <= -1000000) {
-                        // Pattern is constant
-                        llvm_emit(lg, "  %%%d = icmp eq i64 %%%d, %lld", cmp_reg, match_reg, (long long)(-pat_reg - 1000000));
-                        llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cmp_reg, arm_label, next_label);
-                    } else {
-                        // Both are registers
-                        llvm_emit(lg, "  %%%d = icmp eq i64 %%%d, %%%d", cmp_reg, match_reg, pat_reg);
-                        llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cmp_reg, arm_label, next_label);
-                    }
-                    
-                    llvm_emit(lg, "L%d:", arm_label);
-                } else {
-                    // Wildcard matches everything - no comparison needed
-                }
-                
-                // Execute arm body
-                for (int j = 0; j < s->match_stmt.arm_counts[i]; j++) {
-                    llvm_stmt(lg, s->match_stmt.arms[i][j]);
-                }
-                
-                // Jump to end (unless this arm ends with return)
-                bool arm_returns = false;
-                if (s->match_stmt.arm_counts[i] > 0) {
-                    Stmt* last = s->match_stmt.arms[i][s->match_stmt.arm_counts[i] - 1];
-                    arm_returns = (last->kind == STMT_RETURN);
-                }
-                if (!arm_returns) {
-                    llvm_emit(lg, "  br label %%L%d", end_label);
-                }
-                
-                next_arm:
-                // Always emit the next label, even for the last iteration
-                llvm_emit(lg, "L%d:", next_label);
-                // If this is the last arm and no pattern matched, fall through to end
-                if (i == s->match_stmt.arm_count - 1) {
-                    llvm_emit(lg, "  br label %%L%d", end_label);
-                }
-            }
-            
-            llvm_emit(lg, "L%d:", end_label);
-            break;
-        }
-        
         default:
             break;
     }
@@ -11509,26 +10920,17 @@ static void llvm_function(LLVMGen* lg, FnDef* f) {
         int alloca_reg = llvm_new_temp(lg);
         llvm_emit(lg, "  %%%d = alloca i64", alloca_reg);
         llvm_emit(lg, "  store i64 %%param.%s, i64* %%%d", f->params[i].name, alloca_reg);
-        llvm_add_var(lg, f->params[i].name, alloca_reg, f->params[i].type);
+        llvm_add_var(lg, f->params[i].name, alloca_reg);
     }
     
     for (int i = 0; i < f->body_count; i++) {
         llvm_stmt(lg, f->body[i]);
     }
     
-    // Add default return statement
     if (strcmp(f->name, "main") == 0) {
         llvm_emit(lg, "  ret i32 0");
     } else {
-        // Check if the last statement is a return
-        bool has_return = false;
-        if (f->body_count > 0) {
-            Stmt* last = f->body[f->body_count - 1];
-            has_return = (last->kind == STMT_RETURN);
-        }
-        if (!has_return) {
-            llvm_emit(lg, "  ret i64 0");
-        }
+        llvm_emit(lg, "  ret i64 0");
     }
     llvm_emit(lg, "}");
 }
@@ -11569,32 +10971,8 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "@.fmt.float = private unnamed_addr constant [3 x i8] c\"%%f\\00\", align 1");
     llvm_emit(&lg, "");
     
-    // Struct type declarations
-    for (int i = 0; i < m->struct_count; i++) {
-        StructDef* s = &m->structs[i];
-        fprintf(lg.out, "%%struct.%s = type { ", s->name);
-        for (int j = 0; j < s->field_count; j++) {
-            if (j > 0) fprintf(lg.out, ", ");
-            // For now, all fields are i64 (can be extended for other types)
-            fprintf(lg.out, "i64");
-        }
-        fprintf(lg.out, " }\n");
-    }
-    if (m->struct_count > 0) llvm_emit(&lg, "");
-    
     // External declarations
     llvm_emit(&lg, "declare i32 @printf(i8*, ...)");
-    
-    // Builtin function declarations for stdlib
-    llvm_emit(&lg, "declare i64 @ord(i8*)");
-    llvm_emit(&lg, "declare i8* @chr(i64)");
-    llvm_emit(&lg, "declare i8* @substring(i8*, i64, i64)");
-    llvm_emit(&lg, "declare i64 @str_find(i8*, i8*)");
-    llvm_emit(&lg, "declare i8* @str_concat(i8*, i8*)");
-    llvm_emit(&lg, "declare i64 @str_cmp(i8*, i8*)");
-    llvm_emit(&lg, "declare i8** @str_split(i8*, i8*)");
-    llvm_emit(&lg, "declare i8* @char_at(i8*, i64)");
-    llvm_emit(&lg, "declare i8* @int_to_str(i64)");
     llvm_emit(&lg, "");
     
     // Generate functions
@@ -11788,7 +11166,7 @@ int main(int argc, char** argv) {
     
     // Link
     if (!compile_only) {
-        snprintf(cmd, 512, "clang %s runtime/builtins.c runtime/array.c -o %s", obj_file, output_file);
+        snprintf(cmd, 512, "clang %s -o %s", obj_file, output_file);
         if (system(cmd) != 0) {
             fprintf(stderr, "Linking failed\n");
             return 1;
@@ -11797,7 +11175,7 @@ int main(int argc, char** argv) {
     }
     
     // Cleanup
-    // unlink(ir_file);
+    unlink(ir_file);
     if (!compile_only) unlink(obj_file);
     
     parser_free(parser);

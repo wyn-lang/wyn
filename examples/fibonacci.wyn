@@ -24,11 +24,11 @@ fn fib_iterative(n: int) -> int {
 fn main() {
     print("Recursive:")
     for i in 0..=10 {
-        println(fib_recursive(i))
+        print(fib_recursive(i))
     }
     
     print("Iterative:")
     for i in 0..=20 {
-        println(fib_iterative(i))
+        print(fib_iterative(i))
     }
 }

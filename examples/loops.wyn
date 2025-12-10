@@ -1,0 +1,13 @@
+fn main() {
+    print("For loop:")
+    for i in 0..5 {
+        print(i)
+    }
+    
+    print("While loop:")
+    let j: int = 0
+    while j < 3 {
+        print(j)
+        j = j + 1
+    }
+}

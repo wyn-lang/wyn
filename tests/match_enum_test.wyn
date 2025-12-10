@@ -1,0 +1,65 @@
+enum Color {
+    Red,
+    Green,
+    Blue
+}
+
+enum Status {
+    Success = 0,
+    Error = 1,
+    Pending = 2
+}
+
+fn test_basic_match() -> int {
+    let color: int = 0  // Red
+    
+    match color {
+        0 => return 1  // Red
+        1 => return 2  // Green
+        2 => return 3  // Blue
+    }
+    
+    return 0
+}
+
+fn test_enum_with_values() -> int {
+    let status: int = 0  // Success
+    
+    match status {
+        0 => return 10  // Success
+        1 => return 20  // Error
+        2 => return 30  // Pending
+    }
+    
+    return 0
+}
+
+fn test_wildcard_match() -> int {
+    let color: int = 1  // Green
+    
+    match color {
+        0 => return 100  // Red
+        _ => return 200  // Not red
+    }
+}
+
+fn test_match_expression() -> int {
+    let color: int = 2  // Blue
+    
+    let result: int = match color {
+        0 => 1000
+        1 => 2000
+        2 => 3000
+    }
+    
+    return result
+}
+
+fn main() {
+    let result1: int = test_basic_match()
+    let result2: int = test_enum_with_values()
+    let result3: int = test_wildcard_match()
+    let result4: int = test_match_expression()
+    
+    // Results should be: 1, 10, 200, 3000
+}

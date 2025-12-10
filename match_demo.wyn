@@ -1,0 +1,26 @@
+enum Color {
+    Red,
+    Green, 
+    Blue
+}
+
+fn main() {
+    let color: int = 1  // Green
+    let result: int = 0
+    
+    match color {
+        0 => result = 100  // Red
+        1 => result = 200  // Green
+        2 => result = 300  // Blue
+    }
+    
+    // Test wildcard pattern
+    let unknown: int = 5
+    let fallback: int = 0
+    
+    match unknown {
+        0 => fallback = 10
+        1 => fallback = 20
+        _ => fallback = 999  // Wildcard catches everything else
+    }
+}
