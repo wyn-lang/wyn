@@ -26,7 +26,7 @@ pub fn get(c: Counter) -> int {
 # Thread-safe result collector
 # Workaround: Use multiple variables instead of array append
 # Example:
-#   let mut r0, r1, r2, r3, r4: int = 0, 0, 0, 0, 0
+#   let r0, r1, r2, r3, r4: int = 0, 0, 0, 0, 0
 #   spawn { r0 = compute(0) }
 #   spawn { r1 = compute(1) }
 #   ...

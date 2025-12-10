@@ -1800,8 +1800,6 @@ static Stmt* parse_stmt(Parser* p) {
         // let = mutable, const = immutable
         if (parser_match(p, TOK_LET)) {
             s->let.is_mut = true;
-            // Check for explicit mut keyword: let mut x
-            parser_match(p, TOK_MUT);  // Optional, consume if present
         } else if (parser_match(p, TOK_CONST)) {
             s->let.is_mut = false;
         }

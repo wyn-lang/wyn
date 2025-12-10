@@ -983,8 +983,8 @@ fn read_lines(path: str) -> Result[[str], str] {
 # Write lines to file with newline separators
 # Requires: Runtime support for file I/O syscalls
 fn write_lines(path: str, lines: [str]) -> Result[(), str] {
-    let mut content = ""
-    let mut i = 0
+    let content = ""
+    let i = 0
     while i < len(lines) {
         content = str_concat(content, lines[i])
         content = str_concat(content, "\n")

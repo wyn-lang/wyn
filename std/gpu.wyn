@@ -16,8 +16,8 @@ struct Device {
 # List all available GPU devices
 fn list_devices() -> [Device] {
     let count = gpu_device_count()
-    let mut devices = []
-    let mut i = 0
+    let devices = []
+    let i = 0
     while i < count {
         let name = gpu_device_name(i)
         devices.push(Device {
