@@ -9,6 +9,16 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <stdint.h>
+
+// Assert function
+int64_t assert(int64_t condition) {
+    if (!condition) {
+        fprintf(stderr, "Assertion failed\n");
+        exit(1);
+    }
+    return 0;
+}
 
 // Note: print_str, print_newline, print_int, print_float are generated inline
 // by the compiler's codegen, so we don't define them here.
