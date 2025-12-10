@@ -11334,27 +11334,68 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
                 // Regular variable assignment
                 int var_reg = llvm_find_var(lg, s->assign.target->ident);
                 if (var_reg >= 0) {
-                    int val_reg;
-                    llvm_expr(lg, s->assign.value, &val_reg);
-                    
-                    // Check if this is likely a float variable (same heuristic as EXPR_IDENT)
+                    // Check if this is likely a float variable
                     bool is_float_var = strstr(s->assign.target->ident, "float") != NULL || 
                                        (strlen(s->assign.target->ident) > 0 && s->assign.target->ident[strlen(s->assign.target->ident)-1] == 'f');
                     
-                    if (val_reg <= -1000000) {
-                        if (is_float_var) {
-                            // Convert integer constant to float if needed
-                            int conv_reg = llvm_new_temp(lg);
-                            llvm_emit(lg, "  %%%d = sitofp i64 %lld to double", conv_reg, (long long)(-val_reg - 1000000));
-                            llvm_emit(lg, "  store double %%%d, double* %%%d", conv_reg, var_reg);
+                    // Handle compound assignments (+=, -=, etc.)
+                    if (s->assign.op != TOK_EQ) {
+                        // Load current value
+                        int curr_reg = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = load i64, i64* %%%d", curr_reg, var_reg);
+                        
+                        // Evaluate RHS
+                        int val_reg;
+                        llvm_expr(lg, s->assign.value, &val_reg);
+                        
+                        // Perform operation
+                        int result_reg = llvm_new_temp(lg);
+                        if (val_reg <= -1000000) {
+                            // RHS is a constant
+                            long long const_val = -val_reg - 1000000;
+                            if (s->assign.op == TOK_PLUSEQ) {
+                                llvm_emit(lg, "  %%%d = add i64 %%%d, %lld", result_reg, curr_reg, const_val);
+                            } else if (s->assign.op == TOK_MINUSEQ) {
+                                llvm_emit(lg, "  %%%d = sub i64 %%%d, %lld", result_reg, curr_reg, const_val);
+                            } else if (s->assign.op == TOK_STAREQ) {
+                                llvm_emit(lg, "  %%%d = mul i64 %%%d, %lld", result_reg, curr_reg, const_val);
+                            } else if (s->assign.op == TOK_SLASHEQ) {
+                                llvm_emit(lg, "  %%%d = sdiv i64 %%%d, %lld", result_reg, curr_reg, const_val);
+                            }
                         } else {
-                            llvm_emit(lg, "  store i64 %lld, i64* %%%d", (long long)(-val_reg - 1000000), var_reg);
+                            // RHS is a register
+                            if (s->assign.op == TOK_PLUSEQ) {
+                                llvm_emit(lg, "  %%%d = add i64 %%%d, %%%d", result_reg, curr_reg, val_reg);
+                            } else if (s->assign.op == TOK_MINUSEQ) {
+                                llvm_emit(lg, "  %%%d = sub i64 %%%d, %%%d", result_reg, curr_reg, val_reg);
+                            } else if (s->assign.op == TOK_STAREQ) {
+                                llvm_emit(lg, "  %%%d = mul i64 %%%d, %%%d", result_reg, curr_reg, val_reg);
+                            } else if (s->assign.op == TOK_SLASHEQ) {
+                                llvm_emit(lg, "  %%%d = sdiv i64 %%%d, %%%d", result_reg, curr_reg, val_reg);
+                            }
                         }
+                        
+                        // Store result
+                        llvm_emit(lg, "  store i64 %%%d, i64* %%%d", result_reg, var_reg);
                     } else {
-                        if (is_float_var) {
-                            llvm_emit(lg, "  store double %%%d, double* %%%d", val_reg, var_reg);
+                        // Regular assignment
+                        int val_reg;
+                        llvm_expr(lg, s->assign.value, &val_reg);
+                        
+                        if (val_reg <= -1000000) {
+                            if (is_float_var) {
+                                int conv_reg = llvm_new_temp(lg);
+                                llvm_emit(lg, "  %%%d = sitofp i64 %lld to double", conv_reg, (long long)(-val_reg - 1000000));
+                                llvm_emit(lg, "  store double %%%d, double* %%%d", conv_reg, var_reg);
+                            } else {
+                                llvm_emit(lg, "  store i64 %lld, i64* %%%d", (long long)(-val_reg - 1000000), var_reg);
+                            }
                         } else {
-                            llvm_emit(lg, "  store i64 %%%d, i64* %%%d", val_reg, var_reg);
+                            if (is_float_var) {
+                                llvm_emit(lg, "  store double %%%d, double* %%%d", val_reg, var_reg);
+                            } else {
+                                llvm_emit(lg, "  store i64 %%%d, i64* %%%d", val_reg, var_reg);
+                            }
                         }
                     }
                 }
