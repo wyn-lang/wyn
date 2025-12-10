@@ -124,7 +124,7 @@ make install   # Install to system
 | Claim | Reality | Status |
 |-------|---------|--------|
 | Fast compilation | 0.3-0.5s | ✅ True |
-| Python-like syntax | Yes | ✅ True |
+| Clean syntax | Yes | ✅ True |
 | LLVM-powered | Yes | ✅ True |
 | Multi-platform | ARM64, x86_64 | ✅ True |
 | Functions, arrays, recursion | All working | ✅ True |
@@ -148,7 +148,7 @@ make install   # Install to system
 
 ## Conclusion
 
-Wyn delivers on its core promise: **fast, compiled systems language with Python-like syntax**. 
+Wyn delivers on its core promise: **fast, compiled systems language with clean, expressive syntax**. 
 
 The 58% example pass rate demonstrates solid core functionality. The 1% test pass rate reflects that tests target advanced features not yet implemented.
 

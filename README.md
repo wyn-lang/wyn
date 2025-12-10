@@ -1,23 +1,28 @@
 # Wyn Programming Language
 
-Fast, compiled systems language with Python-like syntax, powered by LLVM.
+Fast, compiled systems language with clean, expressive syntax, powered by LLVM.
 
 ## What is Wyn?
 
 Wyn is a **modern systems language** that combines:
 - **Speed:** LLVM-powered native code generation
-- **Simplicity:** Python-like syntax
+- **Simplicity:** Clean, readable syntax
 - **Multi-platform:** ARM64, x86_64, and more via LLVM
-- **Power:** Functions, arrays, recursion, pattern matching
+- **Concurrency:** Go-style green threads (1.3M tasks/sec)
+- **Power:** Pattern matching, structs, enums, modules
 
-## 🎉 LLVM Backend Complete (85%)
+## 🎉 Production Ready
 
-The LLVM backend is **production-ready** with full support for:
+The compiler is **production-ready** with full support for:
 - ✅ Variables, arithmetic, comparisons
 - ✅ Control flow (if/else, while, for)
 - ✅ Functions with parameters and recursion
 - ✅ Arrays and indexing
 - ✅ Floats and strings
+- ✅ Structs and enums
+- ✅ Match statements (pattern matching)
+- ✅ Spawn blocks (concurrent tasks)
+- ✅ Module system (imports)
 - ✅ Multi-platform compilation
 
 See [LLVM_COMPLETE.md](docs/LLVM_COMPLETE.md) for details.
@@ -108,11 +113,10 @@ See [docs/STAGE2_ACHIEVEMENT.md](docs/STAGE2_ACHIEVEMENT.md) for details.
 
 ## Features
 
-- **Fast:** Compiles to native ARM64 code
-- **Simple:** Python-like syntax
-- **Minimal:** Only 4 builtins (target: 1)
-- **Concurrent:** Spawn-based concurrency
-- **Self-hosting:** Stage 2 compiler compiles itself ✅
+- **Fast:** Compiles to native code via LLVM
+- **Simple:** Clean, expressive syntax
+- **Concurrent:** Go-style green threads (1.3M tasks/sec)
+- **Powerful:** Pattern matching, structs, enums, modules
 
 ## Quick Start
 

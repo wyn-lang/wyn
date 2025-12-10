@@ -5,7 +5,7 @@
 
 ## 🎉 Production Ready
 
-Wyn is a **fast, compiled systems language** with Python-like syntax, powered by LLVM.
+Wyn is a **fast, compiled systems language** with clean, readable syntax, powered by LLVM.
 
 ### Quick Start
 ```bash
