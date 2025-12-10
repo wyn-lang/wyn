@@ -36,10 +36,6 @@ PREFIX ?= /usr/local
 WYNC_SRC = $(BOOTSTRAP_DIR)/stage0.c
 WYNC_BIN = $(BUILD_DIR)/wync
 
-# Stage 2 (Self-hosting compiler)
-STAGE2_SRC = $(SRC_DIR)/stage1/minimal_self.wyn
-STAGE2_BIN = $(BUILD_DIR)/stage2
-
 # Runtime libraries
 SPAWN_RUNTIME_SRC = $(RUNTIME_DIR)/spawn.c
 SPAWN_RUNTIME_OBJ = $(BUILD_DIR)/spawn_runtime.o
@@ -48,13 +44,9 @@ ARRAY_RUNTIME_OBJ = $(BUILD_DIR)/array_runtime.o
 BUILTINS_RUNTIME_SRC = $(RUNTIME_DIR)/builtins.c
 BUILTINS_RUNTIME_OBJ = $(BUILD_DIR)/builtins_runtime.o
 
-# Default target - just build the compiler
+# Default target - build compiler and runtime
 .PHONY: all
 all: wync runtime
-
-# Build everything including stage2 (currently broken)
-.PHONY: all-full
-all-full: wync stage2 runtime
 
 # Create build directory
 $(BUILD_DIR):
@@ -66,13 +58,6 @@ wync: $(BUILD_DIR) $(WYNC_BIN)
 
 $(WYNC_BIN): $(WYNC_SRC)
 	$(CC) $(CFLAGS) -o $@ $<
-
-# Build Stage 2 (self-hosting compiler)
-.PHONY: stage2
-stage2: wync runtime $(STAGE2_BIN)
-
-$(STAGE2_BIN): $(STAGE2_SRC)
-	./$(WYNC_BIN) --stage1-tc $(BACKEND_FLAG) -o $@ $<
 
 # Build runtime libraries
 .PHONY: runtime
@@ -111,28 +96,11 @@ test-spawn: wync
 .PHONY: test-match
 test-match: wync
 	@echo "Testing match statements..."
-	@./$(WYNC_BIN) match_demo.wyn -o /tmp/wyn_match 2>&1 | grep -q "Compiled to:" && /tmp/wyn_match > /dev/null 2>&1 && echo "  ✅ Match working" || echo "  ❌ Match failed"
+	@./$(WYNC_BIN) tests/match_enum_test.wyn -o /tmp/wyn_match 2>&1 | grep -q "Compiled to:" && /tmp/wyn_match > /dev/null 2>&1 && echo "  ✅ Match working" || echo "  ❌ Match failed"
 
-# Test self-hosting (disabled - requires stage2 fixes)
-.PHONY: test-self-hosting
-test-self-hosting: stage2
-	@echo "Testing Stage 2 self-hosting..."
-	@./tests/scripts/test_stage2_self_hosting.sh
-
-# Test infinite compilation (disabled - requires stage2 fixes)
-.PHONY: test-infinite
-test-infinite: stage2
-	@echo "Testing infinite compilation..."
-	@./tests/scripts/test_infinite_compilation.sh
-
-# Run all tests (stage0 only for now)
+# Run all tests
 .PHONY: test
 test: test-examples test-spawn test-match
-	@echo "✅ All stage0 tests passed!"
-
-# Run full tests including stage2 (currently broken)
-.PHONY: test-all
-test-all: test test-self-hosting test-infinite
 	@echo "✅ All tests passed!"
 
 # Install to system
@@ -140,7 +108,6 @@ test-all: test test-self-hosting test-infinite
 install: all
 	@echo "Installing Wyn to $(PREFIX)/bin..."
 	install -m 755 $(BUILD_DIR)/wync $(PREFIX)/bin/wync
-	install -m 755 $(BUILD_DIR)/stage2 $(PREFIX)/bin/wyn
 	@echo "Installing stdlib to $(PREFIX)/share/wyn/std..."
 	mkdir -p $(PREFIX)/share/wyn
 	cp -r std $(PREFIX)/share/wyn/
@@ -171,7 +138,7 @@ rebuild: clean all
 # Show version
 .PHONY: version
 version:
-	@echo "Wyn $(VERSION) - Self-Hosting"
+	@echo "Wyn $(VERSION) - Production Compiler"
 
 # Help
 .PHONY: help
@@ -179,13 +146,13 @@ help:
 	@echo "Wyn Language Build System"
 	@echo ""
 	@echo "Targets:"
-	@echo "  all                 - Build everything (default)"
+	@echo "  all                 - Build compiler and runtime (default)"
 	@echo "  wync                - Build Wyn compiler (LLVM backend)"
-	@echo "  stage2              - Build Stage 2 (self-hosting)"
 	@echo "  runtime             - Build runtime libraries"
 	@echo "  test                - Run all tests"
-	@echo "  test-self-hosting   - Test Stage 2 self-hosting"
-	@echo "  test-infinite       - Test infinite compilation"
+	@echo "  test-examples       - Test core examples"
+	@echo "  test-spawn          - Test spawn blocks"
+	@echo "  test-match          - Test match statements"
 	@echo "  install             - Install to system"
 	@echo "  uninstall           - Uninstall from system"
 	@echo "  clean               - Remove build artifacts"
