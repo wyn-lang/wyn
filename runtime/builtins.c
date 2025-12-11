@@ -291,6 +291,186 @@ long long max_int(long long a, long long b) {
     return a > b ? a : b;
 }
 
+// Extended OS functions (hostname and getpid already exist above)
+char* hostname_wyn() {
+    char* buf = malloc(256);
+    if (gethostname(buf, 256) == 0) return buf;
+    free(buf);
+    return strdup("");
+}
+
+int64_t is_file_wyn(const char* path) {
+    struct stat st;
+    if (stat(path, &st) != 0) return 0;
+    return S_ISREG(st.st_mode) ? 1 : 0;
+}
+
+// Extended Net functions (only new ones)
+char* http_put_wyn(const char* url, const char* body) {
+    char cmd[4096];
+    snprintf(cmd, 4096, "curl -s -X PUT -d '%s' '%s' 2>/dev/null", body, url);
+    
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) return strdup("");
+    
+    char* result = malloc(65536);
+    size_t total = 0;
+    size_t n;
+    
+    while ((n = fread(result + total, 1, 4096, pipe)) > 0) {
+        total += n;
+        if (total >= 65536 - 4096) break;
+    }
+    result[total] = '\0';
+    pclose(pipe);
+    
+    return result;
+}
+
+char* http_delete_wyn(const char* url) {
+    char cmd[2048];
+    snprintf(cmd, 2048, "curl -s -X DELETE '%s' 2>/dev/null", url);
+    
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) return strdup("");
+    
+    char* result = malloc(65536);
+    size_t total = 0;
+    size_t n;
+    
+    while ((n = fread(result + total, 1, 4096, pipe)) > 0) {
+        total += n;
+        if (total >= 65536 - 4096) break;
+    }
+    result[total] = '\0';
+    pclose(pipe);
+    
+    return result;
+}
+
+char* http_head_wyn(const char* url) {
+    char cmd[2048];
+    snprintf(cmd, 2048, "curl -s -I '%s' 2>/dev/null", url);
+    
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) return strdup("");
+    
+    char* result = malloc(65536);
+    size_t total = 0;
+    size_t n;
+    
+    while ((n = fread(result + total, 1, 4096, pipe)) > 0) {
+        total += n;
+        if (total >= 65536 - 4096) break;
+    }
+    result[total] = '\0';
+    pclose(pipe);
+    
+    return result;
+}
+
+char* http_get_headers_wyn(const char* url, const char* headers) {
+    char cmd[4096];
+    snprintf(cmd, 4096, "curl -s -H '%s' '%s' 2>/dev/null", headers, url);
+    
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) return strdup("");
+    
+    char* result = malloc(65536);
+    size_t total = 0;
+    size_t n;
+    
+    while ((n = fread(result + total, 1, 4096, pipe)) > 0) {
+        total += n;
+        if (total >= 65536 - 4096) break;
+    }
+    result[total] = '\0';
+    pclose(pipe);
+    
+    return result;
+}
+
+int64_t udp_send_wyn(const char* host, int port, const char* data) {
+    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd < 0) return 0;
+    
+    struct sockaddr_in serv_addr;
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(port);
+    
+    struct hostent* server = gethostbyname(host);
+    if (!server) {
+        close(sockfd);
+        return 0;
+    }
+    
+    memcpy(&serv_addr.sin_addr.s_addr, server->h_addr, server->h_length);
+    
+    ssize_t sent = sendto(sockfd, data, strlen(data), 0,
+                          (struct sockaddr*)&serv_addr, sizeof(serv_addr));
+    close(sockfd);
+    
+    return (sent > 0) ? 1 : 0;
+}
+
+char* udp_recv_wyn(int port, int size) {
+    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd < 0) return strdup("");
+    
+    struct sockaddr_in serv_addr;
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    serv_addr.sin_port = htons(port);
+    
+    if (bind(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
+        close(sockfd);
+        return strdup("");
+    }
+    
+    char* buf = malloc(size + 1);
+    struct sockaddr_in cli_addr;
+    socklen_t cli_len = sizeof(cli_addr);
+    
+    ssize_t received = recvfrom(sockfd, buf, size, 0,
+                                (struct sockaddr*)&cli_addr, &cli_len);
+    close(sockfd);
+    
+    if (received < 0) {
+        free(buf);
+        return strdup("");
+    }
+    
+    buf[received] = '\0';
+    return buf;
+}
+
+char* resolve_host_wyn(const char* hostname) {
+    struct hostent* he = gethostbyname(hostname);
+    if (!he) return strdup("");
+    
+    struct in_addr** addr_list = (struct in_addr**)he->h_addr_list;
+    if (addr_list[0]) {
+        return strdup(inet_ntoa(*addr_list[0]));
+    }
+    return strdup("");
+}
+
+char* get_local_ip_wyn() {
+    char hostname[256];
+    if (gethostname(hostname, 256) != 0) return strdup("");
+    
+    struct hostent* he = gethostbyname(hostname);
+    if (!he) return strdup("127.0.0.1");
+    
+    struct in_addr** addr_list = (struct in_addr**)he->h_addr_list;
+    if (addr_list[0]) {
+        return strdup(inet_ntoa(*addr_list[0]));
+    }
+    return strdup("127.0.0.1");
+}
+
 // Array contains - check if element is in array
 int64_t array_contains(int64_t* arr, int64_t elem) {
     if (!arr) return 0;

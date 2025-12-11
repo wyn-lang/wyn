@@ -829,6 +829,8 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "args") == 0) return "args_wyn";
         if (strcmp(function, "cwd") == 0) return "cwd_wyn";
         if (strcmp(function, "chdir") == 0) return "chdir_wyn";
+        if (strcmp(function, "hostname") == 0) return "hostname_wyn";
+        if (strcmp(function, "getpid") == 0) return "getpid_wyn";
         // Legacy mappings
         if (strcmp(function, "getpid") == 0) return "getpid";
         if (strcmp(function, "getcwd") == 0) return "getcwd";
@@ -846,6 +848,14 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "tcp_send") == 0) return "tcp_send_wyn";
         if (strcmp(function, "tcp_recv") == 0) return "tcp_recv_wyn";
         if (strcmp(function, "tcp_close") == 0) return "tcp_close_wyn";
+        if (strcmp(function, "http_put") == 0) return "http_put_wyn";
+        if (strcmp(function, "http_delete") == 0) return "http_delete_wyn";
+        if (strcmp(function, "http_head") == 0) return "http_head_wyn";
+        if (strcmp(function, "http_get_headers") == 0) return "http_get_headers_wyn";
+        if (strcmp(function, "udp_send") == 0) return "udp_send_wyn";
+        if (strcmp(function, "udp_recv") == 0) return "udp_recv_wyn";
+        if (strcmp(function, "resolve_host") == 0) return "resolve_host_wyn";
+        if (strcmp(function, "get_local_ip") == 0) return "get_local_ip_wyn";
         if (strcmp(function, "args") == 0) return "args";
         if (strcmp(function, "args") == 0) return "args";
     } else if (strcmp(module, "io") == 0) {
@@ -859,6 +869,12 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "input") == 0) return "input";
         // File operations
         if (strcmp(function, "read_file") == 0) return "read_file";
+        if (strcmp(function, "delete") == 0) return "delete_file";
+        if (strcmp(function, "size") == 0) return "file_size";
+        if (strcmp(function, "mkdir") == 0) return "mkdir_wyn";
+        if (strcmp(function, "rmdir") == 0) return "rmdir_wyn";
+        if (strcmp(function, "is_dir") == 0) return "is_dir_wyn";
+        if (strcmp(function, "is_file") == 0) return "is_file_wyn";
         if (strcmp(function, "write_file") == 0) return "write_file";
         if (strcmp(function, "append_file") == 0) return "append_file";
         if (strcmp(function, "delete_file") == 0) return "delete_file";
@@ -870,6 +886,12 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "rmdir") == 0) return "rmdir";
     } else if (strcmp(module, "fs") == 0) {
         if (strcmp(function, "read_file") == 0) return "read_file";
+        if (strcmp(function, "delete") == 0) return "delete_file";
+        if (strcmp(function, "size") == 0) return "file_size";
+        if (strcmp(function, "mkdir") == 0) return "mkdir_wyn";
+        if (strcmp(function, "rmdir") == 0) return "rmdir_wyn";
+        if (strcmp(function, "is_dir") == 0) return "is_dir_wyn";
+        if (strcmp(function, "is_file") == 0) return "is_file_wyn";
         if (strcmp(function, "write_file") == 0) return "write_file";
         if (strcmp(function, "append_file") == 0) return "append_file";
         if (strcmp(function, "delete_file") == 0) return "delete_file";
@@ -947,6 +969,8 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "args") == 0) return "args_wyn";
         if (strcmp(function, "cwd") == 0) return "cwd_wyn";
         if (strcmp(function, "chdir") == 0) return "chdir_wyn";
+        if (strcmp(function, "hostname") == 0) return "hostname_wyn";
+        if (strcmp(function, "getpid") == 0) return "getpid_wyn";
     } else if (strcmp(module, "json") == 0) {
         if (strcmp(function, "parse") == 0) return "parse_json";
         if (strcmp(function, "stringify") == 0) return "stringify_json";
@@ -960,6 +984,14 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "tcp_send") == 0) return "tcp_send_wyn";
         if (strcmp(function, "tcp_recv") == 0) return "tcp_recv_wyn";
         if (strcmp(function, "tcp_close") == 0) return "tcp_close_wyn";
+        if (strcmp(function, "http_put") == 0) return "http_put_wyn";
+        if (strcmp(function, "http_delete") == 0) return "http_delete_wyn";
+        if (strcmp(function, "http_head") == 0) return "http_head_wyn";
+        if (strcmp(function, "http_get_headers") == 0) return "http_get_headers_wyn";
+        if (strcmp(function, "udp_send") == 0) return "udp_send_wyn";
+        if (strcmp(function, "udp_recv") == 0) return "udp_recv_wyn";
+        if (strcmp(function, "resolve_host") == 0) return "resolve_host_wyn";
+        if (strcmp(function, "get_local_ip") == 0) return "get_local_ip_wyn";
     }
     return NULL;
 }
@@ -3260,6 +3292,14 @@ static bool tc1_is_builtin(const char* name) {
     if (strcmp(name, "http_get_wyn") == 0 || strcmp(name, "http_post_wyn") == 0) return true;
     if (strcmp(name, "tcp_connect_wyn") == 0 || strcmp(name, "tcp_send_wyn") == 0) return true;
     if (strcmp(name, "tcp_recv_wyn") == 0 || strcmp(name, "tcp_close_wyn") == 0) return true;
+    if (strcmp(name, "delete_file") == 0 || strcmp(name, "file_size") == 0) return true;
+    if (strcmp(name, "mkdir_wyn") == 0 || strcmp(name, "rmdir_wyn") == 0) return true;
+    if (strcmp(name, "is_dir_wyn") == 0 || strcmp(name, "is_file_wyn") == 0) return true;
+    if (strcmp(name, "hostname_wyn") == 0 || strcmp(name, "getpid_wyn") == 0) return true;
+    if (strcmp(name, "http_put_wyn") == 0 || strcmp(name, "http_delete_wyn") == 0) return true;
+    if (strcmp(name, "http_head_wyn") == 0 || strcmp(name, "http_get_headers_wyn") == 0) return true;
+    if (strcmp(name, "udp_send_wyn") == 0 || strcmp(name, "udp_recv_wyn") == 0) return true;
+    if (strcmp(name, "resolve_host_wyn") == 0 || strcmp(name, "get_local_ip_wyn") == 0) return true;
     
     // Time builtins
     if (strcmp(name, "time_now") == 0 || strcmp(name, "sleep_ms") == 0 || strcmp(name, "sleep") == 0) return true;
@@ -11045,7 +11085,15 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                           strcmp(function, "get_string") == 0 ||
                                           strcmp(function, "http_get") == 0 ||
                                           strcmp(function, "http_post") == 0 ||
-                                          strcmp(function, "tcp_recv") == 0);
+                                          strcmp(function, "tcp_recv") == 0 ||
+                                          strcmp(function, "hostname") == 0 ||
+                                          strcmp(function, "http_put") == 0 ||
+                                          strcmp(function, "http_delete") == 0 ||
+                                          strcmp(function, "http_head") == 0 ||
+                                          strcmp(function, "http_get_headers") == 0 ||
+                                          strcmp(function, "udp_recv") == 0 ||
+                                          strcmp(function, "resolve_host") == 0 ||
+                                          strcmp(function, "get_local_ip") == 0);
                     
                     int t = llvm_new_temp(lg);
                     if (returns_string) {
@@ -11186,7 +11234,15 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                          strcmp(func_name, "get_string_json") == 0 ||
                                          strcmp(func_name, "http_get_wyn") == 0 ||
                                          strcmp(func_name, "http_post_wyn") == 0 ||
-                                         strcmp(func_name, "tcp_recv_wyn") == 0);
+                                         strcmp(func_name, "tcp_recv_wyn") == 0 ||
+                                         strcmp(func_name, "hostname_wyn") == 0 ||
+                                         strcmp(func_name, "http_put_wyn") == 0 ||
+                                         strcmp(func_name, "http_delete_wyn") == 0 ||
+                                         strcmp(func_name, "http_head_wyn") == 0 ||
+                                         strcmp(func_name, "http_get_headers_wyn") == 0 ||
+                                         strcmp(func_name, "udp_recv_wyn") == 0 ||
+                                         strcmp(func_name, "resolve_host_wyn") == 0 ||
+                                         strcmp(func_name, "get_local_ip_wyn") == 0);
                 
                 bool is_int_builtin = (strcmp(func_name, "ord") == 0 ||
                                       strcmp(func_name, "str_find") == 0 ||
@@ -12316,6 +12372,24 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i64 @tcp_send_wyn(i64, i8*)");
     llvm_emit(&lg, "declare i8* @tcp_recv_wyn(i64, i64)");
     llvm_emit(&lg, "declare void @tcp_close_wyn(i64)");
+    
+    // Extended IO functions
+    llvm_emit(&lg, "declare i64 @delete_file(i8*)");
+    llvm_emit(&lg, "declare i64 @file_size(i8*)");
+    llvm_emit(&lg, "declare i64 @mkdir_wyn(i8*)");
+    llvm_emit(&lg, "declare i64 @rmdir_wyn(i8*)");
+    llvm_emit(&lg, "declare i64 @is_dir_wyn(i8*)");
+    llvm_emit(&lg, "declare i64 @is_file_wyn(i8*)");
+    llvm_emit(&lg, "declare i8* @hostname_wyn()");
+    llvm_emit(&lg, "declare i64 @getpid_wyn()");
+    llvm_emit(&lg, "declare i8* @http_put_wyn(i8*, i8*)");
+    llvm_emit(&lg, "declare i8* @http_delete_wyn(i8*)");
+    llvm_emit(&lg, "declare i8* @http_head_wyn(i8*)");
+    llvm_emit(&lg, "declare i8* @http_get_headers_wyn(i8*, i8*)");
+    llvm_emit(&lg, "declare i64 @udp_send_wyn(i8*, i64, i8*)");
+    llvm_emit(&lg, "declare i8* @udp_recv_wyn(i64, i64)");
+    llvm_emit(&lg, "declare i8* @resolve_host_wyn(i8*)");
+    llvm_emit(&lg, "declare i8* @get_local_ip_wyn()");
     llvm_emit(&lg, "");
     
     // Generate functions

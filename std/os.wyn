@@ -1,5 +1,3 @@
 # std/os.wyn
 # Operating system interface
-
-# Note: All functions are mapped to runtime implementations
-# via the module mapping system in the compiler
+# All functions are mapped to runtime implementations via compiler

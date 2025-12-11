@@ -1,0 +1,40 @@
+import io
+import os
+import net
+
+fn main() {
+    print("=== Extended Infrastructure Demo ===")
+    
+    # IO operations
+    print("IO Module:")
+    const test_file: str = "/tmp/wyn_extended_test.txt"
+    io.write(test_file, "test content")
+    print("File size:")
+    print(io.size(test_file))
+    
+    if io.is_file(test_file) == true {
+        print("Is file: yes")
+    }
+    
+    io.delete(test_file)
+    
+    # OS operations
+    print("OS Module:")
+    const hostname: str = os.hostname()
+    print("Hostname length:")
+    print(hostname.len())
+    
+    const pid: int = os.getpid()
+    print("PID:")
+    print(pid)
+    
+    # Network operations
+    print("Net Module:")
+    const ip: str = net.get_local_ip()
+    print("Local IP: " + ip)
+    
+    const resolved: str = net.resolve_host("localhost")
+    print("Resolved localhost: " + resolved)
+    
+    print("=== Demo Complete ===")
+}

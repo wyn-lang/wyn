@@ -1,30 +1,3 @@
 # std/io.wyn
 # File I/O operations
-
-# Read entire file as string
-# Returns empty string on error
-pub fn read(path: str) -> str {
-    return read_file(path)
-}
-
-# Write string to file
-# Returns true on success, false on error
-pub fn write(path: str, content: str) -> bool {
-    return write_file(path, content)
-}
-
-# Check if file exists
-pub fn exists(path: str) -> bool {
-    return file_exists(path)
-}
-
-# Append to file
-pub fn append(path: str, content: str) -> bool {
-    return append_file(path, content)
-}
-
-# Read file as lines
-pub fn read_lines(path: str) -> [str] {
-    const content: str = read_file(path)
-    return str_split(content, "\n")
-}
+# All functions are mapped to runtime implementations via compiler
