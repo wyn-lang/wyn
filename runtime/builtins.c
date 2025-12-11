@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <stdint.h>
+#include <sys/time.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
@@ -307,6 +308,51 @@ int64_t is_file_wyn(const char* path) {
 
 int64_t is_dir_wyn(const char* path) {
     return is_dir(path);
+}
+
+// Time module functions
+int64_t now_unix() {
+    return (int64_t)time(NULL);
+}
+
+int64_t now_millis() {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return (int64_t)(tv.tv_sec * 1000 + tv.tv_usec / 1000);
+}
+
+int64_t now_micros() {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return (int64_t)(tv.tv_sec * 1000000 + tv.tv_usec);
+}
+
+void sleep_seconds(int64_t seconds) {
+    sleep((unsigned int)seconds);
+}
+
+char* format_timestamp(int64_t unix_time) {
+    time_t t = (time_t)unix_time;
+    struct tm* tm_info = localtime(&t);
+    char* buf = malloc(64);
+    strftime(buf, 64, "%Y-%m-%d %H:%M:%S", tm_info);
+    return buf;
+}
+
+char* format_iso8601(int64_t unix_time) {
+    time_t t = (time_t)unix_time;
+    struct tm* tm_info = gmtime(&t);
+    char* buf = malloc(64);
+    strftime(buf, 64, "%Y-%m-%dT%H:%M:%SZ", tm_info);
+    return buf;
+}
+
+int64_t parse_timestamp(const char* str) {
+    struct tm tm_info = {0};
+    if (strptime(str, "%Y-%m-%d %H:%M:%S", &tm_info) != NULL) {
+        return (int64_t)mktime(&tm_info);
+    }
+    return 0;
 }
 
 // Extended Net functions (only new ones)
@@ -687,4 +733,207 @@ char* tcp_recv_wyn(int fd, int size) {
 
 void tcp_close_wyn(int fd) {
     if (fd >= 0) close(fd);
+}
+
+// Log module functions
+void log_info(const char* msg) {
+    printf("[INFO] %s\n", msg);
+}
+
+void log_warn(const char* msg) {
+    printf("[WARN] %s\n", msg);
+}
+
+void log_error(const char* msg) {
+    printf("[ERROR] %s\n", msg);
+}
+
+void log_debug(const char* msg) {
+    printf("[DEBUG] %s\n", msg);
+}
+
+void log_with_level(const char* level, const char* msg) {
+    printf("[%s] %s\n", level, msg);
+}
+
+// Encoding module functions
+char* base64_encode(const char* data) {
+    char cmd[4096];
+    snprintf(cmd, 4096, "echo -n '%s' | base64", data);
+    
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) return strdup("");
+    
+    char* result = malloc(4096);
+    if (fgets(result, 4096, pipe) != NULL) {
+        // Remove newline
+        char* newline = strchr(result, '\n');
+        if (newline) *newline = '\0';
+    } else {
+        strcpy(result, "");
+    }
+    
+    pclose(pipe);
+    return result;
+}
+
+char* base64_decode(const char* data) {
+    char cmd[4096];
+    snprintf(cmd, 4096, "echo '%s' | base64 -d", data);
+    
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) return strdup("");
+    
+    char* result = malloc(4096);
+    if (fgets(result, 4096, pipe) != NULL) {
+        // Remove newline if present
+        char* newline = strchr(result, '\n');
+        if (newline) *newline = '\0';
+    } else {
+        strcpy(result, "");
+    }
+    
+    pclose(pipe);
+    return result;
+}
+
+char* hex_encode(const char* data) {
+    char cmd[4096];
+    snprintf(cmd, 4096, "echo -n '%s' | xxd -p | tr -d '\\n'", data);
+    
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) return strdup("");
+    
+    char* result = malloc(4096);
+    if (fgets(result, 4096, pipe) != NULL) {
+        // Remove newline
+        char* newline = strchr(result, '\n');
+        if (newline) *newline = '\0';
+    } else {
+        strcpy(result, "");
+    }
+    
+    pclose(pipe);
+    return result;
+}
+
+char* hex_decode(const char* data) {
+    char cmd[4096];
+    snprintf(cmd, 4096, "echo '%s' | xxd -r -p", data);
+    
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) return strdup("");
+    
+    char* result = malloc(4096);
+    if (fgets(result, 4096, pipe) != NULL) {
+        // Remove newline if present
+        char* newline = strchr(result, '\n');
+        if (newline) *newline = '\0';
+    } else {
+        strcpy(result, "");
+    }
+    
+    pclose(pipe);
+    return result;
+}
+
+char* url_encode(const char* data) {
+    char cmd[4096];
+    snprintf(cmd, 4096, "python3 -c \"import urllib.parse; print(urllib.parse.quote('%s'))\"", data);
+    
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) return strdup("");
+    
+    char* result = malloc(4096);
+    if (fgets(result, 4096, pipe) != NULL) {
+        // Remove newline
+        char* newline = strchr(result, '\n');
+        if (newline) *newline = '\0';
+    } else {
+        strcpy(result, "");
+    }
+    
+    pclose(pipe);
+    return result;
+}
+
+char* url_decode(const char* data) {
+    char cmd[4096];
+    snprintf(cmd, 4096, "python3 -c \"import urllib.parse; print(urllib.parse.unquote('%s'))\"", data);
+    
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) return strdup("");
+    
+    char* result = malloc(4096);
+    if (fgets(result, 4096, pipe) != NULL) {
+        // Remove newline
+        char* newline = strchr(result, '\n');
+        if (newline) *newline = '\0';
+    } else {
+        strcpy(result, "");
+    }
+    
+    pclose(pipe);
+    return result;
+}
+
+// Hash module functions
+char* sha256_hash(const char* data) {
+    char cmd[4096];
+    snprintf(cmd, 4096, "echo -n '%s' | openssl dgst -sha256 | cut -d' ' -f2", data);
+    
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) return strdup("");
+    
+    char* result = malloc(128);
+    if (fgets(result, 128, pipe) != NULL) {
+        // Remove newline
+        char* newline = strchr(result, '\n');
+        if (newline) *newline = '\0';
+    } else {
+        strcpy(result, "");
+    }
+    
+    pclose(pipe);
+    return result;
+}
+
+char* md5_hash(const char* data) {
+    char cmd[4096];
+    snprintf(cmd, 4096, "echo -n '%s' | openssl dgst -md5 | cut -d' ' -f2", data);
+    
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) return strdup("");
+    
+    char* result = malloc(64);
+    if (fgets(result, 64, pipe) != NULL) {
+        // Remove newline
+        char* newline = strchr(result, '\n');
+        if (newline) *newline = '\0';
+    } else {
+        strcpy(result, "");
+    }
+    
+    pclose(pipe);
+    return result;
+}
+
+char* sha1_hash(const char* data) {
+    char cmd[4096];
+    snprintf(cmd, 4096, "echo -n '%s' | openssl dgst -sha1 | cut -d' ' -f2", data);
+    
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) return strdup("");
+    
+    char* result = malloc(64);
+    if (fgets(result, 64, pipe) != NULL) {
+        // Remove newline
+        char* newline = strchr(result, '\n');
+        if (newline) *newline = '\0';
+    } else {
+        strcpy(result, "");
+    }
+    
+    pclose(pipe);
+    return result;
 }

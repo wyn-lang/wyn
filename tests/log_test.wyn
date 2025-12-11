@@ -1,0 +1,13 @@
+import log
+
+fn main() {
+    print("Testing log module...\n")
+    
+    log.info("Test info message")
+    log.warn("Test warning message")
+    log.error("Test error message")
+    log.debug("Test debug message")
+    log.log_with_level("CUSTOM", "Test custom level message")
+    
+    print("Log module test passed!\n")
+}

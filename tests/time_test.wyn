@@ -1,0 +1,29 @@
+import time
+
+fn main() {
+    print("Time module test")
+    
+    const unix: int = time.now_unix()
+    print("Unix timestamp:")
+    print(unix)
+    
+    const millis: int = time.now_millis()
+    print("Milliseconds:")
+    print(millis)
+    
+    const formatted: str = time.format_timestamp(unix)
+    print("Formatted: " + formatted)
+    
+    const iso: str = time.format_iso8601(unix)
+    print("ISO8601: " + iso)
+    
+    print("Sleeping 1 second...")
+    time.sleep(1)
+    
+    const after: int = time.now_unix()
+    if after > unix {
+        print("Sleep worked!")
+    }
+    
+    print("Time module test complete")
+}

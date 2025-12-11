@@ -818,6 +818,14 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "int_to_str") == 0) return "int_to_str";
         if (strcmp(function, "from_int") == 0) return "int_to_str";
     } else if (strcmp(module, "time") == 0) {
+        if (strcmp(function, "now_unix") == 0) return "now_unix";
+        if (strcmp(function, "now_millis") == 0) return "now_millis";
+        if (strcmp(function, "now_micros") == 0) return "now_micros";
+        if (strcmp(function, "sleep") == 0) return "sleep_seconds";
+        if (strcmp(function, "format_timestamp") == 0) return "format_timestamp";
+        if (strcmp(function, "format_iso8601") == 0) return "format_iso8601";
+        if (strcmp(function, "parse_timestamp") == 0) return "parse_timestamp";
+        // Legacy mappings
         if (strcmp(function, "sleep_ms") == 0) return "sleep_ms";
         if (strcmp(function, "now") == 0) return "time_now";
         if (strcmp(function, "clock") == 0) return "clock";
@@ -992,6 +1000,23 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "udp_recv") == 0) return "udp_recv_wyn";
         if (strcmp(function, "resolve_host") == 0) return "resolve_host_wyn";
         if (strcmp(function, "get_local_ip") == 0) return "get_local_ip_wyn";
+    } else if (strcmp(module, "log") == 0) {
+        if (strcmp(function, "info") == 0) return "log_info";
+        if (strcmp(function, "warn") == 0) return "log_warn";
+        if (strcmp(function, "error") == 0) return "log_error";
+        if (strcmp(function, "debug") == 0) return "log_debug";
+        if (strcmp(function, "log_with_level") == 0) return "log_with_level";
+    } else if (strcmp(module, "encoding") == 0) {
+        if (strcmp(function, "base64_encode") == 0) return "base64_encode";
+        if (strcmp(function, "base64_decode") == 0) return "base64_decode";
+        if (strcmp(function, "hex_encode") == 0) return "hex_encode";
+        if (strcmp(function, "hex_decode") == 0) return "hex_decode";
+        if (strcmp(function, "url_encode") == 0) return "url_encode";
+        if (strcmp(function, "url_decode") == 0) return "url_decode";
+    } else if (strcmp(module, "hash") == 0) {
+        if (strcmp(function, "sha256") == 0) return "sha256_hash";
+        if (strcmp(function, "md5") == 0) return "md5_hash";
+        if (strcmp(function, "sha1") == 0) return "sha1_hash";
     }
     return NULL;
 }
@@ -1079,6 +1104,39 @@ static Type* new_type(TypeKind kind) {
     Type* t = calloc(1, sizeof(Type));
     t->kind = kind;
     return t;
+}
+
+// Helper: Get return type for builtin functions
+static Type* get_builtin_return_type(const char* builtin_name) {
+    // String-returning functions
+    if (strcmp(builtin_name, "format_timestamp") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "format_iso8601") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "base64_encode") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "base64_decode") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "hex_encode") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "hex_decode") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "url_encode") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "url_decode") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "sha256_hash") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "md5_hash") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "sha1_hash") == 0) return new_type(TYPE_STR);
+    
+    // Integer-returning functions
+    if (strcmp(builtin_name, "now_unix") == 0) return new_type(TYPE_INT);
+    if (strcmp(builtin_name, "now_millis") == 0) return new_type(TYPE_INT);
+    if (strcmp(builtin_name, "now_micros") == 0) return new_type(TYPE_INT);
+    if (strcmp(builtin_name, "parse_timestamp") == 0) return new_type(TYPE_INT);
+    
+    // Void-returning functions
+    if (strcmp(builtin_name, "log_info") == 0) return new_type(TYPE_VOID);
+    if (strcmp(builtin_name, "log_warn") == 0) return new_type(TYPE_VOID);
+    if (strcmp(builtin_name, "log_error") == 0) return new_type(TYPE_VOID);
+    if (strcmp(builtin_name, "log_debug") == 0) return new_type(TYPE_VOID);
+    if (strcmp(builtin_name, "log_with_level") == 0) return new_type(TYPE_VOID);
+    if (strcmp(builtin_name, "sleep_seconds") == 0) return new_type(TYPE_VOID);
+    
+    // Default to ANY for unknown functions
+    return new_type(TYPE_ANY);
 }
 
 // Type parsing
@@ -2768,8 +2826,7 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                         tc_check_expr(tc, e->call.args[i]);
                     }
                     // Return appropriate type based on function
-                    // For now, return ANY - could be improved with a lookup table
-                    return new_type(TYPE_ANY);
+                    return get_builtin_return_type(builtin_name);
                 }
             }
             
@@ -3300,6 +3357,23 @@ static bool tc1_is_builtin(const char* name) {
     if (strcmp(name, "http_head_wyn") == 0 || strcmp(name, "http_get_headers_wyn") == 0) return true;
     if (strcmp(name, "udp_send_wyn") == 0 || strcmp(name, "udp_recv_wyn") == 0) return true;
     if (strcmp(name, "resolve_host_wyn") == 0 || strcmp(name, "get_local_ip_wyn") == 0) return true;
+    if (strcmp(name, "now_unix") == 0 || strcmp(name, "now_millis") == 0 || strcmp(name, "now_micros") == 0) return true;
+    if (strcmp(name, "sleep_seconds") == 0) return true;
+    if (strcmp(name, "format_timestamp") == 0 || strcmp(name, "format_iso8601") == 0 || strcmp(name, "parse_timestamp") == 0) return true;
+    
+    // Log builtins
+    if (strcmp(name, "log_info") == 0 || strcmp(name, "log_warn") == 0) return true;
+    if (strcmp(name, "log_error") == 0 || strcmp(name, "log_debug") == 0) return true;
+    if (strcmp(name, "log_with_level") == 0) return true;
+    
+    // Encoding builtins
+    if (strcmp(name, "base64_encode") == 0 || strcmp(name, "base64_decode") == 0) return true;
+    if (strcmp(name, "hex_encode") == 0 || strcmp(name, "hex_decode") == 0) return true;
+    if (strcmp(name, "url_encode") == 0 || strcmp(name, "url_decode") == 0) return true;
+    
+    // Hash builtins
+    if (strcmp(name, "sha256_hash") == 0 || strcmp(name, "md5_hash") == 0) return true;
+    if (strcmp(name, "sha1_hash") == 0) return true;
     
     // Time builtins
     if (strcmp(name, "time_now") == 0 || strcmp(name, "sleep_ms") == 0 || strcmp(name, "sleep") == 0) return true;
@@ -3409,7 +3483,7 @@ static Type* tc1_check_expr(TypeChecker1* tc, Expr* e) {
                 const char* builtin_name = map_module_function(module, function);
                 if (builtin_name) {
                     for (int i = 0; i < e->call.arg_count; i++) tc1_check_expr(tc, e->call.args[i]);
-                    return new_type(TYPE_ANY);
+                    return get_builtin_return_type(builtin_name);
                 }
             }
             
@@ -11093,7 +11167,18 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                           strcmp(function, "http_get_headers") == 0 ||
                                           strcmp(function, "udp_recv") == 0 ||
                                           strcmp(function, "resolve_host") == 0 ||
-                                          strcmp(function, "get_local_ip") == 0);
+                                          strcmp(function, "get_local_ip") == 0 ||
+                                          strcmp(function, "format_timestamp") == 0 ||
+                                          strcmp(function, "format_iso8601") == 0 ||
+                                          strcmp(function, "base64_encode") == 0 ||
+                                          strcmp(function, "base64_decode") == 0 ||
+                                          strcmp(function, "hex_encode") == 0 ||
+                                          strcmp(function, "hex_decode") == 0 ||
+                                          strcmp(function, "url_encode") == 0 ||
+                                          strcmp(function, "url_decode") == 0 ||
+                                          strcmp(function, "sha256") == 0 ||
+                                          strcmp(function, "md5") == 0 ||
+                                          strcmp(function, "sha1") == 0);
                     
                     int t = llvm_new_temp(lg);
                     if (returns_string) {
@@ -11242,7 +11327,9 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                          strcmp(func_name, "http_get_headers_wyn") == 0 ||
                                          strcmp(func_name, "udp_recv_wyn") == 0 ||
                                          strcmp(func_name, "resolve_host_wyn") == 0 ||
-                                         strcmp(func_name, "get_local_ip_wyn") == 0);
+                                         strcmp(func_name, "get_local_ip_wyn") == 0 ||
+                                         strcmp(func_name, "format_timestamp") == 0 ||
+                                         strcmp(func_name, "format_iso8601") == 0);
                 
                 bool is_int_builtin = (strcmp(func_name, "ord") == 0 ||
                                       strcmp(func_name, "str_find") == 0 ||
@@ -11728,7 +11815,15 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
                     } else if (is_array_var) {
                         llvm_emit(lg, "  store i64* %%%d, i64** %%%d", val_reg, alloca_reg);
                     } else if (is_string_var) {
-                        llvm_emit(lg, "  store i8* %%%d, i8** %%%d", val_reg, alloca_reg);
+                        // Check if value is from array indexing (i64 that needs cast to i8*)
+                        if (s->let.value->kind == EXPR_INDEX) {
+                            // Cast i64 to i8* for string array elements
+                            int cast_reg = llvm_new_temp(lg);
+                            llvm_emit(lg, "  %%%d = inttoptr i64 %%%d to i8*", cast_reg, val_reg);
+                            llvm_emit(lg, "  store i8* %%%d, i8** %%%d", cast_reg, alloca_reg);
+                        } else {
+                            llvm_emit(lg, "  store i8* %%%d, i8** %%%d", val_reg, alloca_reg);
+                        }
                     } else {
                         if (val_reg <= -1000000) {
                             llvm_emit(lg, "  store i64 %lld, i64* %%%d", (long long)(-val_reg - 1000000), alloca_reg);
@@ -12390,6 +12485,35 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i8* @udp_recv_wyn(i64, i64)");
     llvm_emit(&lg, "declare i8* @resolve_host_wyn(i8*)");
     llvm_emit(&lg, "declare i8* @get_local_ip_wyn()");
+    
+    // Time module functions
+    llvm_emit(&lg, "declare i64 @now_unix()");
+    llvm_emit(&lg, "declare i64 @now_millis()");
+    llvm_emit(&lg, "declare i64 @now_micros()");
+    llvm_emit(&lg, "declare void @sleep_seconds(i64)");
+    llvm_emit(&lg, "declare i8* @format_timestamp(i64)");
+    llvm_emit(&lg, "declare i8* @format_iso8601(i64)");
+    llvm_emit(&lg, "declare i64 @parse_timestamp(i8*)");
+    
+    // Log module functions
+    llvm_emit(&lg, "declare void @log_info(i8*)");
+    llvm_emit(&lg, "declare void @log_warn(i8*)");
+    llvm_emit(&lg, "declare void @log_error(i8*)");
+    llvm_emit(&lg, "declare void @log_debug(i8*)");
+    llvm_emit(&lg, "declare void @log_with_level(i8*, i8*)");
+    
+    // Encoding module functions
+    llvm_emit(&lg, "declare i8* @base64_encode(i8*)");
+    llvm_emit(&lg, "declare i8* @base64_decode(i8*)");
+    llvm_emit(&lg, "declare i8* @hex_encode(i8*)");
+    llvm_emit(&lg, "declare i8* @hex_decode(i8*)");
+    llvm_emit(&lg, "declare i8* @url_encode(i8*)");
+    llvm_emit(&lg, "declare i8* @url_decode(i8*)");
+    
+    // Hash module functions
+    llvm_emit(&lg, "declare i8* @sha256_hash(i8*)");
+    llvm_emit(&lg, "declare i8* @md5_hash(i8*)");
+    llvm_emit(&lg, "declare i8* @sha1_hash(i8*)");
     llvm_emit(&lg, "");
     
     // Generate functions
