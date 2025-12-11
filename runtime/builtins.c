@@ -305,6 +305,10 @@ int64_t is_file_wyn(const char* path) {
     return S_ISREG(st.st_mode) ? 1 : 0;
 }
 
+int64_t is_dir_wyn(const char* path) {
+    return is_dir(path);
+}
+
 // Extended Net functions (only new ones)
 char* http_put_wyn(const char* url, const char* body) {
     char cmd[4096];
