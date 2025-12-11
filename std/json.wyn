@@ -1,0 +1,5 @@
+// JSON module - Simple JSON parsing and generation
+// Minimal implementation for basic key-value operations
+
+// Note: Functions are mapped to runtime implementations
+// via the module mapping system in the compiler

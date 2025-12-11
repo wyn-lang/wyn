@@ -822,12 +822,30 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "now") == 0) return "time_now";
         if (strcmp(function, "clock") == 0) return "clock";
     } else if (strcmp(module, "os") == 0) {
-        if (strcmp(function, "getenv") == 0) return "getenv";
+        if (strcmp(function, "getenv") == 0) return "getenv_wyn";
+        if (strcmp(function, "setenv") == 0) return "setenv_wyn";
+        if (strcmp(function, "exec") == 0) return "exec_wyn";
+        if (strcmp(function, "exit") == 0) return "exit_wyn";
+        if (strcmp(function, "args") == 0) return "args_wyn";
+        if (strcmp(function, "cwd") == 0) return "cwd_wyn";
+        if (strcmp(function, "chdir") == 0) return "chdir_wyn";
+        // Legacy mappings
         if (strcmp(function, "getpid") == 0) return "getpid";
         if (strcmp(function, "getcwd") == 0) return "getcwd";
-        if (strcmp(function, "exit") == 0) return "exit";
         if (strcmp(function, "system") == 0) return "system";
-        if (strcmp(function, "chdir") == 0) return "chdir";
+    } else if (strcmp(module, "json") == 0) {
+        if (strcmp(function, "parse") == 0) return "parse_json";
+        if (strcmp(function, "stringify") == 0) return "stringify_json";
+        if (strcmp(function, "get_string") == 0) return "get_string_json";
+        if (strcmp(function, "get_int") == 0) return "get_int_json";
+        if (strcmp(function, "get_bool") == 0) return "get_bool_json";
+    } else if (strcmp(module, "net") == 0) {
+        if (strcmp(function, "http_get") == 0) return "http_get_wyn";
+        if (strcmp(function, "http_post") == 0) return "http_post_wyn";
+        if (strcmp(function, "tcp_connect") == 0) return "tcp_connect_wyn";
+        if (strcmp(function, "tcp_send") == 0) return "tcp_send_wyn";
+        if (strcmp(function, "tcp_recv") == 0) return "tcp_recv_wyn";
+        if (strcmp(function, "tcp_close") == 0) return "tcp_close_wyn";
         if (strcmp(function, "args") == 0) return "args";
         if (strcmp(function, "args") == 0) return "args";
     } else if (strcmp(module, "io") == 0) {
@@ -921,6 +939,27 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "malloc") == 0) return "__wyn_gpu_malloc";
         if (strcmp(function, "free") == 0) return "__wyn_gpu_free";
         if (strcmp(function, "sync") == 0) return "__wyn_gpu_sync";
+    } else if (strcmp(module, "os") == 0) {
+        if (strcmp(function, "getenv") == 0) return "getenv_wyn";
+        if (strcmp(function, "setenv") == 0) return "setenv_wyn";
+        if (strcmp(function, "exec") == 0) return "exec_wyn";
+        if (strcmp(function, "exit") == 0) return "exit_wyn";
+        if (strcmp(function, "args") == 0) return "args_wyn";
+        if (strcmp(function, "cwd") == 0) return "cwd_wyn";
+        if (strcmp(function, "chdir") == 0) return "chdir_wyn";
+    } else if (strcmp(module, "json") == 0) {
+        if (strcmp(function, "parse") == 0) return "parse_json";
+        if (strcmp(function, "stringify") == 0) return "stringify_json";
+        if (strcmp(function, "get_string") == 0) return "get_string_json";
+        if (strcmp(function, "get_int") == 0) return "get_int_json";
+        if (strcmp(function, "get_bool") == 0) return "get_bool_json";
+    } else if (strcmp(module, "net") == 0) {
+        if (strcmp(function, "http_get") == 0) return "http_get_wyn";
+        if (strcmp(function, "http_post") == 0) return "http_post_wyn";
+        if (strcmp(function, "tcp_connect") == 0) return "tcp_connect_wyn";
+        if (strcmp(function, "tcp_send") == 0) return "tcp_send_wyn";
+        if (strcmp(function, "tcp_recv") == 0) return "tcp_recv_wyn";
+        if (strcmp(function, "tcp_close") == 0) return "tcp_close_wyn";
     }
     return NULL;
 }
@@ -3209,6 +3248,18 @@ static bool tc1_is_builtin(const char* name) {
     
     // OS builtins
     if (strcmp(name, "getcwd") == 0 || strcmp(name, "getpid") == 0 || strcmp(name, "exit") == 0) return true;
+    if (strcmp(name, "getenv_wyn") == 0 || strcmp(name, "setenv_wyn") == 0) return true;
+    if (strcmp(name, "exec_wyn") == 0 || strcmp(name, "exit_wyn") == 0) return true;
+    if (strcmp(name, "args_wyn") == 0 || strcmp(name, "cwd_wyn") == 0 || strcmp(name, "chdir_wyn") == 0) return true;
+    
+    // JSON builtins
+    if (strcmp(name, "parse_json") == 0 || strcmp(name, "stringify_json") == 0) return true;
+    if (strcmp(name, "get_string_json") == 0 || strcmp(name, "get_int_json") == 0 || strcmp(name, "get_bool_json") == 0) return true;
+    
+    // Net builtins
+    if (strcmp(name, "http_get_wyn") == 0 || strcmp(name, "http_post_wyn") == 0) return true;
+    if (strcmp(name, "tcp_connect_wyn") == 0 || strcmp(name, "tcp_send_wyn") == 0) return true;
+    if (strcmp(name, "tcp_recv_wyn") == 0 || strcmp(name, "tcp_close_wyn") == 0) return true;
     
     // Time builtins
     if (strcmp(name, "time_now") == 0 || strcmp(name, "sleep_ms") == 0 || strcmp(name, "sleep") == 0) return true;
@@ -10965,10 +11016,10 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                         
                         char arg_str[128];
                         // Check if argument is a string (use i8* type)
-                        bool is_string_arg = (e->call.args[i]->kind == EXPR_STRING) ||
-                                            (e->call.args[i]->kind == EXPR_IDENT && 
-                                             (strstr(e->call.args[i]->ident, "str") != NULL ||
-                                              strstr(e->call.args[i]->ident, "s") != NULL));
+                        bool is_string_arg = (e->call.args[i]->kind == EXPR_STRING ||
+                                             (e->call.args[i]->kind == EXPR_IDENT &&
+                                              llvm_get_var_type(lg, e->call.args[i]->ident) &&
+                                              llvm_get_var_type(lg, e->call.args[i]->ident)->kind == TYPE_STR));
                         
                         if (is_string_arg) {
                             snprintf(arg_str, 128, "i8* %%%d", arg_reg);
@@ -10986,7 +11037,15 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                           strcmp(function, "substring") == 0 ||
                                           strcmp(function, "concat") == 0 ||
                                           strcmp(function, "char_at") == 0 ||
-                                          strcmp(function, "int_to_str") == 0);
+                                          strcmp(function, "int_to_str") == 0 ||
+                                          strcmp(function, "getenv") == 0 ||
+                                          strcmp(function, "cwd") == 0 ||
+                                          strcmp(function, "parse") == 0 ||
+                                          strcmp(function, "stringify") == 0 ||
+                                          strcmp(function, "get_string") == 0 ||
+                                          strcmp(function, "http_get") == 0 ||
+                                          strcmp(function, "http_post") == 0 ||
+                                          strcmp(function, "tcp_recv") == 0);
                     
                     int t = llvm_new_temp(lg);
                     if (returns_string) {
@@ -11119,7 +11178,15 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                          strcmp(func_name, "char_at") == 0 ||
                                          strcmp(func_name, "int_to_str") == 0 ||
                                          strcmp(func_name, "str_substr") == 0 ||
-                                         strcmp(func_name, "read_file") == 0);
+                                         strcmp(func_name, "read_file") == 0 ||
+                                         strcmp(func_name, "getenv_wyn") == 0 ||
+                                         strcmp(func_name, "cwd_wyn") == 0 ||
+                                         strcmp(func_name, "parse_json") == 0 ||
+                                         strcmp(func_name, "stringify_json") == 0 ||
+                                         strcmp(func_name, "get_string_json") == 0 ||
+                                         strcmp(func_name, "http_get_wyn") == 0 ||
+                                         strcmp(func_name, "http_post_wyn") == 0 ||
+                                         strcmp(func_name, "tcp_recv_wyn") == 0);
                 
                 bool is_int_builtin = (strcmp(func_name, "ord") == 0 ||
                                       strcmp(func_name, "str_find") == 0 ||
@@ -12223,7 +12290,6 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i8* @getenv_wyn(i8*)");
     llvm_emit(&lg, "declare i64 @setenv_wyn(i8*, i8*)");
     llvm_emit(&lg, "declare i64 @exec_wyn(i8*)");
-    llvm_emit(&lg, "declare void @exit_wyn(i64)");
     llvm_emit(&lg, "declare i8** @args_wyn()");
     llvm_emit(&lg, "declare i8* @cwd_wyn()");
     llvm_emit(&lg, "declare i64 @chdir_wyn(i8*)");

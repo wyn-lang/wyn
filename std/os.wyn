@@ -1,0 +1,5 @@
+// OS module - Operating system interface
+// Provides basic OS functionality for infrastructure tasks
+
+// Note: These functions are mapped to runtime implementations
+// via the module mapping system in the compiler

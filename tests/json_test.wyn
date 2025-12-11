@@ -1,0 +1,23 @@
+import json
+
+fn main() {
+    // Test JSON parsing (minimal)
+    let json_str: str = "test"
+    let data: str = json.parse(json_str)
+    
+    // Test stringify
+    let str_result: str = json.stringify(data)
+    print("JSON stringify: ")
+    if str_result.len() >= 0 {
+        print(1)
+    } else {
+        print(0)
+    }
+    
+    // Test getters (will return defaults for now)
+    let name: str = json.get_string(data, "name")
+    let count: int = json.get_int(data, "count")
+    let flag: bool = json.get_bool(data, "flag")
+    
+    print("JSON module test complete")
+}

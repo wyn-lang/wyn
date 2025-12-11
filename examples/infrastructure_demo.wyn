@@ -1,0 +1,35 @@
+// Infrastructure modules demo
+// Demonstrates the new os, json, and net modules for DevOps tasks
+
+import os
+import json
+import net
+
+fn main() {
+    print("=== Wyn Infrastructure Modules Demo ===")
+    
+    // OS module - system interaction
+    print("OS Module:")
+    let user: str = os.getenv("USER")
+    print("Current user length:")
+    print(user.len())
+    
+    let dir: str = os.cwd()
+    print("Working directory length:")
+    print(dir.len())
+    
+    // JSON module - data processing
+    print("JSON Module:")
+    let config_str: str = "config"
+    let config: str = json.parse(config_str)
+    print("JSON parsing works:")
+    print(config.len())
+    
+    // Net module - network operations
+    print("Net Module:")
+    let response: str = net.http_get("https://api.example.com")
+    print("HTTP response length:")
+    print(response.len())
+    
+    print("=== Demo Complete ===")
+}

@@ -1,0 +1,5 @@
+// Net module - Basic networking functionality
+// Simple HTTP and TCP operations for infrastructure tasks
+
+// Note: Functions are mapped to runtime implementations
+// via the module mapping system in the compiler

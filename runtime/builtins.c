@@ -297,22 +297,13 @@ int64_t array_contains(int64_t* arr, int64_t elem) {
     return 0;
 }
 
-// OS module functions
-char* getenv_wyn(const char* name) {
-    char* val = getenv(name);
-    return val ? strdup(val) : strdup("");
-}
-
+// Additional OS module functions
 int setenv_wyn(const char* name, const char* value) {
     return setenv(name, value, 1) == 0 ? 1 : 0;
 }
 
 int exec_wyn(const char* command) {
     return system(command);
-}
-
-void exit_wyn(int code) {
-    exit(code);
 }
 
 char** args_wyn() {
@@ -331,34 +322,24 @@ int chdir_wyn(const char* path) {
 }
 
 // JSON module functions (minimal implementation)
-typedef struct {
-    char** keys;
-    char** values;
-    int count;
-} JsonValue;
-
-JsonValue* parse_json(const char* s) {
-    // Minimal JSON parser - just key:value pairs
-    JsonValue* json = malloc(sizeof(JsonValue));
-    json->keys = malloc(sizeof(char*) * 100);
-    json->values = malloc(sizeof(char*) * 100);
-    json->count = 0;
-    return json;
+char* parse_json(const char* s) {
+    // Return the input string as-is for now
+    return strdup(s);
 }
 
-char* stringify_json(JsonValue* json) {
+char* stringify_json(const char* json) {
     return strdup("{}");
 }
 
-char* get_string_json(JsonValue* json, const char* key) {
+char* get_string_json(const char* json, const char* key) {
     return strdup("");
 }
 
-int get_int_json(JsonValue* json, const char* key) {
+int get_int_json(const char* json, const char* key) {
     return 0;
 }
 
-int get_bool_json(JsonValue* json, const char* key) {
+int get_bool_json(const char* json, const char* key) {
     return 0;
 }
 

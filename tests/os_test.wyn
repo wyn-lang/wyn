@@ -1,0 +1,32 @@
+import os
+
+fn main() {
+    // Test environment variables
+    let path: str = os.getenv("PATH")
+    print("PATH exists: ")
+    if path.len() > 0 {
+        print(1)
+    } else {
+        print(0)
+    }
+    
+    // Test current directory
+    let dir: str = os.cwd()
+    print("Current dir: ")
+    if dir.len() > 0 {
+        print(1)
+    } else {
+        print(0)
+    }
+    
+    // Test command execution (safe command)
+    let result: int = os.exec("echo test > /dev/null")
+    print("Command result: ")
+    if result == 0 {
+        print(1)
+    } else {
+        print(0)
+    }
+    
+    print("OS module test complete")
+}
