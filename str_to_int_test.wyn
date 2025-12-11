@@ -1,0 +1,5 @@
+fn main() {
+    print("Testing str_to_int:")
+    print(str_to_int("123"))
+    print(str_to_int("456"))
+}

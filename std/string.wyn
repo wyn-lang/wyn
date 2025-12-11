@@ -11,8 +11,12 @@ pub fn upper(s: str) -> str {
     while i < s.len() {
         const c: str = s[i:i+1]
         const code: int = ord(c)
-        if code >= 97 and code <= 122 {
-            result = result + chr(code - 32)
+        if code >= 97 {
+            if code <= 122 {
+                result = result + chr(code - 32)
+            } else {
+                result = result + c
+            }
         } else {
             result = result + c
         }
@@ -28,8 +32,12 @@ pub fn lower(s: str) -> str {
     while i < s.len() {
         const c: str = s[i:i+1]
         const code: int = ord(c)
-        if code >= 65 and code <= 90 {
-            result = result + chr(code + 32)
+        if code >= 65 {
+            if code <= 90 {
+                result = result + chr(code + 32)
+            } else {
+                result = result + c
+            }
         } else {
             result = result + c
         }

@@ -3817,6 +3817,10 @@ static bool block_ends_with_return(Stmt** stmts, int count) {
     return count > 0 && stmts[count - 1]->kind == STMT_RETURN;
 }
 
+static bool block_ends_with_break_or_continue(Stmt** stmts, int count) {
+    return count > 0 && (stmts[count - 1]->kind == STMT_BREAK || stmts[count - 1]->kind == STMT_CONTINUE);
+}
+
 static int eliminate_dead_code(Stmt** stmts, int count) {
     int new_count = 0;
     bool found_return = false;
@@ -10695,8 +10699,9 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                 snprintf(right_str, 64, "%%%d", right_reg);
             }
             
-            int t = llvm_new_temp(lg);
+            int t;
             if (is_float_op) {
+                t = llvm_new_temp(lg);
                 // Float arithmetic
                 switch (e->binary.op) {
                     case TOK_PLUS:
@@ -10738,10 +10743,33 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                 }
             } else {
                 // Integer arithmetic
+                // For most operations, allocate t first
+                // For TOK_STARSTAR, t is allocated at the end
+                if (e->binary.op != TOK_STARSTAR) {
+                    t = llvm_new_temp(lg);
+                }
+                
                 switch (e->binary.op) {
-                    case TOK_PLUS:
-                        llvm_emit(lg, "  %%%d = add i64 %s, %s", t, left_str, right_str);
+                    case TOK_PLUS: {
+                        // Check if concatenating strings
+                        bool left_is_str = (e->binary.left->kind == EXPR_STRING) ||
+                                          (e->binary.left->kind == EXPR_IDENT && 
+                                           llvm_get_var_type(lg, e->binary.left->ident) &&
+                                           llvm_get_var_type(lg, e->binary.left->ident)->kind == TYPE_STR);
+                        bool right_is_str = (e->binary.right->kind == EXPR_STRING) ||
+                                           (e->binary.right->kind == EXPR_IDENT && 
+                                            llvm_get_var_type(lg, e->binary.right->ident) &&
+                                            llvm_get_var_type(lg, e->binary.right->ident)->kind == TYPE_STR);
+                        
+                        if (left_is_str || right_is_str) {
+                            // String concatenation - call str_concat
+                            t = llvm_new_temp(lg);
+                            llvm_emit(lg, "  %%%d = call i8* @str_concat(i8* %s, i8* %s)", t, left_str, right_str);
+                        } else {
+                            llvm_emit(lg, "  %%%d = add i64 %s, %s", t, left_str, right_str);
+                        }
                         break;
+                    }
                     case TOK_MINUS:
                         llvm_emit(lg, "  %%%d = sub i64 %s, %s", t, left_str, right_str);
                         break;
@@ -10766,12 +10794,116 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     case TOK_GTEQ:
                         llvm_emit(lg, "  %%%d = icmp sge i64 %s, %s", t, left_str, right_str);
                         break;
-                    case TOK_EQEQ:
-                        llvm_emit(lg, "  %%%d = icmp eq i64 %s, %s", t, left_str, right_str);
+                    case TOK_EQEQ: {
+                        // Check if comparing strings
+                        bool left_is_str = (e->binary.left->kind == EXPR_STRING) ||
+                                          (e->binary.left->kind == EXPR_IDENT && 
+                                           llvm_get_var_type(lg, e->binary.left->ident) &&
+                                           llvm_get_var_type(lg, e->binary.left->ident)->kind == TYPE_STR);
+                        bool right_is_str = (e->binary.right->kind == EXPR_STRING) ||
+                                           (e->binary.right->kind == EXPR_IDENT && 
+                                            llvm_get_var_type(lg, e->binary.right->ident) &&
+                                            llvm_get_var_type(lg, e->binary.right->ident)->kind == TYPE_STR);
+                        
+                        if (left_is_str || right_is_str) {
+                            // String comparison - call str_cmp and check if result == 0
+                            int cmp_reg = llvm_new_temp(lg);
+                            t = llvm_new_temp(lg);
+                            llvm_emit(lg, "  %%%d = call i64 @str_cmp(i8* %s, i8* %s)", cmp_reg, left_str, right_str);
+                            llvm_emit(lg, "  %%%d = icmp eq i64 %%%d, 0", t, cmp_reg);
+                        } else {
+                            llvm_emit(lg, "  %%%d = icmp eq i64 %s, %s", t, left_str, right_str);
+                        }
                         break;
-                    case TOK_NOTEQ:
-                        llvm_emit(lg, "  %%%d = icmp ne i64 %s, %s", t, left_str, right_str);
+                    }
+                    case TOK_NOTEQ: {
+                        // Check if comparing strings
+                        bool left_is_str = (e->binary.left->kind == EXPR_STRING) ||
+                                          (e->binary.left->kind == EXPR_IDENT && 
+                                           llvm_get_var_type(lg, e->binary.left->ident) &&
+                                           llvm_get_var_type(lg, e->binary.left->ident)->kind == TYPE_STR);
+                        bool right_is_str = (e->binary.right->kind == EXPR_STRING) ||
+                                           (e->binary.right->kind == EXPR_IDENT && 
+                                            llvm_get_var_type(lg, e->binary.right->ident) &&
+                                            llvm_get_var_type(lg, e->binary.right->ident)->kind == TYPE_STR);
+                        
+                        if (left_is_str || right_is_str) {
+                            // String comparison - call str_cmp and check if result != 0
+                            int cmp_reg = llvm_new_temp(lg);
+                            t = llvm_new_temp(lg);
+                            llvm_emit(lg, "  %%%d = call i64 @str_cmp(i8* %s, i8* %s)", cmp_reg, left_str, right_str);
+                            llvm_emit(lg, "  %%%d = icmp ne i64 %%%d, 0", t, cmp_reg);
+                        } else {
+                            llvm_emit(lg, "  %%%d = icmp ne i64 %s, %s", t, left_str, right_str);
+                        }
                         break;
+                    }
+                    case TOK_PIPE:
+                        llvm_emit(lg, "  %%%d = or i64 %s, %s", t, left_str, right_str);
+                        break;
+                    case TOK_AMPERSAND:
+                        llvm_emit(lg, "  %%%d = and i64 %s, %s", t, left_str, right_str);
+                        break;
+                    case TOK_CARET:
+                        llvm_emit(lg, "  %%%d = xor i64 %s, %s", t, left_str, right_str);
+                        break;
+                    case TOK_LTLT:
+                        llvm_emit(lg, "  %%%d = shl i64 %s, %s", t, left_str, right_str);
+                        break;
+                    case TOK_GTGT:
+                        llvm_emit(lg, "  %%%d = ashr i64 %s, %s", t, left_str, right_str);
+                        break;
+                    case TOK_STARSTAR: {
+                        // Power operator: use loop-based implementation
+                        int base_reg, exp_reg, result_reg_pow;
+                        int loop_label, body_label, end_label;
+                        
+                        // Allocate variables
+                        base_reg = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = alloca i64", base_reg);
+                        exp_reg = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = alloca i64", exp_reg);
+                        result_reg_pow = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = alloca i64", result_reg_pow);
+                        
+                        // Store base and exponent
+                        llvm_emit(lg, "  store i64 %s, i64* %%%d", left_str, base_reg);
+                        llvm_emit(lg, "  store i64 %s, i64* %%%d", right_str, exp_reg);
+                        llvm_emit(lg, "  store i64 1, i64* %%%d", result_reg_pow);
+                        
+                        // Loop
+                        loop_label = llvm_new_label(lg);
+                        body_label = llvm_new_label(lg);
+                        end_label = llvm_new_label(lg);
+                        llvm_emit(lg, "  br label %%L%d", loop_label);
+                        llvm_emit(lg, "L%d:", loop_label);
+                        
+                        int exp_val = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = load i64, i64* %%%d", exp_val, exp_reg);
+                        int cond = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = icmp sgt i64 %%%d, 0", cond, exp_val);
+                        llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cond, body_label, end_label);
+                        
+                        llvm_emit(lg, "L%d:", body_label);
+                        int curr_result = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = load i64, i64* %%%d", curr_result, result_reg_pow);
+                        int base_val = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = load i64, i64* %%%d", base_val, base_reg);
+                        int new_result = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = mul i64 %%%d, %%%d", new_result, curr_result, base_val);
+                        llvm_emit(lg, "  store i64 %%%d, i64* %%%d", new_result, result_reg_pow);
+                        int new_exp = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = sub i64 %%%d, 1", new_exp, exp_val);
+                        llvm_emit(lg, "  store i64 %%%d, i64* %%%d", new_exp, exp_reg);
+                        llvm_emit(lg, "  br label %%L%d", loop_label);
+                        
+                        llvm_emit(lg, "L%d:", end_label);
+                        // Allocate t NOW, after all the loop code
+                        t = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = load i64, i64* %%%d", t, result_reg_pow);
+                        *result_reg = t;
+                        return;
+                    }
                     default:
                         // Unsupported integer operation - generate zero register
                         t = llvm_new_temp(lg);
@@ -10800,6 +10932,8 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                 llvm_emit(lg, "  %%%d = sub i64 0, %s", t, operand_str);
             } else if (e->unary.op == TOK_BANG) {
                 llvm_emit(lg, "  %%%d = xor i1 %s, true", t, operand_str);
+            } else if (e->unary.op == TOK_TILDE) {
+                llvm_emit(lg, "  %%%d = xor i64 %s, -1", t, operand_str);
             }
             *result_reg = t;
             break;
@@ -10863,6 +10997,34 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     int t = llvm_new_temp(lg);  // Capture printf return value
                     if (e->call.args[i]->kind == EXPR_STRING) {
                         llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* %%%d)", t, arg_reg);
+                    } else if (e->call.args[i]->kind == EXPR_BINARY && e->call.args[i]->binary.op == TOK_PLUS) {
+                        // Check if binary expression is string concatenation
+                        bool left_is_str = (e->call.args[i]->binary.left->kind == EXPR_STRING) ||
+                                          (e->call.args[i]->binary.left->kind == EXPR_IDENT && 
+                                           llvm_get_var_type(lg, e->call.args[i]->binary.left->ident) &&
+                                           llvm_get_var_type(lg, e->call.args[i]->binary.left->ident)->kind == TYPE_STR);
+                        bool right_is_str = (e->call.args[i]->binary.right->kind == EXPR_STRING) ||
+                                           (e->call.args[i]->binary.right->kind == EXPR_IDENT && 
+                                            llvm_get_var_type(lg, e->call.args[i]->binary.right->ident) &&
+                                            llvm_get_var_type(lg, e->call.args[i]->binary.right->ident)->kind == TYPE_STR);
+                        if (left_is_str || right_is_str) {
+                            // String concatenation result - print as string
+                            llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* %%%d)", t, arg_reg);
+                        } else {
+                            // Integer addition result - print as integer
+                            llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.int, i32 0, i32 0), i64 %%%d)", t, arg_reg);
+                        }
+                    } else if (e->call.args[i]->kind == EXPR_CALL && e->call.args[i]->call.func->kind == EXPR_IDENT) {
+                        // Check if function call returns string
+                        const char* func_name = e->call.args[i]->call.func->ident;
+                        if (strcmp(func_name, "int_to_str") == 0 || strcmp(func_name, "chr") == 0 || 
+                            strcmp(func_name, "str_concat") == 0 || strcmp(func_name, "substring") == 0) {
+                            // Function returns string - print as string
+                            llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* %%%d)", t, arg_reg);
+                        } else {
+                            // Function returns integer - print as integer
+                            llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.int, i32 0, i32 0), i64 %%%d)", t, arg_reg);
+                        }
                     } else if (e->call.args[i]->kind == EXPR_FLOAT) {
                         llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.float, i32 0, i32 0), double %f)", 
                                  t, e->call.args[i]->float_val);
@@ -10898,6 +11060,9 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                         llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.int, i32 0, i32 0), i64 %s)", t, arg_str);
                     }
                 }
+                // Add newline after print
+                int nl = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([2 x i8], [2 x i8]* @.fmt.newline, i32 0, i32 0))", nl);
                 // Print returns void, generate zero register for consistency
                 int t = llvm_new_temp(lg);
                 llvm_emit(lg, "  %%%d = add i64 0, 0", t);
@@ -11008,7 +11173,7 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     }
                     *result_reg = t;
                 } else {
-                    // Special handling for assert - convert i1 arguments to i64
+                    // Special handling for assert - convert i1 arguments to i64 if needed
                     char converted_args[1024] = "";
                     for (int i = 0; i < e->call.arg_count; i++) {
                         int arg_reg;
@@ -11018,10 +11183,24 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                         if (arg_reg <= -1000000) {
                             snprintf(arg_str, 128, "i64 %lld", (long long)(-arg_reg - 1000000));
                         } else {
-                            // Check if this is a comparison result (i1) and convert to i64
-                            int conv_reg = llvm_new_temp(lg);
-                            llvm_emit(lg, "  %%%d = zext i1 %%%d to i64", conv_reg, arg_reg);
-                            snprintf(arg_str, 128, "i64 %%%d", conv_reg);
+                            // Only convert if this is a direct comparison (i1), not a loaded variable (i64)
+                            bool is_direct_comparison = (e->call.args[i]->kind == EXPR_BINARY && 
+                                                        (e->call.args[i]->binary.op == TOK_EQEQ || 
+                                                         e->call.args[i]->binary.op == TOK_NOTEQ ||
+                                                         e->call.args[i]->binary.op == TOK_LT ||
+                                                         e->call.args[i]->binary.op == TOK_GT ||
+                                                         e->call.args[i]->binary.op == TOK_LTEQ ||
+                                                         e->call.args[i]->binary.op == TOK_GTEQ));
+                            
+                            if (is_direct_comparison) {
+                                // Convert i1 to i64
+                                int conv_reg = llvm_new_temp(lg);
+                                llvm_emit(lg, "  %%%d = zext i1 %%%d to i64", conv_reg, arg_reg);
+                                snprintf(arg_str, 128, "i64 %%%d", conv_reg);
+                            } else {
+                                // Already i64 (loaded from variable or direct value)
+                                snprintf(arg_str, 128, "i64 %%%d", arg_reg);
+                            }
                         }
                         if (i > 0) strcat(converted_args, ", ");
                         strcat(converted_args, arg_str);
@@ -11411,7 +11590,24 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
                         if (val_reg <= -1000000) {
                             llvm_emit(lg, "  store i64 %lld, i64* %%%d", (long long)(-val_reg - 1000000), alloca_reg);
                         } else {
-                            llvm_emit(lg, "  store i64 %%%d, i64* %%%d", val_reg, alloca_reg);
+                            // For non-constant values, we need to handle potential i1 to i64 conversion
+                            // Check if this is a comparison that returns i1
+                            bool needs_bool_conv = (s->let.value->kind == EXPR_BINARY && 
+                                                   (s->let.value->binary.op == TOK_EQEQ || 
+                                                    s->let.value->binary.op == TOK_NOTEQ ||
+                                                    s->let.value->binary.op == TOK_LT ||
+                                                    s->let.value->binary.op == TOK_GT ||
+                                                    s->let.value->binary.op == TOK_LTEQ ||
+                                                    s->let.value->binary.op == TOK_GTEQ));
+                            
+                            if (needs_bool_conv) {
+                                // Convert i1 to i64
+                                int conv_reg = llvm_new_temp(lg);
+                                llvm_emit(lg, "  %%%d = zext i1 %%%d to i64", conv_reg, val_reg);
+                                llvm_emit(lg, "  store i64 %%%d, i64* %%%d", conv_reg, alloca_reg);
+                            } else {
+                                llvm_emit(lg, "  store i64 %%%d, i64* %%%d", val_reg, alloca_reg);
+                            }
                         }
                     }
                 }
@@ -11553,11 +11749,24 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
             int cond_reg;
             llvm_expr(lg, s->if_stmt.cond, &cond_reg);
             
+            // Check if condition needs i64 to i1 conversion
+            // This happens when condition is a variable or function call, not a direct comparison
+            bool needs_i64_to_i1 = (s->if_stmt.cond->kind == EXPR_IDENT) ||
+                                   (s->if_stmt.cond->kind == EXPR_CALL);
+            
+            int final_cond_reg = cond_reg;
+            if (needs_i64_to_i1 && cond_reg > -1000000) {
+                // Convert i64 to i1 by comparing with 0
+                int conv_reg = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = icmp ne i64 %%%d, 0", conv_reg, cond_reg);
+                final_cond_reg = conv_reg;
+            }
+            
             int then_label = llvm_new_label(lg);
             int else_label = llvm_new_label(lg);
             int end_label = llvm_new_label(lg);
             
-            llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cond_reg, then_label, 
+            llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", final_cond_reg, then_label, 
                      s->if_stmt.else_count > 0 ? else_label : end_label);
             
             llvm_emit(lg, "L%d:", then_label);
@@ -11565,7 +11774,8 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
                 llvm_stmt(lg, s->if_stmt.then_block[i]);
             }
             bool then_returns = block_ends_with_return(s->if_stmt.then_block, s->if_stmt.then_count);
-            if (!then_returns) {
+            bool then_breaks = block_ends_with_break_or_continue(s->if_stmt.then_block, s->if_stmt.then_count);
+            if (!then_returns && !then_breaks) {
                 llvm_emit(lg, "  br label %%L%d", end_label);
             }
             
@@ -11575,7 +11785,8 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
                     llvm_stmt(lg, s->if_stmt.else_block[i]);
                 }
                 bool else_returns = block_ends_with_return(s->if_stmt.else_block, s->if_stmt.else_count);
-                if (!else_returns) {
+                bool else_breaks = block_ends_with_break_or_continue(s->if_stmt.else_block, s->if_stmt.else_count);
+                if (!else_returns && !else_breaks) {
                     llvm_emit(lg, "  br label %%L%d", end_label);
                 }
             }

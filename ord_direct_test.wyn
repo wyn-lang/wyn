@@ -1,0 +1,5 @@
+fn main() {
+    print("Testing ord:")
+    print(ord("A"))
+    print(ord("a"))
+}
