@@ -1030,6 +1030,23 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "sha256") == 0) return "sha256_hash";
         if (strcmp(function, "md5") == 0) return "md5_hash";
         if (strcmp(function, "sha1") == 0) return "sha1_hash";
+    } else if (strcmp(module, "collections") == 0) {
+        if (strcmp(function, "hashmap_new") == 0) return "hashmap_new";
+        if (strcmp(function, "hashmap_put") == 0) return "hashmap_put";
+        if (strcmp(function, "hashmap_get") == 0) return "hashmap_get";
+        if (strcmp(function, "hashmap_contains") == 0) return "hashmap_contains";
+        if (strcmp(function, "hashmap_remove") == 0) return "hashmap_remove";
+        if (strcmp(function, "hashmap_size") == 0) return "hashmap_size";
+        if (strcmp(function, "hashmap_clear") == 0) return "hashmap_clear";
+        if (strcmp(function, "set_new") == 0) return "set_new";
+        if (strcmp(function, "set_add") == 0) return "set_add";
+        if (strcmp(function, "set_contains") == 0) return "set_contains";
+        if (strcmp(function, "set_remove") == 0) return "set_remove";
+        if (strcmp(function, "set_size") == 0) return "set_size";
+        if (strcmp(function, "set_clear") == 0) return "set_clear";
+        if (strcmp(function, "sha256") == 0) return "sha256_hash";
+        if (strcmp(function, "md5") == 0) return "md5_hash";
+        if (strcmp(function, "sha1") == 0) return "sha1_hash";
     }
     return NULL;
 }
@@ -1133,6 +1150,9 @@ static Type* get_builtin_return_type(const char* builtin_name) {
     if (strcmp(builtin_name, "sha256_hash") == 0) return new_type(TYPE_STR);
     if (strcmp(builtin_name, "md5_hash") == 0) return new_type(TYPE_STR);
     if (strcmp(builtin_name, "sha1_hash") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "hashmap_new") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "hashmap_get") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "set_new") == 0) return new_type(TYPE_STR);
     
     // Integer-returning functions
     if (strcmp(builtin_name, "now_unix") == 0) return new_type(TYPE_INT);
@@ -3387,6 +3407,12 @@ static bool tc1_is_builtin(const char* name) {
     // Hash builtins
     if (strcmp(name, "sha256_hash") == 0 || strcmp(name, "md5_hash") == 0) return true;
     if (strcmp(name, "sha1_hash") == 0) return true;
+    if (strcmp(name, "hashmap_new") == 0 || strcmp(name, "hashmap_put") == 0) return true;
+    if (strcmp(name, "hashmap_get") == 0 || strcmp(name, "hashmap_contains") == 0) return true;
+    if (strcmp(name, "hashmap_remove") == 0 || strcmp(name, "hashmap_size") == 0 || strcmp(name, "hashmap_clear") == 0) return true;
+    if (strcmp(name, "set_new") == 0 || strcmp(name, "set_add") == 0) return true;
+    if (strcmp(name, "set_contains") == 0 || strcmp(name, "set_remove") == 0) return true;
+    if (strcmp(name, "set_size") == 0 || strcmp(name, "set_clear") == 0) return true;
     
     // Time builtins
     if (strcmp(name, "time_now") == 0 || strcmp(name, "sleep_ms") == 0 || strcmp(name, "sleep") == 0) return true;
@@ -11193,7 +11219,10 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                           strcmp(function, "md5") == 0 ||
                                           strcmp(function, "sha1") == 0 ||
                                           strcmp(function, "find") == 0 ||
-                                          strcmp(function, "replace") == 0);
+                                          strcmp(function, "replace") == 0 ||
+                                          strcmp(function, "hashmap_new") == 0 ||
+                                          strcmp(function, "hashmap_get") == 0 ||
+                                          strcmp(function, "set_new") == 0);
                     
                     int t = llvm_new_temp(lg);
                     if (returns_string) {
@@ -11344,7 +11373,10 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                          strcmp(func_name, "resolve_host_wyn") == 0 ||
                                          strcmp(func_name, "get_local_ip_wyn") == 0 ||
                                          strcmp(func_name, "format_timestamp") == 0 ||
-                                         strcmp(func_name, "format_iso8601") == 0);
+                                         strcmp(func_name, "format_iso8601") == 0 ||
+                                         strcmp(func_name, "hashmap_new") == 0 ||
+                                         strcmp(func_name, "hashmap_get") == 0 ||
+                                         strcmp(func_name, "set_new") == 0);
                 
                 bool is_int_builtin = (strcmp(func_name, "ord") == 0 ||
                                       strcmp(func_name, "str_find") == 0 ||
@@ -12544,6 +12576,21 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i8* @sha256_hash(i8*)");
     llvm_emit(&lg, "declare i8* @md5_hash(i8*)");
     llvm_emit(&lg, "declare i8* @sha1_hash(i8*)");
+    
+    // Collections module functions
+    llvm_emit(&lg, "declare i8* @hashmap_new()");
+    llvm_emit(&lg, "declare void @hashmap_put(i8*, i8*, i8*)");
+    llvm_emit(&lg, "declare i8* @hashmap_get(i8*, i8*)");
+    llvm_emit(&lg, "declare i64 @hashmap_contains(i8*, i8*)");
+    llvm_emit(&lg, "declare void @hashmap_remove(i8*, i8*)");
+    llvm_emit(&lg, "declare i64 @hashmap_size(i8*)");
+    llvm_emit(&lg, "declare void @hashmap_clear(i8*)");
+    llvm_emit(&lg, "declare i8* @set_new()");
+    llvm_emit(&lg, "declare void @set_add(i8*, i8*)");
+    llvm_emit(&lg, "declare i64 @set_contains(i8*, i8*)");
+    llvm_emit(&lg, "declare void @set_remove(i8*, i8*)");
+    llvm_emit(&lg, "declare i64 @set_size(i8*)");
+    llvm_emit(&lg, "declare void @set_clear(i8*)");
     llvm_emit(&lg, "");
     
     // Generate functions

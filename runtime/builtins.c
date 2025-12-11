@@ -584,6 +584,165 @@ int64_t array_contains(int64_t* arr, int64_t elem) {
     return 0;
 }
 
+// Collections module - Simple HashMap implementation
+typedef struct HashMapEntry {
+    char* key;
+    char* value;
+    struct HashMapEntry* next;
+} HashMapEntry;
+
+typedef struct {
+    HashMapEntry** buckets;
+    int size;
+    int count;
+} HashMap;
+
+// Simple hash function
+static unsigned int hash_string(const char* str) {
+    unsigned int hash = 5381;
+    int c;
+    while ((c = *str++)) {
+        hash = ((hash << 5) + hash) + c;
+    }
+    return hash;
+}
+
+HashMap* hashmap_new() {
+    HashMap* map = malloc(sizeof(HashMap));
+    map->size = 128;
+    map->count = 0;
+    map->buckets = calloc(map->size, sizeof(HashMapEntry*));
+    return map;
+}
+
+void hashmap_put(HashMap* map, const char* key, const char* value) {
+    if (!map || !key) return;
+    
+    unsigned int index = hash_string(key) % map->size;
+    HashMapEntry* entry = map->buckets[index];
+    
+    // Check if key exists
+    while (entry) {
+        if (strcmp(entry->key, key) == 0) {
+            free(entry->value);
+            entry->value = strdup(value);
+            return;
+        }
+        entry = entry->next;
+    }
+    
+    // Add new entry
+    HashMapEntry* new_entry = malloc(sizeof(HashMapEntry));
+    new_entry->key = strdup(key);
+    new_entry->value = strdup(value);
+    new_entry->next = map->buckets[index];
+    map->buckets[index] = new_entry;
+    map->count++;
+}
+
+char* hashmap_get(HashMap* map, const char* key) {
+    if (!map || !key) return strdup("");
+    
+    unsigned int index = hash_string(key) % map->size;
+    HashMapEntry* entry = map->buckets[index];
+    
+    while (entry) {
+        if (strcmp(entry->key, key) == 0) {
+            return strdup(entry->value);
+        }
+        entry = entry->next;
+    }
+    
+    return strdup("");
+}
+
+int64_t hashmap_contains(HashMap* map, const char* key) {
+    if (!map || !key) return 0;
+    
+    unsigned int index = hash_string(key) % map->size;
+    HashMapEntry* entry = map->buckets[index];
+    
+    while (entry) {
+        if (strcmp(entry->key, key) == 0) return 1;
+        entry = entry->next;
+    }
+    
+    return 0;
+}
+
+void hashmap_remove(HashMap* map, const char* key) {
+    if (!map || !key) return;
+    
+    unsigned int index = hash_string(key) % map->size;
+    HashMapEntry* entry = map->buckets[index];
+    HashMapEntry* prev = NULL;
+    
+    while (entry) {
+        if (strcmp(entry->key, key) == 0) {
+            if (prev) {
+                prev->next = entry->next;
+            } else {
+                map->buckets[index] = entry->next;
+            }
+            free(entry->key);
+            free(entry->value);
+            free(entry);
+            map->count--;
+            return;
+        }
+        prev = entry;
+        entry = entry->next;
+    }
+}
+
+int64_t hashmap_size(HashMap* map) {
+    return map ? map->count : 0;
+}
+
+void hashmap_clear(HashMap* map) {
+    if (!map) return;
+    
+    for (int i = 0; i < map->size; i++) {
+        HashMapEntry* entry = map->buckets[i];
+        while (entry) {
+            HashMapEntry* next = entry->next;
+            free(entry->key);
+            free(entry->value);
+            free(entry);
+            entry = next;
+        }
+        map->buckets[i] = NULL;
+    }
+    map->count = 0;
+}
+
+// Simple Set implementation (using HashMap with dummy values)
+typedef HashMap Set;
+
+Set* set_new() {
+    return hashmap_new();
+}
+
+void set_add(Set* set, const char* value) {
+    hashmap_put(set, value, "1");
+}
+
+int64_t set_contains(Set* set, const char* value) {
+    return hashmap_contains(set, value);
+}
+
+void set_remove(Set* set, const char* value) {
+    hashmap_remove(set, value);
+}
+
+int64_t set_size(Set* set) {
+    return hashmap_size(set);
+}
+
+void set_clear(Set* set) {
+    hashmap_clear(set);
+}
+
 // Compress module functions
 int64_t gzip_file(const char* input, const char* output) {
     char cmd[2048];
