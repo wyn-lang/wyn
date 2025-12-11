@@ -1,0 +1,52 @@
+# std/result.wyn
+# Result type for error handling
+
+enum Result[T, E] {
+    Ok(T)
+    Err(E)
+}
+
+# Create Ok result
+pub fn ok[T](value: T) -> Result[T, str] {
+    return Result.Ok(value)
+}
+
+# Create Err result
+pub fn err[E](error: E) -> Result[int, E] {
+    return Result.Err(error)
+}
+
+# Check if result is Ok
+pub fn is_ok[T, E](result: Result[T, E]) -> bool {
+    match result {
+        Result.Ok(_) => return true
+        Result.Err(_) => return false
+    }
+}
+
+# Check if result is Err
+pub fn is_err[T, E](result: Result[T, E]) -> bool {
+    match result {
+        Result.Ok(_) => return false
+        Result.Err(_) => return true
+    }
+}
+
+# Unwrap Ok value (panics if Err)
+pub fn unwrap[T, E](result: Result[T, E]) -> T {
+    match result {
+        Result.Ok(value) => return value
+        Result.Err(_) => {
+            print("Called unwrap on Err value!")
+            assert(false)
+        }
+    }
+}
+
+# Unwrap or return default
+pub fn unwrap_or[T, E](result: Result[T, E], default: T) -> T {
+    match result {
+        Result.Ok(value) => return value
+        Result.Err(_) => return default
+    }
+}

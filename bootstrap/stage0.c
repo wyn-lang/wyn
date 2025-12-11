@@ -11118,7 +11118,8 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                          strcmp(func_name, "str_concat") == 0 ||
                                          strcmp(func_name, "char_at") == 0 ||
                                          strcmp(func_name, "int_to_str") == 0 ||
-                                         strcmp(func_name, "str_substr") == 0);
+                                         strcmp(func_name, "str_substr") == 0 ||
+                                         strcmp(func_name, "read_file") == 0);
                 
                 bool is_int_builtin = (strcmp(func_name, "ord") == 0 ||
                                       strcmp(func_name, "str_find") == 0 ||
@@ -12191,6 +12192,14 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     // Builtin function declarations for stdlib
     llvm_emit(&lg, "declare i64 @assert(i64)");
     llvm_emit(&lg, "declare i64 @array_contains(i64*, i64)");
+    llvm_emit(&lg, "declare i8* @read_file_builtin(i8*)");
+    llvm_emit(&lg, "declare i64 @write_file_builtin(i8*, i8*)");
+    llvm_emit(&lg, "declare i64 @file_exists_builtin(i8*)");
+    llvm_emit(&lg, "declare i64 @append_file_builtin(i8*, i8*)");
+    llvm_emit(&lg, "declare i8* @read_file(i8*)");
+    llvm_emit(&lg, "declare i64 @write_file(i8*, i8*)");
+    llvm_emit(&lg, "declare i64 @file_exists(i8*)");
+    llvm_emit(&lg, "declare i64 @append_file(i8*, i8*)");
     llvm_emit(&lg, "declare i64 @ord(i8*)");
     llvm_emit(&lg, "declare i8* @chr(i64)");
     llvm_emit(&lg, "declare i8* @substring(i8*, i64, i64)");
@@ -12209,6 +12218,30 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i64 @min_int(i64, i64)");
     llvm_emit(&lg, "declare i64 @max_int(i64, i64)");
     llvm_emit(&lg, "declare i64 @abs_int(i64)");
+    
+    // OS module functions
+    llvm_emit(&lg, "declare i8* @getenv_wyn(i8*)");
+    llvm_emit(&lg, "declare i64 @setenv_wyn(i8*, i8*)");
+    llvm_emit(&lg, "declare i64 @exec_wyn(i8*)");
+    llvm_emit(&lg, "declare void @exit_wyn(i64)");
+    llvm_emit(&lg, "declare i8** @args_wyn()");
+    llvm_emit(&lg, "declare i8* @cwd_wyn()");
+    llvm_emit(&lg, "declare i64 @chdir_wyn(i8*)");
+    
+    // JSON module functions
+    llvm_emit(&lg, "declare i8* @parse_json(i8*)");
+    llvm_emit(&lg, "declare i8* @stringify_json(i8*)");
+    llvm_emit(&lg, "declare i8* @get_string_json(i8*, i8*)");
+    llvm_emit(&lg, "declare i64 @get_int_json(i8*, i8*)");
+    llvm_emit(&lg, "declare i64 @get_bool_json(i8*, i8*)");
+    
+    // Net module functions
+    llvm_emit(&lg, "declare i8* @http_get_wyn(i8*)");
+    llvm_emit(&lg, "declare i8* @http_post_wyn(i8*, i8*)");
+    llvm_emit(&lg, "declare i64 @tcp_connect_wyn(i8*, i64)");
+    llvm_emit(&lg, "declare i64 @tcp_send_wyn(i64, i8*)");
+    llvm_emit(&lg, "declare i8* @tcp_recv_wyn(i64, i64)");
+    llvm_emit(&lg, "declare void @tcp_close_wyn(i64)");
     llvm_emit(&lg, "");
     
     // Generate functions

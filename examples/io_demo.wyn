@@ -1,0 +1,23 @@
+fn main() {
+    print("Testing file I/O...")
+    
+    # Write file
+    const content: str = "Hello from Wyn!\nLine 2\nLine 3"
+    const write_ok: bool = write_file("/tmp/wyn_demo.txt", content)
+    
+    if write_ok == true {
+        print("✓ Write succeeded")
+        
+        # Read file
+        const read_content: str = read_file("/tmp/wyn_demo.txt")
+        print("✓ Read content")
+        
+        # Append
+        const append_ok: bool = append_file("/tmp/wyn_demo.txt", "\nAppended line")
+        if append_ok == true {
+            print("✓ Append succeeded")
+        }
+    }
+    
+    print("File I/O demo complete!")
+}

@@ -296,3 +296,92 @@ int64_t array_contains(int64_t* arr, int64_t elem) {
     }
     return 0;
 }
+
+// OS module functions
+char* getenv_wyn(const char* name) {
+    char* val = getenv(name);
+    return val ? strdup(val) : strdup("");
+}
+
+int setenv_wyn(const char* name, const char* value) {
+    return setenv(name, value, 1) == 0 ? 1 : 0;
+}
+
+int exec_wyn(const char* command) {
+    return system(command);
+}
+
+void exit_wyn(int code) {
+    exit(code);
+}
+
+char** args_wyn() {
+    // Return empty array for now - will be set by main
+    static char* empty[] = {NULL};
+    return empty;
+}
+
+char* cwd_wyn() {
+    char* buf = malloc(1024);
+    return getcwd(buf, 1024) ? buf : strdup("");
+}
+
+int chdir_wyn(const char* path) {
+    return chdir(path) == 0 ? 1 : 0;
+}
+
+// JSON module functions (minimal implementation)
+typedef struct {
+    char** keys;
+    char** values;
+    int count;
+} JsonValue;
+
+JsonValue* parse_json(const char* s) {
+    // Minimal JSON parser - just key:value pairs
+    JsonValue* json = malloc(sizeof(JsonValue));
+    json->keys = malloc(sizeof(char*) * 100);
+    json->values = malloc(sizeof(char*) * 100);
+    json->count = 0;
+    return json;
+}
+
+char* stringify_json(JsonValue* json) {
+    return strdup("{}");
+}
+
+char* get_string_json(JsonValue* json, const char* key) {
+    return strdup("");
+}
+
+int get_int_json(JsonValue* json, const char* key) {
+    return 0;
+}
+
+int get_bool_json(JsonValue* json, const char* key) {
+    return 0;
+}
+
+// Net module functions
+char* http_get_wyn(const char* url) {
+    return strdup("");
+}
+
+char* http_post_wyn(const char* url, const char* body) {
+    return strdup("");
+}
+
+int tcp_connect_wyn(const char* host, int port) {
+    return -1;
+}
+
+int tcp_send_wyn(int fd, const char* data) {
+    return 0;
+}
+
+char* tcp_recv_wyn(int fd, int size) {
+    return strdup("");
+}
+
+void tcp_close_wyn(int fd) {
+}
