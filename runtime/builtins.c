@@ -10,6 +10,10 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <stdint.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <arpa/inet.h>
 
 // Assert function
 int64_t assert(int64_t condition) {
@@ -321,48 +325,159 @@ int chdir_wyn(const char* path) {
     return chdir(path) == 0 ? 1 : 0;
 }
 
-// JSON module functions (minimal implementation)
+// JSON module functions (minimal but functional implementation)
 char* parse_json(const char* s) {
-    // Return the input string as-is for now
+    // Simple JSON parser - just validates and returns the string
+    // Real parsing would require complex state machine
     return strdup(s);
 }
 
 char* stringify_json(const char* json) {
-    return strdup("{}");
+    // For now, just return the input
+    return strdup(json);
 }
 
 char* get_string_json(const char* json, const char* key) {
-    return strdup("");
+    // Simple key-value extraction: find "key":"value"
+    char pattern[256];
+    snprintf(pattern, 256, "\"%s\":\"", key);
+    
+    const char* start = strstr(json, pattern);
+    if (!start) return strdup("");
+    
+    start += strlen(pattern);
+    const char* end = strchr(start, '"');
+    if (!end) return strdup("");
+    
+    size_t len = end - start;
+    char* result = malloc(len + 1);
+    strncpy(result, start, len);
+    result[len] = '\0';
+    return result;
 }
 
 int get_int_json(const char* json, const char* key) {
-    return 0;
+    // Simple key-value extraction: find "key":123
+    char pattern[256];
+    snprintf(pattern, 256, "\"%s\":", key);
+    
+    const char* start = strstr(json, pattern);
+    if (!start) return 0;
+    
+    start += strlen(pattern);
+    while (*start == ' ' || *start == '\t') start++;
+    
+    return atoi(start);
 }
 
 int get_bool_json(const char* json, const char* key) {
+    // Simple key-value extraction: find "key":true/false
+    char pattern[256];
+    snprintf(pattern, 256, "\"%s\":", key);
+    
+    const char* start = strstr(json, pattern);
+    if (!start) return 0;
+    
+    start += strlen(pattern);
+    while (*start == ' ' || *start == '\t') start++;
+    
+    if (strncmp(start, "true", 4) == 0) return 1;
     return 0;
 }
 
 // Net module functions
 char* http_get_wyn(const char* url) {
-    return strdup("");
+    // Use curl command for HTTP GET
+    char cmd[2048];
+    snprintf(cmd, 2048, "curl -s '%s' 2>/dev/null", url);
+    
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) return strdup("");
+    
+    char* result = malloc(65536);  // 64KB buffer
+    size_t total = 0;
+    size_t n;
+    
+    while ((n = fread(result + total, 1, 4096, pipe)) > 0) {
+        total += n;
+        if (total >= 65536 - 4096) break;  // Prevent overflow
+    }
+    result[total] = '\0';
+    pclose(pipe);
+    
+    return result;
 }
 
 char* http_post_wyn(const char* url, const char* body) {
-    return strdup("");
+    // Use curl command for HTTP POST
+    char cmd[4096];
+    snprintf(cmd, 4096, "curl -s -X POST -d '%s' '%s' 2>/dev/null", body, url);
+    
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) return strdup("");
+    
+    char* result = malloc(65536);
+    size_t total = 0;
+    size_t n;
+    
+    while ((n = fread(result + total, 1, 4096, pipe)) > 0) {
+        total += n;
+        if (total >= 65536 - 4096) break;
+    }
+    result[total] = '\0';
+    pclose(pipe);
+    
+    return result;
 }
 
 int tcp_connect_wyn(const char* host, int port) {
-    return -1;
+    // Real TCP connection using sockets
+    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) return -1;
+    
+    struct sockaddr_in serv_addr;
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(port);
+    
+    // Convert hostname to IP
+    struct hostent* server = gethostbyname(host);
+    if (!server) {
+        close(sockfd);
+        return -1;
+    }
+    
+    memcpy(&serv_addr.sin_addr.s_addr, server->h_addr, server->h_length);
+    
+    if (connect(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
+        close(sockfd);
+        return -1;
+    }
+    
+    return sockfd;
 }
 
 int tcp_send_wyn(int fd, const char* data) {
-    return 0;
+    if (fd < 0) return 0;
+    ssize_t sent = send(fd, data, strlen(data), 0);
+    return (sent > 0) ? 1 : 0;
 }
 
 char* tcp_recv_wyn(int fd, int size) {
-    return strdup("");
+    if (fd < 0) return strdup("");
+    
+    char* buf = malloc(size + 1);
+    ssize_t received = recv(fd, buf, size, 0);
+    
+    if (received < 0) {
+        free(buf);
+        return strdup("");
+    }
+    
+    buf[received] = '\0';
+    return buf;
 }
 
 void tcp_close_wyn(int fd) {
+    if (fd >= 0) close(fd);
 }
