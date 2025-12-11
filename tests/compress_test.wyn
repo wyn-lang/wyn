@@ -1,0 +1,35 @@
+import compress
+import io
+
+fn main() {
+    print("Compress module test")
+    
+    # Test file compression
+    const test_file: str = "/tmp/wyn_test.txt"
+    const gz_file: str = "/tmp/wyn_test.txt.gz"
+    
+    io.write(test_file, "Hello compression!")
+    
+    const gzip_ok: bool = compress.gzip_file(test_file, gz_file)
+    if gzip_ok == true {
+        print("Gzip: OK")
+    }
+    
+    if io.exists(gz_file) == true {
+        print("Gzip file exists: OK")
+    }
+    
+    # Test tar
+    const tar_file: str = "/tmp/wyn_test.tar.gz"
+    const tar_ok: bool = compress.tar_create(tar_file, test_file)
+    if tar_ok == true {
+        print("Tar create: OK")
+    }
+    
+    # Cleanup
+    io.delete(test_file)
+    io.delete(gz_file)
+    io.delete(tar_file)
+    
+    print("Compress module test complete")
+}

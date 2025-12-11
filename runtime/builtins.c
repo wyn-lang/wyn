@@ -531,6 +531,115 @@ int64_t array_contains(int64_t* arr, int64_t elem) {
     return 0;
 }
 
+// Compress module functions
+int64_t gzip_file(const char* input, const char* output) {
+    char cmd[2048];
+    snprintf(cmd, 2048, "gzip -c '%s' > '%s' 2>/dev/null", input, output);
+    return (system(cmd) == 0) ? 1 : 0;
+}
+
+int64_t gunzip_file(const char* input, const char* output) {
+    char cmd[2048];
+    snprintf(cmd, 2048, "gunzip -c '%s' > '%s' 2>/dev/null", input, output);
+    return (system(cmd) == 0) ? 1 : 0;
+}
+
+int64_t tar_create(const char* archive, const char* files) {
+    char cmd[4096];
+    snprintf(cmd, 4096, "tar -czf '%s' %s 2>/dev/null", archive, files);
+    return (system(cmd) == 0) ? 1 : 0;
+}
+
+int64_t tar_extract(const char* archive, const char* dest) {
+    char cmd[2048];
+    snprintf(cmd, 2048, "tar -xzf '%s' -C '%s' 2>/dev/null", archive, dest);
+    return (system(cmd) == 0) ? 1 : 0;
+}
+
+int64_t tar_list(const char* archive) {
+    char cmd[2048];
+    snprintf(cmd, 2048, "tar -tzf '%s' 2>/dev/null", archive);
+    return (system(cmd) == 0) ? 1 : 0;
+}
+
+char* compress_string(const char* data) {
+    // Write to temp file, gzip, read back
+    const char* tmp_in = "/tmp/wyn_compress_in";
+    const char* tmp_out = "/tmp/wyn_compress_out";
+    
+    FILE* f = fopen(tmp_in, "w");
+    if (!f) return strdup("");
+    fwrite(data, 1, strlen(data), f);
+    fclose(f);
+    
+    char cmd[512];
+    snprintf(cmd, 512, "gzip -c '%s' > '%s' 2>/dev/null", tmp_in, tmp_out);
+    if (system(cmd) != 0) {
+        unlink(tmp_in);
+        return strdup("");
+    }
+    
+    f = fopen(tmp_out, "rb");
+    if (!f) {
+        unlink(tmp_in);
+        unlink(tmp_out);
+        return strdup("");
+    }
+    
+    fseek(f, 0, SEEK_END);
+    long size = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    
+    char* result = malloc(size + 1);
+    fread(result, 1, size, f);
+    result[size] = '\0';
+    fclose(f);
+    
+    unlink(tmp_in);
+    unlink(tmp_out);
+    
+    return result;
+}
+
+char* decompress_string(const char* data) {
+    // Write to temp file, gunzip, read back
+    const char* tmp_in = "/tmp/wyn_decompress_in";
+    const char* tmp_out = "/tmp/wyn_decompress_out";
+    
+    FILE* f = fopen(tmp_in, "wb");
+    if (!f) return strdup("");
+    fwrite(data, 1, strlen(data), f);
+    fclose(f);
+    
+    char cmd[512];
+    snprintf(cmd, 512, "gunzip -c '%s' > '%s' 2>/dev/null", tmp_in, tmp_out);
+    if (system(cmd) != 0) {
+        unlink(tmp_in);
+        return strdup("");
+    }
+    
+    f = fopen(tmp_out, "r");
+    if (!f) {
+        unlink(tmp_in);
+        unlink(tmp_out);
+        return strdup("");
+    }
+    
+    fseek(f, 0, SEEK_END);
+    long size = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    
+    char* result = malloc(size + 1);
+    fread(result, 1, size, f);
+    result[size] = '\0';
+    fclose(f);
+    
+    unlink(tmp_in);
+    unlink(tmp_out);
+    
+    return result;
+}
+
 // Additional OS module functions
 int setenv_wyn(const char* name, const char* value) {
     return setenv(name, value, 1) == 0 ? 1 : 0;

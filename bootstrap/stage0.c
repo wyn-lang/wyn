@@ -817,6 +817,14 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "ord") == 0) return "ord";
         if (strcmp(function, "int_to_str") == 0) return "int_to_str";
         if (strcmp(function, "from_int") == 0) return "int_to_str";
+    } else if (strcmp(module, "compress") == 0) {
+        if (strcmp(function, "gzip_file") == 0) return "gzip_file";
+        if (strcmp(function, "gunzip_file") == 0) return "gunzip_file";
+        if (strcmp(function, "tar_create") == 0) return "tar_create";
+        if (strcmp(function, "tar_extract") == 0) return "tar_extract";
+        if (strcmp(function, "tar_list") == 0) return "tar_list";
+        if (strcmp(function, "compress_string") == 0) return "compress_string";
+        if (strcmp(function, "decompress_string") == 0) return "decompress_string";
     } else if (strcmp(module, "time") == 0) {
         if (strcmp(function, "now_unix") == 0) return "now_unix";
         if (strcmp(function, "now_millis") == 0) return "now_millis";
@@ -12485,6 +12493,15 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i8* @udp_recv_wyn(i64, i64)");
     llvm_emit(&lg, "declare i8* @resolve_host_wyn(i8*)");
     llvm_emit(&lg, "declare i8* @get_local_ip_wyn()");
+    
+    // Compress module functions
+    llvm_emit(&lg, "declare i64 @gzip_file(i8*, i8*)");
+    llvm_emit(&lg, "declare i64 @gunzip_file(i8*, i8*)");
+    llvm_emit(&lg, "declare i64 @tar_create(i8*, i8*)");
+    llvm_emit(&lg, "declare i64 @tar_extract(i8*, i8*)");
+    llvm_emit(&lg, "declare i64 @tar_list(i8*)");
+    llvm_emit(&lg, "declare i8* @compress_string(i8*)");
+    llvm_emit(&lg, "declare i8* @decompress_string(i8*)");
     
     // Time module functions
     llvm_emit(&lg, "declare i64 @now_unix()");
