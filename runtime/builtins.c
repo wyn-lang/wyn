@@ -743,6 +743,106 @@ void set_clear(Set* set) {
     hashmap_clear(set);
 }
 
+// Crypto module functions (using openssl commands)
+char* encrypt_aes256(const char* data, const char* key) {
+    // Use openssl for AES-256 encryption
+    char cmd[4096];
+    snprintf(cmd, 4096, "echo -n '%s' | openssl enc -aes-256-cbc -a -salt -pass pass:'%s' 2>/dev/null", data, key);
+    
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) return strdup("");
+    
+    char* result = malloc(4096);
+    size_t n = fread(result, 1, 4095, pipe);
+    result[n] = '\0';
+    pclose(pipe);
+    
+    // Remove trailing newline
+    if (n > 0 && result[n-1] == '\n') result[n-1] = '\0';
+    
+    return result;
+}
+
+char* decrypt_aes256(const char* data, const char* key) {
+    // Use openssl for AES-256 decryption
+    char cmd[4096];
+    snprintf(cmd, 4096, "echo '%s' | openssl enc -aes-256-cbc -d -a -pass pass:'%s' 2>/dev/null", data, key);
+    
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) return strdup("");
+    
+    char* result = malloc(4096);
+    size_t n = fread(result, 1, 4095, pipe);
+    result[n] = '\0';
+    pclose(pipe);
+    
+    // Remove trailing newline
+    if (n > 0 && result[n-1] == '\n') result[n-1] = '\0';
+    
+    return result;
+}
+
+char* generate_random_bytes(int64_t count) {
+    // Generate random bytes using openssl
+    char cmd[256];
+    snprintf(cmd, 256, "openssl rand -hex %lld", (long long)count);
+    
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) return strdup("");
+    
+    char* result = malloc(count * 2 + 1);
+    size_t n = fread(result, 1, count * 2, pipe);
+    result[n] = '\0';
+    pclose(pipe);
+    
+    // Remove trailing newline
+    if (n > 0 && result[n-1] == '\n') result[n-1] = '\0';
+    
+    return result;
+}
+
+char* hmac_sha256(const char* data, const char* key) {
+    // HMAC-SHA256 using openssl
+    char cmd[4096];
+    snprintf(cmd, 4096, "echo -n '%s' | openssl dgst -sha256 -hmac '%s' | cut -d' ' -f2", data, key);
+    
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) return strdup("");
+    
+    char* result = malloc(128);
+    size_t n = fread(result, 1, 127, pipe);
+    result[n] = '\0';
+    pclose(pipe);
+    
+    // Remove trailing newline
+    if (n > 0 && result[n-1] == '\n') result[n-1] = '\0';
+    
+    return result;
+}
+
+int64_t verify_signature(const char* data, const char* signature, const char* public_key) {
+    // Simplified signature verification - just check if signature matches hash
+    // Real implementation would use RSA/ECDSA
+    char cmd[4096];
+    snprintf(cmd, 4096, "echo -n '%s' | openssl dgst -sha256 | cut -d' ' -f2", data);
+    
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) return 0;
+    
+    char hash[128];
+    if (fgets(hash, 128, pipe) != NULL) {
+        // Remove newline
+        char* newline = strchr(hash, '\n');
+        if (newline) *newline = '\0';
+        
+        pclose(pipe);
+        return (strcmp(hash, signature) == 0) ? 1 : 0;
+    }
+    
+    pclose(pipe);
+    return 0;
+}
+
 // Compress module functions
 int64_t gzip_file(const char* input, const char* output) {
     char cmd[2048];
