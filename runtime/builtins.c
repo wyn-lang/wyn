@@ -311,9 +311,32 @@ int exec_wyn(const char* command) {
 }
 
 char** args_wyn() {
-    // Return empty array for now - will be set by main
-    static char* empty[] = {NULL};
-    return empty;
+    // Simple implementation: return program name and any WYN_ARGS env var
+    static char* args[100];
+    static int initialized = 0;
+    
+    if (!initialized) {
+        args[0] = strdup("wyn_program");
+        
+        // Check for WYN_ARGS environment variable
+        char* env_args = getenv("WYN_ARGS");
+        if (env_args) {
+            // Split by spaces (simple tokenization)
+            char* copy = strdup(env_args);
+            char* token = strtok(copy, " ");
+            int i = 1;
+            while (token && i < 99) {
+                args[i++] = strdup(token);
+                token = strtok(NULL, " ");
+            }
+            args[i] = NULL;
+        } else {
+            args[1] = NULL;
+        }
+        initialized = 1;
+    }
+    
+    return args;
 }
 
 char* cwd_wyn() {
