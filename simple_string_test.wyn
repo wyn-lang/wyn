@@ -1,5 +1,0 @@
-fn main() {
-    const s: str = "hello"
-    print("Testing string operations")
-    print(s)
-}

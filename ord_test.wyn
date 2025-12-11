@@ -1,7 +1,0 @@
-import string
-
-fn main() {
-    print("Testing ord:")
-    print(string.ord("A"))
-    print(string.ord("a"))
-}
