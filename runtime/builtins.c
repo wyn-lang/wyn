@@ -286,3 +286,13 @@ long long min_int(long long a, long long b) {
 long long max_int(long long a, long long b) {
     return a > b ? a : b;
 }
+
+// Array contains - check if element is in array
+int64_t array_contains(int64_t* arr, int64_t elem) {
+    if (!arr) return 0;
+    int64_t len = arr[0];  // Length is at index 0
+    for (int64_t i = 0; i < len; i++) {
+        if (arr[i + 2] == elem) return 1;  // Elements start at index 2
+    }
+    return 0;
+}

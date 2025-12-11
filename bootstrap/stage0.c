@@ -10597,7 +10597,7 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
             break;
             
         case EXPR_BOOL:
-            *result_reg = -(e->bool_val ? 1 : 0) - 2000000;
+            *result_reg = -(e->bool_val ? 1 : 0) - 1000000;
             break;
             
         case EXPR_FLOAT: {
@@ -10837,6 +10837,16 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                             llvm_emit(lg, "  %%%d = icmp ne i64 %s, %s", t, left_str, right_str);
                         }
                         break;
+                    }
+                    case TOK_IN: {
+                        // Array membership: element in array
+                        // Call array_contains builtin
+                        t = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = call i64 @array_contains(i64* %s, i64 %s)", t, right_str, left_str);
+                        int bool_result = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = icmp ne i64 %%%d, 0", bool_result, t);
+                        *result_reg = bool_result;
+                        return;
                     }
                     case TOK_PIPE:
                         llvm_emit(lg, "  %%%d = or i64 %s, %s", t, left_str, right_str);
@@ -11190,7 +11200,8 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                                          e->call.args[i]->binary.op == TOK_LT ||
                                                          e->call.args[i]->binary.op == TOK_GT ||
                                                          e->call.args[i]->binary.op == TOK_LTEQ ||
-                                                         e->call.args[i]->binary.op == TOK_GTEQ));
+                                                         e->call.args[i]->binary.op == TOK_GTEQ ||
+                                                         e->call.args[i]->binary.op == TOK_IN));
                             
                             if (is_direct_comparison) {
                                 // Convert i1 to i64
@@ -11598,7 +11609,8 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
                                                     s->let.value->binary.op == TOK_LT ||
                                                     s->let.value->binary.op == TOK_GT ||
                                                     s->let.value->binary.op == TOK_LTEQ ||
-                                                    s->let.value->binary.op == TOK_GTEQ));
+                                                    s->let.value->binary.op == TOK_GTEQ ||
+                                                    s->let.value->binary.op == TOK_IN));
                             
                             if (needs_bool_conv) {
                                 // Convert i1 to i64
@@ -12178,6 +12190,7 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     
     // Builtin function declarations for stdlib
     llvm_emit(&lg, "declare i64 @assert(i64)");
+    llvm_emit(&lg, "declare i64 @array_contains(i64*, i64)");
     llvm_emit(&lg, "declare i64 @ord(i8*)");
     llvm_emit(&lg, "declare i8* @chr(i64)");
     llvm_emit(&lg, "declare i8* @substring(i8*, i64, i64)");
