@@ -1,0 +1,27 @@
+import regex
+
+fn main() {
+    print("Regex module test")
+    
+    const text: str = "The quick brown fox jumps over the lazy dog"
+    
+    # Test matches
+    if regex.matches(text, "quick") == true {
+        print("Matches: OK")
+    }
+    
+    # Test find
+    const found: str = regex.find(text, "brown")
+    print("Found: " + found)
+    
+    # Test replace
+    const replaced: str = regex.replace(text, "fox", "cat")
+    print("Replaced: " + replaced)
+    
+    # Test count
+    const count: int = regex.count(text, "the")
+    print("Count:")
+    print(count)
+    
+    print("Regex module test complete")
+}

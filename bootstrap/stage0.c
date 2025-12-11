@@ -818,6 +818,11 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "int_to_str") == 0) return "int_to_str";
         if (strcmp(function, "from_int") == 0) return "int_to_str";
     } else if (strcmp(module, "compress") == 0) {
+    } else if (strcmp(module, "regex") == 0) {
+        if (strcmp(function, "matches") == 0) return "regex_matches";
+        if (strcmp(function, "find") == 0) return "regex_find";
+        if (strcmp(function, "replace") == 0) return "regex_replace";
+        if (strcmp(function, "count") == 0) return "regex_count";
         if (strcmp(function, "gzip_file") == 0) return "gzip_file";
         if (strcmp(function, "gunzip_file") == 0) return "gunzip_file";
         if (strcmp(function, "tar_create") == 0) return "tar_create";
@@ -11186,7 +11191,9 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                           strcmp(function, "url_decode") == 0 ||
                                           strcmp(function, "sha256") == 0 ||
                                           strcmp(function, "md5") == 0 ||
-                                          strcmp(function, "sha1") == 0);
+                                          strcmp(function, "sha1") == 0 ||
+                                          strcmp(function, "find") == 0 ||
+                                          strcmp(function, "replace") == 0);
                     
                     int t = llvm_new_temp(lg);
                     if (returns_string) {
@@ -12502,6 +12509,12 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i64 @tar_list(i8*)");
     llvm_emit(&lg, "declare i8* @compress_string(i8*)");
     llvm_emit(&lg, "declare i8* @decompress_string(i8*)");
+    
+    // Regex module functions
+    llvm_emit(&lg, "declare i64 @regex_matches(i8*, i8*)");
+    llvm_emit(&lg, "declare i8* @regex_find(i8*, i8*)");
+    llvm_emit(&lg, "declare i8* @regex_replace(i8*, i8*, i8*)");
+    llvm_emit(&lg, "declare i64 @regex_count(i8*, i8*)");
     
     // Time module functions
     llvm_emit(&lg, "declare i64 @now_unix()");

@@ -521,6 +521,59 @@ char* get_local_ip_wyn() {
     return strdup("127.0.0.1");
 }
 
+// Regex module functions (using grep/sed)
+int64_t regex_matches(const char* text, const char* pattern) {
+    char cmd[4096];
+    snprintf(cmd, 4096, "echo '%s' | grep -E '%s' >/dev/null 2>&1", text, pattern);
+    return (system(cmd) == 0) ? 1 : 0;
+}
+
+char* regex_find(const char* text, const char* pattern) {
+    char cmd[4096];
+    snprintf(cmd, 4096, "echo '%s' | grep -oE '%s' | head -1", text, pattern);
+    
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) return strdup("");
+    
+    char* result = malloc(1024);
+    size_t n = fread(result, 1, 1023, pipe);
+    result[n] = '\0';
+    pclose(pipe);
+    
+    if (n > 0 && result[n-1] == '\n') result[n-1] = '\0';
+    return result;
+}
+
+char* regex_replace(const char* text, const char* pattern, const char* replacement) {
+    char cmd[4096];
+    snprintf(cmd, 4096, "echo '%s' | sed -E 's/%s/%s/g'", text, pattern, replacement);
+    
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) return strdup("");
+    
+    char* result = malloc(4096);
+    size_t n = fread(result, 1, 4095, pipe);
+    result[n] = '\0';
+    pclose(pipe);
+    
+    if (n > 0 && result[n-1] == '\n') result[n-1] = '\0';
+    return result;
+}
+
+int64_t regex_count(const char* text, const char* pattern) {
+    char cmd[4096];
+    snprintf(cmd, 4096, "echo '%s' | grep -oE '%s' | wc -l", text, pattern);
+    
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) return 0;
+    
+    char buf[32];
+    fgets(buf, 32, pipe);
+    pclose(pipe);
+    
+    return atoi(buf);
+}
+
 // Array contains - check if element is in array
 int64_t array_contains(int64_t* arr, int64_t elem) {
     if (!arr) return 0;
