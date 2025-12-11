@@ -11390,8 +11390,16 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                 int elem_ptr = llvm_new_temp(lg);
                 llvm_emit(lg, "  %%%d = getelementptr i64, i64* %%%d, i64 %d", elem_ptr, ptr_reg, i + 2);
                 
+                // Check if element is a string
+                bool is_string_elem = (e->array.elements[i]->kind == EXPR_STRING);
+                
                 if (elem_reg <= -1000000) {
                     llvm_emit(lg, "  store i64 %lld, i64* %%%d", (long long)(-elem_reg - 1000000), elem_ptr);
+                } else if (is_string_elem) {
+                    // Cast i8* to i64 for storage
+                    int cast_reg = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = ptrtoint i8* %%%d to i64", cast_reg, elem_reg);
+                    llvm_emit(lg, "  store i64 %%%d, i64* %%%d", cast_reg, elem_ptr);
                 } else {
                     llvm_emit(lg, "  store i64 %%%d, i64* %%%d", elem_reg, elem_ptr);
                 }

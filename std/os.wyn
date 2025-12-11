@@ -1,9 +1,5 @@
 # std/os.wyn
 # Operating system interface
 
-# Note: Functions are mapped to runtime implementations
+# Note: All functions are mapped to runtime implementations
 # via the module mapping system in the compiler
-
-# Limitation: args() is not yet implemented
-# Requires string array support which is pending
-# Workaround: Use environment variables (WYN_ARGS)

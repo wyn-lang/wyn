@@ -1,0 +1,13 @@
+import os
+
+fn main() {
+    print("Command line arguments demo")
+    print("Set WYN_ARGS environment variable to pass arguments")
+    
+    const args: str = os.getenv("WYN_ARGS")
+    if args.len() > 0 {
+        print("Arguments: " + args)
+    } else {
+        print("No arguments provided")
+    }
+}
