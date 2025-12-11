@@ -1,17 +1,7 @@
 # std/core.wyn
-# Core functions - must be imported to use
+# Core types and utilities
 
-# Print a string
-fn print(s: str) {
-    print(s)
-}
-
-# Get length of array or string  
-fn len(arr: [any]) -> int {
-    return len(arr)
-}
-
-# Check a condition is true (assert)
-fn check(condition: bool) {
-    assert(condition)
-}
+# This module is intentionally minimal
+# Most core functionality is provided as builtins:
+# - print(), println() - output
+# - assert() - assertions

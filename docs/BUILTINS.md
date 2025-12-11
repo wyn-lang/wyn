@@ -1,81 +1,113 @@
 # Wyn Builtins
 
-## Current Status
+## Philosophy
 
-**Goal:** Only `print()` as a global builtin.  
-**Reality:** ~40 builtins currently accessible.
+Wyn provides a minimal set of builtin functions that are available without imports. These are fundamental operations needed by almost every program.
 
-## Why?
+## Available Without Import
 
-The stdlib modules (string, io, os, etc.) call C runtime functions like `int_to_str`, `ord`, `chr`. These must be accessible during stdlib compilation.
+### Output
+- `print(value)` - Print value with newline
+- `println(value)` - Alias for print (for compatibility)
 
-Due to how module loading works (parse → merge → type check), we can't distinguish between "builtin called from stdlib" vs "builtin called from user code" at type-check time.
+### Assertions
+- `assert(condition: bool)` - Panic if condition is false
 
-## Available Builtins
+### String Operations
+- `ord(s: str) -> int` - Get ASCII code of first character
+- `chr(code: int) -> str` - Convert ASCII code to character
+- `str_to_int(s: str) -> int` - Parse string as integer
+- `int_to_str(n: int) -> str` - Convert integer to string
+- `str_len(s: str) -> int` - Get string length
+- `str_find(s: str, substr: str) -> int` - Find substring position
+- `str_concat(a: str, b: str) -> str` - Concatenate strings
+- `str_cmp(a: str, b: str) -> int` - Compare strings
+- `substring(s: str, start: int, len: int) -> str` - Extract substring
+- `char_at(s: str, index: int) -> str` - Get character at index
 
-### Always Use These Via Stdlib
+### String Methods
+- `s.len()` - String length (syntactic sugar for str_len)
+
+### Array Methods
+- `arr.len()` - Array length
+
+## Require Import
+
+### String Module (`import string`)
+- `upper(s: str) -> str`
+- `lower(s: str) -> str`
+- `trim(s: str) -> str`
+- `starts_with(s: str, prefix: str) -> bool`
+- `ends_with(s: str, suffix: str) -> bool`
+- `contains(s: str, substr: str) -> bool`
+- `find(s: str, substr: str) -> int`
+- `split(s: str, delimiter: str) -> [str]`
+
+### Math Module (`import math`)
+- Trigonometric functions
+- Logarithms
+- Power functions
+- Constants
+
+### Array Module (`import array`)
+- Advanced array operations
+- Functional programming helpers
+
+### Task Module (`import task`)
+- Concurrency primitives
+- Channels
+- Async operations
+
+## Rationale
+
+### Why These Builtins?
+
+1. **print/println**: Every program needs output
+2. **assert**: Essential for testing and debugging
+3. **String basics**: String manipulation is fundamental
+4. **String methods**: Convenient syntax for common operations
+
+### Why Not More?
+
+- Keeps language core minimal
+- Encourages explicit dependencies
+- Makes code more maintainable
+- Follows principle: "import what you use"
+
+## Future Considerations
+
+As the language matures, we may:
+- Move some string functions to require `import string`
+- Add more method syntax (`.upper()`, `.lower()`, etc.)
+- Introduce a prelude module that's auto-imported
+
+For now, the current set provides a good balance between convenience and explicitness.
+
+## Examples
+
+### No Imports Needed
 ```wyn
-// ❌ DON'T: Direct builtin access
-let s: str = int_to_str(42)
-
-// ✅ DO: Via stdlib module
-import string
-let s: str = string.from_int(42)
-```
-
-### Core (Global)
-- `print()` - Print to stdout
-
-### String (Use via `import string`)
-- ord, chr, substring, str_split, str_find
-- str_concat, str_cmp, char_at, int_to_str
-- str_substr, str_to_int
-
-### Math (Use via `import math`)
-- abs, sqrtf, int_to_float, float_to_int
-
-### File/IO (Use via `import io`)
-- len, read_file, write_file, append_file
-- file_exists, file_size, read_stdin_line
-- mkdir, rmdir, rename_file
-
-### OS (Use via `import os`)
-- getcwd, getpid, args
-
-### Time (Use via `import time`)
-- time_now, sleep_ms, sleep
-
-### System
-- syscall - Low-level system calls
-
-## Best Practice
-
-**Always use stdlib modules:**
-```wyn
-import string
-import io
-import os
-
 fn main() {
-    let s: str = string.from_int(42)
-    io.write_file("out.txt", s)
-    os.exit(0)
+    print("Hello")
+    assert(5 > 3)
+    
+    const s: str = "test"
+    print(s.len())
+    print(ord("A"))
+    print(chr(65))
 }
 ```
 
-**Never call builtins directly** (even though the compiler allows it).
+### With Imports
+```wyn
+import string
+import math
 
-## Future
-
-To enforce "one correct way":
-1. Track function source during module loading
-2. Only allow builtins in stdlib context
-3. Reject builtin calls in user code
-
-This requires refactoring the module loading and type checking pipeline.
-
-## Conclusion
-
-**Convention over enforcement:** Use stdlib modules for all functionality except `print()`.
-
-The compiler currently allows direct builtin access for technical reasons, but this is considered **bad practice** and may be restricted in future versions.
+fn main() {
+    const s: str = string.upper("hello")
+    print(s)
+    
+    const x: float = math.sin(3.14)
+    print(x)
+}
+```
