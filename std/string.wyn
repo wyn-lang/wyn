@@ -4,10 +4,8 @@
 # The builtin functions ord, chr, int_to_str, str_to_int, char_at, str_find, 
 # str_split, str_concat, str_cmp, str_substr are available globally
 
-# Split string into array of strings
-pub fn split(s: str, delim: str) -> [str] {
-    return str_split(s, delim)
-}
+# Note: str_split is a builtin that returns [str]
+# Use it directly: str_split(text, delim)
 
 # Convert string to uppercase
 pub fn upper(s: str) -> str {

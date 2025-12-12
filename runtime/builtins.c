@@ -1117,6 +1117,24 @@ int exec_wyn(const char* command) {
     return system(command);
 }
 
+char* exec_output_wyn(const char* command) {
+    FILE* pipe = popen(command, "r");
+    if (!pipe) return strdup("");
+    
+    char* result = malloc(65536);
+    size_t total = 0;
+    size_t n;
+    
+    while ((n = fread(result + total, 1, 4096, pipe)) > 0) {
+        total += n;
+        if (total >= 61440) break;  // Leave room for null terminator
+    }
+    result[total] = '\0';
+    
+    pclose(pipe);
+    return result;
+}
+
 char** args_wyn() {
     // Simple implementation: return program name and any WYN_ARGS env var
     static char* args[100];

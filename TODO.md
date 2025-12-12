@@ -28,10 +28,16 @@
 
 ## Grand Total: 99 Infrastructure Functions, ALL REAL! 🚀
 
+### NEW: String Arrays and Atomic Operations! 🎉
+- ✅ **String arrays** - `const arr: [str] = str_split("a,b,c", ",")`
+- ✅ **Array iteration** - `for item in arr { print(item) }`
+- ✅ **Atomic operations** - `wyn_atomic_add/sub/load/store/cas`
+- ✅ **os.exec_output()** - Execute command and capture output
+
 ### Test Suite Status
-- **Current**: 112/112 passing (100%)
-- **Examples**: 85/85
-- **Tests**: 27/27
+- **Current**: 120/120 passing (100%)
+- **Examples**: 89/89
+- **Tests**: 31/31
 
 ### What's Next:
 

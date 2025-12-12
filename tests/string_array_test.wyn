@@ -1,11 +1,9 @@
-import string
-
 fn main() {
-    // Test str_split
+    // Test str_split (builtin)
     const text: str = "apple,banana,cherry"
-    const fruits: [str] = string.split(text, ",")
+    const fruits: [str] = str_split(text, ",")
     
-    // Test iteration over string array
+    // Test iteration (this should work with our new for loop code)
     print("Fruits:")
     for fruit in fruits {
         print(fruit)
@@ -13,12 +11,12 @@ fn main() {
     
     // Test with newlines
     const lines: str = "line1\nline2\nline3"
-    const parts: [str] = string.split(lines, "\n")
+    const parts: [str] = str_split(lines, "\n")
     
     print("Lines:")
     for line in parts {
         print(line)
     }
     
-    print("All string array tests passed!")
+    print("String array tests passed!")
 }

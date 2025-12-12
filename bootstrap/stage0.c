@@ -856,6 +856,7 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "getenv") == 0) return "getenv_wyn";
         if (strcmp(function, "setenv") == 0) return "setenv_wyn";
         if (strcmp(function, "exec") == 0) return "exec_wyn";
+        if (strcmp(function, "exec_output") == 0) return "exec_output_wyn";
         if (strcmp(function, "exit") == 0) return "exit_wyn";
         if (strcmp(function, "args") == 0) return "args_wyn";
         if (strcmp(function, "cwd") == 0) return "cwd_wyn";
@@ -1227,6 +1228,7 @@ static Type* get_builtin_return_type(const char* builtin_name) {
     if (strcmp(builtin_name, "http_parse_method") == 0) return new_type(TYPE_STR);
     if (strcmp(builtin_name, "http_parse_path") == 0) return new_type(TYPE_STR);
     if (strcmp(builtin_name, "http_parse_body") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "exec_output_wyn") == 0) return new_type(TYPE_STR);
     
     // Integer-returning functions
     if (strcmp(builtin_name, "now_unix") == 0) return new_type(TYPE_INT);
@@ -11379,6 +11381,7 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                           strcmp(function, "int_to_str") == 0 ||
                                           strcmp(function, "getenv") == 0 ||
                                           strcmp(function, "cwd") == 0 ||
+                                          strcmp(function, "exec_output") == 0 ||
                                           strcmp(function, "parse") == 0 ||
                                           strcmp(function, "stringify") == 0 ||
                                           strcmp(function, "get_string") == 0 ||
@@ -11899,7 +11902,21 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
             // Load element
             int t = llvm_new_temp(lg);
             llvm_emit(lg, "  %%%d = load i64, i64* %%%d", t, elem_ptr);
-            *result_reg = t;
+            
+            // Check if this is a string array - need to cast i64 to i8*
+            Type* arr_type = NULL;
+            if (e->index.object->kind == EXPR_IDENT) {
+                arr_type = llvm_get_var_type(lg, e->index.object->ident);
+            }
+            
+            if (arr_type && arr_type->kind == TYPE_ARRAY && arr_type->inner && arr_type->inner->kind == TYPE_STR) {
+                // Cast i64 to i8* for string arrays
+                int str_reg = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = inttoptr i64 %%%d to i8*", str_reg, t);
+                *result_reg = str_reg;
+            } else {
+                *result_reg = t;
+            }
             break;
         }
         
@@ -12456,8 +12473,99 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
                 
                 lg->loop_start_label = old_start;
                 lg->loop_end_label = old_end;
+            } else {
+                // Array iteration: for elem in arr
+                int arr_reg;
+                llvm_expr(lg, s->for_stmt.iter, &arr_reg);
+                
+                // Get array type to determine element type
+                Type* arr_type = NULL;
+                if (s->for_stmt.iter->kind == EXPR_IDENT) {
+                    arr_type = llvm_get_var_type(lg, s->for_stmt.iter->ident);
+                }
+                bool is_string_array = arr_type && arr_type->kind == TYPE_ARRAY && 
+                                      arr_type->inner && arr_type->inner->kind == TYPE_STR;
+                
+                // Allocate loop variable and index
+                int var_reg = llvm_new_temp(lg);
+                int idx_reg = llvm_new_temp(lg);
+                
+                if (is_string_array) {
+                    llvm_emit(lg, "  %%%d = alloca i8*", var_reg);
+                } else {
+                    llvm_emit(lg, "  %%%d = alloca i64", var_reg);
+                }
+                llvm_emit(lg, "  %%%d = alloca i64", idx_reg);
+                llvm_add_var(lg, s->for_stmt.var, var_reg, arr_type ? arr_type->inner : new_type(TYPE_INT));
+                
+                // Initialize index to 0
+                llvm_emit(lg, "  store i64 0, i64* %%%d", idx_reg);
+                
+                // Get array length
+                int len_ptr = llvm_new_temp(lg);
+                int len_reg = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = getelementptr i64, i64* %%%d, i64 0", len_ptr, arr_reg);
+                llvm_emit(lg, "  %%%d = load i64, i64* %%%d", len_reg, len_ptr);
+                
+                // Create labels
+                int cond_label = llvm_new_label(lg);
+                int body_label = llvm_new_label(lg);
+                int cont_label = llvm_new_label(lg);
+                int end_label = llvm_new_label(lg);
+                
+                int old_start = lg->loop_start_label;
+                int old_end = lg->loop_end_label;
+                lg->loop_start_label = cont_label;
+                lg->loop_end_label = end_label;
+                
+                llvm_emit(lg, "  br label %%L%d", cond_label);
+                
+                // Condition: idx < len
+                llvm_emit(lg, "L%d:", cond_label);
+                int curr_idx = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = load i64, i64* %%%d", curr_idx, idx_reg);
+                int cmp = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = icmp slt i64 %%%d, %%%d", cmp, curr_idx, len_reg);
+                llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cmp, body_label, end_label);
+                
+                // Body: load element and execute statements
+                llvm_emit(lg, "L%d:", body_label);
+                int adj_idx = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = add i64 %%%d, 2", adj_idx, curr_idx);
+                int elem_ptr = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = getelementptr i64, i64* %%%d, i64 %%%d", elem_ptr, arr_reg, adj_idx);
+                int elem_val = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = load i64, i64* %%%d", elem_val, elem_ptr);
+                
+                if (is_string_array) {
+                    // Cast i64 to i8* for string elements
+                    int str_val = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = inttoptr i64 %%%d to i8*", str_val, elem_val);
+                    llvm_emit(lg, "  store i8* %%%d, i8** %%%d", str_val, var_reg);
+                } else {
+                    llvm_emit(lg, "  store i64 %%%d, i64* %%%d", elem_val, var_reg);
+                }
+                
+                for (int i = 0; i < s->for_stmt.body_count; i++) {
+                    llvm_stmt(lg, s->for_stmt.body[i]);
+                }
+                llvm_emit(lg, "  br label %%L%d", cont_label);
+                
+                // Continue: increment index
+                llvm_emit(lg, "L%d:", cont_label);
+                int loaded_idx = llvm_new_temp(lg);
+                int next_idx = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = load i64, i64* %%%d", loaded_idx, idx_reg);
+                llvm_emit(lg, "  %%%d = add i64 %%%d, 1", next_idx, loaded_idx);
+                llvm_emit(lg, "  store i64 %%%d, i64* %%%d", next_idx, idx_reg);
+                llvm_emit(lg, "  br label %%L%d", cond_label);
+                
+                // End
+                llvm_emit(lg, "L%d:", end_label);
+                
+                lg->loop_start_label = old_start;
+                lg->loop_end_label = old_end;
             }
-            // TODO: Array iteration
             break;
         }
         
@@ -12761,6 +12869,7 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i8* @getenv_wyn(i8*)");
     llvm_emit(&lg, "declare i64 @setenv_wyn(i8*, i8*)");
     llvm_emit(&lg, "declare i64 @exec_wyn(i8*)");
+    llvm_emit(&lg, "declare i8* @exec_output_wyn(i8*)");
     llvm_emit(&lg, "declare i8** @args_wyn()");
     llvm_emit(&lg, "declare i8* @cwd_wyn()");
     llvm_emit(&lg, "declare i64 @chdir_wyn(i8*)");

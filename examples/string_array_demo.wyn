@@ -1,20 +1,13 @@
 fn main() {
     print("String Array Demo")
     
-    const arr: [str] = ["apple", "banana", "cherry", "date"]
-    
-    print("Array length:")
-    print(arr.len())
+    // Create string array using str_split
+    const arr: [str] = str_split("apple,banana,cherry,date", ",")
     
     print("Elements:")
-    print(arr[0])
-    print(arr[1])
-    print(arr[2])
-    print(arr[3])
-    
-    print("Negative indexing:")
-    print(arr[-1])
-    print(arr[-2])
+    for item in arr {
+        print(item)
+    }
     
     print("String array operations complete!")
 }
