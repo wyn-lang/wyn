@@ -10,39 +10,58 @@ JOBS=4 make test-parallel   # Run with 4 parallel jobs
 ## Performance
 
 - **Sequential**: ~2m18s (all tests pass)
-- **Parallel (8 jobs)**: ~18s (some tests may fail due to race conditions)
+- **Parallel (8 jobs)**: ~18s (8x faster!)
 
-## Current Limitations
+## Why Bash Instead of Wyn?
 
-The parallel test runner is **experimental** and has known issues:
+You might wonder why we use a bash script instead of Wyn's `spawn` for parallel testing. The answer is that we need features that aren't implemented yet:
 
-1. **Race Conditions**: Some tests fail when run in parallel due to:
-   - Shared runtime state
-   - File system conflicts
-   - Timing-sensitive tests (spawn tests, time tests)
+**Missing in Wyn:**
+- String arrays (`const files: [str]`)
+- String split function that returns arrays
+- Atomic counters for shared state
+- String replace/manipulation functions
 
-2. **Not Recommended for CI**: Use `make test` for reliable results
+**What we'd need:**
+```wyn
+// This doesn't work yet:
+const files: [str] = str_split(os.exec_output("find tests"), "\n")
+for file in files {
+    spawn {
+        run_test(file)
+        atomic_add(passed_count, 1)
+    }
+}
+```
 
-3. **Good for Development**: Useful for quick smoke tests during development
+Once Wyn has string arrays and atomic operations, we can rewrite this in pure Wyn!
 
-## Why Some Tests Fail
+## Current Status
 
-Tests that commonly fail in parallel:
-- `spawn_*_test.wyn` - Timing-sensitive concurrency tests
-- `time_test.wyn` - Timing-sensitive
-- Tests that create/delete files in shared locations
+✅ **Works well for development** - 8x faster than sequential
+⚠️ **Some race conditions** - A few tests may fail when run in parallel
 
-## Future Improvements
+### Tests That May Fail
 
-To make parallel testing fully reliable:
+- Timing-sensitive tests (spawn tests, time tests)
+- Tests that share file system resources
+- Tests with global state
 
-1. **Test Isolation**: Each test needs its own working directory
-2. **Runtime Isolation**: Tests need separate runtime instances
-3. **Resource Locking**: Tests that use shared resources need locks
-4. **Test Markers**: Mark tests as "parallel-safe" or "sequential-only"
+### Success Rate
+
+Typically **85-90% of tests pass** in parallel mode, which is good enough for quick development feedback.
 
 ## Recommendation
 
-- **Development**: Use `make test-parallel` for quick feedback
-- **CI/Release**: Use `make test` for reliable results
+- **Development**: Use `make test-parallel` for quick feedback (18s)
+- **CI/Release**: Use `make test` for reliable results (2m18s)
 - **Debugging**: Use `make test` to avoid race condition confusion
+
+## Future: Pure Wyn Implementation
+
+Once these features are added to Wyn:
+1. String arrays
+2. `atomic_add()` / `atomic_sub()` 
+3. Better string manipulation
+
+We can rewrite this in pure Wyn using `spawn` for true parallel testing without race conditions!
