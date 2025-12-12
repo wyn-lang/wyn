@@ -50,7 +50,7 @@
 10. **Traits/interfaces** - For polymorphism
 
 #### Developer Tools (High Effort):
-11. **REPL** - Interactive shell
+11. ✅ **REPL** - Interactive shell (COMPLETE)
 12. **LSP server** - IDE support (autocomplete, go-to-def)
 13. **Package manager** - `wyn pkg install`
 14. **Debugger** - Step-through debugging
