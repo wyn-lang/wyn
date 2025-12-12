@@ -1,0 +1,30 @@
+# Test simple Result/Option indicators
+
+enum ResultType {
+    Ok = 0,
+    Err = 1
+}
+
+fn divide(a: int, b: int) -> int {
+    if b == 0 {
+        return Err
+    }
+    return Ok
+}
+
+fn main() {
+    print("Result/Option test")
+    
+    const r1: int = divide(10, 2)
+    if r1 == Ok {
+        print("Result: Ok")
+    }
+    
+    const r2: int = divide(10, 0)
+    if r2 == Err {
+        print("Result: Err")
+    }
+    
+    print("Simple Result types work")
+    print("Note: Full Result[T,E] requires generics")
+}
