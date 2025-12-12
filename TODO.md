@@ -36,9 +36,9 @@
 ### What's Next:
 
 #### High Priority:
-1. ✅ **HTTP server** - COMPLETE (10 functions added to net module)
-2. ✅ **Result/Option types** - Simple version implemented (enum-based)
-3. **Better error messages** - Add context and suggestions
+1. ✅ **HTTP server** - COMPLETE
+2. ✅ **Result/Option types** - Simple version implemented
+3. ✅ **Better error messages** - COMPLETE (beautiful formatting + suggestions)
 
 #### Medium Priority:
 4. **Generics** - Enables proper Result[T,E] and Option[T]
