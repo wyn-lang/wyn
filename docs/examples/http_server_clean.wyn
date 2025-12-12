@@ -1,0 +1,34 @@
+import net
+
+fn main() {
+    print("Starting server on :8080")
+    
+    const server: int = net.serve(8080)
+    if server < 0 {
+        print("Failed to start server")
+        return
+    }
+    
+    print("Server ready! Try: curl http://localhost:8080/api")
+    
+    # Handle one request
+    const client: int = net.accept(server)
+    if client >= 0 {
+        const req: net.Request = net.read_request(client)
+        
+        print("Request: " + req.method + " " + req.path)
+        
+        # Simple routing
+        if req.path == "/api" {
+            net.respond_json(client, 200, "{status:ok}")
+        } else if req.path == "/hello" {
+            net.respond(client, 200, "Hello from Wyn!")
+        } else {
+            net.respond(client, 404, "Not Found")
+        }
+        
+        net.close_client(client)
+    }
+    
+    net.close_server(server)
+}
