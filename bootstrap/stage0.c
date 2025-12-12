@@ -1044,9 +1044,12 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "set_remove") == 0) return "set_remove";
         if (strcmp(function, "set_size") == 0) return "set_size";
         if (strcmp(function, "set_clear") == 0) return "set_clear";
-        if (strcmp(function, "sha256") == 0) return "sha256_hash";
-        if (strcmp(function, "md5") == 0) return "md5_hash";
-        if (strcmp(function, "sha1") == 0) return "sha1_hash";
+    } else if (strcmp(module, "crypto") == 0) {
+        if (strcmp(function, "encrypt_aes256") == 0) return "encrypt_aes256";
+        if (strcmp(function, "decrypt_aes256") == 0) return "decrypt_aes256";
+        if (strcmp(function, "generate_random_bytes") == 0) return "generate_random_bytes";
+        if (strcmp(function, "hmac_sha256") == 0) return "hmac_sha256";
+        if (strcmp(function, "verify_signature") == 0) return "verify_signature";
     }
     return NULL;
 }
@@ -1153,6 +1156,10 @@ static Type* get_builtin_return_type(const char* builtin_name) {
     if (strcmp(builtin_name, "hashmap_new") == 0) return new_type(TYPE_STR);
     if (strcmp(builtin_name, "hashmap_get") == 0) return new_type(TYPE_STR);
     if (strcmp(builtin_name, "set_new") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "encrypt_aes256") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "decrypt_aes256") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "generate_random_bytes") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "hmac_sha256") == 0) return new_type(TYPE_STR);
     
     // Integer-returning functions
     if (strcmp(builtin_name, "now_unix") == 0) return new_type(TYPE_INT);
@@ -3413,6 +3420,9 @@ static bool tc1_is_builtin(const char* name) {
     if (strcmp(name, "set_new") == 0 || strcmp(name, "set_add") == 0) return true;
     if (strcmp(name, "set_contains") == 0 || strcmp(name, "set_remove") == 0) return true;
     if (strcmp(name, "set_size") == 0 || strcmp(name, "set_clear") == 0) return true;
+    if (strcmp(name, "encrypt_aes256") == 0 || strcmp(name, "decrypt_aes256") == 0) return true;
+    if (strcmp(name, "generate_random_bytes") == 0 || strcmp(name, "hmac_sha256") == 0) return true;
+    if (strcmp(name, "verify_signature") == 0) return true;
     
     // Time builtins
     if (strcmp(name, "time_now") == 0 || strcmp(name, "sleep_ms") == 0 || strcmp(name, "sleep") == 0) return true;
@@ -11222,7 +11232,11 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                           strcmp(function, "replace") == 0 ||
                                           strcmp(function, "hashmap_new") == 0 ||
                                           strcmp(function, "hashmap_get") == 0 ||
-                                          strcmp(function, "set_new") == 0);
+                                          strcmp(function, "set_new") == 0 ||
+                                          strcmp(function, "encrypt_aes256") == 0 ||
+                                          strcmp(function, "decrypt_aes256") == 0 ||
+                                          strcmp(function, "generate_random_bytes") == 0 ||
+                                          strcmp(function, "hmac_sha256") == 0);
                     
                     int t = llvm_new_temp(lg);
                     if (returns_string) {
@@ -11376,7 +11390,11 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                          strcmp(func_name, "format_iso8601") == 0 ||
                                          strcmp(func_name, "hashmap_new") == 0 ||
                                          strcmp(func_name, "hashmap_get") == 0 ||
-                                         strcmp(func_name, "set_new") == 0);
+                                         strcmp(func_name, "set_new") == 0 ||
+                                         strcmp(func_name, "encrypt_aes256") == 0 ||
+                                         strcmp(func_name, "decrypt_aes256") == 0 ||
+                                         strcmp(func_name, "generate_random_bytes") == 0 ||
+                                         strcmp(func_name, "hmac_sha256") == 0);
                 
                 bool is_int_builtin = (strcmp(func_name, "ord") == 0 ||
                                       strcmp(func_name, "str_find") == 0 ||
@@ -12591,6 +12609,13 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare void @set_remove(i8*, i8*)");
     llvm_emit(&lg, "declare i64 @set_size(i8*)");
     llvm_emit(&lg, "declare void @set_clear(i8*)");
+    
+    // Crypto module functions
+    llvm_emit(&lg, "declare i8* @encrypt_aes256(i8*, i8*)");
+    llvm_emit(&lg, "declare i8* @decrypt_aes256(i8*, i8*)");
+    llvm_emit(&lg, "declare i8* @generate_random_bytes(i64)");
+    llvm_emit(&lg, "declare i8* @hmac_sha256(i8*, i8*)");
+    llvm_emit(&lg, "declare i64 @verify_signature(i8*, i8*, i8*)");
     llvm_emit(&lg, "");
     
     // Generate functions
