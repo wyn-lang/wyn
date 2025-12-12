@@ -1,0 +1,19 @@
+// Multi-line String Demo
+// Shows how to use triple quotes for multi-line strings
+
+fn main() {
+    // Basic multi-line string
+    let poem: str = """Roses are red,
+Violets are blue,
+Wyn is fast,
+And so are you!"""
+    print(poem)
+    print("---")
+    
+    // Multi-line string with simple content
+    let message: str = """This is line 1
+This is line 2
+This is line 3"""
+    print("Multi-line message:")
+    print(message)
+}

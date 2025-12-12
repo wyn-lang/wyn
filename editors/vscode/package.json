@@ -1,0 +1,35 @@
+{
+  "name": "wyn-language",
+  "displayName": "Wyn Language Support",
+  "description": "Language support for Wyn programming language",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": ["Programming Languages"],
+  "contributes": {
+    "languages": [{
+      "id": "wyn",
+      "aliases": ["Wyn", "wyn"],
+      "extensions": [".wyn"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "wyn",
+      "scopeName": "source.wyn",
+      "path": "./syntaxes/wyn.tmLanguage.json"
+    }],
+    "configuration": {
+      "title": "Wyn",
+      "properties": {
+        "wyn.lsp.path": {
+          "type": "string",
+          "default": "wyn-lsp",
+          "description": "Path to Wyn LSP server"
+        }
+      }
+    }
+  },
+  "activationEvents": ["onLanguage:wyn"],
+  "main": "./extension.js"
+}

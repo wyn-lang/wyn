@@ -1440,8 +1440,9 @@ static Expr* parse_primary(Parser* p) {
     if (parser_check(p, TOK_STRING) || parser_check(p, TOK_RAW_STRING) || parser_check(p, TOK_MULTILINE_STRING)) {
         char str[MAX_STRING_LEN];
         strcpy(str, p->current.str_val);
+        TokenKind str_kind = p->current.kind;
         parser_advance(p);
-        if (has_interpolation(str)) {
+        if (str_kind == TOK_STRING && has_interpolation(str)) {
             return parse_interpolated_string(p, str, line, col);
         }
         Expr* e = new_expr(EXPR_STRING, line, col);
