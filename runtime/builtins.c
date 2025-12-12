@@ -214,6 +214,49 @@ long long str_find(const char* haystack, const char* needle) {
     return pos - haystack;
 }
 
+char* str_replace(const char* str, const char* old, const char* new) {
+    if (!str || !old || !new) return strdup(str ? str : "");
+    
+    size_t old_len = strlen(old);
+    size_t new_len = strlen(new);
+    
+    // Count occurrences
+    int count = 0;
+    const char* p = str;
+    while ((p = strstr(p, old)) != NULL) {
+        count++;
+        p += old_len;
+    }
+    
+    if (count == 0) return strdup(str);
+    
+    // Allocate result
+    size_t result_len = strlen(str) + count * (new_len - old_len) + 1;
+    char* result = malloc(result_len);
+    char* dst = result;
+    const char* src = str;
+    
+    while (*src) {
+        const char* match = strstr(src, old);
+        if (match) {
+            // Copy before match
+            size_t len = match - src;
+            memcpy(dst, src, len);
+            dst += len;
+            // Copy replacement
+            memcpy(dst, new, new_len);
+            dst += new_len;
+            src = match + old_len;
+        } else {
+            // Copy rest
+            strcpy(dst, src);
+            break;
+        }
+    }
+    
+    return result;
+}
+
 char* str_concat(const char* a, const char* b) {
     size_t len = strlen(a) + strlen(b) + 1;
     char* result = malloc(len);

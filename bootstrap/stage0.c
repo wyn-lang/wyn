@@ -1229,6 +1229,7 @@ static Type* get_builtin_return_type(const char* builtin_name) {
     if (strcmp(builtin_name, "http_parse_path") == 0) return new_type(TYPE_STR);
     if (strcmp(builtin_name, "http_parse_body") == 0) return new_type(TYPE_STR);
     if (strcmp(builtin_name, "exec_output_wyn") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "str_replace") == 0) return new_type(TYPE_STR);
     
     // Integer-returning functions
     if (strcmp(builtin_name, "now_unix") == 0) return new_type(TYPE_INT);
@@ -2877,6 +2878,7 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     strcmp(e->ident, "min") == 0 || strcmp(e->ident, "max") == 0 ||
                     strcmp(e->ident, "substring") == 0 || strcmp(e->ident, "str_split") == 0 ||
                     strcmp(e->ident, "str_find") == 0 || strcmp(e->ident, "str_concat") == 0 ||
+                    strcmp(e->ident, "str_replace") == 0 ||
                     strcmp(e->ident, "str_cmp") == 0 || strcmp(e->ident, "char_at") == 0 ||
                     strcmp(e->ident, "int_to_str") == 0 || strcmp(e->ident, "str_substr") == 0 ||
                     strcmp(e->ident, "str_to_int") == 0 || strcmp(e->ident, "abs") == 0 ||
@@ -11579,6 +11581,7 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                 bool is_string_builtin = (strcmp(func_name, "chr") == 0 ||
                                          strcmp(func_name, "substring") == 0 ||
                                          strcmp(func_name, "str_concat") == 0 ||
+                                         strcmp(func_name, "str_replace") == 0 ||
                                          strcmp(func_name, "char_at") == 0 ||
                                          strcmp(func_name, "int_to_str") == 0 ||
                                          strcmp(func_name, "to_string") == 0 ||
@@ -12851,6 +12854,7 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i8* @substring(i8*, i64, i64)");
     llvm_emit(&lg, "declare i64 @str_find(i8*, i8*)");
     llvm_emit(&lg, "declare i8* @str_concat(i8*, i8*)");
+    llvm_emit(&lg, "declare i8* @str_replace(i8*, i8*, i8*)");
     llvm_emit(&lg, "declare i64 @str_cmp(i8*, i8*)");
     llvm_emit(&lg, "declare i64* @str_split(i8*, i8*)");
     llvm_emit(&lg, "declare i8* @char_at(i8*, i64)");

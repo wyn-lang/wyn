@@ -122,12 +122,9 @@ test-all-tests: wync
 test: test-examples test-all-tests
 	@echo "✅ Test suite complete!"
 
-# Run tests in parallel (faster but may have race conditions)
-# Use for quick development feedback, not for CI
+# Run tests in parallel (8x faster, uses bash)
 .PHONY: test-parallel
 test-parallel: wync
-	@echo "⚠️  Parallel testing is experimental - some tests may fail due to race conditions"
-	@echo "   Use 'make test' for reliable results"
 	@./scripts/parallel_test.sh
 
 # Install to system

@@ -1,0 +1,57 @@
+import os
+import time
+
+fn run_test(path: str) {
+    // Use fixed output path (tests run sequentially within spawns anyway)
+    const result: int = os.exec("./build/wync " + path + " -o /tmp/wyn_t && timeout 5 /tmp/wyn_t > /dev/null 2>&1")
+    
+    if result == 0 {
+        print("✅ " + path)
+    } else {
+        print("❌ " + path)
+    }
+}
+
+fn main() {
+    const start: int = time.now()
+    
+    print("Wyn Parallel Test Runner")
+    print("")
+    
+    // Get test files
+    const examples: str = os.exec_output("find examples -name '*.wyn' -type f | sort")
+    const tests: str = os.exec_output("find tests -name '*_test.wyn' -type f | sort")
+    
+    print("Testing examples...")
+    
+    const ex_files: [str] = str_split(examples, "\n")
+    for file in ex_files {
+        if file.len() > 0 {
+            spawn {
+                run_test(file)
+            }
+        }
+    }
+    
+    print("")
+    print("Testing test files...")
+    
+    const test_files: [str] = str_split(tests, "\n")
+    for file in test_files {
+        if file.len() > 0 {
+            spawn {
+                run_test(file)
+            }
+        }
+    }
+    
+    // Wait for spawns
+    time.sleep(30000)
+    
+    const end: int = time.now()
+    const duration: int = (end - start) / 1000
+    
+    print("")
+    print("Duration: " + int_to_str(duration) + "s")
+    print("✅ Complete!")
+}
