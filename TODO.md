@@ -35,16 +35,18 @@
 
 ### What's Next:
 
-#### High Priority:
-1. ✅ **HTTP server** - COMPLETE
-2. ✅ **Result/Option types** - Simple version implemented
-3. ✅ **Better error messages** - COMPLETE (beautiful formatting + suggestions)
+#### Achievable Now:
+1. **Documentation generator** - Auto-generate docs from code
+2. **More examples** - Real-world infrastructure use cases
+3. **Performance benchmarks** - Measure stdlib performance
+4. **Integration tests** - End-to-end scenarios
 
-#### Medium Priority:
-4. **Generics** - Enables proper Result[T,E] and Option[T]
-5. **Package manager** - wyn pkg for dependencies
-6. **Documentation generator** - Auto-docs from code
+#### Requires Significant Work:
+5. **Generics** - Major language feature (partially implemented)
+6. **Package manager** - wyn pkg system
 7. **LSP server** - IDE support
+8. **Default parameters** - Language feature
+9. **Lambda expressions** - Language feature
 
 #### Language Features:
 - ⏳ Generics (enables proper Result/Option types)
