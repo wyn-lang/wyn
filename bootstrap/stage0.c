@@ -11070,6 +11070,22 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                             llvm_get_var_type(lg, e->binary.right->ident) &&
                                             llvm_get_var_type(lg, e->binary.right->ident)->kind == TYPE_STR);
                         
+                        // Check for known string-returning function calls
+                        if (e->binary.left->kind == EXPR_CALL && e->binary.left->call.func->kind == EXPR_IDENT) {
+                            const char* fn = e->binary.left->call.func->ident;
+                            if (strcmp(fn, "str_lower") == 0 || strcmp(fn, "str_upper") == 0 ||
+                                strcmp(fn, "str_trim") == 0 || strcmp(fn, "read_file") == 0 ||
+                                strcmp(fn, "to_string") == 0 || strcmp(fn, "int_to_str") == 0 ||
+                                strcmp(fn, "chr") == 0 || strcmp(fn, "substring") == 0) left_is_str = true;
+                        }
+                        if (e->binary.right->kind == EXPR_CALL && e->binary.right->call.func->kind == EXPR_IDENT) {
+                            const char* fn = e->binary.right->call.func->ident;
+                            if (strcmp(fn, "str_lower") == 0 || strcmp(fn, "str_upper") == 0 ||
+                                strcmp(fn, "str_trim") == 0 || strcmp(fn, "read_file") == 0 ||
+                                strcmp(fn, "to_string") == 0 || strcmp(fn, "int_to_str") == 0 ||
+                                strcmp(fn, "chr") == 0 || strcmp(fn, "substring") == 0) right_is_str = true;
+                        }
+                        
                         if (left_is_str || right_is_str) {
                             // String concatenation - call str_concat
                             t = llvm_new_temp(lg);
@@ -11467,6 +11483,7 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                          strcmp(func_name, "str_concat") == 0 ||
                                          strcmp(func_name, "char_at") == 0 ||
                                          strcmp(func_name, "int_to_str") == 0 ||
+                                         strcmp(func_name, "to_string") == 0 ||
                                          strcmp(func_name, "str_substr") == 0 ||
                                          strcmp(func_name, "read_file") == 0 ||
                                          strcmp(func_name, "getenv_wyn") == 0 ||
@@ -11554,6 +11571,7 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     if (strcmp(func_name, "min") == 0) runtime_name = "min_int";
                     if (strcmp(func_name, "max") == 0) runtime_name = "max_int";
                     if (strcmp(func_name, "abs") == 0) runtime_name = "abs_int";
+                    if (strcmp(func_name, "to_string") == 0) runtime_name = "int_to_str";
                     
                     if (is_string_builtin) {
                         llvm_emit(lg, "  %%%d = call i8* @%s(%s)", t, runtime_name, args);
