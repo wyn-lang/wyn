@@ -1,0 +1,8 @@
+# compress Module
+
+std/compress.wyn
+Compression and archiving operations
+All functions are mapped to runtime implementations via compiler
+
+## Functions
+

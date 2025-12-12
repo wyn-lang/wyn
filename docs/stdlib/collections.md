@@ -1,0 +1,8 @@
+# collections Module
+
+std/collections.wyn
+Data structures: HashMap and Set
+All functions are mapped to runtime implementations via compiler
+
+## Functions
+
