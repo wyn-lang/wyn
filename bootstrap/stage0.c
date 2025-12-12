@@ -112,6 +112,7 @@ typedef enum {
     TOK_TEST,
     TOK_BENCH,
     TOK_ASSERT,
+    TOK_LAMBDA,
     
     // Operators
     TOK_PLUS,
@@ -199,7 +200,7 @@ static const char* keywords[] = {
     "break", "continue", "return", "import", "from", "as",
     "true", "false", "none", "some", "ok", "err", "self", "Self",
     "try", "catch", "defer", "spawn", "parallel", "async", "await", "yield",
-    "and", "or", "not", "test", "bench", "assert"
+    "and", "or", "not", "test", "bench", "assert", "lambda"
 };
 
 static const TokenKind keyword_tokens[] = {
@@ -208,7 +209,7 @@ static const TokenKind keyword_tokens[] = {
     TOK_BREAK, TOK_CONTINUE, TOK_RETURN, TOK_IMPORT, TOK_FROM, TOK_AS,
     TOK_TRUE, TOK_FALSE, TOK_NONE, TOK_SOME, TOK_OK, TOK_ERR, TOK_SELF, TOK_SELF_TYPE,
     TOK_TRY, TOK_CATCH, TOK_DEFER, TOK_SPAWN, TOK_PARALLEL, TOK_ASYNC, TOK_AWAIT, TOK_YIELD,
-    TOK_AND, TOK_OR, TOK_NOT, TOK_TEST, TOK_BENCH, TOK_ASSERT
+    TOK_AND, TOK_OR, TOK_NOT, TOK_TEST, TOK_BENCH, TOK_ASSERT, TOK_LAMBDA
 };
 
 #define NUM_KEYWORDS (sizeof(keywords) / sizeof(keywords[0]))
@@ -1669,6 +1670,36 @@ static Expr* parse_primary(Parser* p) {
             e->match_expr.arm_count++;
         }
         parser_expect(p, TOK_RBRACE, "}");
+        return e;
+    }
+    
+    // Python-style Lambda: lambda x, y: expr or lambda: expr
+    if (parser_match(p, TOK_LAMBDA)) {
+        Expr* e = new_expr(EXPR_LAMBDA, line, col);
+        e->lambda.param_count = 0;
+        e->lambda.return_type = NULL;
+        e->lambda.id = p->lambda_count++;
+        
+        // Parse parameters (no parentheses, no types)
+        if (!parser_check(p, TOK_COLON)) {
+            do {
+                Token name = parser_expect(p, TOK_IDENT, "parameter name");
+                strcpy(e->lambda.params[e->lambda.param_count], name.ident);
+                e->lambda.param_types[e->lambda.param_count] = NULL; // Type inference
+                e->lambda.param_count++;
+            } while (parser_match(p, TOK_COMMA));
+        }
+        
+        parser_expect(p, TOK_COLON, ":");
+        
+        // Parse single expression body
+        Expr* body_expr = parse_expr(p);
+        e->lambda.body = malloc(sizeof(Stmt*) * 1);
+        e->lambda.body_count = 1;
+        Stmt* ret_stmt = new_stmt(STMT_RETURN, line, col);
+        ret_stmt->ret.value = body_expr;
+        e->lambda.body[0] = ret_stmt;
+        
         return e;
     }
     
@@ -3639,9 +3670,20 @@ static Type* tc1_check_expr(TypeChecker1* tc, Expr* e) {
             if (e->call.func->kind == EXPR_IDENT) {
                 FnDef* fn = tc_lookup_fn((TypeChecker*)tc, e->call.func->ident);
                 if (fn) {
-                    if (e->call.arg_count != fn->param_count) {
-                        tc1_error(tc, e->line, e->column, "function '%s' expects %d arguments, got %d",
-                                  e->call.func->ident, fn->param_count, e->call.arg_count);
+                    // Count required parameters (those without defaults)
+                    int required_params = 0;
+                    for (int i = 0; i < fn->param_count; i++) {
+                        if (!fn->params[i].default_val) required_params++;
+                    }
+                    
+                    if (e->call.arg_count < required_params || e->call.arg_count > fn->param_count) {
+                        if (required_params == fn->param_count) {
+                            tc1_error(tc, e->line, e->column, "function '%s' expects %d arguments, got %d",
+                                      e->call.func->ident, fn->param_count, e->call.arg_count);
+                        } else {
+                            tc1_error(tc, e->line, e->column, "function '%s' expects %d-%d arguments, got %d",
+                                      e->call.func->ident, required_params, fn->param_count, e->call.arg_count);
+                        }
                     }
                     if (fn->return_type) {
                         if (e->call.type_arg_count > 0 && fn->generic_count > 0) {
@@ -10813,6 +10855,8 @@ typedef struct {
     int var_count;
     Stmt* spawn_blocks[256];  // Track spawn blocks to emit later
     int spawn_count;
+    Expr* lambdas[256];  // Track lambda expressions to emit later
+    int lambda_count;
 } LLVMGen;
 
 static void llvm_emit(LLVMGen* lg, const char* fmt, ...) {
@@ -10821,6 +10865,13 @@ static void llvm_emit(LLVMGen* lg, const char* fmt, ...) {
     vfprintf(lg->out, fmt, args);
     va_end(args);
     fprintf(lg->out, "\n");
+}
+
+static void llvm_emit_raw(LLVMGen* lg, const char* fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(lg->out, fmt, args);
+    va_end(args);
 }
 
 static int llvm_new_temp(LLVMGen* lg) { return lg->temp_count++; }
@@ -11478,6 +11529,32 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
             } else if (e->call.func->kind == EXPR_IDENT) {
                 const char* func_name = e->call.func->ident;
                 
+                // Handle default parameters for user-defined functions
+                FnDef* fn_def = NULL;
+                for (int i = 0; i < lg->module->function_count; i++) {
+                    if (strcmp(lg->module->functions[i].name, func_name) == 0) {
+                        fn_def = &lg->module->functions[i];
+                        break;
+                    }
+                }
+                
+                // Fill in default arguments if needed
+                Expr** actual_args = e->call.args;
+                int actual_arg_count = e->call.arg_count;
+                
+                if (fn_def && e->call.arg_count < fn_def->param_count) {
+                    // Allocate new args array with defaults filled in
+                    actual_args = malloc(sizeof(Expr*) * fn_def->param_count);
+                    for (int i = 0; i < fn_def->param_count; i++) {
+                        if (i < e->call.arg_count) {
+                            actual_args[i] = e->call.args[i];
+                        } else {
+                            actual_args[i] = fn_def->params[i].default_val;
+                        }
+                    }
+                    actual_arg_count = fn_def->param_count;
+                }
+                
                 // Check if it's a builtin function
                 bool is_string_builtin = (strcmp(func_name, "chr") == 0 ||
                                          strcmp(func_name, "substring") == 0 ||
@@ -11530,16 +11607,16 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                 char args[1024] = "";
                 if (strcmp(func_name, "assert") != 0) {
                     // Normal argument processing for non-assert functions
-                    for (int i = 0; i < e->call.arg_count; i++) {
+                    for (int i = 0; i < actual_arg_count; i++) {
                         int arg_reg;
-                        llvm_expr(lg, e->call.args[i], &arg_reg);
+                        llvm_expr(lg, actual_args[i], &arg_reg);
                         
                         char arg_str[128];
                         // Check if argument should be i8* (string)
-                        bool is_string_arg = (e->call.args[i]->kind == EXPR_STRING ||
-                                             (e->call.args[i]->kind == EXPR_IDENT &&
-                                              llvm_get_var_type(lg, e->call.args[i]->ident) &&
-                                              llvm_get_var_type(lg, e->call.args[i]->ident)->kind == TYPE_STR));
+                        bool is_string_arg = (actual_args[i]->kind == EXPR_STRING ||
+                                             (actual_args[i]->kind == EXPR_IDENT &&
+                                              llvm_get_var_type(lg, actual_args[i]->ident) &&
+                                              llvm_get_var_type(lg, actual_args[i]->ident)->kind == TYPE_STR));
                         
                         // Special case: ord() first arg is always i8*, str_find/str_cmp first two args are i8*
                         bool force_string_arg = false;
@@ -11547,7 +11624,7 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                         if ((strcmp(func_name, "str_find") == 0 || strcmp(func_name, "str_cmp") == 0) && i < 2) force_string_arg = true;
                         
                         if (is_string_arg || is_string_builtin || force_string_arg) {
-                            if (e->call.args[i]->kind == EXPR_STRING || is_string_arg || force_string_arg) {
+                            if (actual_args[i]->kind == EXPR_STRING || is_string_arg || force_string_arg) {
                                 snprintf(arg_str, 128, "i8* %%%d", arg_reg);
                             } else if (arg_reg <= -1000000) {
                                 snprintf(arg_str, 128, "i64 %lld", (long long)(-arg_reg - 1000000));
@@ -11583,23 +11660,23 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                 } else {
                     // Special handling for assert - convert i1 arguments to i64 if needed
                     char converted_args[1024] = "";
-                    for (int i = 0; i < e->call.arg_count; i++) {
+                    for (int i = 0; i < actual_arg_count; i++) {
                         int arg_reg;
-                        llvm_expr(lg, e->call.args[i], &arg_reg);
+                        llvm_expr(lg, actual_args[i], &arg_reg);
                         
                         char arg_str[128];
                         if (arg_reg <= -1000000) {
                             snprintf(arg_str, 128, "i64 %lld", (long long)(-arg_reg - 1000000));
                         } else {
                             // Only convert if this is a direct comparison (i1), not a loaded variable (i64)
-                            bool is_direct_comparison = (e->call.args[i]->kind == EXPR_BINARY && 
-                                                        (e->call.args[i]->binary.op == TOK_EQEQ || 
-                                                         e->call.args[i]->binary.op == TOK_NOTEQ ||
-                                                         e->call.args[i]->binary.op == TOK_LT ||
-                                                         e->call.args[i]->binary.op == TOK_GT ||
-                                                         e->call.args[i]->binary.op == TOK_LTEQ ||
-                                                         e->call.args[i]->binary.op == TOK_GTEQ ||
-                                                         e->call.args[i]->binary.op == TOK_IN));
+                            bool is_direct_comparison = (actual_args[i]->kind == EXPR_BINARY && 
+                                                        (actual_args[i]->binary.op == TOK_EQEQ || 
+                                                         actual_args[i]->binary.op == TOK_NOTEQ ||
+                                                         actual_args[i]->binary.op == TOK_LT ||
+                                                         actual_args[i]->binary.op == TOK_GT ||
+                                                         actual_args[i]->binary.op == TOK_LTEQ ||
+                                                         actual_args[i]->binary.op == TOK_GTEQ ||
+                                                         actual_args[i]->binary.op == TOK_IN));
                             
                             if (is_direct_comparison) {
                                 // Convert i1 to i64
@@ -11618,6 +11695,11 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     int t = llvm_new_temp(lg);
                     llvm_emit(lg, "  %%%d = call i64 @%s(%s)", t, func_name, converted_args);
                     *result_reg = t;
+                }
+                
+                // Clean up allocated args array if we filled in defaults
+                if (actual_args != e->call.args) {
+                    free(actual_args);
                 }
             } else if (e->call.func->kind == EXPR_FIELD) {
                 // Method call: obj.method()
@@ -11906,6 +11988,21 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
             } else {
                 llvm_emit(lg, "  %%%d = call i64 @__wyn_await(i64 %%%d)", t, future_reg);
             }
+            *result_reg = t;
+            break;
+        }
+        
+        case EXPR_LAMBDA: {
+            // Lambda expression: store for later emission, return function pointer
+            lg->lambdas[lg->lambda_count++] = e;
+            int t = llvm_new_temp(lg);
+            llvm_emit(lg, "  %%%d = ptrtoint i64 (", t);
+            // Build parameter types
+            for (int i = 0; i < e->lambda.param_count; i++) {
+                if (i > 0) llvm_emit_raw(lg, ", ");
+                llvm_emit_raw(lg, "i64");
+            }
+            llvm_emit_raw(lg, ")* @__lambda_%d to i64", e->lambda.id);
             *result_reg = t;
             break;
         }
@@ -12539,6 +12636,13 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     StringTable strings = {0};
     for (int i = 0; i < m->function_count; i++) {
         FnDef* f = &m->functions[i];
+        // Collect strings from default parameter values
+        for (int j = 0; j < f->param_count; j++) {
+            if (f->params[j].default_val) {
+                collect_strings_expr(&strings, f->params[j].default_val);
+            }
+        }
+        // Collect strings from function body
         for (int j = 0; j < f->body_count; j++) {
             collect_strings_stmt(&strings, f->body[j]);
         }
@@ -12800,6 +12904,44 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
         lg.var_count = saved_var;
         
         fprintf(lg.out, "  ret void\n");
+        fprintf(lg.out, "}\n\n");
+    }
+    
+    // Generate lambda functions
+    for (int i = 0; i < lg.lambda_count; i++) {
+        Expr* lambda = lg.lambdas[i];
+        
+        // Function signature
+        fprintf(lg.out, "define i64 @__lambda_%d(", lambda->lambda.id);
+        for (int j = 0; j < lambda->lambda.param_count; j++) {
+            if (j > 0) fprintf(lg.out, ", ");
+            fprintf(lg.out, "i64 %%%s", lambda->lambda.params[j]);
+        }
+        fprintf(lg.out, ") {\n");
+        fprintf(lg.out, "entry:\n");
+        
+        // Save and reset state
+        int saved_temp = lg.temp_count;
+        int saved_var = lg.var_count;
+        lg.temp_count = lambda->lambda.param_count;
+        lg.var_count = 0;
+        
+        // Add parameters as variables
+        for (int j = 0; j < lambda->lambda.param_count; j++) {
+            strcpy(lg.vars[lg.var_count], lambda->lambda.params[j]);
+            lg.var_regs[lg.var_count] = j;  // Parameters are %0, %1, etc.
+            lg.var_count++;
+        }
+        
+        // Generate body
+        for (int j = 0; j < lambda->lambda.body_count; j++) {
+            llvm_stmt(&lg, lambda->lambda.body[j]);
+        }
+        
+        // Restore state
+        lg.temp_count = saved_temp;
+        lg.var_count = saved_var;
+        
         fprintf(lg.out, "}\n\n");
     }
 }

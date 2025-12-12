@@ -1,0 +1,35 @@
+fn greet(name: str = "World") {
+    print("Hello, " + name + "!")
+}
+
+fn add(a: int, b: int = 10) -> int {
+    return a + b
+}
+
+fn create_user(name: str, age: int = 18, active: bool = true) {
+    print("User: " + name)
+    print("Age:")
+    print(age)
+    if active {
+        print("Status: Active")
+    } else {
+        print("Status: Inactive")
+    }
+}
+
+fn main() {
+    // Call with all defaults
+    greet()
+    
+    // Call with custom value
+    greet("Alice")
+    
+    // Partial defaults
+    print(add(5))
+    print(add(5, 20))
+    
+    // Multiple defaults
+    create_user("Bob")
+    create_user("Charlie", 25)
+    create_user("Diana", 30, false)
+}

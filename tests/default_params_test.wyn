@@ -1,0 +1,45 @@
+fn add(a: int, b: int = 10) -> int {
+    return a + b
+}
+
+fn multiply(a: int, b: int = 2, c: int = 1) -> int {
+    return a * b * c
+}
+
+fn main() {
+    // Test single default
+    const a1: int = add(5)
+    const a2: int = add(5, 20)
+    
+    if a1 != 15 {
+        print("FAIL: add(5) should return 15")
+        exit(1)
+    }
+    
+    if a2 != 25 {
+        print("FAIL: add(5, 20) should return 25")
+        exit(1)
+    }
+    
+    // Test multiple defaults
+    const m1: int = multiply(3)
+    const m2: int = multiply(3, 4)
+    const m3: int = multiply(3, 4, 5)
+    
+    if m1 != 6 {
+        print("FAIL: multiply(3) should return 6")
+        exit(1)
+    }
+    
+    if m2 != 12 {
+        print("FAIL: multiply(3, 4) should return 12")
+        exit(1)
+    }
+    
+    if m3 != 60 {
+        print("FAIL: multiply(3, 4, 5) should return 60")
+        exit(1)
+    }
+    
+    print("All default parameter tests passed!")
+}

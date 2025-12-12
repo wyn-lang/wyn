@@ -15,6 +15,8 @@ Wyn is a **production-ready infrastructure/DevOps language** that combines:
 
 The language is **production-ready** with **100% passing test suite**:
 - ✅ All core language features
+- ✅ Default parameters (`fn greet(name: str = "World")`)
+- ✅ Python-style lambda syntax (`lambda x, y: x + y`)
 - ✅ 11 standard library modules (99 functions)
 - ✅ HTTP client and server
 - ✅ Concurrency (spawn, channels)

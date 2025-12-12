@@ -43,11 +43,13 @@
 5. **More examples** - Real-world infrastructure use cases
 
 #### Language Features (Medium Effort):
-6. **Default parameters** - `fn greet(name: str = "World")`
-7. **Lambda expressions** - `const f = |x| x + 1`
+6. ✅ **Default parameters** - `fn greet(name: str = "World")` - COMPLETE
+7. ⚠️ **Lambda expressions** - `lambda x, y: x + y` (Python-style) - PARTIAL (syntax works, first-class functions need work)
 8. **Destructuring** - `const {x, y} = point`
 9. **Generics completion** - Finish partial implementation
 10. **Traits/interfaces** - For polymorphism
+
+**Note**: Default parameters are fully functional. Lambda syntax is supported but storing/calling through variables requires first-class function support.
 
 #### Developer Tools (High Effort):
 11. ✅ **REPL** - Interactive shell (COMPLETE)
