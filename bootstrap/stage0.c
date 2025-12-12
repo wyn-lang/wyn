@@ -143,6 +143,7 @@ typedef enum {
     TOK_BANG,
     TOK_AT,
     TOK_PIPE,
+    TOK_PIPEGT,
     TOK_AMPERSAND,
     TOK_CARET,
     TOK_TILDE,
@@ -549,7 +550,15 @@ Token lexer_next(Lexer* l) {
             else { t.kind = TOK_GT; }
             break;
         case '&': lexer_advance(l); t.kind = TOK_AMPERSAND; break;
-        case '|': lexer_advance(l); t.kind = TOK_PIPE; break;
+        case '|': 
+            lexer_advance(l); 
+            if (lexer_char(l) == '>') { 
+                lexer_advance(l); 
+                t.kind = TOK_PIPEGT; 
+            } else { 
+                t.kind = TOK_PIPE; 
+            }
+            break;
         case '^': lexer_advance(l); t.kind = TOK_CARET; break;
         case '~': lexer_advance(l); t.kind = TOK_TILDE; break;
         case '.':
@@ -1939,6 +1948,7 @@ static Expr* parse_unary(Parser* p) {
 
 static int get_precedence(TokenKind op) {
     switch (op) {
+        case TOK_PIPEGT: return 0;      // pipe operator (lowest precedence)
         case TOK_OR: return 1;
         case TOK_AND: return 2;
         case TOK_PIPE: return 3;        // bitwise or
@@ -1977,7 +1987,15 @@ static Expr* parse_binary(Parser* p, int min_prec) {
         
         Expr* right = parse_binary(p, prec + 1);
         
-        if (op == TOK_QUESTIONQUESTION) {
+        if (op == TOK_PIPEGT) {
+            // Transform x |> f into f(x)
+            Expr* call = new_expr(EXPR_CALL, line, col);
+            call->call.func = right;
+            call->call.args = malloc(sizeof(Expr*));
+            call->call.args[0] = left;
+            call->call.arg_count = 1;
+            left = call;
+        } else if (op == TOK_QUESTIONQUESTION) {
             Expr* e = new_expr(EXPR_DEFAULT, line, col);
             e->default_expr.value = left;
             e->default_expr.default_val = right;
@@ -2816,7 +2834,7 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     strcmp(e->ident, "int_to_str") == 0 || strcmp(e->ident, "str_substr") == 0 ||
                     strcmp(e->ident, "str_to_int") == 0 || strcmp(e->ident, "abs") == 0 ||
                     strcmp(e->ident, "sqrtf") == 0 || strcmp(e->ident, "int_to_float") == 0 ||
-                    strcmp(e->ident, "float_to_int") == 0 ||
+                    strcmp(e->ident, "float_to_int") == 0 || strcmp(e->ident, "to_string") == 0 ||
                     strcmp(e->ident, "read_file") == 0 || strcmp(e->ident, "write_file") == 0 ||
                     strcmp(e->ident, "append_file") == 0 || strcmp(e->ident, "file_exists") == 0 ||
                     strcmp(e->ident, "file_size") == 0 || strcmp(e->ident, "read_stdin_line") == 0 ||
@@ -3433,6 +3451,7 @@ static bool tc1_is_builtin(const char* name) {
     if (strcmp(name, "str_concat") == 0 || strcmp(name, "str_cmp") == 0) return true;
     if (strcmp(name, "char_at") == 0 || strcmp(name, "int_to_str") == 0) return true;
     if (strcmp(name, "str_substr") == 0 || strcmp(name, "str_to_int") == 0) return true;
+    if (strcmp(name, "to_string") == 0) return true;
     
     // Math builtins
     if (strcmp(name, "abs") == 0 || strcmp(name, "sqrtf") == 0) return true;
