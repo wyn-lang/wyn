@@ -35,11 +35,26 @@
 
 ### What's Next:
 
-#### Achievable Now:
-1. ✅ **Documentation generator** - COMPLETE (API reference + module docs)
-2. **More examples** - Real-world infrastructure use cases
-3. **Performance benchmarks** - Measure stdlib performance
-4. **Integration tests** - End-to-end scenarios
+#### Quick Wins (High Impact, Low Effort):
+1. ✅ **Documentation generator** - COMPLETE
+2. **String interpolation** - `"Hello ${name}"` syntax
+3. **Multi-line strings** - Triple quotes for long text
+4. **Pipe operator** - `data |> transform |> filter`
+5. **More examples** - Real-world infrastructure use cases
+
+#### Language Features (Medium Effort):
+6. **Default parameters** - `fn greet(name: str = "World")`
+7. **Lambda expressions** - `const f = |x| x + 1`
+8. **Destructuring** - `const {x, y} = point`
+9. **Generics completion** - Finish partial implementation
+10. **Traits/interfaces** - For polymorphism
+
+#### Developer Tools (High Effort):
+11. **REPL** - Interactive shell
+12. **LSP server** - IDE support (autocomplete, go-to-def)
+13. **Package manager** - `wyn pkg install`
+14. **Debugger** - Step-through debugging
+15. **Formatter** - `wyn fmt` code formatting
 
 #### Requires Significant Work:
 5. **Generics** - Major language feature (partially implemented)
