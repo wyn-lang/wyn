@@ -1091,11 +1091,17 @@ static bool is_builtin_call(Expr* call_func, const char* builtin_name) {
 
 static void parser_error(Parser* p, const char* fmt, ...) {
     p->had_error = true;
-    fprintf(stderr, "%s:%d:%d: error: ", p->filename, p->current.line, p->current.column);
+    fprintf(stderr, "\n");
+    fprintf(stderr, "╭─ Parse Error in %s:%d:%d\n", p->filename, p->current.line, p->current.column);
+    fprintf(stderr, "│\n");
+    fprintf(stderr, "│  ");
     va_list args;
     va_start(args, fmt);
     vfprintf(stderr, fmt, args);
     va_end(args);
+    fprintf(stderr, "\n");
+    fprintf(stderr, "│\n");
+    fprintf(stderr, "╰─ Syntax error\n");
     fprintf(stderr, "\n");
 }
 
@@ -1128,6 +1134,20 @@ static Token parser_expect(Parser* p, TokenKind kind, const char* msg) {
         return parser_advance(p);
     }
     parser_error(p, "expected %s", msg);
+    
+    // Add helpful suggestions
+    if (kind == TOK_LBRACE) {
+        fprintf(stderr, "   💡 Missing opening brace '{' - check if/while/for/fn syntax\n");
+    } else if (kind == TOK_RBRACE) {
+        fprintf(stderr, "   💡 Missing closing brace '}' - check block structure\n");
+    } else if (kind == TOK_LPAREN) {
+        fprintf(stderr, "   💡 Missing opening parenthesis '(' - check function call\n");
+    } else if (kind == TOK_RPAREN) {
+        fprintf(stderr, "   💡 Missing closing parenthesis ')' - check expression\n");
+    } else if (kind == TOK_COLON) {
+        fprintf(stderr, "   💡 Missing colon ':' - check type annotation\n");
+    }
+    
     return p->current;
 }
 
@@ -2622,11 +2642,17 @@ static TypeChecker* typechecker_new(Module* m, const char* filename) {
 }
 
 static void tc_error(TypeChecker* tc, int line, int col, const char* fmt, ...) {
-    fprintf(stderr, "%s:%d:%d: type error: ", tc->filename, line, col);
+    fprintf(stderr, "\n");
+    fprintf(stderr, "╭─ Error in %s:%d:%d\n", tc->filename, line, col);
+    fprintf(stderr, "│\n");
+    fprintf(stderr, "│  ");
     va_list args;
     va_start(args, fmt);
     vfprintf(stderr, fmt, args);
     va_end(args);
+    fprintf(stderr, "\n");
+    fprintf(stderr, "│\n");
+    fprintf(stderr, "╰─ Type error\n");
     fprintf(stderr, "\n");
     tc->had_error = true;
 }
@@ -2802,7 +2828,19 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     strcmp(e->ident, "gpu_device_count") == 0) {
                     return new_type(TYPE_FUNCTION);
                 }
+                
+                // Enhanced error with suggestion
                 tc_error(tc, e->line, e->column, "undefined variable '%s'", e->ident);
+                
+                // Suggest similar variables
+                for (int i = tc->symbol_count - 1; i >= 0; i--) {
+                    if (strstr(tc->symbols[i].name, e->ident) || strstr(e->ident, tc->symbols[i].name)) {
+                        fprintf(stderr, "   💡 Did you mean '%s'?\n", tc->symbols[i].name);
+                        break;
+                    }
+                }
+                fprintf(stderr, "   💡 Make sure the variable is declared before use\n");
+                
                 return new_type(TYPE_ANY);
             }
             return s->type;
@@ -3114,6 +3152,15 @@ static void tc_check_stmt(TypeChecker* tc, Stmt* s) {
                 init_type->kind != TYPE_ANY && decl_type->kind != TYPE_ANY) {
                 tc_error(tc, s->line, s->column, "type mismatch in let: expected %s, got %s",
                          type_name(decl_type), type_name(init_type));
+                
+                // Add helpful suggestions
+                if (decl_type->kind == TYPE_STR && init_type->kind == TYPE_INT) {
+                    fprintf(stderr, "   💡 Use int_to_str() to convert int to string\n");
+                } else if (decl_type->kind == TYPE_INT && init_type->kind == TYPE_STR) {
+                    fprintf(stderr, "   💡 Use str_to_int() to convert string to int\n");
+                } else if (decl_type->kind == TYPE_BOOL && init_type->kind == TYPE_INT) {
+                    fprintf(stderr, "   💡 Use comparison operators (==, !=, <, >) to get bool\n");
+                }
             }
             
             tc_define(tc, s->let.name, decl_type ? decl_type : init_type, s->let.is_mut);
