@@ -36,6 +36,10 @@ PREFIX ?= /usr/local
 WYNC_SRC = $(BOOTSTRAP_DIR)/stage0.c
 WYNC_BIN = $(BUILD_DIR)/wync
 
+# Wyn REPL
+REPL_SRC = $(SRC_DIR)/repl.c
+REPL_BIN = $(BUILD_DIR)/wyn-repl
+
 # Runtime libraries
 SPAWN_RUNTIME_SRC = $(RUNTIME_DIR)/spawn.c
 SPAWN_RUNTIME_OBJ = $(BUILD_DIR)/spawn_runtime.o
@@ -48,7 +52,7 @@ CHANNELS_RUNTIME_OBJ = $(BUILD_DIR)/channels_runtime.o
 
 # Default target - build compiler and runtime
 .PHONY: all
-all: wync runtime
+all: wync repl runtime
 
 # Create build directory
 $(BUILD_DIR):
@@ -59,6 +63,13 @@ $(BUILD_DIR):
 wync: $(BUILD_DIR) $(WYNC_BIN)
 
 $(WYNC_BIN): $(WYNC_SRC)
+	$(CC) $(CFLAGS) -o $@ $<
+
+# Build Wyn REPL
+.PHONY: repl
+repl: $(BUILD_DIR) $(REPL_BIN)
+
+$(REPL_BIN): $(REPL_SRC)
 	$(CC) $(CFLAGS) -o $@ $<
 
 # Build runtime libraries
@@ -170,8 +181,9 @@ help:
 	@echo "Wyn Language Build System"
 	@echo ""
 	@echo "Targets:"
-	@echo "  all                 - Build compiler and runtime (default)"
+	@echo "  all                 - Build compiler, REPL and runtime (default)"
 	@echo "  wync                - Build Wyn compiler (LLVM backend)"
+	@echo "  repl                - Build Wyn REPL"
 	@echo "  runtime             - Build runtime libraries"
 	@echo "  test                - Run all tests"
 	@echo "  test-examples       - Test core examples"
