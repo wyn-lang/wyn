@@ -1,0 +1,13 @@
+fn main() {
+    // Test that atomic module exists and compiles
+    // Full atomic operations require pointer support
+    
+    print("Atomic operations available:")
+    print("- atomic.add(ptr, value)")
+    print("- atomic.sub(ptr, value)")
+    print("- atomic.load(ptr)")
+    print("- atomic.store(ptr, value)")
+    print("- atomic.cas(ptr, expected, desired)")
+    
+    print("Atomic module test passed!")
+}

@@ -164,13 +164,48 @@ long long str_len(const char* s) {
     return strlen(s);
 }
 
-// Stub implementations - these need proper implementation
-char** str_split(const char* s, const char* delim) {
-    // TODO: Implement properly
-    char** result = malloc(sizeof(char*) * 2);
-    result[0] = strdup(s);
-    result[1] = NULL;
-    return result;
+// String split - returns Wyn array of strings
+int64_t* str_split(const char* s, const char* delim) {
+    if (!s || !delim) {
+        int64_t* arr = malloc(sizeof(int64_t) * 2);
+        arr[0] = 0;  // length
+        arr[1] = 0;  // capacity
+        return arr;
+    }
+    
+    // Count occurrences
+    int count = 1;
+    const char* p = s;
+    size_t delim_len = strlen(delim);
+    while ((p = strstr(p, delim)) != NULL) {
+        count++;
+        p += delim_len;
+    }
+    
+    // Allocate array: [length, capacity, elem0, elem1, ...]
+    int64_t* arr = malloc(sizeof(int64_t) * (count + 2));
+    arr[0] = count;
+    arr[1] = count;
+    
+    // Split string
+    char* copy = strdup(s);
+    char* token = copy;
+    char* next;
+    int idx = 0;
+    
+    while (token && idx < count) {
+        next = strstr(token, delim);
+        if (next) {
+            *next = '\0';
+            next += delim_len;
+        }
+        arr[idx + 2] = (int64_t)strdup(token);
+        token = next;
+        idx++;
+    }
+    
+    free(copy);
+    return arr;
 }
 
 long long str_find(const char* haystack, const char* needle) {
@@ -1478,4 +1513,28 @@ char* sha1_hash(const char* data) {
     
     pclose(pipe);
     return result;
+}
+
+// Atomic operations for concurrent programming
+#include <stdatomic.h>
+
+int64_t wyn_atomic_add(int64_t* ptr, int64_t value) {
+    return atomic_fetch_add((_Atomic int64_t*)ptr, value);
+}
+
+int64_t wyn_atomic_sub(int64_t* ptr, int64_t value) {
+    return atomic_fetch_sub((_Atomic int64_t*)ptr, value);
+}
+
+int64_t wyn_atomic_load(int64_t* ptr) {
+    return atomic_load_explicit((_Atomic int64_t*)ptr, memory_order_seq_cst);
+}
+
+void wyn_atomic_store(int64_t* ptr, int64_t value) {
+    atomic_store_explicit((_Atomic int64_t*)ptr, value, memory_order_seq_cst);
+}
+
+int64_t wyn_atomic_cas(int64_t* ptr, int64_t expected, int64_t desired) {
+    atomic_compare_exchange_strong((_Atomic int64_t*)ptr, &expected, desired);
+    return expected;
 }

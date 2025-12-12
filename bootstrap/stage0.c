@@ -1080,6 +1080,12 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "generate_random_bytes") == 0) return "generate_random_bytes";
         if (strcmp(function, "hmac_sha256") == 0) return "hmac_sha256";
         if (strcmp(function, "verify_signature") == 0) return "verify_signature";
+    } else if (strcmp(module, "atomic") == 0) {
+        if (strcmp(function, "add") == 0) return "wyn_atomic_add";
+        if (strcmp(function, "sub") == 0) return "wyn_atomic_sub";
+        if (strcmp(function, "load") == 0) return "wyn_atomic_load";
+        if (strcmp(function, "store") == 0) return "wyn_atomic_store";
+        if (strcmp(function, "cas") == 0) return "wyn_atomic_cas";
     }
     return NULL;
 }
@@ -1191,6 +1197,13 @@ static Type* new_type(TypeKind kind) {
 
 // Helper: Get return type for builtin functions
 static Type* get_builtin_return_type(const char* builtin_name) {
+    // Array-returning functions
+    if (strcmp(builtin_name, "str_split") == 0) {
+        Type* arr = new_type(TYPE_ARRAY);
+        arr->inner = new_type(TYPE_STR);
+        return arr;
+    }
+    
     // String-returning functions
     if (strcmp(builtin_name, "format_timestamp") == 0) return new_type(TYPE_STR);
     if (strcmp(builtin_name, "format_iso8601") == 0) return new_type(TYPE_STR);
@@ -11405,9 +11418,13 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                           strcmp(function, "parse_path") == 0 ||
                                           strcmp(function, "parse_body") == 0);
                     
+                    bool returns_array = (strcmp(function, "split") == 0);
+                    
                     int t = llvm_new_temp(lg);
                     if (returns_string) {
                         llvm_emit(lg, "  %%%d = call i8* @%s(%s)", t, builtin_name, args);
+                    } else if (returns_array) {
+                        llvm_emit(lg, "  %%%d = call i64* @%s(%s)", t, builtin_name, args);
                     } else {
                         llvm_emit(lg, "  %%%d = call i64 @%s(%s)", t, builtin_name, args);
                     }
@@ -11603,6 +11620,8 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                       strcmp(func_name, "max") == 0 ||
                                       strcmp(func_name, "abs") == 0);
                 
+                bool is_array_builtin = (strcmp(func_name, "str_split") == 0);
+                
                 // Build arguments
                 char args[1024] = "";
                 if (strcmp(func_name, "assert") != 0) {
@@ -11653,6 +11672,8 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     
                     if (is_string_builtin) {
                         llvm_emit(lg, "  %%%d = call i8* @%s(%s)", t, runtime_name, args);
+                    } else if (is_array_builtin) {
+                        llvm_emit(lg, "  %%%d = call i64* @%s(%s)", t, runtime_name, args);
                     } else {
                         llvm_emit(lg, "  %%%d = call i64 @%s(%s)", t, runtime_name, args);
                     }
@@ -12723,7 +12744,7 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i64 @str_find(i8*, i8*)");
     llvm_emit(&lg, "declare i8* @str_concat(i8*, i8*)");
     llvm_emit(&lg, "declare i64 @str_cmp(i8*, i8*)");
-    llvm_emit(&lg, "declare i8** @str_split(i8*, i8*)");
+    llvm_emit(&lg, "declare i64* @str_split(i8*, i8*)");
     llvm_emit(&lg, "declare i8* @char_at(i8*, i64)");
     llvm_emit(&lg, "declare i8* @int_to_str(i64)");
     llvm_emit(&lg, "declare i64 @str_to_int(i8*)");
@@ -12842,6 +12863,13 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i8* @generate_random_bytes(i64)");
     llvm_emit(&lg, "declare i8* @hmac_sha256(i8*, i8*)");
     llvm_emit(&lg, "declare i64 @verify_signature(i8*, i8*, i8*)");
+    
+    // Atomic operations
+    llvm_emit(&lg, "declare i64 @wyn_atomic_add(i64*, i64)");
+    llvm_emit(&lg, "declare i64 @wyn_atomic_sub(i64*, i64)");
+    llvm_emit(&lg, "declare i64 @wyn_atomic_load(i64*)");
+    llvm_emit(&lg, "declare void @wyn_atomic_store(i64*, i64)");
+    llvm_emit(&lg, "declare i64 @wyn_atomic_cas(i64*, i64, i64)");
     
     // HTTP Server functions
     llvm_emit(&lg, "declare i64 @http_server_create(i64)");

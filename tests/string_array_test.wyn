@@ -1,0 +1,24 @@
+import string
+
+fn main() {
+    // Test str_split
+    const text: str = "apple,banana,cherry"
+    const fruits: [str] = string.split(text, ",")
+    
+    // Test iteration over string array
+    print("Fruits:")
+    for fruit in fruits {
+        print(fruit)
+    }
+    
+    // Test with newlines
+    const lines: str = "line1\nline2\nline3"
+    const parts: [str] = string.split(lines, "\n")
+    
+    print("Lines:")
+    for line in parts {
+        print(line)
+    }
+    
+    print("All string array tests passed!")
+}
