@@ -1,15 +1,19 @@
 import os
 import time
 
-fn run_test(path: str) {
-    // Use fixed output path (tests run sequentially within spawns anyway)
-    const result: int = os.exec("./build/wync " + path + " -o /tmp/wyn_t && timeout 5 /tmp/wyn_t > /dev/null 2>&1")
+fn run_test(path: str, index: int) {
+    // Use index for unique output file
+    const out: str = "/tmp/wyn_test_" + int_to_str(index)
+    const cmd: str = "./build/wync " + path + " -o " + out + " 2>&1 > /dev/null && timeout 5 " + out + " > /dev/null 2>&1"
+    const result: int = os.exec(cmd)
     
     if result == 0 {
         print("✅ " + path)
     } else {
         print("❌ " + path)
     }
+    
+    os.exec("rm -f " + out)
 }
 
 fn main() {
@@ -25,10 +29,13 @@ fn main() {
     print("Testing examples...")
     
     const ex_files: [str] = str_split(examples, "\n")
+    const ex_index: int = 0
     for file in ex_files {
         if file.len() > 0 {
+            const idx: int = ex_index
+            ex_index = ex_index + 1
             spawn {
-                run_test(file)
+                run_test(file, idx)
             }
         }
     }
@@ -37,16 +44,19 @@ fn main() {
     print("Testing test files...")
     
     const test_files: [str] = str_split(tests, "\n")
+    const test_index: int = 1000
     for file in test_files {
         if file.len() > 0 {
+            const idx: int = test_index
+            test_index = test_index + 1
             spawn {
-                run_test(file)
+                run_test(file, idx)
             }
         }
     }
     
-    // Wait for spawns
-    time.sleep(30000)
+    // Wait for tests to complete
+    time.sleep(15000)
     
     const end: int = time.now()
     const duration: int = (end - start) / 1000

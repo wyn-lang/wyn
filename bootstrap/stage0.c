@@ -11364,7 +11364,25 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                               llvm_get_var_type(lg, e->call.args[i]->ident) &&
                                               llvm_get_var_type(lg, e->call.args[i]->ident)->kind == TYPE_STR));
                         
-                        if (is_string_arg) {
+                        // Check if argument is result of string-returning function
+                        if (e->call.args[i]->kind == EXPR_CALL && e->call.args[i]->call.func->kind == EXPR_IDENT) {
+                            const char* called_func = e->call.args[i]->call.func->ident;
+                            if (strcmp(called_func, "str_concat") == 0 || 
+                                strcmp(called_func, "str_replace") == 0 ||
+                                strcmp(called_func, "substring") == 0 ||
+                                strcmp(called_func, "chr") == 0 ||
+                                strcmp(called_func, "int_to_str") == 0) {
+                                is_string_arg = true;
+                            }
+                        }
+                        
+                        // Check if this function expects string arguments
+                        bool force_string = false;
+                        if (strcmp(builtin_name, "exec_wyn") == 0 && i == 0) force_string = true;
+                        if (strcmp(builtin_name, "setenv_wyn") == 0) force_string = true;
+                        if (strcmp(builtin_name, "chdir_wyn") == 0 && i == 0) force_string = true;
+                        
+                        if (is_string_arg || force_string) {
                             snprintf(arg_str, 128, "i8* %%%d", arg_reg);
                         } else if (arg_reg <= -1000000) {
                             snprintf(arg_str, 128, "i64 %lld", (long long)(-arg_reg - 1000000));
@@ -11643,10 +11661,38 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                               llvm_get_var_type(lg, actual_args[i]->ident) &&
                                               llvm_get_var_type(lg, actual_args[i]->ident)->kind == TYPE_STR));
                         
+                        // Check if argument is a string-returning function call
+                        if (actual_args[i]->kind == EXPR_CALL) {
+                            if (actual_args[i]->call.func->kind == EXPR_IDENT) {
+                                const char* called_func = actual_args[i]->call.func->ident;
+                                if (strcmp(called_func, "str_concat") == 0 || 
+                                    strcmp(called_func, "str_replace") == 0 ||
+                                    strcmp(called_func, "substring") == 0 ||
+                                    strcmp(called_func, "chr") == 0 ||
+                                    strcmp(called_func, "int_to_str") == 0) {
+                                    is_string_arg = true;
+                                }
+                            } else if (actual_args[i]->call.func->kind == EXPR_FIELD) {
+                                // Check module.function calls
+                                Type* ret_type = get_builtin_return_type(
+                                    map_module_function(
+                                        actual_args[i]->call.func->field.object->ident,
+                                        actual_args[i]->call.func->field.field
+                                    )
+                                );
+                                if (ret_type && ret_type->kind == TYPE_STR) {
+                                    is_string_arg = true;
+                                }
+                            }
+                        }
+                        
                         // Special case: ord() first arg is always i8*, str_find/str_cmp first two args are i8*
                         bool force_string_arg = false;
                         if (strcmp(func_name, "ord") == 0 && i == 0) force_string_arg = true;
                         if ((strcmp(func_name, "str_find") == 0 || strcmp(func_name, "str_cmp") == 0) && i < 2) force_string_arg = true;
+                        
+                        // exec_wyn takes string argument
+                        if (strcmp(func_name, "exec_wyn") == 0 && i == 0) force_string_arg = true;
                         
                         if (is_string_arg || is_string_builtin || force_string_arg) {
                             if (actual_args[i]->kind == EXPR_STRING || is_string_arg || force_string_arg) {
@@ -12863,6 +12909,7 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i64 @str_len(i8*)");
     llvm_emit(&lg, "declare i64 @clock_wyn()");
     llvm_emit(&lg, "declare i64 @random_wyn()");
+    llvm_emit(&lg, "declare i64 @time_now()");
     llvm_emit(&lg, "declare void @sleep_ms(i64)");
     llvm_emit(&lg, "declare void @exit_wyn(i64)");
     llvm_emit(&lg, "declare i64 @min_int(i64, i64)");
