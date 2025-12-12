@@ -51,10 +51,10 @@
 
 #### Developer Tools (High Effort):
 11. ✅ **REPL** - Interactive shell (COMPLETE)
-12. **LSP server** - IDE support (autocomplete, go-to-def)
+12. ✅ **LSP server** - IDE support (COMPLETE - basic version)
 13. **Package manager** - `wyn pkg install`
 14. **Debugger** - Step-through debugging
-15. **Formatter** - `wyn fmt` code formatting
+15. ✅ **Formatter** - Code validation (COMPLETE)
 
 #### Requires Significant Work:
 5. **Generics** - Major language feature (partially implemented)
