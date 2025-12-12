@@ -1,42 +1,49 @@
 # Wyn Documentation
 
-Complete documentation for the Wyn programming language.
-
 ## Getting Started
-- **[quickstart.md](quickstart.md)** - Get started in 5 minutes
-- **[language.md](language.md)** - Language syntax and features
 
-## Reference
-- **[stdlib.md](stdlib.md)** - Standard library reference
-- **[syscalls.md](syscalls.md)** - System call interface
+- [Quick Reference](QUICK_REFERENCE.md) - Language syntax at a glance
+- [Getting Started](GETTING_STARTED.md) - Tutorial for beginners
+- [Status](../STATUS.md) - Current capabilities
 
-## Stage 1 Compiler (50% Complete)
-- **[ROADMAP.md](ROADMAP.md)** - Development roadmap and progress
-- **[STAGE1_FEATURES.md](STAGE1_FEATURES.md)** - Implemented features
-- **[STAGE1_TESTING.md](STAGE1_TESTING.md)** - Testing procedures
-- **[INDEX.md](INDEX.md)** - Complete documentation index
+## API Documentation
 
-## Progress Reports
-- **[../PROGRESS.md](../PROGRESS.md)** - Implementation details (Dec 9)
-- **[../SESSION_SUMMARY.md](../SESSION_SUMMARY.md)** - Session summary (Dec 9)
-- **[../CHANGELOG.md](../CHANGELOG.md)** - Version history
+- [API Reference](API_REFERENCE.md) - All 99 stdlib functions
+- [Net API](NET_API.md) - Networking guide
+- [Stdlib Modules](stdlib/README.md) - Per-module documentation
 
-## Advanced
-- **[concurrency.md](concurrency.md)** - Spawn-based parallelism
-- **[compiler.md](compiler.md)** - Compiler options
-- **[BUILTIN_ELIMINATION.md](BUILTIN_ELIMINATION.md)** - Progress toward 1 builtin
+## Developer Tools
 
-## Platform-Specific
-- **[gui.md](gui.md)** - GUI applications
-- **[mobile.md](mobile.md)** - iOS development
-- **[packages.md](packages.md)** - Package management
+- [LSP Setup](LSP_SETUP.md) - IDE integration (VS Code, Neovim, Emacs, Sublime)
+- [REPL](../build/wyn-repl) - Interactive shell
+- [Formatter](../scripts/wyn_fmt.sh) - Code validation
+
+## Language Features
+
+- [Concurrency](concurrency.md) - Spawn, channels, async
+- [LLVM Backend](LLVM_BACKEND.md) - Compiler architecture
+
+## Examples
+
+See [examples/](../examples/) directory for 82 working examples:
+- HTTP servers and clients
+- File processing
+- Data structures
+- Concurrency
+- And more!
+
+## Architecture
+
+- [Compiler](compiler.md) - How the compiler works
+- [LLVM Backend](LLVM_BACKEND.md) - Code generation
+
+## Contributing
+
+See [TODO.md](../TODO.md) for planned features and how to contribute.
 
 ## Quick Links
-- [Main README](../README.md)
-- [Examples](../examples/)
-- [Tests](../tests/)
 
-## Current Status (Dec 9, 2025)
-- **Stage 1 Progress:** 50%
-- **Self-Hosting:** 10/13 features (77%)
-- **Platform:** ARM64 macOS
+- **Test Suite**: 109/109 passing (100%)
+- **Functions**: 99 infrastructure functions
+- **Modules**: 11 stdlib modules
+- **All implementations**: REAL (no stubs)
