@@ -574,6 +574,127 @@ int64_t regex_count(const char* text, const char* pattern) {
     return atoi(buf);
 }
 
+// HTTP Server implementation
+int64_t http_server_create(int port) {
+    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) return -1;
+    
+    int opt = 1;
+    setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    
+    struct sockaddr_in serv_addr;
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_addr.s_addr = INADDR_ANY;
+    serv_addr.sin_port = htons(port);
+    
+    if (bind(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
+        close(sockfd);
+        return -1;
+    }
+    
+    if (listen(sockfd, 10) < 0) {
+        close(sockfd);
+        return -1;
+    }
+    
+    return sockfd;
+}
+
+int64_t http_server_accept(int64_t server_fd) {
+    struct sockaddr_in cli_addr;
+    socklen_t cli_len = sizeof(cli_addr);
+    int client_fd = accept(server_fd, (struct sockaddr*)&cli_addr, &cli_len);
+    return client_fd;
+}
+
+char* http_server_read_request(int64_t client_fd) {
+    if (client_fd < 0) return strdup("");
+    
+    char* buffer = malloc(65536);
+    ssize_t n = recv(client_fd, buffer, 65535, 0);
+    
+    if (n < 0) {
+        free(buffer);
+        return strdup("");
+    }
+    
+    buffer[n] = '\0';
+    return buffer;
+}
+
+char* http_parse_method(const char* request) {
+    char* method = malloc(16);
+    sscanf(request, "%15s", method);
+    return method;
+}
+
+char* http_parse_path(const char* request) {
+    char method[16], path[1024];
+    sscanf(request, "%15s %1023s", method, path);
+    return strdup(path);
+}
+
+char* http_parse_body(const char* request) {
+    const char* body_start = strstr(request, "\r\n\r\n");
+    if (body_start) {
+        return strdup(body_start + 4);
+    }
+    return strdup("");
+}
+
+int64_t http_server_send_response(int64_t client_fd, int status, const char* body) {
+    if (client_fd < 0) return 0;
+    
+    char* status_text = "OK";
+    if (status == 404) status_text = "Not Found";
+    else if (status == 500) status_text = "Internal Server Error";
+    else if (status == 201) status_text = "Created";
+    else if (status == 400) status_text = "Bad Request";
+    
+    char response[65536];
+    int len = snprintf(response, 65536,
+        "HTTP/1.1 %d %s\r\n"
+        "Content-Type: text/plain\r\n"
+        "Content-Length: %zu\r\n"
+        "Connection: close\r\n"
+        "\r\n"
+        "%s",
+        status, status_text, strlen(body), body);
+    
+    ssize_t sent = send(client_fd, response, len, 0);
+    return (sent > 0) ? 1 : 0;
+}
+
+int64_t http_server_send_json(int64_t client_fd, int status, const char* json) {
+    if (client_fd < 0) return 0;
+    
+    char* status_text = "OK";
+    if (status == 404) status_text = "Not Found";
+    else if (status == 500) status_text = "Internal Server Error";
+    
+    char response[65536];
+    int len = snprintf(response, 65536,
+        "HTTP/1.1 %d %s\r\n"
+        "Content-Type: application/json\r\n"
+        "Content-Length: %zu\r\n"
+        "Connection: close\r\n"
+        "\r\n"
+        "%s",
+        status, status_text, strlen(json), json);
+    
+    ssize_t sent = send(client_fd, response, len, 0);
+    return (sent > 0) ? 1 : 0;
+}
+
+void http_server_close_client(int64_t client_fd) {
+    if (client_fd >= 0) close(client_fd);
+}
+
+void http_server_close(int64_t server_fd) {
+    if (server_fd >= 0) close(server_fd);
+}
+
 // Array contains - check if element is in array
 int64_t array_contains(int64_t* arr, int64_t elem) {
     if (!arr) return 0;

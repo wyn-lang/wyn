@@ -877,6 +877,16 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "udp_recv") == 0) return "udp_recv_wyn";
         if (strcmp(function, "resolve_host") == 0) return "resolve_host_wyn";
         if (strcmp(function, "get_local_ip") == 0) return "get_local_ip_wyn";
+        if (strcmp(function, "server_create") == 0) return "http_server_create";
+        if (strcmp(function, "server_accept") == 0) return "http_server_accept";
+        if (strcmp(function, "server_read_request") == 0) return "http_server_read_request";
+        if (strcmp(function, "parse_method") == 0) return "http_parse_method";
+        if (strcmp(function, "parse_path") == 0) return "http_parse_path";
+        if (strcmp(function, "parse_body") == 0) return "http_parse_body";
+        if (strcmp(function, "server_send_response") == 0) return "http_server_send_response";
+        if (strcmp(function, "server_send_json") == 0) return "http_server_send_json";
+        if (strcmp(function, "server_close_client") == 0) return "http_server_close_client";
+        if (strcmp(function, "server_close") == 0) return "http_server_close";
         if (strcmp(function, "args") == 0) return "args";
         if (strcmp(function, "args") == 0) return "args";
     } else if (strcmp(module, "io") == 0) {
@@ -1013,6 +1023,16 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "udp_recv") == 0) return "udp_recv_wyn";
         if (strcmp(function, "resolve_host") == 0) return "resolve_host_wyn";
         if (strcmp(function, "get_local_ip") == 0) return "get_local_ip_wyn";
+        if (strcmp(function, "server_create") == 0) return "http_server_create";
+        if (strcmp(function, "server_accept") == 0) return "http_server_accept";
+        if (strcmp(function, "server_read_request") == 0) return "http_server_read_request";
+        if (strcmp(function, "parse_method") == 0) return "http_parse_method";
+        if (strcmp(function, "parse_path") == 0) return "http_parse_path";
+        if (strcmp(function, "parse_body") == 0) return "http_parse_body";
+        if (strcmp(function, "server_send_response") == 0) return "http_server_send_response";
+        if (strcmp(function, "server_send_json") == 0) return "http_server_send_json";
+        if (strcmp(function, "server_close_client") == 0) return "http_server_close_client";
+        if (strcmp(function, "server_close") == 0) return "http_server_close";
     } else if (strcmp(module, "log") == 0) {
         if (strcmp(function, "info") == 0) return "log_info";
         if (strcmp(function, "warn") == 0) return "log_warn";
@@ -1160,6 +1180,10 @@ static Type* get_builtin_return_type(const char* builtin_name) {
     if (strcmp(builtin_name, "decrypt_aes256") == 0) return new_type(TYPE_STR);
     if (strcmp(builtin_name, "generate_random_bytes") == 0) return new_type(TYPE_STR);
     if (strcmp(builtin_name, "hmac_sha256") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "http_server_read_request") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "http_parse_method") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "http_parse_path") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "http_parse_body") == 0) return new_type(TYPE_STR);
     
     // Integer-returning functions
     if (strcmp(builtin_name, "now_unix") == 0) return new_type(TYPE_INT);
@@ -3423,6 +3447,11 @@ static bool tc1_is_builtin(const char* name) {
     if (strcmp(name, "encrypt_aes256") == 0 || strcmp(name, "decrypt_aes256") == 0) return true;
     if (strcmp(name, "generate_random_bytes") == 0 || strcmp(name, "hmac_sha256") == 0) return true;
     if (strcmp(name, "verify_signature") == 0) return true;
+    if (strcmp(name, "http_server_create") == 0 || strcmp(name, "http_server_accept") == 0) return true;
+    if (strcmp(name, "http_server_read_request") == 0 || strcmp(name, "http_parse_method") == 0) return true;
+    if (strcmp(name, "http_parse_path") == 0 || strcmp(name, "http_parse_body") == 0) return true;
+    if (strcmp(name, "http_server_send_response") == 0 || strcmp(name, "http_server_send_json") == 0) return true;
+    if (strcmp(name, "http_server_close_client") == 0 || strcmp(name, "http_server_close") == 0) return true;
     
     // Time builtins
     if (strcmp(name, "time_now") == 0 || strcmp(name, "sleep_ms") == 0 || strcmp(name, "sleep") == 0) return true;
@@ -11236,7 +11265,11 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                           strcmp(function, "encrypt_aes256") == 0 ||
                                           strcmp(function, "decrypt_aes256") == 0 ||
                                           strcmp(function, "generate_random_bytes") == 0 ||
-                                          strcmp(function, "hmac_sha256") == 0);
+                                          strcmp(function, "hmac_sha256") == 0 ||
+                                          strcmp(function, "server_read_request") == 0 ||
+                                          strcmp(function, "parse_method") == 0 ||
+                                          strcmp(function, "parse_path") == 0 ||
+                                          strcmp(function, "parse_body") == 0);
                     
                     int t = llvm_new_temp(lg);
                     if (returns_string) {
@@ -11394,7 +11427,11 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                          strcmp(func_name, "encrypt_aes256") == 0 ||
                                          strcmp(func_name, "decrypt_aes256") == 0 ||
                                          strcmp(func_name, "generate_random_bytes") == 0 ||
-                                         strcmp(func_name, "hmac_sha256") == 0);
+                                         strcmp(func_name, "hmac_sha256") == 0 ||
+                                         strcmp(func_name, "http_server_read_request") == 0 ||
+                                         strcmp(func_name, "http_parse_method") == 0 ||
+                                         strcmp(func_name, "http_parse_path") == 0 ||
+                                         strcmp(func_name, "http_parse_body") == 0);
                 
                 bool is_int_builtin = (strcmp(func_name, "ord") == 0 ||
                                       strcmp(func_name, "str_find") == 0 ||
@@ -12616,6 +12653,18 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i8* @generate_random_bytes(i64)");
     llvm_emit(&lg, "declare i8* @hmac_sha256(i8*, i8*)");
     llvm_emit(&lg, "declare i64 @verify_signature(i8*, i8*, i8*)");
+    
+    // HTTP Server functions
+    llvm_emit(&lg, "declare i64 @http_server_create(i64)");
+    llvm_emit(&lg, "declare i64 @http_server_accept(i64)");
+    llvm_emit(&lg, "declare i8* @http_server_read_request(i64)");
+    llvm_emit(&lg, "declare i8* @http_parse_method(i8*)");
+    llvm_emit(&lg, "declare i8* @http_parse_path(i8*)");
+    llvm_emit(&lg, "declare i8* @http_parse_body(i8*)");
+    llvm_emit(&lg, "declare i64 @http_server_send_response(i64, i64, i8*)");
+    llvm_emit(&lg, "declare i64 @http_server_send_json(i64, i64, i8*)");
+    llvm_emit(&lg, "declare void @http_server_close_client(i64)");
+    llvm_emit(&lg, "declare void @http_server_close(i64)");
     llvm_emit(&lg, "");
     
     // Generate functions

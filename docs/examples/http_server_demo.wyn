@@ -1,0 +1,37 @@
+import net
+
+fn main() {
+    print("Starting HTTP server on port 8080...")
+    
+    const server: int = net.server_create(8080)
+    if server < 0 {
+        print("Failed to create server")
+        return
+    }
+    
+    print("Server listening on http://localhost:8080")
+    print("Try: curl http://localhost:8080/hello")
+    
+    # Accept one connection for demo
+    const client: int = net.server_accept(server)
+    if client >= 0 {
+        const request: str = net.server_read_request(client)
+        const method: str = net.parse_method(request)
+        const path: str = net.parse_path(request)
+        
+        print("Method: " + method)
+        print("Path: " + path)
+        
+        # Simple routing
+        if path == "/hello" {
+            net.server_send_response(client, 200, "Hello from Wyn!")
+        } else {
+            net.server_send_response(client, 404, "Not Found")
+        }
+        
+        net.server_close_client(client)
+    }
+    
+    net.server_close(server)
+    print("Server stopped")
+}
