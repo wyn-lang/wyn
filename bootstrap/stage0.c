@@ -828,6 +828,9 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "ord") == 0) return "ord";
         if (strcmp(function, "int_to_str") == 0) return "int_to_str";
         if (strcmp(function, "from_int") == 0) return "int_to_str";
+        if (strcmp(function, "upper") == 0) return "str_upper";
+        if (strcmp(function, "lower") == 0) return "str_lower";
+        if (strcmp(function, "trim") == 0) return "str_trim";
     } else if (strcmp(module, "compress") == 0) {
     } else if (strcmp(module, "regex") == 0) {
         if (strcmp(function, "matches") == 0) return "regex_matches";
@@ -11681,6 +11684,9 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                          strcmp(func_name, "int_to_str") == 0 ||
                                          strcmp(func_name, "to_string") == 0 ||
                                          strcmp(func_name, "str_substr") == 0 ||
+                                         strcmp(func_name, "str_upper") == 0 ||
+                                         strcmp(func_name, "str_lower") == 0 ||
+                                         strcmp(func_name, "str_trim") == 0 ||
                                          strcmp(func_name, "read_file") == 0 ||
                                          strcmp(func_name, "getenv_wyn") == 0 ||
                                          strcmp(func_name, "cwd_wyn") == 0 ||
@@ -13177,6 +13183,9 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i8* @int_to_str(i64)");
     llvm_emit(&lg, "declare i64 @str_to_int(i8*)");
     llvm_emit(&lg, "declare i64 @str_len(i8*)");
+    llvm_emit(&lg, "declare i8* @str_upper(i8*)");
+    llvm_emit(&lg, "declare i8* @str_lower(i8*)");
+    llvm_emit(&lg, "declare i8* @str_trim(i8*)");
     llvm_emit(&lg, "declare i64 @clock_wyn()");
     llvm_emit(&lg, "declare i64 @random_wyn()");
     llvm_emit(&lg, "declare i64 @time_now()");

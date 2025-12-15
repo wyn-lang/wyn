@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <time.h>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -1934,5 +1935,43 @@ int64_t* array_slice(int64_t* arr, int64_t start, int64_t end) {
         result[i + 2] = arr[start + i + 2];
     }
     
+    return result;
+}
+
+// String utility functions
+char* str_upper(const char* str) {
+    int len = strlen(str);
+    char* result = malloc(len + 1);
+    for (int i = 0; i < len; i++) {
+        result[i] = toupper(str[i]);
+    }
+    result[len] = '\0';
+    return result;
+}
+
+char* str_lower(const char* str) {
+    int len = strlen(str);
+    char* result = malloc(len + 1);
+    for (int i = 0; i < len; i++) {
+        result[i] = tolower(str[i]);
+    }
+    result[len] = '\0';
+    return result;
+}
+
+char* str_trim(const char* str) {
+    // Trim leading whitespace
+    while (*str && isspace(*str)) str++;
+    
+    if (*str == 0) return strdup("");
+    
+    // Trim trailing whitespace
+    const char* end = str + strlen(str) - 1;
+    while (end > str && isspace(*end)) end--;
+    
+    int len = end - str + 1;
+    char* result = malloc(len + 1);
+    memcpy(result, str, len);
+    result[len] = '\0';
     return result;
 }
