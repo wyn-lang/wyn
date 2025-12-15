@@ -1,0 +1,9 @@
+# std/cli.wyn
+# CLI argument parsing
+# All functions are mapped to runtime implementations via compiler
+#
+# Functions:
+#   has_flag(name) -> bool - Check if flag exists (--flag or -f)
+#   get_arg(name) -> str - Get argument value (--name=value or --name value)
+#   get_positional(index) -> str - Get positional argument
+#   arg_count() -> int - Get number of arguments

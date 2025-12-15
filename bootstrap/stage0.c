@@ -1091,6 +1091,14 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "generate_random_bytes") == 0) return "generate_random_bytes";
         if (strcmp(function, "hmac_sha256") == 0) return "hmac_sha256";
         if (strcmp(function, "verify_signature") == 0) return "verify_signature";
+    } else if (strcmp(module, "cli") == 0) {
+        if (strcmp(function, "has_flag") == 0) return "cli_has_flag";
+        if (strcmp(function, "get_arg") == 0) return "cli_get_arg";
+        if (strcmp(function, "get_positional") == 0) return "cli_get_positional";
+        if (strcmp(function, "arg_count") == 0) return "cli_arg_count";
+        if (strcmp(function, "generate_random_bytes") == 0) return "generate_random_bytes";
+        if (strcmp(function, "hmac_sha256") == 0) return "hmac_sha256";
+        if (strcmp(function, "verify_signature") == 0) return "verify_signature";
     } else if (strcmp(module, "atomic") == 0) {
         if (strcmp(function, "add") == 0) return "wyn_atomic_add";
         if (strcmp(function, "sub") == 0) return "wyn_atomic_sub";
@@ -13034,6 +13042,10 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare void @command_arg(i8*)");
     llvm_emit(&lg, "declare i64 @command_run()");
     llvm_emit(&lg, "declare i8* @command_output()");
+    llvm_emit(&lg, "declare i64 @cli_has_flag(i8*)");
+    llvm_emit(&lg, "declare i8* @cli_get_arg(i8*)");
+    llvm_emit(&lg, "declare i8* @cli_get_positional(i64)");
+    llvm_emit(&lg, "declare i64 @cli_arg_count()");
     llvm_emit(&lg, "declare i8** @args_wyn()");
     llvm_emit(&lg, "declare i8* @cwd_wyn()");
     llvm_emit(&lg, "declare i64 @chdir_wyn(i8*)");

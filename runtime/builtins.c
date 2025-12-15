@@ -1711,3 +1711,60 @@ char* command_output() {
     pclose(pipe);
     return result;
 }
+
+// CLI argument parsing
+static int g_argc = 0;
+static char** g_argv = NULL;
+
+void cli_init(int argc, char** argv) {
+    g_argc = argc;
+    g_argv = argv;
+}
+
+int64_t cli_has_flag(const char* name) {
+    for (int i = 1; i < g_argc; i++) {
+        if (strcmp(g_argv[i], name) == 0) return 1;
+        // Check short form (e.g., -f for --flag)
+        if (name[0] == '-' && name[1] == '-' && strlen(g_argv[i]) == 2 && g_argv[i][0] == '-' && g_argv[i][1] == name[2]) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+char* cli_get_arg(const char* name) {
+    for (int i = 1; i < g_argc; i++) {
+        // Check --name=value format
+        if (strncmp(g_argv[i], name, strlen(name)) == 0 && g_argv[i][strlen(name)] == '=') {
+            return strdup(g_argv[i] + strlen(name) + 1);
+        }
+        // Check --name value format
+        if (strcmp(g_argv[i], name) == 0 && i + 1 < g_argc) {
+            return strdup(g_argv[i + 1]);
+        }
+    }
+    return strdup("");
+}
+
+char* cli_get_positional(int64_t index) {
+    int pos_count = 0;
+    for (int i = 1; i < g_argc; i++) {
+        // Skip flags and their values
+        if (g_argv[i][0] == '-') {
+            // If it's --name value format, skip the value too
+            if (i + 1 < g_argc && g_argv[i + 1][0] != '-') {
+                i++;
+            }
+            continue;
+        }
+        if (pos_count == index) {
+            return strdup(g_argv[i]);
+        }
+        pos_count++;
+    }
+    return strdup("");
+}
+
+int64_t cli_arg_count() {
+    return g_argc - 1;  // Exclude program name
+}
