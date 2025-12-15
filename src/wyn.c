@@ -6,6 +6,9 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+// Compiler entry point (from stage0.c)
+extern int compiler_main(int argc, char** argv);
+
 // Forward declarations for subcommands
 int run_compiler(int argc, char** argv);
 int run_repl(void);
@@ -25,6 +28,7 @@ void print_help(void) {
     printf("Commands:\n");
     printf("  compile <file>       Compile a .wyn file\n");
     printf("  run <file>           Compile and run a file\n");
+    printf("  -e <code>            Execute inline code\n");
     printf("  repl                 Start interactive REPL\n");
     printf("  fmt <file>           Format code (validate syntax)\n");
     printf("  doc [module]         Show documentation\n");
@@ -37,6 +41,7 @@ void print_help(void) {
     printf("  wyn compile hello.wyn          # Compile to a.out\n");
     printf("  wyn compile -o app hello.wyn   # Compile to 'app'\n");
     printf("  wyn run hello.wyn              # Compile and run\n");
+    printf("  wyn -e 'print(42)'             # Execute inline code\n");
     printf("  wyn repl                       # Interactive shell\n");
     printf("  wyn doc net                    # Show net module docs\n");
 }
@@ -52,6 +57,53 @@ int main(int argc, char** argv) {
     if (strcmp(cmd, "compile") == 0) {
         // Shift args and call compiler
         return run_compiler(argc - 1, argv + 1);
+    }
+    else if (strcmp(cmd, "-e") == 0 || strcmp(cmd, "--eval") == 0) {
+        if (argc < 3) {
+            fprintf(stderr, "Error: '-e' requires code argument\n");
+            return 1;
+        }
+        // Execute inline code
+        char temp_file[64];
+        snprintf(temp_file, sizeof(temp_file), "/tmp/wyn_inline_%d.wyn", getpid());
+        
+        FILE* f = fopen(temp_file, "w");
+        fprintf(f, "fn main() {\n    %s\n}\n", argv[2]);
+        fclose(f);
+        
+        char temp_out[64];
+        snprintf(temp_out, sizeof(temp_out), "/tmp/wyn_inline_out_%d", getpid());
+        
+        // Compile
+        char* compile_argv[] = {"wyn", "compile", temp_file, "-o", temp_out, NULL};
+        
+        fflush(stdout);
+        fflush(stderr);
+        int saved_stdout = dup(STDOUT_FILENO);
+        int saved_stderr = dup(STDERR_FILENO);
+        int devnull = open("/dev/null", O_WRONLY);
+        dup2(devnull, STDOUT_FILENO);
+        dup2(devnull, STDERR_FILENO);
+        
+        int result = compiler_main(5, compile_argv);
+        
+        fflush(stdout);
+        fflush(stderr);
+        dup2(saved_stdout, STDOUT_FILENO);
+        dup2(saved_stderr, STDERR_FILENO);
+        close(devnull);
+        close(saved_stdout);
+        close(saved_stderr);
+        
+        if (result == 0) {
+            char run_cmd[256];
+            snprintf(run_cmd, sizeof(run_cmd), "%s 2>&1 | grep -v '\\[Runtime\\]'", temp_out);
+            system(run_cmd);
+        }
+        
+        unlink(temp_file);
+        unlink(temp_out);
+        return result;
     }
     else if (strcmp(cmd, "run") == 0) {
         if (argc < 3) {
@@ -114,9 +166,6 @@ int main(int argc, char** argv) {
         return 1;
     }
 }
-
-// Compiler entry point (from stage0.c main)
-extern int compiler_main(int argc, char** argv);
 
 int run_compiler(int argc, char** argv) {
     return compiler_main(argc, argv);

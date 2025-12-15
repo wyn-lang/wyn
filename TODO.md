@@ -4,14 +4,21 @@
 
 ## Current Status
 
-### ✅ Completed
+### ✅ Completed Today (2025-12-15)
+- Unified CLI binary (`wyn` command)
+- First-class functions (lambdas in variables)
+- 8 infrastructure examples
+- File operations: `io.copy()`, `io.move()`, `io.chmod()`
+- Glob patterns: `io.glob("*.wyn")`
+- Shebang support: `#!/usr/bin/env wyn run`
+- Windows compatibility analysis (see WINDOWS_COMPAT.md)
+- Vision and roadmap documentation
+
+### ✅ Previously Completed
 - All 3 tiers of stdlib (99 functions)
 - Test suite: 120/120 passing (100%)
 - Default parameters
-- Lambda expressions / First-class functions
 - REPL, LSP, Formatter
-- Unified CLI binary
-- 8 infrastructure examples
 
 ## Immediate Priorities (Next 2 Weeks)
 
