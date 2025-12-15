@@ -878,6 +878,9 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "get_string") == 0) return "get_string_json";
         if (strcmp(function, "get_int") == 0) return "get_int_json";
         if (strcmp(function, "get_bool") == 0) return "get_bool_json";
+    } else if (strcmp(module, "config") == 0) {
+        if (strcmp(function, "yaml_parse") == 0) return "yaml_parse";
+        if (strcmp(function, "toml_parse") == 0) return "toml_parse";
     } else if (strcmp(module, "net") == 0) {
         if (strcmp(function, "http_get") == 0) return "http_get_wyn";
         if (strcmp(function, "http_post") == 0) return "http_post_wyn";
@@ -1029,6 +1032,9 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "get_string") == 0) return "get_string_json";
         if (strcmp(function, "get_int") == 0) return "get_int_json";
         if (strcmp(function, "get_bool") == 0) return "get_bool_json";
+    } else if (strcmp(module, "config") == 0) {
+        if (strcmp(function, "yaml_parse") == 0) return "yaml_parse";
+        if (strcmp(function, "toml_parse") == 0) return "toml_parse";
     } else if (strcmp(module, "net") == 0) {
         if (strcmp(function, "http_get") == 0) return "http_get_wyn";
         if (strcmp(function, "http_post") == 0) return "http_post_wyn";
@@ -3541,6 +3547,9 @@ static bool tc1_is_builtin(const char* name) {
     // JSON builtins
     if (strcmp(name, "parse_json") == 0 || strcmp(name, "stringify_json") == 0) return true;
     if (strcmp(name, "get_string_json") == 0 || strcmp(name, "get_int_json") == 0 || strcmp(name, "get_bool_json") == 0) return true;
+    
+    // Config builtins
+    if (strcmp(name, "yaml_parse") == 0 || strcmp(name, "toml_parse") == 0) return true;
     
     // Net builtins
     if (strcmp(name, "http_get_wyn") == 0 || strcmp(name, "http_post_wyn") == 0) return true;
@@ -11639,6 +11648,8 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                          strcmp(func_name, "parse_json") == 0 ||
                                          strcmp(func_name, "stringify_json") == 0 ||
                                          strcmp(func_name, "get_string_json") == 0 ||
+                                         strcmp(func_name, "yaml_parse") == 0 ||
+                                         strcmp(func_name, "toml_parse") == 0 ||
                                          strcmp(func_name, "http_get_wyn") == 0 ||
                                          strcmp(func_name, "http_post_wyn") == 0 ||
                                          strcmp(func_name, "tcp_recv_wyn") == 0 ||
@@ -13100,6 +13111,10 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i8** @args_wyn()");
     llvm_emit(&lg, "declare i8* @cwd_wyn()");
     llvm_emit(&lg, "declare i64 @chdir_wyn(i8*)");
+    
+    // Config module functions
+    llvm_emit(&lg, "declare i8* @yaml_parse(i8*)");
+    llvm_emit(&lg, "declare i8* @toml_parse(i8*)");
     
     // JSON module functions
     llvm_emit(&lg, "declare i8* @parse_json(i8*)");

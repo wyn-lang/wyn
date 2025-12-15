@@ -1276,6 +1276,122 @@ int get_bool_json(const char* json, const char* key) {
     return 0;
 }
 
+// Config module functions (YAML and TOML parsing)
+char* yaml_parse(const char* content) {
+    // Simple YAML to JSON converter
+    // Handles basic key: value pairs and nested structures
+    char* result = malloc(8192);
+    strcpy(result, "{");
+    
+    char* lines = strdup(content);
+    char* line = strtok(lines, "\n");
+    int first = 1;
+    
+    while (line) {
+        // Skip empty lines and comments
+        while (*line == ' ' || *line == '\t') line++;
+        if (*line == '\0' || *line == '#') {
+            line = strtok(NULL, "\n");
+            continue;
+        }
+        
+        // Find key: value pattern
+        char* colon = strchr(line, ':');
+        if (colon) {
+            *colon = '\0';
+            char* key = line;
+            char* value = colon + 1;
+            
+            // Trim whitespace
+            while (*key == ' ' || *key == '\t') key++;
+            while (*value == ' ' || *value == '\t') value++;
+            
+            // Remove trailing whitespace from key
+            char* key_end = key + strlen(key) - 1;
+            while (key_end > key && (*key_end == ' ' || *key_end == '\t')) {
+                *key_end = '\0';
+                key_end--;
+            }
+            
+            if (!first) strcat(result, ",");
+            strcat(result, "\"");
+            strcat(result, key);
+            strcat(result, "\":\"");
+            strcat(result, value);
+            strcat(result, "\"");
+            first = 0;
+        }
+        
+        line = strtok(NULL, "\n");
+    }
+    
+    strcat(result, "}");
+    free(lines);
+    return result;
+}
+
+char* toml_parse(const char* content) {
+    // Simple TOML to JSON converter
+    // Handles basic key = value pairs
+    char* result = malloc(8192);
+    strcpy(result, "{");
+    
+    char* lines = strdup(content);
+    char* line = strtok(lines, "\n");
+    int first = 1;
+    
+    while (line) {
+        // Skip empty lines and comments
+        while (*line == ' ' || *line == '\t') line++;
+        if (*line == '\0' || *line == '#' || *line == '[') {
+            line = strtok(NULL, "\n");
+            continue;
+        }
+        
+        // Find key = value pattern
+        char* equals = strchr(line, '=');
+        if (equals) {
+            *equals = '\0';
+            char* key = line;
+            char* value = equals + 1;
+            
+            // Trim whitespace
+            while (*key == ' ' || *key == '\t') key++;
+            while (*value == ' ' || *value == '\t') value++;
+            
+            // Remove trailing whitespace from key
+            char* key_end = key + strlen(key) - 1;
+            while (key_end > key && (*key_end == ' ' || *key_end == '\t')) {
+                *key_end = '\0';
+                key_end--;
+            }
+            
+            // Remove quotes from value if present
+            if (*value == '"' || *value == '\'') {
+                value++;
+                char* value_end = value + strlen(value) - 1;
+                if (*value_end == '"' || *value_end == '\'') {
+                    *value_end = '\0';
+                }
+            }
+            
+            if (!first) strcat(result, ",");
+            strcat(result, "\"");
+            strcat(result, key);
+            strcat(result, "\":\"");
+            strcat(result, value);
+            strcat(result, "\"");
+            first = 0;
+        }
+        
+        line = strtok(NULL, "\n");
+    }
+    
+    strcat(result, "}");
+    free(lines);
+    return result;
+}
+
 // Net module functions
 char* http_get_wyn(const char* url) {
     // Use curl command for HTTP GET

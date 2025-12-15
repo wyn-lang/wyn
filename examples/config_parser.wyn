@@ -1,0 +1,24 @@
+import config
+import io
+
+fn main() {
+    // Create sample YAML file
+    const yaml_content: str = "name: MyApp\nversion: 1.0.0\nport: 8080\ndebug: true"
+    io.write("app.yaml", yaml_content)
+    
+    // Create sample TOML file  
+    const toml_content: str = "name = \"MyApp\"\nversion = \"1.0.0\"\nport = 8080\ndebug = true"
+    io.write("config.toml", toml_content)
+    
+    // Parse YAML
+    const yaml_file: str = io.read("app.yaml")
+    const yaml_data: str = config.yaml_parse(yaml_file)
+    print("YAML parsed:")
+    print(yaml_data)
+    
+    // Parse TOML
+    const toml_file: str = io.read("config.toml")
+    const toml_data: str = config.toml_parse(toml_file)
+    print("TOML parsed:")
+    print(toml_data)
+}
