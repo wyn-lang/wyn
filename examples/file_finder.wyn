@@ -1,0 +1,32 @@
+// File finder using glob patterns
+// Demonstrates shell-style file pattern matching
+
+import io
+
+fn main() {
+    print("=== File Finder ===")
+    
+    // Find all .wyn files in examples directory
+    print("Finding *.wyn files...")
+    const wyn_files = io.glob("examples/*.wyn")
+    
+    print("Found files:")
+    let i = 0
+    while i < wyn_files.len() {
+        print("  " + wyn_files[i])
+        i = i + 1
+    }
+    
+    print("Total: " + int_to_str(wyn_files.len()) + " files")
+    
+    // Find all markdown files
+    print("Finding *.md files...")
+    const md_files = io.glob("*.md")
+    
+    print("Markdown files:")
+    i = 0
+    while i < md_files.len() {
+        print("  " + md_files[i])
+        i = i + 1
+    }
+}

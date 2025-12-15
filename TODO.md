@@ -16,7 +16,7 @@
 ## Immediate Priorities (Next 2 Weeks)
 
 ### 🔥 Critical: Windows Support
-- [ ] Test all 99 stdlib functions on Windows
+- [ ] Test all 99 stdlib functions on Windows (Agent working on this)
 - [ ] Fix path separators (`/` vs `\`)
 - [ ] Fix line endings (LF vs CRLF)
 - [ ] Test compilation on Windows
@@ -45,12 +45,12 @@
 ### Shell Replacement Features
 - [ ] Command builder API
 - [ ] Improve pipe operator
-- [ ] Glob patterns: `io.glob("**/*.wyn")`
+- [x] Glob patterns: `io.glob("**/*.wyn")` ✅
 - [ ] Process management: spawn, wait, kill
 - [ ] Shebang support: `#!/usr/bin/env wyn run`
 
 ### Python Replacement Features
-- [ ] File operations: `io.copy()`, `io.move()`, `io.chmod()`
+- [x] File operations: `io.copy()`, `io.move()`, `io.chmod()` ✅ (needs testing)
 - [ ] Method chaining on strings/arrays
 - [ ] List operations: `filter()`, `map()`, `reduce()`
 - [ ] Dict/Map literals: `{"key": "value"}`
