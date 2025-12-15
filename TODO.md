@@ -63,6 +63,29 @@ const result = "hello world"
     .join("-")
 ```
 
+### 🐍 High Priority: Python-Style Features
+- [ ] **Ternary operator:** `const x = condition ? "yes" : "no"`
+- [ ] **List comprehensions:** `const evens = [x for x in numbers if x % 2 == 0]`
+- [ ] **Functional array operations:** `arr.filter(fn).map(fn).reduce(fn)`
+
+**Why:** Essential for Python replacement, developers expect these
+
+**Examples:**
+```wyn
+// Ternary
+const status = age >= 18 ? "adult" : "minor"
+const max = a > b ? a : b
+
+// List comprehensions
+const squares = [x * x for x in [1, 2, 3, 4, 5]]
+const evens = [x for x in numbers if x % 2 == 0]
+
+// Functional operations
+const evens = numbers.filter(lambda x: x % 2 == 0)
+const doubled = numbers.map(lambda x: x * 2)
+const sum = numbers.reduce(lambda acc, x: acc + x, 0)
+```
+
 ### 📦 High Priority: Package System
 - [ ] Design package format
 - [ ] Implement `wyn pkg install`
