@@ -1,0 +1,5 @@
+// Config module - YAML and TOML parsing
+// Simple parsing for common configuration file formats
+
+// Note: Functions are mapped to runtime implementations
+// via the module mapping system in the compiler

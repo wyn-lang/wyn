@@ -9,20 +9,26 @@ Wyn is a **production-ready infrastructure/DevOps language** that combines:
 - **Simplicity:** Clean, expressive syntax
 - **Multi-platform:** ARM64, x86_64, and more via LLVM
 - **Concurrency:** Go-style green threads (1.3M tasks/sec)
-- **Complete Stdlib:** 99 infrastructure functions, ALL REAL
+- **Complete Stdlib:** 107+ infrastructure functions, ALL REAL
+- **Universal:** Replace bash, Python, and PowerShell with one language
 
 ## 🎉 Production Ready
 
 The language is **production-ready** with **100% passing test suite**:
 - ✅ All core language features
 - ✅ Default parameters (`fn greet(name: str = "World")`)
-- ✅ Python-style lambda syntax (`lambda x, y: x + y`)
-- ✅ 11 standard library modules (99 functions)
+- ✅ First-class functions (`const add = lambda x, y: x + y`)
+- ✅ 12 standard library modules (107+ functions)
 - ✅ HTTP client and server
 - ✅ Concurrency (spawn, channels)
 - ✅ String arrays with indexing
 - ✅ Pattern matching
 - ✅ Developer tools (REPL, LSP, formatter)
+- ✅ Shebang support (`#!/usr/bin/env wyn run`)
+- ✅ Inline execution (`wyn -e 'code'`)
+- ✅ File operations (copy, move, chmod, glob)
+- ✅ Command builder API
+- ✅ CLI argument parsing
 
 ## Test Suite Status
 
@@ -110,10 +116,10 @@ fn main() {
 
 ## Standard Library
 
-### Complete Modules (99 functions, ALL REAL):
+### Complete Modules (107+ functions, ALL REAL):
 
-- **io** (13) - File operations, directories
-- **os** (8) - Process, environment, system
+- **io** (16) - File operations, directories, copy, move, chmod, glob
+- **os** (12) - Process, environment, system, command builder
 - **net** (23) - HTTP client/server, TCP, UDP
 - **json** (5) - Parsing, stringify
 - **time** (7) - Timestamps, formatting, sleep
@@ -124,6 +130,7 @@ fn main() {
 - **regex** (4) - Pattern matching
 - **collections** (13) - HashMap, Set
 - **crypto** (5) - AES-256, HMAC, random
+- **cli** (4) - Argument parsing, flags
 
 Plus: **string**, **array**, **math**, **task**, **core**, **result**
 
