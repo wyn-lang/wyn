@@ -1,5 +1,0 @@
-import config
-
-fn main() {
-    print("Testing config module")
-}

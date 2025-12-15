@@ -11443,6 +11443,8 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                           strcmp(function, "parse") == 0 ||
                                           strcmp(function, "stringify") == 0 ||
                                           strcmp(function, "get_string") == 0 ||
+                                          strcmp(function, "yaml_parse") == 0 ||
+                                          strcmp(function, "toml_parse") == 0 ||
                                           strcmp(function, "http_get") == 0 ||
                                           strcmp(function, "http_post") == 0 ||
                                           strcmp(function, "tcp_recv") == 0 ||
