@@ -11723,13 +11723,56 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     if (strcmp(func_name, "to_string") == 0) runtime_name = "int_to_str";
                     
                     if (is_string_builtin) {
+                        int t = llvm_new_temp(lg);
                         llvm_emit(lg, "  %%%d = call i8* @%s(%s)", t, runtime_name, args);
+                        *result_reg = t;
                     } else if (is_array_builtin) {
+                        int t = llvm_new_temp(lg);
                         llvm_emit(lg, "  %%%d = call i64* @%s(%s)", t, runtime_name, args);
+                        *result_reg = t;
                     } else {
-                        llvm_emit(lg, "  %%%d = call i64 @%s(%s)", t, runtime_name, args);
+                        // Check if this is a declared function or a variable (function pointer)
+                        bool is_declared_function = false;
+                        for (int i = 0; i < lg->module->function_count; i++) {
+                            if (strcmp(lg->module->functions[i].name, func_name) == 0) {
+                                is_declared_function = true;
+                                break;
+                            }
+                        }
+                        
+                        int var_reg = -1;
+                        if (!is_declared_function) {
+                            for (int i = 0; i < lg->var_count; i++) {
+                                if (strcmp(lg->vars[i], func_name) == 0) {
+                                    var_reg = lg->var_regs[i];
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (var_reg >= 0) {
+                            // Indirect call through function pointer
+                            int ptr_reg = llvm_new_temp(lg);
+                            llvm_emit(lg, "  %%%d = load i64, i64* %%%d", ptr_reg, var_reg);
+                            
+                            int fn_reg = llvm_new_temp(lg);
+                            llvm_emit(lg, "  %%%d = inttoptr i64 %%%d to i64 (", fn_reg, ptr_reg);
+                            for (int i = 0; i < actual_arg_count; i++) {
+                                if (i > 0) llvm_emit_raw(lg, ", ");
+                                llvm_emit_raw(lg, "i64");
+                            }
+                            llvm_emit_raw(lg, ")*\n");
+                            
+                            int t = llvm_new_temp(lg);
+                            llvm_emit(lg, "  %%%d = call i64 %%%d(%s)", t, fn_reg, args);
+                            *result_reg = t;
+                        } else {
+                            // Direct call to named function
+                            int t = llvm_new_temp(lg);
+                            llvm_emit(lg, "  %%%d = call i64 @%s(%s)", t, runtime_name, args);
+                            *result_reg = t;
+                        }
                     }
-                    *result_reg = t;
                 } else {
                     // Special handling for assert - convert i1 arguments to i64 if needed
                     char converted_args[1024] = "";
@@ -11766,7 +11809,47 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     }
                     
                     int t = llvm_new_temp(lg);
-                    llvm_emit(lg, "  %%%d = call i64 @%s(%s)", t, func_name, converted_args);
+                    
+                    // Check if func_name is a declared function or a variable
+                    bool is_declared_function = false;
+                    for (int i = 0; i < lg->module->function_count; i++) {
+                        if (strcmp(lg->module->functions[i].name, func_name) == 0) {
+                            is_declared_function = true;
+                            break;
+                        }
+                    }
+                    
+                    // If not a declared function, check if it's a variable (function pointer)
+                    int var_reg = -1;
+                    if (!is_declared_function) {
+                        for (int i = 0; i < lg->var_count; i++) {
+                            if (strcmp(lg->vars[i], func_name) == 0) {
+                                var_reg = lg->var_regs[i];
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (var_reg >= 0) {
+                        // Indirect call through function pointer
+                        int ptr_reg = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = load i64, i64* %%%d", ptr_reg, var_reg);
+                        
+                        // Cast i64 to function pointer type
+                        int fn_reg = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = inttoptr i64 %%%d to i64 (", fn_reg, ptr_reg);
+                        for (int i = 0; i < actual_arg_count; i++) {
+                            if (i > 0) llvm_emit_raw(lg, ", ");
+                            llvm_emit_raw(lg, "i64");
+                        }
+                        llvm_emit_raw(lg, ")*\n");
+                        
+                        // Call through function pointer
+                        llvm_emit(lg, "  %%%d = call i64 %%%d(%s)", t, fn_reg, converted_args);
+                    } else {
+                        // Direct call to named function
+                        llvm_emit(lg, "  %%%d = call i64 @%s(%s)", t, func_name, converted_args);
+                    }
                     *result_reg = t;
                 }
                 
@@ -12089,7 +12172,7 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                 if (i > 0) llvm_emit_raw(lg, ", ");
                 llvm_emit_raw(lg, "i64");
             }
-            llvm_emit_raw(lg, ")* @__lambda_%d to i64", e->lambda.id);
+            llvm_emit_raw(lg, ")* @__lambda_%d to i64\n", e->lambda.id);
             *result_reg = t;
             break;
         }
@@ -13103,7 +13186,7 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
         fprintf(lg.out, "define i64 @__lambda_%d(", lambda->lambda.id);
         for (int j = 0; j < lambda->lambda.param_count; j++) {
             if (j > 0) fprintf(lg.out, ", ");
-            fprintf(lg.out, "i64 %%%s", lambda->lambda.params[j]);
+            fprintf(lg.out, "i64 %%param_%s", lambda->lambda.params[j]);
         }
         fprintf(lg.out, ") {\n");
         fprintf(lg.out, "entry:\n");
@@ -13111,13 +13194,16 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
         // Save and reset state
         int saved_temp = lg.temp_count;
         int saved_var = lg.var_count;
-        lg.temp_count = lambda->lambda.param_count;
+        lg.temp_count = 0;
         lg.var_count = 0;
         
-        // Add parameters as variables
+        // Allocate stack space for parameters and store them
         for (int j = 0; j < lambda->lambda.param_count; j++) {
+            int alloca_reg = llvm_new_temp(&lg);
+            fprintf(lg.out, "  %%%d = alloca i64\n", alloca_reg);
+            fprintf(lg.out, "  store i64 %%param_%s, i64* %%%d\n", lambda->lambda.params[j], alloca_reg);
             strcpy(lg.vars[lg.var_count], lambda->lambda.params[j]);
-            lg.var_regs[lg.var_count] = j;  // Parameters are %0, %1, etc.
+            lg.var_regs[lg.var_count] = alloca_reg;
             lg.var_count++;
         }
         
@@ -13134,7 +13220,11 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     }
 }
 
+#ifdef COMPILER_MAIN
+int compiler_main(int argc, char** argv) {
+#else
 int main(int argc, char** argv) {
+#endif
     if (argc < 2) {
         print_usage(argv[0]);
         return 1;

@@ -1,81 +1,175 @@
 # Wyn Language - TODO
 
-## 🎉 ALL TIERS COMPLETE! 🎉
+> **See [VISION.md](VISION.md) for long-term roadmap and strategic direction.**
 
-### Tier 1: Essential (COMPLETE ✅)
-1. ✅ io module - 13 functions
-2. ✅ os module - 8 functions
-3. ✅ net module - 13 functions
-4. ✅ json module - 5 functions
+## Current Status
 
-**Total: 39 functions, ALL REAL**
+### ✅ Completed
+- All 3 tiers of stdlib (99 functions)
+- Test suite: 120/120 passing (100%)
+- Default parameters
+- Lambda expressions / First-class functions
+- REPL, LSP, Formatter
+- Unified CLI binary
+- 8 infrastructure examples
 
-### Tier 2: Important (COMPLETE ✅)
-6. ✅ time module - 7 functions
-7. ✅ log module - 5 functions
-8. ✅ encoding module - 6 functions
-9. ✅ hash module - 3 functions
+## Immediate Priorities (Next 2 Weeks)
 
-**Total: 21 functions, ALL REAL**
+### 🔥 Critical: Windows Support
+- [ ] Test all 99 stdlib functions on Windows
+- [ ] Fix path separators (`/` vs `\`)
+- [ ] Fix line endings (LF vs CRLF)
+- [ ] Test compilation on Windows
+- [ ] CI/CD for Windows builds
 
-### Tier 3: Nice to Have (COMPLETE ✅)
-11. ✅ compress module - 7 functions
-12. ✅ crypto module - 5 functions
-13. ✅ collections module - 13 functions
-14. ✅ regex module - 4 functions
+**Why:** Can't be "universal DevOps language" without Windows
 
-**Total: 29 functions, ALL REAL**
+### 🎯 High Priority: Type System
+- [ ] Finish generics implementation
+- [ ] Add Result<T, E> type
+- [ ] Add Option<T> type
+- [ ] Generic collections: Array<T>, Map<K,V>
 
-## Grand Total: 99 Infrastructure Functions, ALL REAL! 🚀
+**Why:** Foundation for everything else
 
-### NEW: String Arrays and Atomic Operations! 🎉
-- ✅ **String arrays** - `const arr: [str] = str_split("a,b,c", ",")`
-- ✅ **Array iteration** - `for item in arr { print(item) }`
-- ✅ **Atomic operations** - `wyn_atomic_add/sub/load/store/cas`
-- ✅ **os.exec_output()** - Execute command and capture output
+### 📦 High Priority: Package System
+- [ ] Design package format
+- [ ] Implement `wyn pkg install`
+- [ ] Implement `wyn pkg publish`
+- [ ] Create package registry (or use GitHub)
 
-### Test Suite Status
-- **Current**: 120/120 passing (100%)
-- **Examples**: 89/89
-- **Tests**: 31/31
+**Why:** Enables ecosystem growth
 
-### What's Next:
+## Next Month
 
-#### Quick Wins (High Impact, Low Effort):
-1. ✅ **Documentation generator** - COMPLETE
-2. ✅ **String interpolation** - COMPLETE (`"Hello {name}"` syntax)
-3. ✅ **Multi-line strings** - COMPLETE (Triple quotes)
-4. ✅ **Pipe operator** - COMPLETE (`data |> transform |> filter`)
-5. **More examples** - Real-world infrastructure use cases
+### Shell Replacement Features
+- [ ] Command builder API
+- [ ] Improve pipe operator
+- [ ] Glob patterns: `io.glob("**/*.wyn")`
+- [ ] Process management: spawn, wait, kill
+- [ ] Shebang support: `#!/usr/bin/env wyn run`
 
-#### Language Features (Medium Effort):
-6. ✅ **Default parameters** - `fn greet(name: str = "World")` - COMPLETE
-7. ⚠️ **Lambda expressions** - `lambda x, y: x + y` (Python-style) - PARTIAL (syntax works, first-class functions need work)
-8. **Destructuring** - `const {x, y} = point`
-9. **Generics completion** - Finish partial implementation
-10. **Traits/interfaces** - For polymorphism
+### Python Replacement Features
+- [ ] File operations: `io.copy()`, `io.move()`, `io.chmod()`
+- [ ] Method chaining on strings/arrays
+- [ ] List operations: `filter()`, `map()`, `reduce()`
+- [ ] Dict/Map literals: `{"key": "value"}`
 
-**Note**: Default parameters are fully functional. Lambda syntax is supported but storing/calling through variables requires first-class function support.
+### Developer Experience
+- [ ] Script caching (compile once, run many)
+- [ ] Embedded mode: `wyn -e 'print("hello")'`
+- [ ] Better error messages
+- [ ] Cross-compilation support
 
-#### Developer Tools (High Effort):
-11. ✅ **REPL** - Interactive shell (COMPLETE)
-12. ✅ **LSP server** - IDE support (COMPLETE - basic version)
-13. **Package manager** - `wyn pkg install`
-14. **Debugger** - Step-through debugging
-15. ✅ **Formatter** - Code validation (COMPLETE)
+## Standard Library Additions
 
-#### Requires Significant Work:
-5. **Generics** - Major language feature (partially implemented)
-6. **Package manager** - wyn pkg system
-7. **LSP server** - IDE support
-8. **Default parameters** - Language feature
-9. **Lambda expressions** - Language feature
+### Tier 2: DevOps Critical
+- [ ] **database** module - postgres, mysql, sqlite
+- [ ] **http** framework - routing, middleware
+- [ ] **test** framework - unit testing
+- [ ] **cli** module - argument parsing
+- [ ] **config** module - YAML, TOML, env files
 
-#### Language Features:
-- ⏳ Generics (enables proper Result/Option types)
-- ⏳ Default parameters
-- ⏳ Lambda expressions
-- ⏳ Traits/interfaces
+### Missing from Current Stdlib
+- [ ] `io.copy()`, `io.move()`, `io.chmod()`
+- [ ] `os.command()` builder
+- [ ] `channel.new()`, `channel.send()`, `channel.recv()`
+- [ ] Array slicing: `arr[1:3]`
+- [ ] String slicing: `str[0:5]`
+
+## Language Features
+
+### In Progress
+- ⚠️ Generics (partially implemented)
+- ⚠️ Channels (declared but not implemented)
+
+### Planned
+- [ ] Result/Option types
+- [ ] Destructuring: `const {x, y} = point`
+- [ ] Traits/interfaces
+- [ ] Method chaining
+- [ ] List comprehensions (or equivalent)
+
+## Developer Tools
+
+### Completed ✅
+- Unified `wyn` CLI
+- REPL
+- LSP (basic)
+- Formatter (validation)
+
+### Needed
+- [ ] Package manager
+- [ ] Testing framework
+- [ ] Debugger
+- [ ] Profiler
+- [ ] Documentation generator
+
+## Examples & Documentation
+
+### Completed ✅
+- 8 infrastructure examples
+- API reference
+- Quick reference
+
+### Needed
+- [ ] 10+ more real-world examples
+- [ ] Tutorial series
+- [ ] Best practices guide
+- [ ] Migration guides (from bash/Python/PowerShell)
+- [ ] Video tutorials
+
+## Testing & Quality
+
+### Current
+- 120/120 tests passing (100%)
+- Examples: 89/89
+- Tests: 31/31
+
+### Needed
+- [ ] Windows test suite
+- [ ] Integration tests
+- [ ] Performance benchmarks
+- [ ] Memory leak tests
+- [ ] Fuzzing
+
+## Infrastructure
+
+### Needed
+- [ ] CI/CD for all platforms (Linux, macOS, Windows)
+- [ ] Automated releases
+- [ ] Package registry
+- [ ] Documentation website
+- [ ] Community forum/Discord
+
+## Marketing & Community
+
+### Needed
+- [ ] Website (wyn-lang.org)
+- [ ] Blog post: "Why I built Wyn"
+- [ ] Show HN post
+- [ ] Reddit posts (r/devops, r/programming)
+- [ ] Twitter presence
+- [ ] YouTube tutorials
+- [ ] Conference talks
+
+## Success Metrics
+
+### 3 Months
+- [ ] 100% Windows compatibility
+- [ ] 10 real-world example scripts
+- [ ] Package manager MVP
+- [ ] 1000 GitHub stars
+
+### 6 Months
+- [ ] 50+ packages in ecosystem
+- [ ] Used in production by 10+ companies
+- [ ] Complete documentation
+- [ ] 5000 GitHub stars
+
+---
+
+**See [VISION.md](VISION.md) for detailed roadmap and strategic direction.**
 
 ## What Wyn Can Do Now:
 

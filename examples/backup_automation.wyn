@@ -1,0 +1,102 @@
+// Automated backup system with compression and rotation
+// Creates compressed backups of directories with timestamp and cleanup
+
+import io
+import os
+import time
+import compress
+import log
+import hash
+
+fn create_backup(source_dir: str, backup_dir: str) -> str {
+    const timestamp: str = time.format(time.now(), "2006-01-02_15-04-05")
+    const backup_name: str = "backup_" + timestamp + ".tar.gz"
+    const backup_path: str = backup_dir + "/" + backup_name
+    
+    print("Creating backup: " + backup_name)
+    
+    // Create backup directory if it doesn't exist
+    if io.is_dir(backup_dir) == false {
+        io.mkdir(backup_dir)
+    }
+    
+    // Create tar archive of source directory
+    const tar_data: str = compress.tar_create(source_dir)
+    const compressed: str = compress.gzip_compress(tar_data)
+    
+    // Write compressed backup
+    io.write(backup_path, compressed)
+    
+    // Generate checksum for integrity
+    const checksum: str = hash.sha256(compressed)
+    const checksum_file: str = backup_path + ".sha256"
+    io.write(checksum_file, checksum)
+    
+    log.info("Backup created: " + backup_path)
+    log.info("Checksum: " + checksum)
+    
+    return backup_path
+}
+
+fn cleanup_old_backups(backup_dir: str, keep_count: int) {
+    print("Cleaning up old backups...")
+    
+    const files: [str] = io.list_files(backup_dir)
+    let backup_files: [str] = []
+    
+    // Filter backup files
+    let i: int = 0
+    while i < files.len() {
+        const file: str = files[i]
+        if file.contains("backup_") && file.contains(".tar.gz") {
+            backup_files = backup_files.append(file)
+        }
+        i = i + 1
+    }
+    
+    // Remove old backups if we have too many
+    if backup_files.len() > keep_count {
+        const to_remove: int = backup_files.len() - keep_count
+        i = 0
+        while i < to_remove {
+            const old_backup: str = backup_dir + "/" + backup_files[i]
+            const old_checksum: str = old_backup + ".sha256"
+            
+            io.delete(old_backup)
+            io.delete(old_checksum)
+            log.info("Removed old backup: " + backup_files[i])
+            i = i + 1
+        }
+    }
+}
+
+fn main() {
+    print("=== Backup Automation ===")
+    
+    // Configuration
+    const source_dir: str = "/tmp/test_data"
+    const backup_dir: str = "/tmp/backups"
+    const keep_backups: int = 5
+    
+    // Create test data for demo
+    io.mkdir(source_dir)
+    io.write(source_dir + "/file1.txt", "Important data 1")
+    io.write(source_dir + "/file2.txt", "Important data 2")
+    
+    // Create backup
+    const backup_path: str = create_backup(source_dir, backup_dir)
+    
+    // Verify backup size
+    const backup_size: int = io.size(backup_path)
+    print("Backup size: " + int_to_str(backup_size) + " bytes")
+    
+    // Cleanup old backups
+    cleanup_old_backups(backup_dir, keep_backups)
+    
+    // Cleanup test data
+    io.delete(source_dir + "/file1.txt")
+    io.delete(source_dir + "/file2.txt")
+    io.rmdir(source_dir)
+    
+    print("Backup automation complete")
+}

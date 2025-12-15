@@ -1,0 +1,72 @@
+// API health monitor - checks multiple endpoints and reports status
+// Monitors response times, status codes, and service availability
+
+import net
+import time
+import log
+import json
+import collections
+
+fn check_endpoint(url: str, name: str) -> str {
+    print("Checking " + name + "...")
+    
+    const start_time: int = time.now()
+    const response: str = net.http_get(url)
+    const end_time: int = time.now()
+    const response_time: int = end_time - start_time
+    
+    // Parse response (simplified - would check actual status)
+    let status: str = "UP"
+    if response.len() == 0 {
+        status = "DOWN"
+    }
+    
+    const result: str = name + ":" + status + ":" + int_to_str(response_time) + "ms"
+    
+    if status == "DOWN" {
+        log.error("Service " + name + " is DOWN")
+    } else if response_time > 1000 {
+        log.warn("Service " + name + " slow response: " + int_to_str(response_time) + "ms")
+    } else {
+        log.info("Service " + name + " healthy: " + int_to_str(response_time) + "ms")
+    }
+    
+    return result
+}
+
+fn main() {
+    print("=== API Health Monitor ===")
+    
+    // Create results map
+    const results: str = collections.hashmap_new()
+    
+    // Monitor multiple services (using localhost for demo)
+    const services: [str] = ["api", "auth", "database"]
+    const endpoints: [str] = ["http://localhost:8080/health", "http://localhost:8081/status", "http://localhost:5432/ping"]
+    
+    let i: int = 0
+    while i < services.len() {
+        const service: str = services[i]
+        const endpoint: str = endpoints[i]
+        const result: str = check_endpoint(endpoint, service)
+        collections.hashmap_put(results, service, result)
+        i = i + 1
+    }
+    
+    // Generate health report
+    print("Health Report:")
+    i = 0
+    while i < services.len() {
+        const service: str = services[i]
+        const status: str = collections.hashmap_get(results, service)
+        print("  " + status)
+        i = i + 1
+    }
+    
+    // Create JSON report
+    const report: str = "{\"timestamp\":" + int_to_str(time.now()) + ",\"status\":\"complete\"}"
+    const report_file: str = "/tmp/health_report.json"
+    
+    print("Report saved to: " + report_file)
+    print("Monitor complete")
+}

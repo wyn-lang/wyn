@@ -32,13 +32,10 @@ TESTS_DIR = tests
 EXAMPLES_DIR = examples
 PREFIX ?= /usr/local
 
-# Wyn Compiler (wync)
-WYNC_SRC = $(BOOTSTRAP_DIR)/stage0.c
-WYNC_BIN = $(BUILD_DIR)/wync
-
-# Wyn REPL
-REPL_SRC = $(SRC_DIR)/repl.c
-REPL_BIN = $(BUILD_DIR)/wyn-repl
+# Unified Wyn binary
+WYN_CLI_SRC = $(SRC_DIR)/wyn.c
+WYN_COMPILER_SRC = $(BOOTSTRAP_DIR)/stage0.c
+WYN_BIN = $(BUILD_DIR)/wyn
 
 # Runtime libraries
 SPAWN_RUNTIME_SRC = $(RUNTIME_DIR)/spawn.c
@@ -50,24 +47,29 @@ BUILTINS_RUNTIME_OBJ = $(BUILD_DIR)/builtins_runtime.o
 CHANNELS_RUNTIME_SRC = $(RUNTIME_DIR)/channels.c
 CHANNELS_RUNTIME_OBJ = $(BUILD_DIR)/channels_runtime.o
 
-# Default target - build compiler and runtime
+# Default target - build unified wyn binary
 .PHONY: all
-all: wync repl runtime
+all: wyn runtime
 
 # Create build directory
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-# Build Wyn Compiler (wync)
-.PHONY: wync
-wync: $(BUILD_DIR) $(WYNC_BIN)
+# Build unified Wyn binary
+.PHONY: wyn
+wyn: $(BUILD_DIR) $(WYN_BIN)
 
-$(WYNC_BIN): $(WYNC_SRC)
-	$(CC) $(CFLAGS) -o $@ $<
+$(WYN_BIN): $(WYN_CLI_SRC) $(WYN_COMPILER_SRC)
+	@echo "Building unified wyn binary..."
+	$(CC) $(CFLAGS) -DCOMPILER_MAIN -o $@ $(WYN_CLI_SRC) $(WYN_COMPILER_SRC)
+	@echo "✓ Built: $(WYN_BIN)"
 
-# Build Wyn REPL
-.PHONY: repl
-repl: $(BUILD_DIR) $(REPL_BIN)
+# Legacy targets (for compatibility during transition)
+.PHONY: wync repl
+wync: wyn
+	@echo "Note: 'wync' is now 'wyn compile'"
+repl: wyn
+	@echo "Note: 'wyn-repl' is now 'wyn repl'"
 
 $(REPL_BIN): $(REPL_SRC)
 	$(CC) $(CFLAGS) -o $@ $<
@@ -88,19 +90,19 @@ $(BUILTINS_RUNTIME_OBJ): $(BUILTINS_RUNTIME_SRC)
 $(CHANNELS_RUNTIME_OBJ): $(CHANNELS_RUNTIME_SRC)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-# Debug build of wync
-.PHONY: wync-debug
-wync-debug: $(BUILD_DIR)
-	$(CC) $(DEBUG_FLAGS) -o $(WYNC_BIN) $(WYNC_SRC)
+# Debug build
+.PHONY: wyn-debug
+wyn-debug: $(BUILD_DIR)
+	$(CC) $(DEBUG_FLAGS) -DCOMPILER_MAIN -o $(WYN_BIN) $(WYN_CLI_SRC) $(WYN_COMPILER_SRC)
 
 # Test all examples
 .PHONY: test-examples
-test-examples: wync
+test-examples: wyn
 	@echo "Testing examples..."
 	@passed=0; failed=0; \
 	for f in examples/*.wyn; do \
 		echo "  Testing $$f..."; \
-		if ./$(WYNC_BIN) $$f -o /tmp/wyn_test 2>&1 | grep -q "Compiled to:" && timeout 2 /tmp/wyn_test > /dev/null 2>&1; then \
+		if ./$(WYN_BIN) compile $$f -o /tmp/wyn_test 2>&1 | grep -q "Compiled to:" && timeout 2 /tmp/wyn_test > /dev/null 2>&1; then \
 			echo "    ✅ PASS"; \
 			passed=$$((passed + 1)); \
 		else \
@@ -112,13 +114,13 @@ test-examples: wync
 
 # Test all test files
 .PHONY: test-all-tests
-test-all-tests: wync
+test-all-tests: wyn
 	@echo "Testing test files..."
 	@passed=0; failed=0; \
 	for f in tests/*_test.wyn; do \
 		[ -f "$$f" ] || continue; \
 		echo "  Testing $$f..."; \
-		if ./$(WYNC_BIN) $$f -o /tmp/wyn_test 2>&1 | grep -q "Compiled to:" && timeout 5 /tmp/wyn_test > /dev/null 2>&1; then \
+		if ./$(WYN_BIN) compile $$f -o /tmp/wyn_test 2>&1 | grep -q "Compiled to:" && timeout 5 /tmp/wyn_test > /dev/null 2>&1; then \
 			echo "    ✅ PASS"; \
 			passed=$$((passed + 1)); \
 		else \
@@ -135,14 +137,14 @@ test: test-examples test-all-tests
 
 # Run tests in parallel (8x faster, uses bash)
 .PHONY: test-parallel
-test-parallel: wync
+test-parallel: wyn
 	@./scripts/parallel_test.sh
 
 # Install to system
 .PHONY: install
 install: all
 	@echo "Installing Wyn to $(PREFIX)/bin..."
-	install -m 755 $(BUILD_DIR)/wync $(PREFIX)/bin/wync
+	install -m 755 $(WYN_BIN) $(PREFIX)/bin/wyn
 	@echo "Installing stdlib to $(PREFIX)/share/wyn/std..."
 	mkdir -p $(PREFIX)/share/wyn
 	cp -r std $(PREFIX)/share/wyn/
@@ -181,19 +183,26 @@ help:
 	@echo "Wyn Language Build System"
 	@echo ""
 	@echo "Targets:"
-	@echo "  all                 - Build compiler, REPL and runtime (default)"
-	@echo "  wync                - Build Wyn compiler (LLVM backend)"
-	@echo "  repl                - Build Wyn REPL"
+	@echo "  all                 - Build unified wyn binary and runtime (default)"
+	@echo "  wyn                 - Build unified wyn binary"
 	@echo "  runtime             - Build runtime libraries"
 	@echo "  test                - Run all tests"
-	@echo "  test-examples       - Test core examples"
-	@echo "  test-spawn          - Test spawn blocks"
-	@echo "  test-match          - Test match statements"
+	@echo "  test-examples       - Test examples"
+	@echo "  test-parallel       - Run tests in parallel (faster)"
 	@echo "  install             - Install to system"
 	@echo "  uninstall           - Uninstall from system"
 	@echo "  clean               - Remove build artifacts"
 	@echo "  rebuild             - Clean and rebuild"
 	@echo "  version             - Show version"
 	@echo "  help                - Show this help"
+	@echo ""
+	@echo "Wyn commands:"
+	@echo "  ./build/wyn compile <file>   - Compile a file"
+	@echo "  ./build/wyn run <file>       - Compile and run"
+	@echo "  ./build/wyn repl             - Start REPL"
+	@echo "  ./build/wyn doc [module]     - Show docs"
+	@echo "  ./build/wyn fmt <file>       - Format/validate"
+	@echo "  ./build/wyn lsp              - Start LSP server"
+	@echo "  ./build/wyn pkg <cmd>        - Package manager"
 
 .DEFAULT_GOAL := all

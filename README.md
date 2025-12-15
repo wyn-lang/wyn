@@ -40,7 +40,7 @@ make
 make test
 
 # 3. Try the REPL
-./build/wyn-repl
+./build/wyn repl
 
 # 4. Write a program
 cat > hello.wyn << 'EOF'
@@ -50,8 +50,11 @@ fn main() {
 EOF
 
 # 5. Compile and run
-./build/wync hello.wyn
+./build/wyn compile hello.wyn
 ./a.out
+
+# Or just run directly
+./build/wyn run hello.wyn
 ```
 
 ## Example Programs
@@ -128,9 +131,21 @@ See [API Reference](docs/API_REFERENCE.md) for complete documentation.
 
 ## Developer Tools
 
+### Unified CLI
+```bash
+./build/wyn help              # Show all commands
+./build/wyn compile file.wyn  # Compile
+./build/wyn run file.wyn      # Compile and run
+./build/wyn repl              # Interactive shell
+./build/wyn fmt file.wyn      # Validate syntax
+./build/wyn doc [module]      # Show docs
+./build/wyn lsp               # Start LSP server
+./build/wyn pkg <cmd>         # Package manager
+```
+
 ### REPL - Interactive Shell
 ```bash
-./build/wyn-repl
+./build/wyn repl
 wyn> 5 + 3
 8
 wyn> "Hello"
@@ -148,7 +163,7 @@ See [LSP Setup Guide](docs/LSP_SETUP.md).
 
 ### Code Formatter
 ```bash
-./scripts/wyn_fmt.sh program.wyn
+./build/wyn fmt program.wyn
 ```
 
 ### Beautiful Error Messages

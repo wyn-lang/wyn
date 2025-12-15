@@ -1,0 +1,140 @@
+// Configuration management system for deploying and validating configs
+// Manages application configurations across different environments
+
+import io
+import json
+import hash
+import log
+import collections
+import encoding
+
+fn validate_config(config_data: str) -> bool {
+    // Basic validation - check required fields exist
+    const required_fields: [str] = ["app_name", "version", "database", "api_key"]
+    
+    let i: int = 0
+    while i < required_fields.len() {
+        const field: str = required_fields[i]
+        if config_data.contains(field) == false {
+            log.error("Missing required field: " + field)
+            return false
+        }
+        i = i + 1
+    }
+    
+    // Check for sensitive data patterns
+    if config_data.contains("password") || config_data.contains("secret") {
+        log.warn("Configuration contains sensitive data")
+    }
+    
+    return true
+}
+
+fn encrypt_sensitive_data(config_data: str) -> str {
+    // Simple encoding for demo (in production, use proper encryption)
+    const encoded: str = encoding.base64_encode(config_data)
+    return encoded
+}
+
+fn deploy_config(config_path: str, environment: str, target_dir: str) {
+    print("Deploying config to " + environment + " environment...")
+    
+    // Read source config
+    const config_data: str = io.read(config_path)
+    
+    // Validate configuration
+    if validate_config(config_data) == false {
+        log.error("Configuration validation failed")
+        return
+    }
+    
+    // Create environment-specific config
+    let env_config: str = config_data
+    if environment == "production" {
+        env_config = encrypt_sensitive_data(config_data)
+    }
+    
+    // Generate deployment paths
+    const target_path: str = target_dir + "/" + environment + "_config.json"
+    const checksum_path: str = target_path + ".checksum"
+    
+    // Create target directory
+    if io.is_dir(target_dir) == false {
+        io.mkdir(target_dir)
+    }
+    
+    // Write config file
+    io.write(target_path, env_config)
+    
+    // Generate and save checksum
+    const checksum: str = hash.sha256(env_config)
+    io.write(checksum_path, checksum)
+    
+    log.info("Config deployed to: " + target_path)
+    log.info("Checksum: " + checksum)
+}
+
+fn verify_deployment(config_path: str) -> bool {
+    const checksum_path: str = config_path + ".checksum"
+    
+    if io.is_file(config_path) == false || io.is_file(checksum_path) == false {
+        return false
+    }
+    
+    const config_data: str = io.read(config_path)
+    const stored_checksum: str = io.read(checksum_path)
+    const calculated_checksum: str = hash.sha256(config_data)
+    
+    return stored_checksum == calculated_checksum
+}
+
+fn main() {
+    print("=== Configuration Manager ===")
+    
+    // Create sample configuration
+    const config_dir: str = "/tmp/configs"
+    const deploy_dir: str = "/tmp/deployed_configs"
+    const source_config: str = config_dir + "/app_config.json"
+    
+    io.mkdir(config_dir)
+    
+    const sample_config: str = "{
+  \"app_name\": \"web-service\",
+  \"version\": \"1.2.3\",
+  \"database\": {
+    \"host\": \"localhost\",
+    \"port\": 5432
+  },
+  \"api_key\": \"demo-key-12345\",
+  \"debug\": true
+}"
+    
+    io.write(source_config, sample_config)
+    
+    // Deploy to different environments
+    const environments: [str] = ["development", "staging", "production"]
+    
+    let i: int = 0
+    while i < environments.len() {
+        const env: str = environments[i]
+        deploy_config(source_config, env, deploy_dir)
+        i = i + 1
+    }
+    
+    // Verify deployments
+    print("Verifying deployments...")
+    i = 0
+    while i < environments.len() {
+        const env: str = environments[i]
+        const deployed_config: str = deploy_dir + "/" + env + "_config.json"
+        
+        if verify_deployment(deployed_config) {
+            log.info(env + " deployment verified")
+        } else {
+            log.error(env + " deployment verification failed")
+        }
+        i = i + 1
+    }
+    
+    print("Configuration management complete")
+}
