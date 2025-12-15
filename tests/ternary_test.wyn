@@ -1,0 +1,29 @@
+// Ternary operator test
+
+fn main() {
+    // Test 1: Basic ternary with strings
+    const result1 = 5 > 3 ? "big" : "small"
+    print(result1)  // big
+    
+    // Test 2: Ternary with integers
+    const max = 10 > 20 ? 10 : 20
+    print(max)  // 20
+    
+    // Test 3: Ternary with comparison
+    const status = 18 >= 18 ? "adult" : "minor"
+    print(status)  // adult
+    
+    // Test 4: Ternary with variables
+    const a = 100
+    const b = 200
+    const larger = a > b ? a : b
+    print(larger)  // 200
+    
+    // Test 5: Multiple ternaries (not nested)
+    const x = 5
+    const y = 10
+    const first = x > 3 ? "x is big" : "x is small"
+    const second = y > 3 ? "y is big" : "y is small"
+    print(first)   // x is big
+    print(second)  // y is big
+}

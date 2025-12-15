@@ -1972,13 +1972,26 @@ static Expr* parse_postfix(Parser* p) {
             continue;
         }
         
-        // Try: expr?
-        if (parser_match(p, TOK_QUESTION)) {
-            Expr* try_e = new_expr(EXPR_TRY, line, col);
-            try_e->unary.operand = e;
-            try_e->unary.op = TOK_QUESTION;
-            e = try_e;
-            continue;
+        // Try: expr? (only if not followed by expression - that would be ternary)
+        if (parser_check(p, TOK_QUESTION)) {
+            // Peek ahead - if next token is an expression start, this is ternary, not try
+            Token next = lexer_peek(p->lexer);
+            bool is_expr_start = (next.kind == TOK_INT || next.kind == TOK_STRING || 
+                                 next.kind == TOK_IDENT || next.kind == TOK_LPAREN ||
+                                 next.kind == TOK_LBRACKET || next.kind == TOK_TRUE ||
+                                 next.kind == TOK_FALSE || next.kind == TOK_MINUS ||
+                                 next.kind == TOK_NOT);
+            
+            if (!is_expr_start) {
+                // This is try operator
+                parser_advance(p);
+                Expr* try_e = new_expr(EXPR_TRY, line, col);
+                try_e->unary.operand = e;
+                try_e->unary.op = TOK_QUESTION;
+                e = try_e;
+                continue;
+            }
+            // Otherwise, leave it for ternary parsing in parse_expr
         }
         
         break;
@@ -10866,6 +10879,11 @@ static void collect_strings_expr(StringTable* st, Expr* e) {
             collect_strings_expr(st, e->if_expr.then_expr);
             collect_strings_expr(st, e->if_expr.else_expr);
             break;
+        case EXPR_TERNARY:
+            collect_strings_expr(st, e->ternary.cond);
+            collect_strings_expr(st, e->ternary.true_val);
+            collect_strings_expr(st, e->ternary.false_val);
+            break;
         case EXPR_INDEX:
             collect_strings_expr(st, e->index.object);
             collect_strings_expr(st, e->index.index);
@@ -11032,6 +11050,10 @@ static bool llvm_is_string_expr(LLVMGen* lg, Expr* e) {
     }
     if (e->kind == EXPR_BINARY && e->binary.op == TOK_PLUS) {
         return llvm_is_string_expr(lg, e->binary.left) || llvm_is_string_expr(lg, e->binary.right);
+    }
+    if (e->kind == EXPR_TERNARY) {
+        // Ternary is string if either branch is string
+        return llvm_is_string_expr(lg, e->ternary.true_val) || llvm_is_string_expr(lg, e->ternary.false_val);
     }
     if (e->kind == EXPR_CALL) {
         if (e->call.func->kind == EXPR_IDENT) {
@@ -12334,11 +12356,24 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
             int label_false = lg->label_count++;
             int label_end = lg->label_count++;
             
+            // Check if condition is already i1 (from comparison) or needs conversion
+            bool cond_is_comparison = (e->ternary.cond->kind == EXPR_BINARY &&
+                                      (e->ternary.cond->binary.op == TOK_EQEQ ||
+                                       e->ternary.cond->binary.op == TOK_NOTEQ ||
+                                       e->ternary.cond->binary.op == TOK_LT ||
+                                       e->ternary.cond->binary.op == TOK_GT ||
+                                       e->ternary.cond->binary.op == TOK_LTEQ ||
+                                       e->ternary.cond->binary.op == TOK_GTEQ));
+            
             // Branch on condition
             if (cond_reg <= -1000000) {
                 int cond_bool = (-cond_reg - 1000000) != 0 ? 1 : 0;
                 llvm_emit(lg, "  br i1 %d, label %%L%d, label %%L%d", cond_bool, label_true, label_false);
+            } else if (cond_is_comparison) {
+                // Condition is already i1, use directly
+                llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cond_reg, label_true, label_false);
             } else {
+                // Condition is i64, convert to i1
                 int cond_i1 = llvm_new_temp(lg);
                 llvm_emit(lg, "  %%%d = icmp ne i64 %%%d, 0", cond_i1, cond_reg);
                 llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cond_i1, label_true, label_false);
@@ -12360,6 +12395,10 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
             llvm_emit(lg, "L%d:", label_end);
             int t = llvm_new_temp(lg);
             
+            // Determine phi type from true/false values
+            bool is_string_result = llvm_is_string_expr(lg, e->ternary.true_val);
+            const char* phi_type = is_string_result ? "i8*" : "i64";
+            
             char true_str[32], false_str[32];
             if (true_reg <= -1000000) {
                 snprintf(true_str, 32, "%lld", (long long)(-true_reg - 1000000));
@@ -12372,8 +12411,8 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                 snprintf(false_str, 32, "%%%d", false_reg);
             }
             
-            llvm_emit(lg, "  %%%d = phi i64 [ %s, %%L%d ], [ %s, %%L%d ]", 
-                     t, true_str, label_true, false_str, label_false);
+            llvm_emit(lg, "  %%%d = phi %s [ %s, %%L%d ], [ %s, %%L%d ]", 
+                     t, phi_type, true_str, label_true, false_str, label_false);
             *result_reg = t;
             break;
         }
