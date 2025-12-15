@@ -1,0 +1,29 @@
+// Test type system handles strings correctly
+
+fn main() {
+    // Test 1: String literals
+    const s1 = "hello"
+    print(s1)
+    
+    // Test 2: String concatenation
+    const s2 = "hello" + " " + "world"
+    print(s2)
+    
+    // Test 3: String variables
+    const x = "foo"
+    const y = "bar"
+    const z = x + y
+    print(z)
+    
+    // Test 4: String assignment
+    let result = "start"
+    result = result + " middle"
+    result = result + " end"
+    print(result)
+    
+    // Test 5: Mixed types
+    const num = 42
+    const str = "number"
+    print(num)
+    print(str)
+}

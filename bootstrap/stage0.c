@@ -11023,6 +11023,30 @@ static bool llvm_is_float_expr(LLVMGen* lg, Expr* e) {
     }
 }
 
+static bool llvm_is_string_expr(LLVMGen* lg, Expr* e) {
+    if (!e) return false;
+    if (e->kind == EXPR_STRING) return true;
+    if (e->kind == EXPR_IDENT) {
+        Type* t = llvm_get_var_type(lg, e->ident);
+        return t && t->kind == TYPE_STR;
+    }
+    if (e->kind == EXPR_BINARY && e->binary.op == TOK_PLUS) {
+        return llvm_is_string_expr(lg, e->binary.left) || llvm_is_string_expr(lg, e->binary.right);
+    }
+    if (e->kind == EXPR_CALL) {
+        if (e->call.func->kind == EXPR_IDENT) {
+            const char* func = e->call.func->ident;
+            return (strcmp(func, "chr") == 0 || strcmp(func, "int_to_str") == 0 ||
+                   strcmp(func, "str_concat") == 0 || strcmp(func, "substring") == 0);
+        } else if (e->call.func->kind == EXPR_FIELD) {
+            const char* func = e->call.func->field.field;
+            return (strcmp(func, "upper") == 0 || strcmp(func, "lower") == 0 ||
+                   strcmp(func, "trim") == 0 || strcmp(func, "read") == 0);
+        }
+    }
+    return false;
+}
+
 // Helper function to find struct definition
 static StructDef* llvm_lookup_struct(LLVMGen* lg, const char* name) {
     for (int i = 0; i < lg->module->struct_count; i++) {
@@ -11477,6 +11501,9 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                           strcmp(function, "concat") == 0 ||
                                           strcmp(function, "char_at") == 0 ||
                                           strcmp(function, "int_to_str") == 0 ||
+                                          strcmp(function, "upper") == 0 ||
+                                          strcmp(function, "lower") == 0 ||
+                                          strcmp(function, "trim") == 0 ||
                                           strcmp(function, "getenv") == 0 ||
                                           strcmp(function, "cwd") == 0 ||
                                           strcmp(function, "exec_output") == 0 ||
@@ -12408,7 +12435,7 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
             
             // Check if this is a string variable
             bool is_string_var = (s->let.type && s->let.type->kind == TYPE_STR) ||
-                                (s->let.value && s->let.value->kind == EXPR_STRING);
+                                (s->let.value && llvm_is_string_expr(lg, s->let.value));
             
             if (is_struct_var) {
                 llvm_emit(lg, "  %%%d = alloca %%struct.%s", alloca_reg, struct_def->name);
@@ -12421,7 +12448,22 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
             } else {
                 llvm_emit(lg, "  %%%d = alloca i64", alloca_reg);
             }
-            llvm_add_var(lg, s->let.name, alloca_reg, s->let.type);
+            
+            // Infer type from value if no explicit type annotation
+            Type* var_type = s->let.type;
+            if (!var_type && s->let.value) {
+                if (is_string_var) {
+                    var_type = new_type(TYPE_STR);
+                } else if (is_array_var) {
+                    var_type = new_type(TYPE_ARRAY);
+                } else if (is_float_var) {
+                    var_type = new_type(TYPE_FLOAT);
+                } else {
+                    var_type = new_type(TYPE_INT);
+                }
+            }
+            
+            llvm_add_var(lg, s->let.name, alloca_reg, var_type);
             
             if (s->let.value) {
                 if (is_struct_var && s->let.value->kind == EXPR_STRUCT) {
@@ -12559,7 +12601,14 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
                                 llvm_emit(lg, "  store i64 %lld, i64* %%%d", (long long)(-val_reg - 1000000), var_reg);
                             }
                         } else {
-                            if (is_float_var) {
+                            // Get variable type to determine storage type
+                            Type* var_type = llvm_get_var_type(lg, s->assign.target->ident);
+                            
+                            if (var_type && var_type->kind == TYPE_STR) {
+                                llvm_emit(lg, "  store i8* %%%d, i8** %%%d", val_reg, var_reg);
+                            } else if (var_type && var_type->kind == TYPE_ARRAY) {
+                                llvm_emit(lg, "  store i64* %%%d, i64** %%%d", val_reg, var_reg);
+                            } else if (is_float_var) {
                                 llvm_emit(lg, "  store double %%%d, double* %%%d", val_reg, var_reg);
                             } else {
                                 llvm_emit(lg, "  store i64 %%%d, i64* %%%d", val_reg, var_reg);
@@ -12617,10 +12666,28 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
             if (s->ret.value) {
                 int val_reg;
                 llvm_expr(lg, s->ret.value, &val_reg);
+                
+                // Check if return value is a string (from variable or function call)
+                bool is_string_return = false;
+                if (s->ret.value->kind == EXPR_IDENT) {
+                    Type* var_type = llvm_get_var_type(lg, s->ret.value->ident);
+                    is_string_return = (var_type && var_type->kind == TYPE_STR);
+                } else if (s->ret.value->kind == EXPR_STRING) {
+                    is_string_return = true;
+                } else if (s->ret.value->kind == EXPR_CALL && s->ret.value->call.func->kind == EXPR_IDENT) {
+                    const char* func = s->ret.value->call.func->ident;
+                    is_string_return = (strcmp(func, "chr") == 0 || strcmp(func, "int_to_str") == 0 ||
+                                       strcmp(func, "str_concat") == 0 || strcmp(func, "substring") == 0);
+                }
+                
                 if (val_reg <= -1000000) {
                     llvm_emit(lg, "  ret i64 %lld", (long long)(-val_reg - 1000000));
                 } else {
-                    llvm_emit(lg, "  ret i64 %%%d", val_reg);
+                    if (is_string_return) {
+                        llvm_emit(lg, "  ret i8* %%%d", val_reg);
+                    } else {
+                        llvm_emit(lg, "  ret i64 %%%d", val_reg);
+                    }
                 }
             } else {
                 llvm_emit(lg, "  ret i32 0");
@@ -13045,7 +13112,20 @@ static void llvm_function(LLVMGen* lg, FnDef* f) {
             if (i > 0) strcat(params, ", ");
             strcat(params, param);
         }
-        llvm_emit(lg, "define i64 @%s(%s) {", f->name, params);
+        
+        // Determine return type
+        const char* ret_type = "i64";
+        if (f->return_type) {
+            if (f->return_type->kind == TYPE_STR) {
+                ret_type = "i8*";
+            } else if (f->return_type->kind == TYPE_ARRAY) {
+                ret_type = "i64*";
+            } else if (f->return_type->kind == TYPE_FLOAT) {
+                ret_type = "double";
+            }
+        }
+        
+        llvm_emit(lg, "define %s @%s(%s) {", ret_type, f->name, params);
         llvm_emit(lg, "entry:");
     }
     
