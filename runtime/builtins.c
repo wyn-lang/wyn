@@ -1768,3 +1768,55 @@ char* cli_get_positional(int64_t index) {
 int64_t cli_arg_count() {
     return g_argc - 1;  // Exclude program name
 }
+
+// String slicing: str[start:end]
+char* str_slice(const char* str, int64_t start, int64_t end) {
+    int64_t len = strlen(str);
+    
+    // Handle negative indices
+    if (start < 0) start = len + start;
+    if (end < 0) end = len + end;
+    
+    // Clamp to valid range
+    if (start < 0) start = 0;
+    if (end > len) end = len;
+    if (start > end) start = end;
+    
+    int64_t slice_len = end - start;
+    char* result = malloc(slice_len + 1);
+    memcpy(result, str + start, slice_len);
+    result[slice_len] = '\0';
+    return result;
+}
+
+// Array slicing: arr[start:end]
+int64_t* array_slice(int64_t* arr, int64_t start, int64_t end) {
+    if (!arr) {
+        int64_t* empty = malloc(sizeof(int64_t) * 2);
+        empty[0] = 0;
+        empty[1] = 0;
+        return empty;
+    }
+    
+    int64_t len = arr[0];
+    
+    // Handle negative indices
+    if (start < 0) start = len + start;
+    if (end < 0) end = len + end;
+    
+    // Clamp to valid range
+    if (start < 0) start = 0;
+    if (end > len) end = len;
+    if (start > end) start = end;
+    
+    int64_t slice_len = end - start;
+    int64_t* result = malloc(sizeof(int64_t) * (slice_len + 2));
+    result[0] = slice_len;
+    result[1] = slice_len;
+    
+    for (int64_t i = 0; i < slice_len; i++) {
+        result[i + 2] = arr[start + i + 2];
+    }
+    
+    return result;
+}

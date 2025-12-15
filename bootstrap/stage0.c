@@ -12166,12 +12166,61 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
         
         case EXPR_SLICE: {
             // String/array slicing: obj[start:end]
-            // For now, generate a placeholder (full implementation would require runtime support)
             int obj_reg;
             llvm_expr(lg, e->slice.object, &obj_reg);
             
-            // Just return the object for now (no actual slicing)
-            *result_reg = obj_reg;
+            int start_reg;
+            if (e->slice.start) {
+                llvm_expr(lg, e->slice.start, &start_reg);
+            } else {
+                start_reg = -1000000;  // 0 constant
+            }
+            
+            int end_reg;
+            if (e->slice.end) {
+                llvm_expr(lg, e->slice.end, &end_reg);
+            } else {
+                end_reg = -1000001;  // -1 constant (means end of string/array)
+            }
+            
+            // Determine if this is string or array slicing
+            Type* obj_type = NULL;
+            if (e->slice.object->kind == EXPR_IDENT) {
+                obj_type = llvm_get_var_type(lg, e->slice.object->ident);
+            }
+            
+            int t = llvm_new_temp(lg);
+            if (obj_type && obj_type->kind == TYPE_ARRAY) {
+                // Array slicing
+                char start_str[32], end_str[32];
+                if (start_reg <= -1000000) {
+                    snprintf(start_str, 32, "i64 %lld", (long long)(-start_reg - 1000000));
+                } else {
+                    snprintf(start_str, 32, "i64 %%%d", start_reg);
+                }
+                if (end_reg <= -1000000) {
+                    snprintf(end_str, 32, "i64 %lld", (long long)(-end_reg - 1000000));
+                } else {
+                    snprintf(end_str, 32, "i64 %%%d", end_reg);
+                }
+                llvm_emit(lg, "  %%%d = call i64* @array_slice(i64* %%%d, %s, %s)", t, obj_reg, start_str, end_str);
+            } else {
+                // String slicing
+                char start_str[32], end_str[32];
+                if (start_reg <= -1000000) {
+                    snprintf(start_str, 32, "i64 %lld", (long long)(-start_reg - 1000000));
+                } else {
+                    snprintf(start_str, 32, "i64 %%%d", start_reg);
+                }
+                if (end_reg <= -1000000) {
+                    snprintf(end_str, 32, "i64 %lld", (long long)(-end_reg - 1000000));
+                } else {
+                    snprintf(end_str, 32, "i64 %%%d", end_reg);
+                }
+                llvm_emit(lg, "  %%%d = call i8* @str_slice(i8* %%%d, %s, %s)", t, obj_reg, start_str, end_str);
+            }
+            
+            *result_reg = t;
             break;
         }
         
@@ -13046,6 +13095,8 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i8* @cli_get_arg(i8*)");
     llvm_emit(&lg, "declare i8* @cli_get_positional(i64)");
     llvm_emit(&lg, "declare i64 @cli_arg_count()");
+    llvm_emit(&lg, "declare i8* @str_slice(i8*, i64, i64)");
+    llvm_emit(&lg, "declare i64* @array_slice(i64*, i64, i64)");
     llvm_emit(&lg, "declare i8** @args_wyn()");
     llvm_emit(&lg, "declare i8* @cwd_wyn()");
     llvm_emit(&lg, "declare i64 @chdir_wyn(i8*)");
