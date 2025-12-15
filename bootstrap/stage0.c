@@ -634,7 +634,7 @@ typedef enum {
     EXPR_BINARY, EXPR_UNARY, EXPR_CALL, EXPR_INDEX, EXPR_FIELD,
     EXPR_ARRAY, EXPR_MAP, EXPR_TUPLE, EXPR_LAMBDA, EXPR_STRUCT,
     EXPR_IF, EXPR_MATCH, EXPR_SOME, EXPR_NONE, EXPR_OK, EXPR_ERR,
-    EXPR_UNWRAP, EXPR_TRY, EXPR_DEFAULT, EXPR_SLICE, EXPR_ADDR, EXPR_DEREF, EXPR_AWAIT
+    EXPR_UNWRAP, EXPR_TRY, EXPR_DEFAULT, EXPR_SLICE, EXPR_ADDR, EXPR_DEREF, EXPR_AWAIT, EXPR_TERNARY
 } ExprKind;
 
 struct Expr {
@@ -661,6 +661,7 @@ struct Expr {
         struct { Expr* object; Expr* start; Expr* end; Expr* step; } slice;
         struct { char params[8][MAX_IDENT_LEN]; Type* param_types[8]; int param_count; Type* return_type; Stmt** body; int body_count; int id; } lambda;
         struct { Expr* future; } await_expr;
+        struct { Expr* cond; Expr* true_val; Expr* false_val; } ternary;
     };
 };
 
@@ -2084,7 +2085,32 @@ static Expr* parse_binary(Parser* p, int min_prec) {
 }
 
 static Expr* parse_expr(Parser* p) {
-    return parse_binary(p, 0);
+    Expr* expr = parse_binary(p, 0);
+    
+    // Check for ternary operator: condition ? true_val : false_val
+    if (parser_check(p, TOK_QUESTION)) {
+        parser_advance(p);  // consume ?
+        int line = p->current.line, col = p->current.column;
+        
+        // Parse true value
+        Expr* true_val = parse_unary(p);
+        
+        if (!parser_check(p, TOK_COLON)) {
+            parser_error(p, "expected ':' in ternary expression");
+        }
+        parser_advance(p);  // consume :
+        
+        // Parse false value (can be another ternary)
+        Expr* false_val = parse_expr(p);
+        
+        Expr* ternary = new_expr(EXPR_TERNARY, line, col);
+        ternary->ternary.cond = expr;
+        ternary->ternary.true_val = true_val;
+        ternary->ternary.false_val = false_val;
+        return ternary;
+    }
+    
+    return expr;
 }
 
 // Statement parsing
@@ -3172,6 +3198,17 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                 tc_error(tc, e->line, e->column, "if branches have different types");
             }
             return then_t;
+        }
+        
+        case EXPR_TERNARY: {
+            Type* cond = tc_check_expr(tc, e->ternary.cond);
+            if (cond->kind != TYPE_BOOL) tc_error(tc, e->line, e->column, "ternary condition must be bool");
+            Type* true_t = tc_check_expr(tc, e->ternary.true_val);
+            Type* false_t = tc_check_expr(tc, e->ternary.false_val);
+            if (!types_equal(true_t, false_t)) {
+                tc_error(tc, e->line, e->column, "ternary branches have different types");
+            }
+            return true_t;
         }
         
         case EXPR_SOME: {
@@ -12250,6 +12287,60 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
             } else {
                 llvm_emit(lg, "  %%%d = call i64 @__wyn_await(i64 %%%d)", t, future_reg);
             }
+            *result_reg = t;
+            break;
+        }
+        
+        case EXPR_TERNARY: {
+            // Ternary operator: cond ? true_val : false_val
+            int cond_reg;
+            llvm_expr(lg, e->ternary.cond, &cond_reg);
+            
+            // Create labels
+            int label_true = lg->label_count++;
+            int label_false = lg->label_count++;
+            int label_end = lg->label_count++;
+            
+            // Branch on condition
+            if (cond_reg <= -1000000) {
+                int cond_bool = (-cond_reg - 1000000) != 0 ? 1 : 0;
+                llvm_emit(lg, "  br i1 %d, label %%L%d, label %%L%d", cond_bool, label_true, label_false);
+            } else {
+                int cond_i1 = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = icmp ne i64 %%%d, 0", cond_i1, cond_reg);
+                llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cond_i1, label_true, label_false);
+            }
+            
+            // True branch
+            llvm_emit(lg, "L%d:", label_true);
+            int true_reg;
+            llvm_expr(lg, e->ternary.true_val, &true_reg);
+            llvm_emit(lg, "  br label %%L%d", label_end);
+            
+            // False branch
+            llvm_emit(lg, "L%d:", label_false);
+            int false_reg;
+            llvm_expr(lg, e->ternary.false_val, &false_reg);
+            llvm_emit(lg, "  br label %%L%d", label_end);
+            
+            // End label with phi node
+            llvm_emit(lg, "L%d:", label_end);
+            int t = llvm_new_temp(lg);
+            
+            char true_str[32], false_str[32];
+            if (true_reg <= -1000000) {
+                snprintf(true_str, 32, "%lld", (long long)(-true_reg - 1000000));
+            } else {
+                snprintf(true_str, 32, "%%%d", true_reg);
+            }
+            if (false_reg <= -1000000) {
+                snprintf(false_str, 32, "%lld", (long long)(-false_reg - 1000000));
+            } else {
+                snprintf(false_str, 32, "%%%d", false_reg);
+            }
+            
+            llvm_emit(lg, "  %%%d = phi i64 [ %s, %%L%d ], [ %s, %%L%d ]", 
+                     t, true_str, label_true, false_str, label_false);
             *result_reg = t;
             break;
         }
