@@ -863,6 +863,11 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "chdir") == 0) return "chdir_wyn";
         if (strcmp(function, "hostname") == 0) return "hostname_wyn";
         if (strcmp(function, "getpid") == 0) return "getpid_wyn";
+        // Command builder
+        if (strcmp(function, "command_start") == 0) return "command_start";
+        if (strcmp(function, "command_arg") == 0) return "command_arg";
+        if (strcmp(function, "command_run") == 0) return "command_run";
+        if (strcmp(function, "command_output") == 0) return "command_output";
         // Legacy mappings
         if (strcmp(function, "getpid") == 0) return "getpid";
         if (strcmp(function, "getcwd") == 0) return "getcwd";
@@ -13025,6 +13030,10 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i64 @setenv_wyn(i8*, i8*)");
     llvm_emit(&lg, "declare i64 @exec_wyn(i8*)");
     llvm_emit(&lg, "declare i8* @exec_output_wyn(i8*)");
+    llvm_emit(&lg, "declare void @command_start(i8*)");
+    llvm_emit(&lg, "declare void @command_arg(i8*)");
+    llvm_emit(&lg, "declare i64 @command_run()");
+    llvm_emit(&lg, "declare i8* @command_output()");
     llvm_emit(&lg, "declare i8** @args_wyn()");
     llvm_emit(&lg, "declare i8* @cwd_wyn()");
     llvm_emit(&lg, "declare i64 @chdir_wyn(i8*)");

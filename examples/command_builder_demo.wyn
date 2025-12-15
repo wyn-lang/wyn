@@ -1,0 +1,35 @@
+// Command builder demonstration
+// Shows how to build and execute commands programmatically
+
+import os
+
+fn main() {
+    print("=== Command Builder Demo ===")
+    
+    // Example 1: Simple command
+    print("Running: ls -la /tmp")
+    os.command_start("ls")
+    os.command_arg("-la")
+    os.command_arg("/tmp")
+    const output1 = os.command_output()
+    print(output1)
+    
+    // Example 2: Docker command
+    print("Building docker command...")
+    os.command_start("docker")
+    os.command_arg("ps")
+    os.command_arg("-a")
+    const result = os.command_run()
+    print("Docker command exit code: " + int_to_str(result))
+    
+    // Example 3: Git command
+    print("Getting git status...")
+    os.command_start("git")
+    os.command_arg("status")
+    os.command_arg("--short")
+    const git_output = os.command_output()
+    print("Git status:")
+    print(git_output)
+    
+    print("Command builder demo complete")
+}

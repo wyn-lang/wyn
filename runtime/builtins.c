@@ -1668,3 +1668,46 @@ int64_t* file_glob(const char* pattern) {
     globfree(&globbuf);
     return result;
 }
+
+// Command builder for better process execution
+typedef struct {
+    char command[4096];
+    int length;
+} CommandBuilder;
+
+static CommandBuilder g_cmd_builder = {0};
+
+void command_start(const char* program) {
+    g_cmd_builder.length = snprintf(g_cmd_builder.command, sizeof(g_cmd_builder.command), "%s", program);
+}
+
+void command_arg(const char* arg) {
+    if (g_cmd_builder.length < sizeof(g_cmd_builder.command) - 2) {
+        g_cmd_builder.command[g_cmd_builder.length++] = ' ';
+        g_cmd_builder.length += snprintf(g_cmd_builder.command + g_cmd_builder.length, 
+                                         sizeof(g_cmd_builder.command) - g_cmd_builder.length, 
+                                         "%s", arg);
+    }
+}
+
+int64_t command_run() {
+    return system(g_cmd_builder.command);
+}
+
+char* command_output() {
+    FILE* pipe = popen(g_cmd_builder.command, "r");
+    if (!pipe) return strdup("");
+    
+    char* result = malloc(65536);
+    size_t total = 0;
+    size_t bytes;
+    
+    while ((bytes = fread(result + total, 1, 4096, pipe)) > 0) {
+        total += bytes;
+        if (total + 4096 > 65536) break;
+    }
+    
+    result[total] = '\0';
+    pclose(pipe);
+    return result;
+}
