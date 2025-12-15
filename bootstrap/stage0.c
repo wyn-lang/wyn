@@ -926,6 +926,10 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "list_dir") == 0) return "list_dir";
         if (strcmp(function, "mkdir") == 0) return "mkdir";
         if (strcmp(function, "rmdir") == 0) return "rmdir";
+        // Additional file operations
+        if (strcmp(function, "copy") == 0) return "file_copy";
+        if (strcmp(function, "move") == 0) return "file_move";
+        if (strcmp(function, "chmod") == 0) return "file_chmod";
     } else if (strcmp(module, "fs") == 0) {
         if (strcmp(function, "read_file") == 0) return "read_file";
         if (strcmp(function, "delete") == 0) return "delete_file";
@@ -12978,6 +12982,9 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i64 @write_file(i8*, i8*)");
     llvm_emit(&lg, "declare i64 @file_exists(i8*)");
     llvm_emit(&lg, "declare i64 @append_file(i8*, i8*)");
+    llvm_emit(&lg, "declare i64 @file_copy(i8*, i8*)");
+    llvm_emit(&lg, "declare i64 @file_move(i8*, i8*)");
+    llvm_emit(&lg, "declare i64 @file_chmod(i8*, i64)");
     llvm_emit(&lg, "declare i64 @ord(i8*)");
     llvm_emit(&lg, "declare i8* @chr(i64)");
     llvm_emit(&lg, "declare i8* @substring(i8*, i64, i64)");

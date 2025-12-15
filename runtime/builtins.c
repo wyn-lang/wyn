@@ -1599,3 +1599,45 @@ int64_t wyn_atomic_cas(int64_t* ptr, int64_t expected, int64_t desired) {
     atomic_compare_exchange_strong((_Atomic int64_t*)ptr, &expected, desired);
     return expected;
 }
+
+// Additional file operations for shell replacement
+int64_t file_copy(const char* src, const char* dest) {
+    FILE* source = fopen(src, "rb");
+    if (!source) return 0;
+    
+    FILE* target = fopen(dest, "wb");
+    if (!target) {
+        fclose(source);
+        return 0;
+    }
+    
+    char buffer[8192];
+    size_t bytes;
+    while ((bytes = fread(buffer, 1, sizeof(buffer), source)) > 0) {
+        if (fwrite(buffer, 1, bytes, target) != bytes) {
+            fclose(source);
+            fclose(target);
+            return 0;
+        }
+    }
+    
+    fclose(source);
+    fclose(target);
+    return 1;
+}
+
+int64_t file_move(const char* src, const char* dest) {
+    if (rename(src, dest) == 0) {
+        return 1;
+    }
+    // If rename fails (cross-device), try copy and delete
+    if (file_copy(src, dest)) {
+        unlink(src);
+        return 1;
+    }
+    return 0;
+}
+
+int64_t file_chmod(const char* path, int64_t mode) {
+    return chmod(path, (mode_t)mode) == 0 ? 1 : 0;
+}

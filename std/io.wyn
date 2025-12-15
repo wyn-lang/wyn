@@ -1,3 +1,5 @@
 # std/io.wyn
 # File I/O operations
 # All functions are mapped to runtime implementations via compiler
+# 
+# New functions: copy(src, dest), move(src, dest), chmod(path, mode)
