@@ -39,6 +39,30 @@
 
 **Why:** Foundation for everything else
 
+### 🔗 High Priority: Method Chaining
+- [ ] Implement method chaining syntax (obj.method().method())
+- [ ] Add struct method support
+- [ ] Redesign command builder with chaining
+- [ ] Add string method chaining (str.upper().split())
+- [ ] Add array method chaining (arr.filter().map())
+
+**Why:** Industry standard, much better UX, enables fluent APIs
+
+**Example:**
+```wyn
+// Command builder with chaining
+const output = os.command("docker")
+    .arg("run")
+    .arg("-d")
+    .output()
+
+// String operations
+const result = "hello world"
+    .upper()
+    .split(" ")
+    .join("-")
+```
+
 ### 📦 High Priority: Package System
 - [ ] Design package format
 - [ ] Implement `wyn pkg install`
