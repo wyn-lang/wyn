@@ -10642,6 +10642,17 @@ char* read_file(const char* path) {
     buf[size] = '\0';
     fclose(f);
     
+    // Skip shebang line if present (#!/usr/bin/env wyn run)
+    if (size >= 2 && buf[0] == '#' && buf[1] == '!') {
+        char* newline = strchr(buf, '\n');
+        if (newline) {
+            // Return pointer after the shebang line
+            char* content = strdup(newline + 1);
+            free(buf);
+            return content;
+        }
+    }
+    
     return buf;
 }
 
