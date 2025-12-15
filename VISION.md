@@ -303,23 +303,76 @@ What Go does well, Wyn must match:
 ## Standard Library Priorities
 
 ### Tier 1: Essential (Complete ✅)
-- io, os, net, json, time, log, encoding, hash, compress, regex, collections, crypto
+- io, os, net, json, time, log, encoding, hash, compress, regex, collections, crypto, cli
 
 ### Tier 2: DevOps Critical (Next 3 months)
-- [ ] **database** - postgres, mysql, sqlite drivers
 - [ ] **http** - Framework with routing, middleware
 - [ ] **test** - Testing framework
-- [ ] **cli** - Argument parsing, flags
 - [ ] **config** - YAML, TOML, env file parsing
-
-### Tier 3: Nice to Have (6+ months)
 - [ ] **template** - Text templating
-- [ ] **email** - SMTP client
 - [ ] **ssh** - SSH client/server
-- [ ] **docker** - Docker API client
-- [ ] **k8s** - Kubernetes API client
-- [ ] **aws** - AWS SDK
 - [ ] **git** - Git operations
+
+### Tier 3: Core Utilities (6+ months)
+- [ ] **email** - SMTP client
+- [ ] **xml** - XML parsing
+- [ ] **csv** - CSV parsing
+- [ ] **markdown** - Markdown parsing
+
+## Package Ecosystem (Not Core Stdlib)
+
+**Philosophy:** Keep core lean. Cloud SDKs, databases, and platform-specific tools should be packages.
+
+### Tier 1: Essential Packages (First 6 months)
+- [ ] **aws** - AWS SDK (S3, EC2, Lambda, DynamoDB, etc.)
+- [ ] **postgres** - PostgreSQL driver
+- [ ] **mysql** - MySQL driver  
+- [ ] **sqlite** - SQLite driver
+- [ ] **docker** - Docker API client
+- [ ] **k8s** - Kubernetes client
+- [ ] **redis** - Redis client
+
+**Example usage:**
+```bash
+wyn pkg install aws
+wyn pkg install postgres
+```
+
+```wyn
+import aws        // From package
+import postgres   // From package
+
+fn main() {
+    const s3 = aws.s3("us-east-1")
+    s3.upload("bucket", "file.txt", "data")
+    
+    const db = postgres.connect("localhost:5432")
+    db.query("SELECT * FROM users")
+}
+```
+
+### Tier 2: Cloud & Infrastructure Packages
+- [ ] **gcp** - Google Cloud SDK
+- [ ] **azure** - Azure SDK
+- [ ] **terraform** - Terraform provider
+- [ ] **ansible** - Ansible integration
+- [ ] **prometheus** - Prometheus client
+- [ ] **grafana** - Grafana API
+
+### Tier 3: Specialized Packages
+- [ ] **mongodb** - MongoDB driver
+- [ ] **cassandra** - Cassandra driver
+- [ ] **elasticsearch** - Elasticsearch client
+- [ ] **kafka** - Kafka client
+- [ ] **rabbitmq** - RabbitMQ client
+- [ ] **grpc** - gRPC support
+
+**Rationale:** 
+- Core stays small and fast (<5MB binary)
+- Users only install what they need
+- Packages can update independently
+- Community can contribute packages
+- Multiple implementations possible (aws-cli wrapper vs native SDK)
 
 ## Success Metrics
 
