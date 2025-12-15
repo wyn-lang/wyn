@@ -1641,3 +1641,30 @@ int64_t file_move(const char* src, const char* dest) {
 int64_t file_chmod(const char* path, int64_t mode) {
     return chmod(path, (mode_t)mode) == 0 ? 1 : 0;
 }
+
+#include <glob.h>
+
+// Glob pattern matching for files
+int64_t* file_glob(const char* pattern) {
+    glob_t globbuf;
+    
+    if (glob(pattern, 0, NULL, &globbuf) != 0) {
+        // Return empty array
+        int64_t* result = malloc(sizeof(int64_t) * 2);
+        result[0] = 0; // length
+        result[1] = 0; // capacity
+        return result;
+    }
+    
+    size_t count = globbuf.gl_pathc;
+    int64_t* result = malloc(sizeof(int64_t) * (count + 2));
+    result[0] = count; // length
+    result[1] = count; // capacity
+    
+    for (size_t i = 0; i < count; i++) {
+        result[i + 2] = (int64_t)strdup(globbuf.gl_pathv[i]);
+    }
+    
+    globfree(&globbuf);
+    return result;
+}

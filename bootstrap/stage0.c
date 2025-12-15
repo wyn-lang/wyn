@@ -930,6 +930,7 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "copy") == 0) return "file_copy";
         if (strcmp(function, "move") == 0) return "file_move";
         if (strcmp(function, "chmod") == 0) return "file_chmod";
+        if (strcmp(function, "glob") == 0) return "file_glob";
     } else if (strcmp(module, "fs") == 0) {
         if (strcmp(function, "read_file") == 0) return "read_file";
         if (strcmp(function, "delete") == 0) return "delete_file";
@@ -11648,7 +11649,8 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                       strcmp(func_name, "max") == 0 ||
                                       strcmp(func_name, "abs") == 0);
                 
-                bool is_array_builtin = (strcmp(func_name, "str_split") == 0);
+                bool is_array_builtin = (strcmp(func_name, "str_split") == 0 ||
+                                         strcmp(func_name, "file_glob") == 0);
                 
                 // Build arguments
                 char args[1024] = "";
@@ -12985,6 +12987,7 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i64 @file_copy(i8*, i8*)");
     llvm_emit(&lg, "declare i64 @file_move(i8*, i8*)");
     llvm_emit(&lg, "declare i64 @file_chmod(i8*, i64)");
+    llvm_emit(&lg, "declare i64* @file_glob(i8*)");
     llvm_emit(&lg, "declare i64 @ord(i8*)");
     llvm_emit(&lg, "declare i8* @chr(i64)");
     llvm_emit(&lg, "declare i8* @substring(i8*, i64, i64)");

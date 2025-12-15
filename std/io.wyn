@@ -2,4 +2,8 @@
 # File I/O operations
 # All functions are mapped to runtime implementations via compiler
 # 
-# New functions: copy(src, dest), move(src, dest), chmod(path, mode)
+# New functions: 
+#   copy(src, dest) - Copy file
+#   move(src, dest) - Move/rename file
+#   chmod(path, mode) - Change file permissions
+#   glob(pattern) - Find files matching pattern (e.g., "*.wyn", "**/*.txt")
