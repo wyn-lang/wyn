@@ -1,0 +1,33 @@
+// Generics test
+
+fn identity[T](x: T) -> T {
+    return x
+}
+
+fn first[T](a: T, b: T) -> T {
+    return a
+}
+
+fn second[T](a: T, b: T) -> T {
+    return b
+}
+
+fn main() {
+    // Test identity with int
+    const a = identity[int](42)
+    print(a)  // 42
+    
+    const b = identity[int](100)
+    print(b)  // 100
+    
+    // Test first/second
+    const c = first[int](5, 10)
+    print(c)  // 5
+    
+    const d = second[int](5, 10)
+    print(d)  // 10
+    
+    // Multiple calls to same instantiation
+    const e = identity[int](999)
+    print(e)  // 999
+}
