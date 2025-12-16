@@ -286,36 +286,57 @@ int run_fmt(const char* file) {
 // Documentation viewer
 int run_doc(int argc, char** argv) {
     if (argc < 2) {
-        printf("Wyn Standard Library\n\n");
-        printf("Modules (99 functions):\n");
-        printf("  io (13)          - File operations, directories\n");
-        printf("  os (8)           - Process, environment, system\n");
-        printf("  net (23)         - HTTP client/server, TCP, UDP\n");
-        printf("  json (5)         - Parsing, stringify\n");
-        printf("  time (7)         - Timestamps, formatting, sleep\n");
-        printf("  log (5)          - Structured logging\n");
-        printf("  encoding (6)     - Base64, hex, URL\n");
-        printf("  hash (3)         - SHA256, MD5, SHA1\n");
-        printf("  compress (7)     - Gzip, tar\n");
-        printf("  regex (4)        - Pattern matching\n");
-        printf("  collections (13) - HashMap, Set\n");
-        printf("  crypto (5)       - AES-256, HMAC, random\n\n");
-        printf("Usage: wyn doc <module>\n");
-        printf("Full docs: docs/API_REFERENCE.md\n");
+        printf("Opening documentation in browser...\n");
+        printf("URL: https://wyn-lang.github.io/\n");
+        
+        // Try to open browser
+        #ifdef __APPLE__
+            system("open https://wyn-lang.github.io/ 2>/dev/null");
+        #elif __linux__
+            system("xdg-open https://wyn-lang.github.io/ 2>/dev/null || firefox https://wyn-lang.github.io/ 2>/dev/null");
+        #elif _WIN32
+            system("start https://wyn-lang.github.io/");
+        #endif
+        
+        printf("\nOr view locally:\n");
+        printf("  Module docs: docs/stdlib/\n");
+        printf("  API reference: docs/API_REFERENCE.md\n");
         return 0;
     }
     
     const char* module = argv[1];
+    
+    // Try to open specific module doc
+    char url[256];
+    snprintf(url, sizeof(url), "https://wyn-lang.github.io/stdlib/%s.html", module);
+    
+    printf("Opening %s documentation...\n", module);
+    printf("URL: %s\n", url);
+    
+    #ifdef __APPLE__
+        char cmd[512];
+        snprintf(cmd, sizeof(cmd), "open %s 2>/dev/null", url);
+        system(cmd);
+    #elif __linux__
+        char cmd[512];
+        snprintf(cmd, sizeof(cmd), "xdg-open %s 2>/dev/null || firefox %s 2>/dev/null", url, url);
+        system(cmd);
+    #elif _WIN32
+        char cmd[512];
+        snprintf(cmd, sizeof(cmd), "start %s", url);
+        system(cmd);
+    #endif
+    
+    // Fallback: show local path
     char path[256];
     snprintf(path, sizeof(path), "docs/stdlib/%s.md", module);
     
     if (access(path, F_OK) == 0) {
-        char cmd[512];
-        snprintf(cmd, sizeof(cmd), "cat %s", path);
-        return system(cmd);
+        printf("\nOr view locally: %s\n", path);
+        return 0;
     } else {
-        printf("Module '%s' not found\n", module);
-        printf("Try: wyn doc (without args) to see available modules\n");
+        printf("\nModule '%s' not found\n", module);
+        printf("Try: wyn doc (without args) to see all modules\n");
         return 1;
     }
 }
