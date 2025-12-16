@@ -10866,6 +10866,21 @@ static void resolve_imports(Module* m, const char* base_path) {
             f = fopen(full_path, "rb");
         }
         
+        // Try ~/.wyn/packages/ for installed packages
+        if (!f) {
+            const char* home = getenv("HOME");
+            if (home) {
+                snprintf(full_path, 512, "%s/.wyn/packages/%s/src/%s.wyn", home, imp->path, imp->path);
+                f = fopen(full_path, "rb");
+                
+                // Also try without /src/
+                if (!f) {
+                    snprintf(full_path, 512, "%s/.wyn/packages/%s/%s.wyn", home, imp->path, imp->path);
+                    f = fopen(full_path, "rb");
+                }
+            }
+        }
+        
         // Try root-level module
         if (!f && dir[0]) {
             char try_path[512];
