@@ -5472,10 +5472,26 @@ static bool llvm_is_array_expr(LLVMGen* lg, Expr* e) {
     if (e->kind == EXPR_CALL) {
         if (e->call.func->kind == EXPR_IDENT) {
             const char* func = e->call.func->ident;
-            return strcmp(func, "str_split") == 0;
+            if (strcmp(func, "str_split") == 0) return true;
+            
+            // Check if this is a user-defined function that returns an array
+            for (int i = 0; i < lg->module->function_count; i++) {
+                if (strcmp(lg->module->functions[i].name, func) == 0) {
+                    FnDef* fn_def = &lg->module->functions[i];
+                    if (fn_def->return_type && fn_def->return_type->kind == TYPE_ARRAY) {
+                        return true;
+                    }
+                    break;
+                }
+            }
         } else if (e->call.func->kind == EXPR_FIELD) {
             const char* module = e->call.func->field.object->ident;
             const char* func = e->call.func->field.field;
+            // Check result module functions (return arrays)
+            if (strcmp(module, "result") == 0) {
+                return (strcmp(func, "make_ok") == 0 || strcmp(func, "make_err") == 0 ||
+                       strcmp(func, "make_some") == 0 || strcmp(func, "make_none") == 0);
+            }
             // Check array module functions
             if (strcmp(module, "array") == 0) {
                 return (strcmp(func, "reverse") == 0 || strcmp(func, "append") == 0 ||
@@ -8438,6 +8454,20 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i64 @result_is_ok_simple(i64)");
     llvm_emit(&lg, "declare i64 @result_is_err_simple(i64)");
     llvm_emit(&lg, "declare i64 @result_unwrap_simple(i64)");
+    llvm_emit(&lg, "declare i64 @array_len(i64*)");
+    llvm_emit(&lg, "declare i64 @array_get(i64*, i64)");
+    llvm_emit(&lg, "declare i64* @array_push(i64*, i64)");
+    llvm_emit(&lg, "declare void @array_set(i64*, i64, i64)");
+    llvm_emit(&lg, "declare i64* @result_ok(i64)");
+    llvm_emit(&lg, "declare i64* @result_err(i64)");
+    llvm_emit(&lg, "declare i64 @result_is_ok(i64*)");
+    llvm_emit(&lg, "declare i64 @result_is_err(i64*)");
+    llvm_emit(&lg, "declare i64 @result_unwrap(i64*)");
+    llvm_emit(&lg, "declare i64* @option_some(i64)");
+    llvm_emit(&lg, "declare i64* @option_none()");
+    llvm_emit(&lg, "declare i64 @option_is_some(i64*)");
+    llvm_emit(&lg, "declare i64 @option_is_none(i64*)");
+    llvm_emit(&lg, "declare i64 @option_unwrap(i64*)");
     llvm_emit(&lg, "declare i64 @option_some_simple(i64)");
     llvm_emit(&lg, "declare i64 @option_none_simple()");
     llvm_emit(&lg, "declare i64 @option_is_some_simple(i64)");

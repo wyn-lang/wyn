@@ -2349,6 +2349,53 @@ int64_t* array_new() {
     return arr;
 }
 
+// Get array length
+int64_t array_len(int64_t* arr) {
+    if (!arr) return 0;
+    return arr[0];
+}
+
+// Get element at index
+int64_t array_get(int64_t* arr, int64_t index) {
+    if (!arr) return 0;
+    int64_t len = arr[0];
+    if (index < 0 || index >= len) return 0;
+    return arr[index + 2];  // Skip length and capacity
+}
+
+// Push element to array (grows if needed)
+int64_t* array_push(int64_t* arr, int64_t value) {
+    if (!arr) arr = array_new();
+    
+    int64_t len = arr[0];
+    int64_t cap = arr[1];
+    
+    // Grow if needed
+    if (len >= cap) {
+        int64_t new_cap = cap == 0 ? 4 : cap * 2;
+        int64_t* new_arr = malloc(sizeof(int64_t) * (new_cap + 2));
+        new_arr[0] = len;
+        new_arr[1] = new_cap;
+        for (int64_t i = 0; i < len; i++) {
+            new_arr[i + 2] = arr[i + 2];
+        }
+        free(arr);
+        arr = new_arr;
+    }
+    
+    arr[len + 2] = value;
+    arr[0] = len + 1;
+    return arr;
+}
+
+// Set element at index
+void array_set(int64_t* arr, int64_t index, int64_t value) {
+    if (!arr) return;
+    int64_t len = arr[0];
+    if (index < 0 || index >= len) return;
+    arr[index + 2] = value;
+}
+
 // Windows socket initialization
 #ifdef _WIN32
 static int winsock_initialized = 0;
@@ -2455,4 +2502,71 @@ char* ok(int64_t value) {
 
 char* err(const char* message) {
     return result_err_str(message);
+}
+
+// Result module functions (return arrays [status, value])
+// Status: 1 = OK, 0 = ERR
+int64_t* result_ok(int64_t value) {
+    int64_t* arr = array_new();
+    arr = array_push(arr, 1);  // OK status
+    arr = array_push(arr, value);
+    return arr;
+}
+
+int64_t* result_err(int64_t code) {
+    int64_t* arr = array_new();
+    arr = array_push(arr, 0);  // ERR status
+    arr = array_push(arr, code);
+    return arr;
+}
+
+int64_t result_is_ok(int64_t* result_arr) {
+    if (!result_arr) return 0;
+    if (array_len(result_arr) < 1) return 0;
+    return array_get(result_arr, 0) == 1 ? 1 : 0;
+}
+
+int64_t result_is_err(int64_t* result_arr) {
+    if (!result_arr) return 1;
+    if (array_len(result_arr) < 1) return 1;
+    return array_get(result_arr, 0) == 0 ? 1 : 0;
+}
+
+int64_t result_unwrap(int64_t* result_arr) {
+    if (!result_arr) return 0;
+    if (array_len(result_arr) < 2) return 0;
+    return array_get(result_arr, 1);
+}
+
+// Option module functions (return arrays [status, value])
+// Status: 1 = Some, 0 = None
+int64_t* option_some(int64_t value) {
+    int64_t* arr = array_new();
+    arr = array_push(arr, 1);  // Some status
+    arr = array_push(arr, value);
+    return arr;
+}
+
+int64_t* option_none() {
+    int64_t* arr = array_new();
+    arr = array_push(arr, 0);  // None status
+    return arr;
+}
+
+int64_t option_is_some(int64_t* option_arr) {
+    if (!option_arr) return 0;
+    if (array_len(option_arr) < 1) return 0;
+    return array_get(option_arr, 0) == 1 ? 1 : 0;
+}
+
+int64_t option_is_none(int64_t* option_arr) {
+    if (!option_arr) return 1;
+    if (array_len(option_arr) < 1) return 1;
+    return array_get(option_arr, 0) == 0 ? 1 : 0;
+}
+
+int64_t option_unwrap(int64_t* option_arr) {
+    if (!option_arr) return 0;
+    if (array_len(option_arr) < 2) return 0;
+    return array_get(option_arr, 1);
 }
