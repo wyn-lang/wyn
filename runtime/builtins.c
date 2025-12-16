@@ -12,10 +12,74 @@
 #include <dirent.h>
 #include <stdint.h>
 #include <sys/time.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#include <arpa/inet.h>
+
+// Platform-specific includes
+#ifdef _WIN32
+    #include <windows.h>
+    #include <direct.h>
+    #define mkdir(path, mode) _mkdir(path)
+    #define rmdir(path) _rmdir(path)
+    #define popen(cmd, mode) _popen(cmd, mode)
+    #define pclose(pipe) _pclose(pipe)
+    #define PATH_SEP '\\'
+    #define PATH_SEP_STR "\\"
+#else
+    #include <sys/socket.h>
+    #include <netinet/in.h>
+    #include <netdb.h>
+    #include <arpa/inet.h>
+    #define PATH_SEP '/'
+    #define PATH_SEP_STR "/"
+#endif
+
+// Path normalization helper
+char* normalize_path(const char* path) {
+    char* normalized = strdup(path);
+    #ifdef _WIN32
+        // Convert forward slashes to backslashes on Windows
+        for (char* p = normalized; *p; p++) {
+            if (*p == '/') *p = '\\';
+        }
+    #endif
+    return normalized;
+}
+
+// Cross-platform command execution
+int exec_command(const char* cmd) {
+    #ifdef _WIN32
+        // On Windows, use cmd.exe
+        char win_cmd[4096];
+        snprintf(win_cmd, sizeof(win_cmd), "cmd.exe /c %s", cmd);
+        return system(win_cmd);
+    #else
+        return system(cmd);
+    #endif
+}
+
+char* exec_command_output(const char* cmd) {
+    #ifdef _WIN32
+        char win_cmd[4096];
+        snprintf(win_cmd, sizeof(win_cmd), "cmd.exe /c %s", cmd);
+        FILE* pipe = popen(win_cmd, "r");
+    #else
+        FILE* pipe = popen(cmd, "r");
+    #endif
+    
+    if (!pipe) return strdup("");
+    
+    char* result = malloc(65536);
+    size_t total = 0;
+    size_t bytes;
+    
+    while ((bytes = fread(result + total, 1, 4096, pipe)) > 0) {
+        total += bytes;
+        if (total + 4096 > 65536) break;
+    }
+    
+    result[total] = '\0';
+    pclose(pipe);
+    return result;
+}
 
 // Assert function
 int64_t assert(int64_t condition) {
