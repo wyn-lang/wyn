@@ -5276,6 +5276,13 @@ typedef struct {
     Expr* lambdas[256];  // Track lambda expressions to emit later
     int lambda_count;
     FnDef* current_function;  // Track current function being compiled
+    // Generic instantiation tracking
+    struct {
+        FnDef* generic_fn;
+        Type* concrete_type;
+        char instantiated_name[MAX_IDENT_LEN];
+    } generic_instances[256];
+    int generic_instance_count;
 } LLVMGen;
 
 static void llvm_emit(LLVMGen* lg, const char* fmt, ...) {
@@ -6108,6 +6115,8 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                 *result_reg = t;
             } else if (e->call.func->kind == EXPR_IDENT) {
                 const char* func_name = e->call.func->ident;
+                char actual_func_name[MAX_IDENT_LEN];
+                strcpy(actual_func_name, func_name);
                 
                 // Handle default parameters for user-defined functions
                 FnDef* fn_def = NULL;
@@ -6115,6 +6124,40 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     if (strcmp(lg->module->functions[i].name, func_name) == 0) {
                         fn_def = &lg->module->functions[i];
                         break;
+                    }
+                }
+                
+                // Check if this is a generic function call
+                if (fn_def && fn_def->generic_count > 0 && e->call.type_arg_count > 0) {
+                    // Create instantiated name: func_int, func_str, etc.
+                    snprintf(actual_func_name, MAX_IDENT_LEN, "%s_", func_name);
+                    
+                    // Append type name (simplified - only handle int, str, bool for now)
+                    if (e->call.type_args[0]->kind == TYPE_INT) {
+                        strcat(actual_func_name, "int");
+                    } else if (e->call.type_args[0]->kind == TYPE_STR) {
+                        strcat(actual_func_name, "str");
+                    } else if (e->call.type_args[0]->kind == TYPE_BOOL) {
+                        strcat(actual_func_name, "bool");
+                    } else {
+                        strcat(actual_func_name, "generic");
+                    }
+                    
+                    // Check if already instantiated
+                    bool already_instantiated = false;
+                    for (int i = 0; i < lg->generic_instance_count; i++) {
+                        if (strcmp(lg->generic_instances[i].instantiated_name, actual_func_name) == 0) {
+                            already_instantiated = true;
+                            break;
+                        }
+                    }
+                    
+                    // Track this instantiation
+                    if (!already_instantiated && lg->generic_instance_count < 256) {
+                        lg->generic_instances[lg->generic_instance_count].generic_fn = fn_def;
+                        lg->generic_instances[lg->generic_instance_count].concrete_type = e->call.type_args[0];
+                        strcpy(lg->generic_instances[lg->generic_instance_count].instantiated_name, actual_func_name);
+                        lg->generic_instance_count++;
                     }
                 }
                 
@@ -6267,14 +6310,14 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     
                     int t = llvm_new_temp(lg);
                     // Map function names to C runtime names
-                    const char* runtime_name = func_name;
-                    if (strcmp(func_name, "clock") == 0) runtime_name = "clock_wyn";
-                    if (strcmp(func_name, "random") == 0) runtime_name = "random_wyn";
-                    if (strcmp(func_name, "exit") == 0) runtime_name = "exit_wyn";
-                    if (strcmp(func_name, "min") == 0) runtime_name = "min_int";
-                    if (strcmp(func_name, "max") == 0) runtime_name = "max_int";
-                    if (strcmp(func_name, "abs") == 0) runtime_name = "abs_int";
-                    if (strcmp(func_name, "to_string") == 0) runtime_name = "int_to_str";
+                    const char* runtime_name = actual_func_name;
+                    if (strcmp(actual_func_name, "clock") == 0) runtime_name = "clock_wyn";
+                    if (strcmp(actual_func_name, "random") == 0) runtime_name = "random_wyn";
+                    if (strcmp(actual_func_name, "exit") == 0) runtime_name = "exit_wyn";
+                    if (strcmp(actual_func_name, "min") == 0) runtime_name = "min_int";
+                    if (strcmp(actual_func_name, "max") == 0) runtime_name = "max_int";
+                    if (strcmp(actual_func_name, "abs") == 0) runtime_name = "abs_int";
+                    if (strcmp(actual_func_name, "to_string") == 0) runtime_name = "int_to_str";
                     
                     if (is_string_builtin) {
                         int t = llvm_new_temp(lg);
@@ -8030,10 +8073,94 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare void @http_server_close(i64)");
     llvm_emit(&lg, "");
     
-    // Generate functions
+    // Generate functions (skip generic functions - they're instantiated separately)
     for (int i = 0; i < m->function_count; i++) {
-        llvm_function(&lg, &m->functions[i]);
-        llvm_emit(&lg, "");
+        if (m->functions[i].generic_count == 0) {
+            llvm_function(&lg, &m->functions[i]);
+            llvm_emit(&lg, "");
+        }
+    }
+    
+    // Generate generic instantiations
+    for (int i = 0; i < lg.generic_instance_count; i++) {
+        FnDef* generic_fn = lg.generic_instances[i].generic_fn;
+        Type* concrete_type = lg.generic_instances[i].concrete_type;
+        const char* inst_name = lg.generic_instances[i].instantiated_name;
+        
+        // Create instantiated function by substituting type
+        // For now, just generate a wrapper that calls with concrete type
+        // Full implementation would clone and transform the entire function
+        
+        // Generate signature
+        const char* ret_type = "i64";
+        if (generic_fn->return_type && generic_fn->return_type->kind == TYPE_GENERIC) {
+            // Return type is generic, use concrete type
+            if (concrete_type->kind == TYPE_STR) ret_type = "i8*";
+            else if (concrete_type->kind == TYPE_ARRAY) ret_type = "i64*";
+        }
+        
+        fprintf(lg.out, "define %s @%s(", ret_type, inst_name);
+        for (int j = 0; j < generic_fn->param_count; j++) {
+            if (j > 0) fprintf(lg.out, ", ");
+            // If parameter type is generic, use concrete type
+            if (generic_fn->params[j].type && generic_fn->params[j].type->kind == TYPE_GENERIC) {
+                if (concrete_type->kind == TYPE_STR) {
+                    fprintf(lg.out, "i8* %%param.%s", generic_fn->params[j].name);
+                } else if (concrete_type->kind == TYPE_ARRAY) {
+                    fprintf(lg.out, "i64* %%param.%s", generic_fn->params[j].name);
+                } else {
+                    fprintf(lg.out, "i64 %%param.%s", generic_fn->params[j].name);
+                }
+            } else {
+                fprintf(lg.out, "i64 %%param.%s", generic_fn->params[j].name);
+            }
+        }
+        fprintf(lg.out, ") {\n");
+        fprintf(lg.out, "entry:\n");
+        
+        // Save state
+        int saved_temp = lg.temp_count;
+        int saved_var = lg.var_count;
+        lg.temp_count = 0;
+        lg.var_count = 0;
+        
+        // Set current function for return type
+        lg.current_function = generic_fn;
+        
+        // Allocate and store parameters
+        for (int j = 0; j < generic_fn->param_count; j++) {
+            int alloca_reg = llvm_new_temp(&lg);
+            
+            // Determine parameter type
+            if (generic_fn->params[j].type && generic_fn->params[j].type->kind == TYPE_GENERIC) {
+                if (concrete_type->kind == TYPE_STR) {
+                    llvm_emit(&lg, "  %%%d = alloca i8*", alloca_reg);
+                    llvm_emit(&lg, "  store i8* %%param.%s, i8** %%%d", generic_fn->params[j].name, alloca_reg);
+                } else if (concrete_type->kind == TYPE_ARRAY) {
+                    llvm_emit(&lg, "  %%%d = alloca i64*", alloca_reg);
+                    llvm_emit(&lg, "  store i64* %%param.%s, i64** %%%d", generic_fn->params[j].name, alloca_reg);
+                } else {
+                    llvm_emit(&lg, "  %%%d = alloca i64", alloca_reg);
+                    llvm_emit(&lg, "  store i64 %%param.%s, i64* %%%d", generic_fn->params[j].name, alloca_reg);
+                }
+                llvm_add_var(&lg, generic_fn->params[j].name, alloca_reg, concrete_type);
+            } else {
+                llvm_emit(&lg, "  %%%d = alloca i64", alloca_reg);
+                llvm_emit(&lg, "  store i64 %%param.%s, i64* %%%d", generic_fn->params[j].name, alloca_reg);
+                llvm_add_var(&lg, generic_fn->params[j].name, alloca_reg, generic_fn->params[j].type);
+            }
+        }
+        
+        // Generate body
+        for (int j = 0; j < generic_fn->body_count; j++) {
+            llvm_stmt(&lg, generic_fn->body[j]);
+        }
+        
+        // Restore state
+        lg.temp_count = saved_temp;
+        lg.var_count = saved_var;
+        
+        fprintf(lg.out, "}\n\n");
     }
     
     // Generate spawn functions
