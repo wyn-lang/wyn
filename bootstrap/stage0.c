@@ -874,6 +874,11 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "command_arg") == 0) return "command_arg";
         if (strcmp(function, "command_run") == 0) return "command_run";
         if (strcmp(function, "command_output") == 0) return "command_output";
+        // New chaining API
+        if (strcmp(function, "command") == 0) return "command_new";
+        if (strcmp(function, "arg") == 0) return "command_arg_chain";
+        if (strcmp(function, "run") == 0) return "command_run_chain";
+        if (strcmp(function, "output") == 0) return "command_output_chain";
         // Legacy mappings
         if (strcmp(function, "getpid") == 0) return "getpid";
         if (strcmp(function, "getcwd") == 0) return "getcwd";
@@ -11155,7 +11160,7 @@ static bool llvm_is_string_expr(LLVMGen* lg, Expr* e) {
                    strcmp(func, "sqlite_query") == 0 || strcmp(func, "exec_output") == 0 ||
                    strcmp(func, "http_get") == 0 || strcmp(func, "server_read_request") == 0 ||
                    strcmp(func, "parse_method") == 0 || strcmp(func, "parse_path") == 0 ||
-                   strcmp(func, "parse_body") == 0);
+                   strcmp(func, "parse_body") == 0 || strcmp(func, "output") == 0);
         }
     }
     return false;
@@ -11698,7 +11703,8 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                           strcmp(function, "parse_method") == 0 ||
                                           strcmp(function, "parse_path") == 0 ||
                                           strcmp(function, "parse_body") == 0 ||
-                                          strcmp(function, "sqlite_query") == 0);
+                                          strcmp(function, "sqlite_query") == 0 ||
+                                          strcmp(function, "output") == 0);
                     
                     bool returns_array = (strcmp(function, "split") == 0 ||
                                          strcmp(function, "glob") == 0 ||
@@ -13466,6 +13472,10 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare void @command_arg(i8*)");
     llvm_emit(&lg, "declare i64 @command_run()");
     llvm_emit(&lg, "declare i8* @command_output()");
+    llvm_emit(&lg, "declare i64 @command_new(i8*)");
+    llvm_emit(&lg, "declare i64 @command_arg_chain(i64, i8*)");
+    llvm_emit(&lg, "declare i64 @command_run_chain(i64)");
+    llvm_emit(&lg, "declare i8* @command_output_chain(i64)");
     llvm_emit(&lg, "declare i64 @cli_has_flag(i8*)");
     llvm_emit(&lg, "declare i8* @cli_get_arg(i8*)");
     llvm_emit(&lg, "declare i8* @cli_get_positional(i64)");

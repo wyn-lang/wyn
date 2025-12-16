@@ -1794,6 +1794,45 @@ typedef struct {
 
 static CommandBuilder g_cmd_builder = {0};
 
+// New chaining API - returns command handle
+int64_t command_new(const char* program) {
+    g_cmd_builder.length = snprintf(g_cmd_builder.command, sizeof(g_cmd_builder.command), "%s", program);
+    return 1;  // Return dummy handle
+}
+
+int64_t command_arg_chain(int64_t cmd, const char* arg) {
+    if (g_cmd_builder.length < sizeof(g_cmd_builder.command) - 2) {
+        g_cmd_builder.command[g_cmd_builder.length++] = ' ';
+        g_cmd_builder.length += snprintf(g_cmd_builder.command + g_cmd_builder.length, 
+                                         sizeof(g_cmd_builder.command) - g_cmd_builder.length, 
+                                         "%s", arg);
+    }
+    return cmd;  // Return same handle for chaining
+}
+
+int64_t command_run_chain(int64_t cmd) {
+    return system(g_cmd_builder.command);
+}
+
+char* command_output_chain(int64_t cmd) {
+    FILE* pipe = popen(g_cmd_builder.command, "r");
+    if (!pipe) return strdup("");
+    
+    char* result = malloc(65536);
+    size_t total = 0;
+    size_t bytes;
+    
+    while ((bytes = fread(result + total, 1, 4096, pipe)) > 0) {
+        total += bytes;
+        if (total + 4096 > 65536) break;
+    }
+    
+    result[total] = '\0';
+    pclose(pipe);
+    return result;
+}
+
+// Old API (keep for compatibility)
 void command_start(const char* program) {
     g_cmd_builder.length = snprintf(g_cmd_builder.command, sizeof(g_cmd_builder.command), "%s", program);
 }
