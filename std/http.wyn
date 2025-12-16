@@ -1,0 +1,11 @@
+# std/http.wyn
+# HTTP framework with routing
+# All functions are mapped to runtime implementations via compiler
+#
+# Functions:
+#   router_new() -> int - Create router
+#   router_add(router, method, path, handler_id) -> int - Add route
+#   router_match(router, method, path) -> int - Match route, return handler_id
+#   response_json(client, status, json) -> int - Send JSON response
+#   response_html(client, status, html) -> int - Send HTML response
+#   response_text(client, status, text) -> int - Send text response

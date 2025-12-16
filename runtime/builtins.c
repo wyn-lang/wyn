@@ -2125,3 +2125,158 @@ int64_t array_contains_elem(int64_t* arr, int64_t value) {
     }
     return 0;
 }
+
+// Database operations (SQLite via CLI)
+int64_t sqlite_open(const char* path) {
+    // Return dummy handle (path hash)
+    return (int64_t)path;
+}
+
+int64_t sqlite_exec(int64_t db, const char* sql) {
+    const char* db_path = (const char*)db;
+    char cmd[4096];
+    snprintf(cmd, sizeof(cmd), "sqlite3 %s '%s' 2>/dev/null", db_path, sql);
+    return system(cmd) == 0 ? 1 : 0;
+}
+
+char* sqlite_query(int64_t db, const char* sql) {
+    const char* db_path = (const char*)db;
+    char cmd[4096];
+    snprintf(cmd, sizeof(cmd), "sqlite3 -json %s '%s' 2>/dev/null", db_path, sql);
+    
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) return strdup("[]");
+    
+    char* result = malloc(65536);
+    size_t total = 0;
+    size_t bytes;
+    
+    while ((bytes = fread(result + total, 1, 4096, pipe)) > 0) {
+        total += bytes;
+        if (total + 4096 > 65536) break;
+    }
+    
+    result[total] = '\0';
+    pclose(pipe);
+    return result;
+}
+
+int64_t sqlite_close(int64_t db) {
+    // Nothing to do for CLI-based implementation
+    return 1;
+}
+
+// HTTP Framework - Simple routing
+typedef struct {
+    char method[16];
+    char path[256];
+    int handler_id;
+} Route;
+
+static Route g_routes[256];
+static int g_route_count = 0;
+
+int64_t http_router_new() {
+    g_route_count = 0;
+    return 1;  // Dummy router handle
+}
+
+int64_t http_router_add(int64_t router, const char* method, const char* path, int64_t handler_id) {
+    if (g_route_count >= 256) return 0;
+    
+    strncpy(g_routes[g_route_count].method, method, 15);
+    strncpy(g_routes[g_route_count].path, path, 255);
+    g_routes[g_route_count].handler_id = handler_id;
+    g_route_count++;
+    return 1;
+}
+
+int64_t http_router_match(int64_t router, const char* method, const char* path) {
+    for (int i = 0; i < g_route_count; i++) {
+        if (strcmp(g_routes[i].method, method) == 0 && strcmp(g_routes[i].path, path) == 0) {
+            return g_routes[i].handler_id;
+        }
+    }
+    return 0;  // No match
+}
+
+int64_t http_response_json(int64_t client, int64_t status, const char* json) {
+    char response[8192];
+    snprintf(response, sizeof(response), 
+             "HTTP/1.1 %lld OK\r\nContent-Type: application/json\r\nContent-Length: %zu\r\n\r\n%s",
+             (long long)status, strlen(json), json);
+    return write(client, response, strlen(response));
+}
+
+int64_t http_response_html(int64_t client, int64_t status, const char* html) {
+    char response[8192];
+    snprintf(response, sizeof(response),
+             "HTTP/1.1 %lld OK\r\nContent-Type: text/html\r\nContent-Length: %zu\r\n\r\n%s",
+             (long long)status, strlen(html), html);
+    return write(client, response, strlen(response));
+}
+
+int64_t http_response_text(int64_t client, int64_t status, const char* text) {
+    char response[8192];
+    snprintf(response, sizeof(response),
+             "HTTP/1.1 %lld OK\r\nContent-Type: text/plain\r\nContent-Length: %zu\r\n\r\n%s",
+             (long long)status, strlen(text), text);
+    return write(client, response, strlen(response));
+}
+
+// Testing framework
+static int g_test_passed = 0;
+static int g_test_failed = 0;
+
+int64_t test_assert_eq(int64_t a, int64_t b, const char* message) {
+    if (a == b) {
+        printf("  ✅ PASS: %s\n", message);
+        g_test_passed++;
+        return 1;
+    } else {
+        printf("  ❌ FAIL: %s (expected %lld, got %lld)\n", message, (long long)b, (long long)a);
+        g_test_failed++;
+        return 0;
+    }
+}
+
+int64_t test_assert_ne(int64_t a, int64_t b, const char* message) {
+    if (a != b) {
+        printf("  ✅ PASS: %s\n", message);
+        g_test_passed++;
+        return 1;
+    } else {
+        printf("  ❌ FAIL: %s (values should not be equal)\n", message);
+        g_test_failed++;
+        return 0;
+    }
+}
+
+int64_t test_assert_true(int64_t condition, const char* message) {
+    if (condition) {
+        printf("  ✅ PASS: %s\n", message);
+        g_test_passed++;
+        return 1;
+    } else {
+        printf("  ❌ FAIL: %s (expected true)\n", message);
+        g_test_failed++;
+        return 0;
+    }
+}
+
+int64_t test_assert_false(int64_t condition, const char* message) {
+    if (!condition) {
+        printf("  ✅ PASS: %s\n", message);
+        g_test_passed++;
+        return 1;
+    } else {
+        printf("  ❌ FAIL: %s (expected false)\n", message);
+        g_test_failed++;
+        return 0;
+    }
+}
+
+int64_t test_summary() {
+    printf("\nTest Summary: %d passed, %d failed\n", g_test_passed, g_test_failed);
+    return g_test_passed;
+}

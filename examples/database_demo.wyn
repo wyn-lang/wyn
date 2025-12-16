@@ -1,0 +1,27 @@
+// Database operations with SQLite
+import database
+
+fn main() {
+    print("=== Database Demo ===")
+    
+    const db = database.sqlite_open("/tmp/test.db")
+    print("Database opened")
+    
+    // Create table
+    const create = database.sqlite_exec(db, "CREATE TABLE IF NOT EXISTS users (id INTEGER, name TEXT)")
+    print("Table created")
+    
+    // Insert data
+    database.sqlite_exec(db, "INSERT INTO users VALUES (1, 'Alice')")
+    database.sqlite_exec(db, "INSERT INTO users VALUES (2, 'Bob')")
+    print("Data inserted")
+    
+    // Query data
+    const rows = database.sqlite_query(db, "SELECT * FROM users")
+    print("Query results:")
+    print(rows)
+    
+    // Close
+    database.sqlite_close(db)
+    print("Database closed")
+}

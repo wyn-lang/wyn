@@ -1116,6 +1116,24 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "filter") == 0) return "array_filter";
         if (strcmp(function, "map") == 0) return "array_map";
         if (strcmp(function, "reduce") == 0) return "array_reduce";
+    } else if (strcmp(module, "database") == 0) {
+        if (strcmp(function, "sqlite_open") == 0) return "sqlite_open";
+        if (strcmp(function, "sqlite_exec") == 0) return "sqlite_exec";
+        if (strcmp(function, "sqlite_query") == 0) return "sqlite_query";
+        if (strcmp(function, "sqlite_close") == 0) return "sqlite_close";
+    } else if (strcmp(module, "http") == 0) {
+        if (strcmp(function, "router_new") == 0) return "http_router_new";
+        if (strcmp(function, "router_add") == 0) return "http_router_add";
+        if (strcmp(function, "router_match") == 0) return "http_router_match";
+        if (strcmp(function, "response_json") == 0) return "http_response_json";
+        if (strcmp(function, "response_html") == 0) return "http_response_html";
+        if (strcmp(function, "response_text") == 0) return "http_response_text";
+    } else if (strcmp(module, "testing") == 0) {
+        if (strcmp(function, "assert_eq") == 0) return "test_assert_eq";
+        if (strcmp(function, "assert_ne") == 0) return "test_assert_ne";
+        if (strcmp(function, "assert_true") == 0) return "test_assert_true";
+        if (strcmp(function, "assert_false") == 0) return "test_assert_false";
+        if (strcmp(function, "summary") == 0) return "test_summary";
         if (strcmp(function, "generate_random_bytes") == 0) return "generate_random_bytes";
         if (strcmp(function, "hmac_sha256") == 0) return "hmac_sha256";
         if (strcmp(function, "verify_signature") == 0) return "verify_signature";
@@ -11133,7 +11151,11 @@ static bool llvm_is_string_expr(LLVMGen* lg, Expr* e) {
         } else if (e->call.func->kind == EXPR_FIELD) {
             const char* func = e->call.func->field.field;
             return (strcmp(func, "upper") == 0 || strcmp(func, "lower") == 0 ||
-                   strcmp(func, "trim") == 0 || strcmp(func, "read") == 0);
+                   strcmp(func, "trim") == 0 || strcmp(func, "read") == 0 ||
+                   strcmp(func, "sqlite_query") == 0 || strcmp(func, "exec_output") == 0 ||
+                   strcmp(func, "http_get") == 0 || strcmp(func, "server_read_request") == 0 ||
+                   strcmp(func, "parse_method") == 0 || strcmp(func, "parse_path") == 0 ||
+                   strcmp(func, "parse_body") == 0);
         }
     }
     return false;
@@ -11675,7 +11697,8 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                           strcmp(function, "server_read_request") == 0 ||
                                           strcmp(function, "parse_method") == 0 ||
                                           strcmp(function, "parse_path") == 0 ||
-                                          strcmp(function, "parse_body") == 0);
+                                          strcmp(function, "parse_body") == 0 ||
+                                          strcmp(function, "sqlite_query") == 0);
                     
                     bool returns_array = (strcmp(function, "split") == 0 ||
                                          strcmp(function, "glob") == 0 ||
@@ -13453,6 +13476,21 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i64* @array_append_elem(i64*, i64)");
     llvm_emit(&lg, "declare i64* @array_prepend_elem(i64*, i64)");
     llvm_emit(&lg, "declare i64 @array_contains_elem(i64*, i64)");
+    llvm_emit(&lg, "declare i64 @sqlite_open(i8*)");
+    llvm_emit(&lg, "declare i64 @sqlite_exec(i64, i8*)");
+    llvm_emit(&lg, "declare i8* @sqlite_query(i64, i8*)");
+    llvm_emit(&lg, "declare i64 @sqlite_close(i64)");
+    llvm_emit(&lg, "declare i64 @http_router_new()");
+    llvm_emit(&lg, "declare i64 @http_router_add(i64, i8*, i8*, i64)");
+    llvm_emit(&lg, "declare i64 @http_router_match(i64, i8*, i8*)");
+    llvm_emit(&lg, "declare i64 @http_response_json(i64, i64, i8*)");
+    llvm_emit(&lg, "declare i64 @http_response_html(i64, i64, i8*)");
+    llvm_emit(&lg, "declare i64 @http_response_text(i64, i64, i8*)");
+    llvm_emit(&lg, "declare i64 @test_assert_eq(i64, i64, i8*)");
+    llvm_emit(&lg, "declare i64 @test_assert_ne(i64, i64, i8*)");
+    llvm_emit(&lg, "declare i64 @test_assert_true(i64, i8*)");
+    llvm_emit(&lg, "declare i64 @test_assert_false(i64, i8*)");
+    llvm_emit(&lg, "declare i64 @test_summary()");
     llvm_emit(&lg, "declare i8** @args_wyn()");
     llvm_emit(&lg, "declare i8* @cwd_wyn()");
     llvm_emit(&lg, "declare i64 @chdir_wyn(i8*)");
