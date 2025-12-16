@@ -1,0 +1,22 @@
+# Simple Result test with integer errors
+
+fn divide(a: int, b: int) -> Result[int, int] {
+    if b == 0 {
+        return err(-1)  # Use integer error code
+    }
+    return ok(a / b)
+}
+
+fn main() {
+    print("Testing simple Result with integers")
+    
+    # Test successful case
+    const result1 = divide(10, 2)
+    print("Result1 created")
+    
+    # Test error case  
+    const result2 = divide(10, 0)
+    print("Result2 created")
+    
+    print("Simple Result test complete")
+}

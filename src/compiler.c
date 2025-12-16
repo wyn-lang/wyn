@@ -5251,6 +5251,16 @@ static void collect_strings_expr(StringTable* st, Expr* e) {
                 collect_strings_expr(st, e->array.elements[i]);
             }
             break;
+        case EXPR_OK:
+        case EXPR_ERR:
+        case EXPR_SOME:
+            if (e->some.value) {
+                collect_strings_expr(st, e->some.value);
+            }
+            break;
+        case EXPR_NONE:
+            // No strings to collect
+            break;
         default:
             break;
     }
@@ -5301,6 +5311,15 @@ static void collect_strings_stmt(StringTable* st, Stmt* s) {
         case STMT_SPAWN:
             for (int i = 0; i < s->spawn.body_count; i++) {
                 collect_strings_stmt(st, s->spawn.body[i]);
+            }
+            break;
+        case STMT_MATCH:
+            collect_strings_expr(st, s->match_stmt.value);
+            for (int i = 0; i < s->match_stmt.arm_count; i++) {
+                collect_strings_expr(st, s->match_stmt.patterns[i]);
+                for (int j = 0; j < s->match_stmt.arm_counts[i]; j++) {
+                    collect_strings_stmt(st, s->match_stmt.arms[i][j]);
+                }
             }
             break;
         default:
@@ -5410,6 +5429,11 @@ static bool llvm_is_string_expr(LLVMGen* lg, Expr* e) {
     if (e->kind == EXPR_IDENT) {
         Type* t = llvm_get_var_type(lg, e->ident);
         return t && t->kind == TYPE_STR;
+    }
+    if (e->kind == EXPR_INDEX) {
+        // Check if this is indexing into a string array
+        Type* obj_type = llvm_get_var_type(lg, e->index.object->ident);
+        return obj_type && obj_type->kind == TYPE_ARRAY && obj_type->inner && obj_type->inner->kind == TYPE_STR;
     }
     if (e->kind == EXPR_BINARY && e->binary.op == TOK_PLUS) {
         return llvm_is_string_expr(lg, e->binary.left) || llvm_is_string_expr(lg, e->binary.right);
@@ -6430,7 +6454,24 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                         } else {
                             // Direct call to named function
                             int t = llvm_new_temp(lg);
-                            llvm_emit(lg, "  %%%d = call i64 @%s(%s)", t, runtime_name, args);
+                            
+                            // Determine return type from function definition
+                            const char* ret_type = "i64";
+                            if (fn_def && fn_def->return_type) {
+                                if (fn_def->return_type->kind == TYPE_STR) {
+                                    ret_type = "i8*";
+                                } else if (fn_def->return_type->kind == TYPE_ARRAY) {
+                                    ret_type = "i64*";
+                                } else if (fn_def->return_type->kind == TYPE_RESULT) {
+                                    ret_type = "i64";  // Result types use simple integer encoding
+                                } else if (fn_def->return_type->kind == TYPE_OPTIONAL) {
+                                    ret_type = "i64";  // Option types use simple integer encoding
+                                } else if (fn_def->return_type->kind == TYPE_FLOAT) {
+                                    ret_type = "double";
+                                }
+                            }
+                            
+                            llvm_emit(lg, "  %%%d = call %s @%s(%s)", t, ret_type, runtime_name, args);
                             *result_reg = t;
                         }
                     }
@@ -6509,7 +6550,23 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                         llvm_emit(lg, "  %%%d = call i64 %%%d(%s)", t, fn_reg, converted_args);
                     } else {
                         // Direct call to named function
-                        llvm_emit(lg, "  %%%d = call i64 @%s(%s)", t, func_name, converted_args);
+                        // Determine return type from function definition
+                        const char* ret_type = "i64";
+                        if (fn_def && fn_def->return_type) {
+                            if (fn_def->return_type->kind == TYPE_STR) {
+                                ret_type = "i8*";
+                            } else if (fn_def->return_type->kind == TYPE_ARRAY) {
+                                ret_type = "i64*";
+                            } else if (fn_def->return_type->kind == TYPE_RESULT) {
+                                ret_type = "i64";  // Result types use simple integer encoding
+                            } else if (fn_def->return_type->kind == TYPE_OPTIONAL) {
+                                ret_type = "i64";  // Option types use simple integer encoding
+                            } else if (fn_def->return_type->kind == TYPE_FLOAT) {
+                                ret_type = "double";
+                            }
+                        }
+                        
+                        llvm_emit(lg, "  %%%d = call %s @%s(%s)", t, ret_type, func_name, converted_args);
                     }
                     *result_reg = t;
                 }
@@ -7243,6 +7300,91 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
             int operand_reg;
             llvm_expr(lg, e->unary.operand, &operand_reg);
             *result_reg = operand_reg;
+            break;
+        }
+        
+        case EXPR_OK: {
+            // ok(value) - create Result with Ok status (simple encoding)
+            int value_reg;
+            llvm_expr(lg, e->some.value, &value_reg);
+            
+            int t = llvm_new_temp(lg);
+            char value_str[64];
+            if (value_reg <= -1000000) {
+                snprintf(value_str, 64, "i64 %lld", (long long)(-value_reg - 1000000));
+            } else {
+                snprintf(value_str, 64, "i64 %%%d", value_reg);
+            }
+            llvm_emit(lg, "  %%%d = call i64 @result_ok_simple(%s)", t, value_str);
+            *result_reg = t;
+            break;
+        }
+        
+        case EXPR_ERR: {
+            // err(value) - create Result with Err status (simple encoding)
+            int value_reg;
+            llvm_expr(lg, e->some.value, &value_reg);
+            
+            int t = llvm_new_temp(lg);
+            
+            // For string errors, use the negative of the string ID as error code
+            if (e->some.value->kind == EXPR_STRING) {
+                int str_id = string_table_find(lg->strings, e->some.value->str_val);
+                llvm_emit(lg, "  %%%d = call i64 @result_err_simple(i64 %d)", t, -str_id);
+            } else {
+                char value_str[64];
+                if (value_reg <= -1000000) {
+                    snprintf(value_str, 64, "i64 %lld", (long long)(-value_reg - 1000000));
+                } else {
+                    snprintf(value_str, 64, "i64 %%%d", value_reg);
+                }
+                llvm_emit(lg, "  %%%d = call i64 @result_err_simple(%s)", t, value_str);
+            }
+            *result_reg = t;
+            break;
+        }
+        
+        case EXPR_SOME: {
+            // some(value) - create Option with Some status (simple encoding)
+            int value_reg;
+            llvm_expr(lg, e->some.value, &value_reg);
+            
+            // For string literals, use the string ID as the value
+            if (e->some.value->kind == EXPR_STRING) {
+                int str_id = string_table_find(lg->strings, e->some.value->str_val);
+                int t = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = call i64 @option_some_simple(i64 %d)", t, str_id);
+                *result_reg = t;
+            } else {
+                // For other values, check if it's a string expression and convert pointer to int
+                bool is_string_expr = llvm_is_string_expr(lg, e->some.value);
+                if (is_string_expr) {
+                    // Convert pointer to integer
+                    int ptr_to_int_reg = llvm_new_temp(lg);
+                    int t = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = ptrtoint i8* %%%d to i64", ptr_to_int_reg, value_reg);
+                    llvm_emit(lg, "  %%%d = call i64 @option_some_simple(i64 %%%d)", t, ptr_to_int_reg);
+                    *result_reg = t;
+                } else {
+                    int t = llvm_new_temp(lg);
+                    char value_str[64];
+                    if (value_reg <= -1000000) {
+                        snprintf(value_str, 64, "i64 %lld", (long long)(-value_reg - 1000000));
+                    } else {
+                        snprintf(value_str, 64, "i64 %%%d", value_reg);
+                    }
+                    llvm_emit(lg, "  %%%d = call i64 @option_some_simple(%s)", t, value_str);
+                    *result_reg = t;
+                }
+            }
+            break;
+        }
+        
+        case EXPR_NONE: {
+            // none - create Option with None status (simple encoding)
+            int t = llvm_new_temp(lg);
+            llvm_emit(lg, "  %%%d = call i64 @option_none_simple()", t);
+            *result_reg = t;
             break;
         }
         
@@ -8067,6 +8209,10 @@ static void llvm_function(LLVMGen* lg, FnDef* f) {
                 ret_type = "i8*";
             } else if (f->return_type->kind == TYPE_ARRAY) {
                 ret_type = "i64*";
+            } else if (f->return_type->kind == TYPE_RESULT) {
+                ret_type = "i64";  // Result types use simple integer encoding
+            } else if (f->return_type->kind == TYPE_OPTIONAL) {
+                ret_type = "i64";  // Option types use simple integer encoding
             } else if (f->return_type->kind == TYPE_FLOAT) {
                 ret_type = "double";
             }
@@ -8264,16 +8410,16 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i64 @test_assert_true(i64, i8*)");
     llvm_emit(&lg, "declare i64 @test_assert_false(i64, i8*)");
     llvm_emit(&lg, "declare i64 @test_summary()");
-    llvm_emit(&lg, "declare i64* @result_ok(i64)");
-    llvm_emit(&lg, "declare i64* @result_err(i64)");
-    llvm_emit(&lg, "declare i64 @result_is_ok(i64*)");
-    llvm_emit(&lg, "declare i64 @result_is_err(i64*)");
-    llvm_emit(&lg, "declare i64 @result_unwrap(i64*)");
-    llvm_emit(&lg, "declare i64* @option_some(i64)");
-    llvm_emit(&lg, "declare i64* @option_none()");
-    llvm_emit(&lg, "declare i64 @option_is_some(i64*)");
-    llvm_emit(&lg, "declare i64 @option_is_none(i64*)");
-    llvm_emit(&lg, "declare i64 @option_unwrap(i64*)");
+    llvm_emit(&lg, "declare i64 @result_ok_simple(i64)");
+    llvm_emit(&lg, "declare i64 @result_err_simple(i64)");
+    llvm_emit(&lg, "declare i64 @result_is_ok_simple(i64)");
+    llvm_emit(&lg, "declare i64 @result_is_err_simple(i64)");
+    llvm_emit(&lg, "declare i64 @result_unwrap_simple(i64)");
+    llvm_emit(&lg, "declare i64 @option_some_simple(i64)");
+    llvm_emit(&lg, "declare i64 @option_none_simple()");
+    llvm_emit(&lg, "declare i64 @option_is_some_simple(i64)");
+    llvm_emit(&lg, "declare i64 @option_is_none_simple(i64)");
+    llvm_emit(&lg, "declare i64 @option_unwrap_simple(i64)");
     llvm_emit(&lg, "declare i8** @args_wyn()");
     llvm_emit(&lg, "declare i8* @cwd_wyn()");
     llvm_emit(&lg, "declare i64 @chdir_wyn(i8*)");

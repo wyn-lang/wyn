@@ -2364,63 +2364,95 @@ void init_winsock() {
 void init_winsock() { /* No-op on Unix */ }
 #endif
 
-// Result/Option helpers (using arrays)
-int64_t* result_ok(int64_t value) {
-    int64_t* result = malloc(sizeof(int64_t) * 4);
-    result[0] = 2;  // length
-    result[1] = 2;  // capacity
-    result[2] = 0;  // Ok status
-    result[3] = value;
-    return result;
+// Result/Option helpers (using simple integer encoding)
+// For now, use simple encoding: positive = ok/some, negative = err/none
+// This is a simplified implementation for basic functionality
+
+int64_t result_ok_simple(int64_t value) {
+    // Encode as positive value (simple approach)
+    return value >= 0 ? value : 1;  // Ensure positive
 }
 
-int64_t* result_err(int64_t code) {
-    int64_t* result = malloc(sizeof(int64_t) * 4);
-    result[0] = 2;
-    result[1] = 2;
-    result[2] = 1;  // Err status
-    result[3] = code;
-    return result;
+int64_t result_err_simple(int64_t code) {
+    // Encode as negative value
+    return code <= 0 ? code : -code;  // Ensure negative
 }
 
-int64_t result_is_ok(int64_t* result) {
-    return result && result[2] == 0 ? 1 : 0;
+int64_t result_is_ok_simple(int64_t result) {
+    return result >= 0 ? 1 : 0;
 }
 
-int64_t result_is_err(int64_t* result) {
-    return result && result[2] == 1 ? 1 : 0;
+int64_t result_is_err_simple(int64_t result) {
+    return result < 0 ? 1 : 0;
 }
 
-int64_t result_unwrap(int64_t* result) {
-    return result ? result[3] : 0;
+int64_t result_unwrap_simple(int64_t result) {
+    return result >= 0 ? result : 0;  // Return value or 0 for error
 }
 
-int64_t* option_some(int64_t value) {
-    int64_t* option = malloc(sizeof(int64_t) * 4);
-    option[0] = 2;
-    option[1] = 2;
-    option[2] = 0;  // Some status
-    option[3] = value;
-    return option;
+int64_t option_some_simple(int64_t value) {
+    return value;  // Just return the value
 }
 
-int64_t* option_none() {
-    int64_t* option = malloc(sizeof(int64_t) * 4);
-    option[0] = 2;
-    option[1] = 2;
-    option[2] = 1;  // None status
-    option[3] = 0;
-    return option;
+int64_t option_none_simple() {
+    return -1;  // Use -1 to represent None
 }
 
-int64_t option_is_some(int64_t* option) {
-    return option && option[2] == 0 ? 1 : 0;
+int64_t option_is_some_simple(int64_t option) {
+    return option >= 0 ? 1 : 0;
 }
 
-int64_t option_is_none(int64_t* option) {
-    return option && option[2] == 1 ? 1 : 0;
+int64_t option_is_none_simple(int64_t option) {
+    return option < 0 ? 1 : 0;
 }
 
-int64_t option_unwrap(int64_t* option) {
-    return option ? option[3] : 0;
+int64_t option_unwrap_simple(int64_t option) {
+    return option >= 0 ? option : 0;
+}
+
+// String-based Result functions
+char* result_ok_str(int64_t value) {
+    // For string Results, we encode success as a special marker + value
+    // This is a simplified implementation
+    static char ok_buffer[32];
+    snprintf(ok_buffer, sizeof(ok_buffer), "OK:%lld", (long long)value);
+    return ok_buffer;
+}
+
+char* result_err_str(const char* message) {
+    // For string Results, we encode error as "ERR:" + message
+    static char err_buffer[256];
+    snprintf(err_buffer, sizeof(err_buffer), "ERR:%s", message);
+    return err_buffer;
+}
+
+int64_t result_is_ok_str(const char* result) {
+    return (result && strncmp(result, "OK:", 3) == 0) ? 1 : 0;
+}
+
+int64_t result_is_err_str(const char* result) {
+    return (result && strncmp(result, "ERR:", 4) == 0) ? 1 : 0;
+}
+
+char* result_unwrap_str(const char* result) {
+    if (result && strncmp(result, "OK:", 3) == 0) {
+        return (char*)(result + 3);  // Return value part
+    }
+    return "";  // Return empty string for error
+}
+
+char* result_unwrap_err_str(const char* result) {
+    if (result && strncmp(result, "ERR:", 4) == 0) {
+        return (char*)(result + 4);  // Return error message part
+    }
+    return "";  // Return empty string if not error
+}
+
+// Helper functions for Result creation
+char* ok(int64_t value) {
+    return result_ok_str(value);
+}
+
+char* err(const char* message) {
+    return result_err_str(message);
 }

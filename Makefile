@@ -45,6 +45,8 @@ BUILTINS_RUNTIME_SRC = $(RUNTIME_DIR)/builtins.c
 BUILTINS_RUNTIME_OBJ = $(BUILD_DIR)/builtins_runtime.o
 CHANNELS_RUNTIME_SRC = $(RUNTIME_DIR)/channels.c
 CHANNELS_RUNTIME_OBJ = $(BUILD_DIR)/channels_runtime.o
+TASK_RUNTIME_SRC = $(RUNTIME_DIR)/task.c
+TASK_RUNTIME_OBJ = $(BUILD_DIR)/task_runtime.o
 
 # Default target - build unified wyn binary
 .PHONY: all
@@ -75,7 +77,7 @@ $(REPL_BIN): $(REPL_SRC)
 
 # Build runtime libraries
 .PHONY: runtime
-runtime: $(BUILD_DIR) $(SPAWN_RUNTIME_OBJ) $(ARRAY_RUNTIME_OBJ) $(BUILTINS_RUNTIME_OBJ) $(CHANNELS_RUNTIME_OBJ)
+runtime: $(BUILD_DIR) $(SPAWN_RUNTIME_OBJ) $(ARRAY_RUNTIME_OBJ) $(BUILTINS_RUNTIME_OBJ) $(CHANNELS_RUNTIME_OBJ) $(TASK_RUNTIME_OBJ)
 
 $(SPAWN_RUNTIME_OBJ): $(SPAWN_RUNTIME_SRC)
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -87,6 +89,9 @@ $(BUILTINS_RUNTIME_OBJ): $(BUILTINS_RUNTIME_SRC)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 $(CHANNELS_RUNTIME_OBJ): $(CHANNELS_RUNTIME_SRC)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(TASK_RUNTIME_OBJ): $(TASK_RUNTIME_SRC)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 # Debug build

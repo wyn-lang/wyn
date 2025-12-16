@@ -1,0 +1,80 @@
+#!/usr/bin/env wyn run
+# Docker Package Example
+
+import docker
+
+fn main() {
+    print("Docker API Example")
+    
+    # System info
+    print("\n=== Docker Info ===")
+    const version = docker.version()
+    print("Docker version info:")
+    print(version)
+    
+    # Pull image
+    print("\n=== Pulling Image ===")
+    const pulled = docker.pull("nginx:alpine")
+    if pulled {
+        print("Successfully pulled nginx:alpine")
+    }
+    
+    # List images
+    print("\n=== Available Images ===")
+    const images = docker.images()
+    print(images)
+    
+    # Run container
+    print("\n=== Running Container ===")
+    const container_id = docker.run("nginx:alpine", "test-nginx", "-p 8080:80")
+    if container_id != "" {
+        print("Started container: " + container_id)
+    }
+    
+    # List running containers
+    print("\n=== Running Containers ===")
+    const containers = docker.ps(false)
+    print(containers)
+    
+    # Get container logs
+    print("\n=== Container Logs ===")
+    const logs = docker.logs("test-nginx", false)
+    print("Container logs:")
+    print(logs)
+    
+    # Container management
+    print("\n=== Container Management ===")
+    
+    # Stop container
+    const stopped = docker.stop("test-nginx")
+    if stopped {
+        print("Container stopped")
+    }
+    
+    # Start container again
+    const started = docker.start("test-nginx")
+    if started {
+        print("Container started")
+    }
+    
+    # Network operations
+    print("\n=== Network Operations ===")
+    docker.network_create("test-network", "bridge")
+    docker.network_connect("test-network", "test-nginx")
+    
+    const networks = docker.network_ls()
+    print("Available networks:")
+    print(networks)
+    
+    # Cleanup
+    print("\n=== Cleanup ===")
+    docker.stop("test-nginx")
+    docker.remove("test-nginx", true)
+    print("Container removed")
+    
+    # System cleanup (uncomment to test)
+    # docker.system_prune(false)
+    # print("System cleaned up")
+    
+    print("\nDocker operations completed!")
+}

@@ -265,6 +265,20 @@ void __wyn_join_all() {
     }
 }
 
+// Wait for all spawned tasks to complete (public API)
+long long task_join_all() {
+    if (!runtime.initialized) {
+        return 0;
+    }
+    
+    // Wait for all tasks to complete
+    while (atomic_load(&runtime.task_count) > 0) {
+        usleep(1000); // Sleep 1ms
+    }
+    
+    return 0;
+}
+
 // Atomic operations (existing API compatibility)
 static pthread_mutex_t atomic_mutex = PTHREAD_MUTEX_INITIALIZER;
 
