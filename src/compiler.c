@@ -8439,7 +8439,7 @@ int main(int argc, char** argv) {
     
     // Code generation - LLVM Backend
     char ir_file[256];
-    snprintf(ir_file, 256, "/tmp/wyn_%d.ll", getpid());
+    snprintf(ir_file, 256, "/tmp/wyn_%d_%d.ll", getpid(), rand());
     FILE* ir_out = fopen(ir_file, "w");
     if (!ir_out) {
         fprintf(stderr, "Cannot open %s for writing\n", ir_file);
