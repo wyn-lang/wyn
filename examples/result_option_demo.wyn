@@ -1,0 +1,49 @@
+// Result and Option types demonstration
+import result
+
+fn divide(a: int, b: int) -> [int] {
+    if b == 0 {
+        return result.err(-1)
+    }
+    return result.ok(a / b)
+}
+
+fn find_in_array(arr: [int], target: int) -> [int] {
+    let i = 0
+    while i < arr.len() {
+        if arr[i] == target {
+            return result.some(i)
+        }
+        i = i + 1
+    }
+    return result.none()
+}
+
+fn main() {
+    print("=== Result/Option Demo ===")
+    
+    // Test Result
+    const res1 = divide(10, 2)
+    if result.is_ok(res1) {
+        print("10 / 2 = " + int_to_str(result.unwrap(res1)))
+    }
+    
+    const res2 = divide(10, 0)
+    if result.is_err(res2) {
+        print("Division by zero error")
+    }
+    
+    // Test Option
+    const numbers = [1, 2, 3, 4, 5]
+    const found = find_in_array(numbers, 3)
+    if result.is_some(found) {
+        print("Found at index: " + int_to_str(result.unwrap_option(found)))
+    }
+    
+    const not_found = find_in_array(numbers, 10)
+    if result.is_none(not_found) {
+        print("Not found")
+    }
+    
+    print("Result/Option patterns work!")
+}

@@ -1,39 +1,63 @@
 # std/result.wyn
 # Result and Option types for error handling
 
-# NOTE: Full Result[T,E] and Option[T] types require:
-# 1. Generics implementation
-# 2. Enum variants with associated data
-# 3. Pattern matching on enum variants
-#
-# These are planned language features but not yet implemented.
-#
-# Current workaround: Use tuples or separate variables
-# Example:
-#   fn divide(a: int, b: int) -> int {
-#       if b == 0 { return -1 }  # Error indicator
-#       return a / b
-#   }
-#
-#   const result: int = divide(10, 2)
-#   if result >= 0 {
-#       print("Success")
-#   } else {
-#       print("Error")
-#   }
+# Practical approach: Use tuples (arrays) to represent Result/Option
+# Result: [status, value] where status: 0=Ok, 1=Err
+# Option: [status, value] where status: 0=Some, 1=None
 
-# Simple error indicators (without associated data)
-enum ResultType {
-    Ok = 0,
-    Err = 1
+# Result helpers
+pub fn ok(value: int) -> [int] {
+    return [0, value]  # [Ok, value]
 }
 
-enum OptionType {
-    Some = 0,
-    None = 1
+pub fn err(code: int) -> [int] {
+    return [1, code]  # [Err, code]
 }
 
-# These can be used as simple flags:
-# const status: int = Ok  # 0
-# const status: int = Err # 1
-# if status == Ok { ... }
+pub fn is_ok(result: [int]) -> bool {
+    return result[0] == 0
+}
+
+pub fn is_err(result: [int]) -> bool {
+    return result[0] == 1
+}
+
+pub fn unwrap(result: [int]) -> int {
+    return result[1]
+}
+
+# Option helpers
+pub fn some(value: int) -> [int] {
+    return [0, value]  # [Some, value]
+}
+
+pub fn none() -> [int] {
+    return [1, 0]  # [None, 0]
+}
+
+pub fn is_some(option: [int]) -> bool {
+    return option[0] == 0
+}
+
+pub fn is_none(option: [int]) -> bool {
+    return option[0] == 1
+}
+
+pub fn unwrap_option(option: [int]) -> int {
+    return option[1]
+}
+
+# Example usage:
+# fn divide(a: int, b: int) -> [int] {
+#     if b == 0 {
+#         return err(-1)
+#     }
+#     return ok(a / b)
+# }
+#
+# const result = divide(10, 2)
+# if is_ok(result) {
+#     print(unwrap(result))
+# } else {
+#     print("Error")
+# }
