@@ -692,7 +692,7 @@ struct Stmt {
         struct { Expr* value; Expr** patterns; Stmt*** arms; int* arm_counts; int arm_count; char bindings[64][MAX_IDENT_LEN]; Type** binding_types; } match_stmt;
         struct { Stmt** stmts; int count; } block;
         struct { Expr* expr; } defer;
-        struct { Stmt** body; int body_count; char** captured_vars; int captured_count; } spawn;
+        struct { Stmt** body; int body_count; char** captured_vars; int captured_count; Type** captured_types; } spawn;
     };
 };
 
@@ -4924,9 +4924,11 @@ static void analyze_spawn_stmt(Stmt* s) {
         
         if (used_count > 0) {
             s->spawn.captured_vars = malloc(sizeof(char*) * used_count);
+            s->spawn.captured_types = malloc(sizeof(Type*) * used_count);
             s->spawn.captured_count = used_count;
             for (int k = 0; k < used_count; k++) {
                 s->spawn.captured_vars[k] = strdup(used_vars[k]);
+                s->spawn.captured_types[k] = NULL;  // Will be filled in during codegen
             }
         }
         return;
@@ -7694,6 +7696,9 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
                     if (var_idx >= 0) {
                         Type* var_type = llvm_get_var_type(lg, s->spawn.captured_vars[i]);
                         
+                        // Store type for later use in spawn function
+                        s->spawn.captured_types[i] = var_type;
+                        
                         int addr_t = llvm_new_temp(lg);
                         int cast_t = llvm_new_temp(lg);
                         llvm_emit(lg, "  %%%d = getelementptr i8, i8* %%%d, i64 %d", addr_t, ctx_t, i * 8);
@@ -8220,12 +8225,7 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
         // Load captured variables from context
         if (cap_count > 0) {
             for (int j = 0; j < cap_count; j++) {
-                // Get variable type from original scope
-                Type* var_type = NULL;
-                for (int k = 0; k < lg.module->function_count; k++) {
-                    // Find the variable type (simplified - assumes it's in main)
-                    // In practice, would need better scope tracking
-                }
+                Type* var_type = s->spawn.captured_types[j];
                 
                 // Add variable to spawn function scope
                 strcpy(lg.vars[lg.var_count], s->spawn.captured_vars[j]);
@@ -8238,13 +8238,23 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
                 
                 fprintf(lg.out, "  %%%d = getelementptr i8, i8* %%ctx, i64 %d\n", addr_t, j * 8);
                 
-                // For now, assume all captured vars are i64 (integers)
-                // TODO: Track and use actual types
-                fprintf(lg.out, "  %%%d = bitcast i8* %%%d to i64**\n", cast_t, addr_t);
-                fprintf(lg.out, "  %%%d = load i64*, i64** %%%d\n", var_t, cast_t);
+                if (var_type && var_type->kind == TYPE_STR) {
+                    // String variable
+                    fprintf(lg.out, "  %%%d = bitcast i8* %%%d to i8***\n", cast_t, addr_t);
+                    fprintf(lg.out, "  %%%d = load i8**, i8*** %%%d\n", var_t, cast_t);
+                    lg.var_types[lg.var_count] = var_type;
+                } else if (var_type && var_type->kind == TYPE_ARRAY) {
+                    // Array variable
+                    fprintf(lg.out, "  %%%d = bitcast i8* %%%d to i64***\n", cast_t, addr_t);
+                    fprintf(lg.out, "  %%%d = load i64**, i64*** %%%d\n", var_t, cast_t);
+                    lg.var_types[lg.var_count] = var_type;
+                } else {
+                    // Integer variable (default)
+                    fprintf(lg.out, "  %%%d = bitcast i8* %%%d to i64**\n", cast_t, addr_t);
+                    fprintf(lg.out, "  %%%d = load i64*, i64** %%%d\n", var_t, cast_t);
+                    lg.var_types[lg.var_count] = var_type ? var_type : new_type(TYPE_INT);
+                }
                 
-                // Store type as int for now
-                lg.var_types[lg.var_count] = new_type(TYPE_INT);
                 lg.var_count++;
             }
         }
