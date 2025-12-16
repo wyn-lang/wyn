@@ -2319,3 +2319,11 @@ int64_t test_summary() {
     printf("\nTest Summary: %d passed, %d failed\n", g_test_passed, g_test_failed);
     return g_test_passed;
 }
+
+// Array creation for comprehensions
+int64_t* array_new() {
+    int64_t* arr = malloc(sizeof(int64_t) * 2);
+    arr[0] = 0;  // length
+    arr[1] = 0;  // capacity
+    return arr;
+}

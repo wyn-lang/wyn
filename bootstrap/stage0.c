@@ -13486,6 +13486,7 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i64* @array_append_elem(i64*, i64)");
     llvm_emit(&lg, "declare i64* @array_prepend_elem(i64*, i64)");
     llvm_emit(&lg, "declare i64 @array_contains_elem(i64*, i64)");
+    llvm_emit(&lg, "declare i64* @array_new()");
     llvm_emit(&lg, "declare i64 @sqlite_open(i8*)");
     llvm_emit(&lg, "declare i64 @sqlite_exec(i64, i8*)");
     llvm_emit(&lg, "declare i8* @sqlite_query(i64, i8*)");
