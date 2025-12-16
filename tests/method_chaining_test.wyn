@@ -1,0 +1,21 @@
+// Method chaining test
+
+import os
+
+fn main() {
+    // Test 1: Simple chain
+    const output1 = os.command("echo").arg("test").output()
+    print(output1)
+    
+    // Test 2: Multiple args
+    const output2 = os.command("echo").arg("Hello").arg("World").output()
+    print(output2)
+    
+    // Test 3: Chain with run
+    const result = os.command("echo").arg("status").run()
+    print(result)
+    
+    // Test 4: Longer chain
+    const output3 = os.command("echo").arg("A").arg("B").arg("C").output()
+    print(output3)
+}

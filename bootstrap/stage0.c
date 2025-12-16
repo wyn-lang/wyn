@@ -11166,6 +11166,7 @@ static bool llvm_is_string_expr(LLVMGen* lg, Expr* e) {
                    strcmp(func, "str_concat") == 0 || strcmp(func, "substring") == 0);
         } else if (e->call.func->kind == EXPR_FIELD) {
             const char* func = e->call.func->field.field;
+            // Check if this is a string-returning method (regardless of object)
             return (strcmp(func, "upper") == 0 || strcmp(func, "lower") == 0 ||
                    strcmp(func, "trim") == 0 || strcmp(func, "read") == 0 ||
                    strcmp(func, "sqlite_query") == 0 || strcmp(func, "exec_output") == 0 ||
@@ -11605,11 +11606,67 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
         }
         
         case EXPR_CALL: {
-            // Check for module.function() calls
-            if (e->call.func->kind == EXPR_FIELD && e->call.func->field.object->kind == EXPR_IDENT) {
-                const char* module = e->call.func->field.object->ident;
+            // Check for module.function() calls or chained method calls
+            if (e->call.func->kind == EXPR_FIELD) {
+                // Could be: module.function() or result.method()
                 const char* function = e->call.func->field.field;
-                const char* builtin_name = map_module_function(module, function);
+                const char* builtin_name = NULL;
+                
+                // Check if it's a simple module.function call
+                if (e->call.func->field.object->kind == EXPR_IDENT) {
+                    const char* module = e->call.func->field.object->ident;
+                    builtin_name = map_module_function(module, function);
+                }
+                
+                // If not a module function, check if it's a method on a call result (chaining)
+                if (!builtin_name && e->call.func->field.object->kind == EXPR_CALL) {
+                    // This is method chaining: result.method()
+                    // Evaluate the object (previous call)
+                    int obj_reg;
+                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                    
+                    // Now call the method with obj_reg as first argument
+                    // Map the method name (e.g., "arg" -> "command_arg_chain")
+                    builtin_name = map_module_function("os", function);  // Assume os for now
+                    
+                    if (builtin_name) {
+                        // Build arguments with object as first arg
+                        char args[1024];
+                        snprintf(args, sizeof(args), "i64 %%%d", obj_reg);
+                        
+                        for (int i = 0; i < e->call.arg_count; i++) {
+                            int arg_reg;
+                            llvm_expr(lg, e->call.args[i], &arg_reg);
+                            
+                            char arg_str[128];
+                            bool is_string_arg = llvm_is_string_expr(lg, e->call.args[i]);
+                            bool is_array_arg = llvm_is_array_expr(lg, e->call.args[i]);
+                            
+                            if (is_string_arg) {
+                                snprintf(arg_str, 128, ", i8* %%%d", arg_reg);
+                            } else if (is_array_arg) {
+                                snprintf(arg_str, 128, ", i64* %%%d", arg_reg);
+                            } else if (arg_reg <= -1000000) {
+                                snprintf(arg_str, 128, ", i64 %lld", (long long)(-arg_reg - 1000000));
+                            } else {
+                                snprintf(arg_str, 128, ", i64 %%%d", arg_reg);
+                            }
+                            strcat(args, arg_str);
+                        }
+                        
+                        // Determine return type
+                        bool returns_string = (strcmp(function, "output") == 0);
+                        
+                        int t = llvm_new_temp(lg);
+                        if (returns_string) {
+                            llvm_emit(lg, "  %%%d = call i8* @%s(%s)", t, builtin_name, args);
+                        } else {
+                            llvm_emit(lg, "  %%%d = call i64 @%s(%s)", t, builtin_name, args);
+                        }
+                        *result_reg = t;
+                        break;
+                    }
+                }
                 
                 if (builtin_name) {
                     // Map to builtin function call with proper types
@@ -11762,15 +11819,11 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                             // Integer addition result - print as integer
                             llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.int, i32 0, i32 0), i64 %%%d)", t, arg_reg);
                         }
-                    } else if (e->call.args[i]->kind == EXPR_CALL && e->call.args[i]->call.func->kind == EXPR_IDENT) {
-                        // Check if function call returns string
-                        const char* func_name = e->call.args[i]->call.func->ident;
-                        if (strcmp(func_name, "int_to_str") == 0 || strcmp(func_name, "chr") == 0 || 
-                            strcmp(func_name, "str_concat") == 0 || strcmp(func_name, "substring") == 0) {
-                            // Function returns string - print as string
+                    } else if (e->call.args[i]->kind == EXPR_CALL) {
+                        // Check if this is a string-returning call (including chained)
+                        if (llvm_is_string_expr(lg, e->call.args[i])) {
                             llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* %%%d)", t, arg_reg);
                         } else {
-                            // Function returns integer - print as integer
                             llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.int, i32 0, i32 0), i64 %%%d)", t, arg_reg);
                         }
                     } else if (e->call.args[i]->kind == EXPR_FLOAT) {
