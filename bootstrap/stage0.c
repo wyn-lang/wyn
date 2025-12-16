@@ -11069,6 +11069,26 @@ static bool llvm_is_string_expr(LLVMGen* lg, Expr* e) {
     return false;
 }
 
+static bool llvm_is_array_expr(LLVMGen* lg, Expr* e) {
+    if (!e) return false;
+    if (e->kind == EXPR_ARRAY) return true;
+    if (e->kind == EXPR_IDENT) {
+        Type* t = llvm_get_var_type(lg, e->ident);
+        return t && t->kind == TYPE_ARRAY;
+    }
+    if (e->kind == EXPR_CALL) {
+        if (e->call.func->kind == EXPR_IDENT) {
+            const char* func = e->call.func->ident;
+            return strcmp(func, "str_split") == 0;
+        } else if (e->call.func->kind == EXPR_FIELD) {
+            const char* func = e->call.func->field.field;
+            return (strcmp(func, "glob") == 0 || strcmp(func, "split") == 0 ||
+                   strcmp(func, "list_files") == 0 || strcmp(func, "list_dir") == 0);
+        }
+    }
+    return false;
+}
+
 // Helper function to find struct definition
 static StructDef* llvm_lookup_struct(LLVMGen* lg, const char* name) {
     for (int i = 0; i < lg->module->struct_count; i++) {
@@ -11570,7 +11590,8 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                           strcmp(function, "parse_path") == 0 ||
                                           strcmp(function, "parse_body") == 0);
                     
-                    bool returns_array = (strcmp(function, "split") == 0);
+                    bool returns_array = (strcmp(function, "split") == 0 ||
+                                         strcmp(function, "glob") == 0);
                     
                     int t = llvm_new_temp(lg);
                     if (returns_string) {
@@ -12470,7 +12491,7 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
             
             // Check if this is an array variable
             bool is_array_var = (s->let.type && s->let.type->kind == TYPE_ARRAY) ||
-                               (s->let.value && s->let.value->kind == EXPR_ARRAY);
+                               (s->let.value && llvm_is_array_expr(lg, s->let.value));
             
             // Check if this is a string variable
             bool is_string_var = (s->let.type && s->let.type->kind == TYPE_STR) ||
