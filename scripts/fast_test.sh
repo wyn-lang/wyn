@@ -1,21 +1,21 @@
 #!/bin/bash
-# Fast test runner - runs tests in parallel
+# Fast parallel test runner
 
 echo "Running tests in parallel..."
 
-passed=0
-failed=0
-
-# Run all tests in background
+# Run all tests in background with unique temp files
 for f in tests/*_test.wyn; do
     (
-        if timeout 5 ./build/wyn run "$f" >/dev/null 2>&1; then
+        # Use unique temp file per test
+        temp_out="/tmp/wyn_test_$(basename $f .wyn)_$$"
+        if timeout 5 ./build/wyn compile "$f" -o "$temp_out" >/dev/null 2>&1 && timeout 2 "$temp_out" >/dev/null 2>&1; then
             echo "  ✅ $f"
-            echo "1" > /tmp/wyn_test_$$.pass
+            echo "1" > "/tmp/wyn_pass_$$_$(basename $f)"
         else
             echo "  ❌ $f"
-            echo "1" > /tmp/wyn_test_$$.fail
+            echo "1" > "/tmp/wyn_fail_$$_$(basename $f)"
         fi
+        rm -f "$temp_out"
     ) &
 done
 
@@ -23,9 +23,12 @@ done
 wait
 
 # Count results
-passed=$(ls /tmp/wyn_test_*.pass 2>/dev/null | wc -l)
-failed=$(ls /tmp/wyn_test_*.fail 2>/dev/null | wc -l)
-rm -f /tmp/wyn_test_*.pass /tmp/wyn_test_*.fail
+passed=$(ls /tmp/wyn_pass_$$_* 2>/dev/null | wc -l | tr -d ' ')
+failed=$(ls /tmp/wyn_fail_$$_* 2>/dev/null | wc -l | tr -d ' ')
+rm -f /tmp/wyn_pass_$$_* /tmp/wyn_fail_$$_*
 
 echo ""
 echo "Tests: $passed passed, $failed failed"
+
+# Exit with error if any failed
+[ "$failed" -eq 0 ]
