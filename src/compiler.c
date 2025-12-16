@@ -7332,13 +7332,28 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                 int str_id = string_table_find(lg->strings, e->some.value->str_val);
                 llvm_emit(lg, "  %%%d = call i64 @result_err_simple(i64 %d)", t, -str_id);
             } else {
-                char value_str[64];
-                if (value_reg <= -1000000) {
-                    snprintf(value_str, 64, "i64 %lld", (long long)(-value_reg - 1000000));
+                // Check if this is a string expression that results in a pointer
+                bool is_string_expr = llvm_is_string_expr(lg, e->some.value);
+                
+                if (is_string_expr) {
+                    // Convert string pointer to integer for simple Result encoding
+                    int ptr_to_int = llvm_new_temp(lg);
+                    if (value_reg <= -1000000) {
+                        llvm_emit(lg, "  %%%d = add i64 0, %lld", ptr_to_int, (long long)(-value_reg - 1000000));
+                    } else {
+                        llvm_emit(lg, "  %%%d = ptrtoint i8* %%%d to i64", ptr_to_int, value_reg);
+                    }
+                    llvm_emit(lg, "  %%%d = call i64 @result_err_simple(i64 %%%d)", t, ptr_to_int);
                 } else {
-                    snprintf(value_str, 64, "i64 %%%d", value_reg);
+                    // Integer error code
+                    char value_str[64];
+                    if (value_reg <= -1000000) {
+                        snprintf(value_str, 64, "i64 %lld", (long long)(-value_reg - 1000000));
+                    } else {
+                        snprintf(value_str, 64, "i64 %%%d", value_reg);
+                    }
+                    llvm_emit(lg, "  %%%d = call i64 @result_err_simple(%s)", t, value_str);
                 }
-                llvm_emit(lg, "  %%%d = call i64 @result_err_simple(%s)", t, value_str);
             }
             *result_reg = t;
             break;
