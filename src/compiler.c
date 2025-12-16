@@ -1146,6 +1146,17 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "assert_true") == 0) return "test_assert_true";
         if (strcmp(function, "assert_false") == 0) return "test_assert_false";
         if (strcmp(function, "summary") == 0) return "test_summary";
+    } else if (strcmp(module, "result") == 0) {
+        if (strcmp(function, "make_ok") == 0) return "result_ok";
+        if (strcmp(function, "make_err") == 0) return "result_err";
+        if (strcmp(function, "is_ok") == 0) return "result_is_ok";
+        if (strcmp(function, "is_err") == 0) return "result_is_err";
+        if (strcmp(function, "unwrap") == 0) return "result_unwrap";
+        if (strcmp(function, "make_some") == 0) return "option_some";
+        if (strcmp(function, "make_none") == 0) return "option_none";
+        if (strcmp(function, "is_some") == 0) return "option_is_some";
+        if (strcmp(function, "is_none") == 0) return "option_is_none";
+        if (strcmp(function, "unwrap_option") == 0) return "option_unwrap";
         if (strcmp(function, "generate_random_bytes") == 0) return "generate_random_bytes";
         if (strcmp(function, "hmac_sha256") == 0) return "hmac_sha256";
         if (strcmp(function, "verify_signature") == 0) return "verify_signature";
@@ -5264,6 +5275,7 @@ typedef struct {
     int spawn_count;
     Expr* lambdas[256];  // Track lambda expressions to emit later
     int lambda_count;
+    FnDef* current_function;  // Track current function being compiled
 } LLVMGen;
 
 static void llvm_emit(LLVMGen* lg, const char* fmt, ...) {
@@ -5969,7 +5981,11 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                          strcmp(function, "glob") == 0 ||
                                          strcmp(function, "reverse") == 0 ||
                                          strcmp(function, "append") == 0 ||
-                                         strcmp(function, "prepend") == 0);
+                                         strcmp(function, "prepend") == 0 ||
+                                         strcmp(function, "make_ok") == 0 ||
+                                         strcmp(function, "make_err") == 0 ||
+                                         strcmp(function, "make_some") == 0 ||
+                                         strcmp(function, "make_none") == 0);
                     
                     int t = llvm_new_temp(lg);
                     if (returns_string) {
@@ -7232,24 +7248,18 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
                 int val_reg;
                 llvm_expr(lg, s->ret.value, &val_reg);
                 
-                // Check if return value is a string (from variable or function call)
-                bool is_string_return = false;
-                if (s->ret.value->kind == EXPR_IDENT) {
-                    Type* var_type = llvm_get_var_type(lg, s->ret.value->ident);
-                    is_string_return = (var_type && var_type->kind == TYPE_STR);
-                } else if (s->ret.value->kind == EXPR_STRING) {
-                    is_string_return = true;
-                } else if (s->ret.value->kind == EXPR_CALL && s->ret.value->call.func->kind == EXPR_IDENT) {
-                    const char* func = s->ret.value->call.func->ident;
-                    is_string_return = (strcmp(func, "chr") == 0 || strcmp(func, "int_to_str") == 0 ||
-                                       strcmp(func, "str_concat") == 0 || strcmp(func, "substring") == 0);
-                }
+                // Check function's return type
+                Type* ret_type = lg->current_function ? lg->current_function->return_type : NULL;
                 
                 if (val_reg <= -1000000) {
                     llvm_emit(lg, "  ret i64 %lld", (long long)(-val_reg - 1000000));
                 } else {
-                    if (is_string_return) {
+                    if (ret_type && ret_type->kind == TYPE_STR) {
                         llvm_emit(lg, "  ret i8* %%%d", val_reg);
+                    } else if (ret_type && ret_type->kind == TYPE_ARRAY) {
+                        llvm_emit(lg, "  ret i64* %%%d", val_reg);
+                    } else if (ret_type && ret_type->kind == TYPE_FLOAT) {
+                        llvm_emit(lg, "  ret double %%%d", val_reg);
                     } else {
                         llvm_emit(lg, "  ret i64 %%%d", val_reg);
                     }
@@ -7660,6 +7670,9 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
 }
 
 static void llvm_function(LLVMGen* lg, FnDef* f) {
+    // Track current function for return type checking
+    lg->current_function = f;
+    
     // Generate function signature
     if (strcmp(f->name, "main") == 0) {
         llvm_emit(lg, "define i32 @%s() {", f->name);
@@ -7880,6 +7893,16 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i64 @test_assert_true(i64, i8*)");
     llvm_emit(&lg, "declare i64 @test_assert_false(i64, i8*)");
     llvm_emit(&lg, "declare i64 @test_summary()");
+    llvm_emit(&lg, "declare i64* @result_ok(i64)");
+    llvm_emit(&lg, "declare i64* @result_err(i64)");
+    llvm_emit(&lg, "declare i64 @result_is_ok(i64*)");
+    llvm_emit(&lg, "declare i64 @result_is_err(i64*)");
+    llvm_emit(&lg, "declare i64 @result_unwrap(i64*)");
+    llvm_emit(&lg, "declare i64* @option_some(i64)");
+    llvm_emit(&lg, "declare i64* @option_none()");
+    llvm_emit(&lg, "declare i64 @option_is_some(i64*)");
+    llvm_emit(&lg, "declare i64 @option_is_none(i64*)");
+    llvm_emit(&lg, "declare i64 @option_unwrap(i64*)");
     llvm_emit(&lg, "declare i8** @args_wyn()");
     llvm_emit(&lg, "declare i8* @cwd_wyn()");
     llvm_emit(&lg, "declare i64 @chdir_wyn(i8*)");

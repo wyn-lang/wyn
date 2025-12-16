@@ -2363,3 +2363,64 @@ void init_winsock() {
 #else
 void init_winsock() { /* No-op on Unix */ }
 #endif
+
+// Result/Option helpers (using arrays)
+int64_t* result_ok(int64_t value) {
+    int64_t* result = malloc(sizeof(int64_t) * 4);
+    result[0] = 2;  // length
+    result[1] = 2;  // capacity
+    result[2] = 0;  // Ok status
+    result[3] = value;
+    return result;
+}
+
+int64_t* result_err(int64_t code) {
+    int64_t* result = malloc(sizeof(int64_t) * 4);
+    result[0] = 2;
+    result[1] = 2;
+    result[2] = 1;  // Err status
+    result[3] = code;
+    return result;
+}
+
+int64_t result_is_ok(int64_t* result) {
+    return result && result[2] == 0 ? 1 : 0;
+}
+
+int64_t result_is_err(int64_t* result) {
+    return result && result[2] == 1 ? 1 : 0;
+}
+
+int64_t result_unwrap(int64_t* result) {
+    return result ? result[3] : 0;
+}
+
+int64_t* option_some(int64_t value) {
+    int64_t* option = malloc(sizeof(int64_t) * 4);
+    option[0] = 2;
+    option[1] = 2;
+    option[2] = 0;  // Some status
+    option[3] = value;
+    return option;
+}
+
+int64_t* option_none() {
+    int64_t* option = malloc(sizeof(int64_t) * 4);
+    option[0] = 2;
+    option[1] = 2;
+    option[2] = 1;  // None status
+    option[3] = 0;
+    return option;
+}
+
+int64_t option_is_some(int64_t* option) {
+    return option && option[2] == 0 ? 1 : 0;
+}
+
+int64_t option_is_none(int64_t* option) {
+    return option && option[2] == 1 ? 1 : 0;
+}
+
+int64_t option_unwrap(int64_t* option) {
+    return option ? option[3] : 0;
+}

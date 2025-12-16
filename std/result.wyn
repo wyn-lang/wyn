@@ -1,63 +1,19 @@
 # std/result.wyn
 # Result and Option types for error handling
-
-# Practical approach: Use tuples (arrays) to represent Result/Option
-# Result: [status, value] where status: 0=Ok, 1=Err
-# Option: [status, value] where status: 0=Some, 1=None
-
-# Result helpers
-pub fn ok(value: int) -> [int] {
-    return [0, value]  # [Ok, value]
-}
-
-pub fn err(code: int) -> [int] {
-    return [1, code]  # [Err, code]
-}
-
-pub fn is_ok(result: [int]) -> bool {
-    return result[0] == 0
-}
-
-pub fn is_err(result: [int]) -> bool {
-    return result[0] == 1
-}
-
-pub fn unwrap(result: [int]) -> int {
-    return result[1]
-}
-
-# Option helpers
-pub fn some(value: int) -> [int] {
-    return [0, value]  # [Some, value]
-}
-
-pub fn none() -> [int] {
-    return [1, 0]  # [None, 0]
-}
-
-pub fn is_some(option: [int]) -> bool {
-    return option[0] == 0
-}
-
-pub fn is_none(option: [int]) -> bool {
-    return option[0] == 1
-}
-
-pub fn unwrap_option(option: [int]) -> int {
-    return option[1]
-}
-
-# Example usage:
-# fn divide(a: int, b: int) -> [int] {
-#     if b == 0 {
-#         return err(-1)
-#     }
-#     return ok(a / b)
-# }
+# All functions are mapped to runtime implementations via compiler
 #
-# const result = divide(10, 2)
-# if is_ok(result) {
-#     print(unwrap(result))
-# } else {
-#     print("Error")
-# }
+# Result functions (returns [status, value]):
+#   make_ok(value) -> [int] - Create Ok result
+#   make_err(code) -> [int] - Create Err result
+#   is_ok(result) -> bool - Check if Ok
+#   is_err(result) -> bool - Check if Err
+#   unwrap(result) -> int - Get value
+#
+# Option functions (returns [status, value]):
+#   make_some(value) -> [int] - Create Some option
+#   make_none() -> [int] - Create None option
+#   is_some(option) -> bool - Check if Some
+#   is_none(option) -> bool - Check if None
+#   unwrap_option(option) -> int - Get value
+#
+# Note: ok, err, some, none are keywords, so we use make_ prefix
