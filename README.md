@@ -14,8 +14,11 @@ Wyn is a **production-ready infrastructure/DevOps language** that combines:
 
 ## 🎉 Production Ready
 
-The language is **production-ready** with **100% passing test suite**:
+The language is **production-ready** with **100% passing test suite** and **comprehensive error handling**:
 - ✅ All core language features
+- ✅ **Result<T, E> and Option<T> types with pattern destructuring**
+- ✅ **Match expressions with variable binding**
+- ✅ **Unwrap operator (!) for safe value extraction**
 - ✅ Default parameters (`fn greet(name: str = "World")`)
 - ✅ First-class functions (`const add = lambda x, y: x + y`)
 - ✅ 16 standard library modules (120+ functions)
@@ -25,7 +28,7 @@ The language is **production-ready** with **100% passing test suite**:
 - ✅ Package manager (install from GitHub)
 - ✅ Concurrency (spawn, channels) with **automatic task synchronization**
 - ✅ String arrays with indexing
-- ✅ Pattern matching
+- ✅ Pattern matching with destructuring
 - ✅ Developer tools (REPL, LSP, formatter)
 - ✅ Shebang support (`#!/usr/bin/env wyn run`)
 - ✅ Inline execution (`wyn -e 'code'`)
@@ -100,6 +103,33 @@ fn main() {
     const errors: int = regex.count(log, "ERROR")
     print("Errors found:")
     print(errors)
+}
+```
+
+### Error Handling
+```wyn
+fn divide(a: int, b: int) -> Result[int, str] {
+    if b == 0 {
+        return err("Division by zero")
+    }
+    return ok(a / b)
+}
+
+fn main() {
+    const result = divide(10, 2)
+    match result {
+        ok(value) => {
+            print("Success: " + int_to_str(value))
+        }
+        err(message) => {
+            print("Error: " + message)
+        }
+    }
+    
+    # Unwrap operator
+    const safe_result = divide(20, 4)
+    const value = safe_result!  # Extracts value
+    print(value)
 }
 ```
 

@@ -1,0 +1,10 @@
+# Minimal Result test
+
+fn main() {
+    print("Testing basic Result")
+    
+    const result = ok(42)
+    print("Created result")
+    
+    print("Done")
+}

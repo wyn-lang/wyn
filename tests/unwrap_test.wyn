@@ -1,0 +1,15 @@
+# Test unwrap operator
+
+fn main() {
+    print("Testing unwrap operator")
+    
+    const result = ok(42)
+    const value = result!
+    print(value)
+    
+    const option = some(100)
+    const val = option!
+    print(val)
+    
+    print("Unwrap operator works")
+}

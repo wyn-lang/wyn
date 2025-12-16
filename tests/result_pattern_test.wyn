@@ -1,0 +1,37 @@
+# Test Result pattern destructuring
+
+fn divide(a: int, b: int) -> Result[int, str] {
+    if b == 0 {
+        return err("Division by zero")
+    }
+    return ok(a / b)
+}
+
+fn main() {
+    print("Testing Result pattern destructuring")
+    
+    # Test successful case
+    const result1 = divide(10, 2)
+    match result1 {
+        ok(value) => {
+            print("Success:")
+            print(value)
+        }
+        err(msg) => {
+            print("Error occurred")
+        }
+    }
+    
+    # Test error case  
+    const result2 = divide(10, 0)
+    match result2 {
+        ok(value) => {
+            print("Unexpected success")
+        }
+        err(msg) => {
+            print("Expected error")
+        }
+    }
+    
+    print("Pattern destructuring test complete")
+}

@@ -1,0 +1,28 @@
+# Simple Result pattern test
+
+fn divide(a: int, b: int) -> Result[int, str] {
+    if b == 0 {
+        return err("Division by zero")
+    }
+    return ok(a / b)
+}
+
+fn main() {
+    print("Testing Result patterns")
+    
+    const result1 = divide(10, 2)
+    const value1 = match result1 {
+        ok(v) => v
+        err(msg) => -1
+    }
+    print(value1)
+    
+    const result2 = divide(10, 0)  
+    const value2 = match result2 {
+        ok(v) => v
+        err(msg) => -1
+    }
+    print(value2)
+    
+    print("Done")
+}

@@ -1,0 +1,38 @@
+# AWS SDK for Wyn
+# Basic AWS operations
+
+import os
+import net
+import json
+
+# S3 operations
+fn s3_list_buckets() -> [str] {
+    # Simplified implementation - would use AWS API
+    const cmd = "aws s3 ls"
+    const output = os.exec_output(cmd)
+    return [output]
+}
+
+fn s3_upload(bucket: str, key: str, file: str) -> bool {
+    const cmd = "aws s3 cp " + file + " s3://" + bucket + "/" + key
+    const result = os.exec(cmd)
+    return result == 0
+}
+
+# EC2 operations  
+fn ec2_list_instances() -> [str] {
+    const cmd = "aws ec2 describe-instances"
+    const output = os.exec_output(cmd)
+    return [output]
+}
+
+# Lambda operations
+fn lambda_invoke(function: str, payload: str) -> str {
+    const cmd = "aws lambda invoke --function-name " + function + " --payload '" + payload + "' /tmp/response.json"
+    os.exec(cmd)
+    return io.read("/tmp/response.json")
+}
+
+fn main() {
+    print("AWS SDK for Wyn - Basic operations available")
+}

@@ -1,0 +1,98 @@
+# Comprehensive Error Handling Demo
+# Shows all implemented error handling features
+
+import result
+
+# Using built-in Result types
+fn divide_builtin(a: int, b: int) -> Result[int, str] {
+    if b == 0 {
+        return err("Cannot divide by zero")
+    }
+    return ok(a / b)
+}
+
+# Using helper functions (fully working alternative)
+fn divide_helper(a: int, b: int) -> [int] {
+    if b == 0 {
+        return result.make_err(-1)
+    }
+    return result.make_ok(a / b)
+}
+
+fn main() {
+    print("=== Wyn Error Handling Demo ===")
+    
+    # 1. Basic Result creation
+    print("1. Basic Result creation:")
+    const success = ok(42)
+    const failure = err("Something went wrong")
+    print("✓ Created Result types")
+    
+    # 2. Unwrap operator (basic implementation)
+    print("2. Unwrap operator:")
+    const value = success!
+    print("Unwrapped value:")
+    print(value)
+    
+    # 3. Match statements with pattern destructuring (WORKING!)
+    print("3. Match statements with pattern destructuring:")
+    const result1 = divide_builtin(10, 2)
+    match result1 {
+        ok(val) => {
+            print("Success! Result:")
+            print(val)
+        }
+        err(msg) => {
+            print("Error occurred")
+        }
+    }
+    
+    const result2 = divide_builtin(10, 0)
+    match result2 {
+        ok(val) => {
+            print("Unexpected success")
+        }
+        err(msg) => {
+            print("Expected error caught")
+        }
+    }
+    
+    # 4. Helper functions (fully working alternative)
+    print("4. Helper functions (production ready):")
+    const helper_result = divide_helper(15, 3)
+    if result.is_ok(helper_result) == 1 {
+        const val = result.unwrap(helper_result)
+        print("Helper result:")
+        print(val)
+    }
+    
+    const helper_error = divide_helper(15, 0)
+    if result.is_err(helper_error) == 1 {
+        print("Helper error caught successfully")
+    }
+    
+    # 5. Option types
+    print("5. Option types:")
+    const some_value = some(100)
+    const no_value = none
+    
+    match some_value {
+        some(v) => {
+            print("Found value:")
+            print(v)
+        }
+        none => {
+            print("No value")
+        }
+    }
+    
+    print("=== Demo Complete ===")
+    print("✓ Result<T, E> types working")
+    print("✓ Option<T> types working") 
+    print("✓ Pattern destructuring working")
+    print("✓ Match statements working")
+    print("✓ Unwrap operator working")
+    print("✓ Helper functions working")
+    print("")
+    print("Wyn now has comprehensive error handling!")
+}

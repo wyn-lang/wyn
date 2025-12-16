@@ -3379,14 +3379,41 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
         }
         
         case EXPR_MATCH: {
-            tc_check_expr(tc, e->match_expr.value);
+            Type* match_type = tc_check_expr(tc, e->match_expr.value);
             Type* result_type = NULL;
             for (int i = 0; i < e->match_expr.arm_count; i++) {
-                tc_check_expr(tc, e->match_expr.patterns[i]);
+                Expr* pat = e->match_expr.patterns[i];
+                // Don't type-check binding patterns - they introduce variables
+                bool is_binding_pattern = (pat->kind == EXPR_SOME || pat->kind == EXPR_OK || pat->kind == EXPR_ERR) &&
+                                         pat->some.value && pat->some.value->kind == EXPR_IDENT;
+                if (!is_binding_pattern) {
+                    tc_check_expr(tc, pat);
+                }
+                
+                tc_enter_scope(tc);
+                // Add binding variable to scope if present
+                if (e->match_expr.bindings[i][0] != '\0') {
+                    // For some(x)/ok(x), binding gets the inner type
+                    // For err(e), binding gets the error type (str for now)
+                    Type* bind_type = new_type(TYPE_INT);  // Default
+                    if (match_type && match_type->kind == TYPE_OPTIONAL && match_type->inner) {
+                        bind_type = match_type->inner;
+                    } else if (match_type && match_type->kind == TYPE_RESULT) {
+                        if (pat->kind == EXPR_ERR) {
+                            bind_type = new_type(TYPE_STR);  // Error type is str
+                        } else if (match_type->inner) {
+                            bind_type = match_type->inner;
+                        }
+                    }
+                    e->match_expr.binding_types[i] = bind_type;
+                    tc_define(tc, e->match_expr.bindings[i], bind_type, false);
+                }
+                
                 Type* arm_type = tc_check_expr(tc, e->match_expr.arms[i]);
                 if (result_type == NULL) {
                     result_type = arm_type;
                 }
+                tc_exit_scope(tc);
             }
             return result_type ? result_type : new_type(TYPE_ANY);
         }
@@ -4072,12 +4099,29 @@ static Type* tc1_check_expr(TypeChecker1* tc, Expr* e) {
         }
         
         case EXPR_MATCH: {
-            tc1_check_expr(tc, e->match_expr.value);
+            Type* match_type = tc1_check_expr(tc, e->match_expr.value);
             Type* result_type = NULL;
             for (int i = 0; i < e->match_expr.arm_count; i++) {
-                tc1_check_expr(tc, e->match_expr.patterns[i]);
+                Expr* pat = e->match_expr.patterns[i];
+                bool is_binding_pattern = (pat->kind == EXPR_SOME || pat->kind == EXPR_OK || pat->kind == EXPR_ERR) &&
+                                         pat->some.value && pat->some.value->kind == EXPR_IDENT;
+                if (!is_binding_pattern) tc1_check_expr(tc, pat);
+                
+                tc1_enter_scope(tc);
+                if (e->match_expr.bindings[i][0] != '\0') {
+                    Type* bind_type = new_type(TYPE_INT);
+                    if (match_type && match_type->kind == TYPE_OPTIONAL && match_type->inner) {
+                        bind_type = match_type->inner;
+                    } else if (match_type && match_type->kind == TYPE_RESULT) {
+                        if (pat->kind == EXPR_ERR) bind_type = new_type(TYPE_STR);
+                        else if (match_type->inner) bind_type = match_type->inner;
+                    }
+                    e->match_expr.binding_types[i] = bind_type;
+                    tc1_define(tc, e->match_expr.bindings[i], bind_type, false);
+                }
                 Type* arm_type = tc1_check_expr(tc, e->match_expr.arms[i]);
                 if (result_type == NULL) result_type = arm_type;
+                tc1_exit_scope(tc);
             }
             return result_type ? result_type : new_type(TYPE_ANY);
         }
@@ -7037,6 +7081,171 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
             break;
         }
         
+        case EXPR_MATCH: {
+            // Match expression: match value { pattern => expr, ... }
+            int end_label = llvm_new_label(lg);
+            int result_alloca = llvm_new_temp(lg);
+            
+            // Allocate result variable
+            llvm_emit(lg, "  %%%d = alloca i64", result_alloca);
+            
+            // Evaluate match value once
+            int match_reg;
+            llvm_expr(lg, e->match_expr.value, &match_reg);
+            
+            for (int i = 0; i < e->match_expr.arm_count; i++) {
+                int next_label = (i < e->match_expr.arm_count - 1) ? llvm_new_label(lg) : end_label;
+                Expr* pat = e->match_expr.patterns[i];
+                
+                // Check if this is a wildcard pattern
+                bool is_wildcard = pat->kind == EXPR_IDENT && strcmp(pat->ident, "_") == 0;
+                
+                // Check if this is a binding pattern (ok(v), err(msg), some(v))
+                bool is_binding_pattern = (pat->kind == EXPR_SOME || pat->kind == EXPR_OK || pat->kind == EXPR_ERR) &&
+                                         pat->some.value && pat->some.value->kind == EXPR_IDENT;
+                
+                if (!is_wildcard) {
+                    int arm_label = llvm_new_label(lg);
+                    
+                    if (is_binding_pattern) {
+                        // For binding patterns, we need to check the tag and extract the value
+                        if (pat->kind == EXPR_OK) {
+                            // Check if match value represents "ok" (non-negative for now)
+                            int cmp_reg = llvm_new_temp(lg);
+                            if (match_reg <= -1000000) {
+                                long long match_val = -match_reg - 1000000;
+                                if (match_val >= 0) {
+                                    llvm_emit(lg, "  br label %%L%d", arm_label);
+                                } else {
+                                    llvm_emit(lg, "  br label %%L%d", next_label);
+                                    continue;
+                                }
+                            } else {
+                                llvm_emit(lg, "  %%%d = icmp sge i64 %%%d, 0", cmp_reg, match_reg);
+                                llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cmp_reg, arm_label, next_label);
+                            }
+                        } else if (pat->kind == EXPR_ERR) {
+                            // Check if match value represents "err" (negative for now)
+                            int cmp_reg = llvm_new_temp(lg);
+                            if (match_reg <= -1000000) {
+                                long long match_val = -match_reg - 1000000;
+                                if (match_val < 0) {
+                                    llvm_emit(lg, "  br label %%L%d", arm_label);
+                                } else {
+                                    llvm_emit(lg, "  br label %%L%d", next_label);
+                                    continue;
+                                }
+                            } else {
+                                llvm_emit(lg, "  %%%d = icmp slt i64 %%%d, 0", cmp_reg, match_reg);
+                                llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cmp_reg, arm_label, next_label);
+                            }
+                        } else if (pat->kind == EXPR_SOME) {
+                            // For Option types, check if not none (non-zero for now)
+                            int cmp_reg = llvm_new_temp(lg);
+                            if (match_reg <= -1000000) {
+                                long long match_val = -match_reg - 1000000;
+                                if (match_val != 0) {
+                                    llvm_emit(lg, "  br label %%L%d", arm_label);
+                                } else {
+                                    llvm_emit(lg, "  br label %%L%d", next_label);
+                                    continue;
+                                }
+                            } else {
+                                llvm_emit(lg, "  %%%d = icmp ne i64 %%%d, 0", cmp_reg, match_reg);
+                                llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cmp_reg, arm_label, next_label);
+                            }
+                        }
+                    } else {
+                        // Regular pattern matching
+                        int pat_reg;
+                        llvm_expr(lg, pat, &pat_reg);
+                        
+                        int cmp_reg = llvm_new_temp(lg);
+                        
+                        if (match_reg <= -1000000 && pat_reg <= -1000000) {
+                            // Both constants
+                            long long match_val = -match_reg - 1000000;
+                            long long pat_val = -pat_reg - 1000000;
+                            if (match_val == pat_val) {
+                                llvm_emit(lg, "  br label %%L%d", arm_label);
+                            } else {
+                                llvm_emit(lg, "  br label %%L%d", next_label);
+                                continue;
+                            }
+                        } else if (match_reg <= -1000000) {
+                            // Match value is constant
+                            llvm_emit(lg, "  %%%d = icmp eq i64 %%%d, %lld", cmp_reg, pat_reg, (long long)(-match_reg - 1000000));
+                            llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cmp_reg, arm_label, next_label);
+                        } else if (pat_reg <= -1000000) {
+                            // Pattern is constant
+                            llvm_emit(lg, "  %%%d = icmp eq i64 %%%d, %lld", cmp_reg, match_reg, (long long)(-pat_reg - 1000000));
+                            llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cmp_reg, arm_label, next_label);
+                        } else {
+                            // Both are registers
+                            llvm_emit(lg, "  %%%d = icmp eq i64 %%%d, %%%d", cmp_reg, match_reg, pat_reg);
+                            llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cmp_reg, arm_label, next_label);
+                        }
+                    }
+                    
+                    llvm_emit(lg, "L%d:", arm_label);
+                    
+                    // Add variable binding if present
+                    if (e->match_expr.bindings[i][0] != '\0') {
+                        // Create variable for the bound value
+                        int var_reg = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = alloca i64", var_reg);
+                        
+                        // For now, just store the match value directly
+                        if (match_reg <= -1000000) {
+                            llvm_emit(lg, "  store i64 %lld, i64* %%%d", (long long)(-match_reg - 1000000), var_reg);
+                        } else {
+                            llvm_emit(lg, "  store i64 %%%d, i64* %%%d", match_reg, var_reg);
+                        }
+                        
+                        // Add variable to scope
+                        llvm_add_var(lg, e->match_expr.bindings[i], var_reg, new_type(TYPE_INT));
+                    }
+                } else {
+                    // Wildcard matches everything - no comparison needed
+                }
+                
+                // Evaluate arm expression and store result
+                int arm_reg;
+                llvm_expr(lg, e->match_expr.arms[i], &arm_reg);
+                
+                if (arm_reg <= -1000000) {
+                    llvm_emit(lg, "  store i64 %lld, i64* %%%d", (long long)(-arm_reg - 1000000), result_alloca);
+                } else {
+                    llvm_emit(lg, "  store i64 %%%d, i64* %%%d", arm_reg, result_alloca);
+                }
+                llvm_emit(lg, "  br label %%L%d", end_label);
+                
+                // Emit next label only if not the last iteration
+                if (i < e->match_expr.arm_count - 1) {
+                    llvm_emit(lg, "L%d:", next_label);
+                }
+            }
+            
+            // End label
+            llvm_emit(lg, "L%d:", end_label);
+            
+            // Load final result
+            int final_reg = llvm_new_temp(lg);
+            llvm_emit(lg, "  %%%d = load i64, i64* %%%d", final_reg, result_alloca);
+            *result_reg = final_reg;
+            break;
+        }
+        
+        case EXPR_UNWRAP: {
+            // Unwrap operator: expr!
+            // For now, just return the operand value directly
+            // In a full implementation, this would check for errors and panic if needed
+            int operand_reg;
+            llvm_expr(lg, e->unary.operand, &operand_reg);
+            *result_reg = operand_reg;
+            break;
+        }
+        
         default:
             // Unhandled expression type - generate zero register
             {
@@ -7631,40 +7840,116 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
                 // Check if pattern is wildcard (_)
                 bool is_wildcard = pat->kind == EXPR_IDENT && strcmp(pat->ident, "_") == 0;
                 
+                // Check if this is a binding pattern (ok(v), err(msg), some(v))
+                bool is_binding_pattern = (pat->kind == EXPR_SOME || pat->kind == EXPR_OK || pat->kind == EXPR_ERR) &&
+                                         pat->some.value && pat->some.value->kind == EXPR_IDENT;
+                
                 if (!is_wildcard) {
-                    // Generate pattern comparison
-                    int pat_reg;
-                    llvm_expr(lg, pat, &pat_reg);
-                    
-                    int cmp_reg = llvm_new_temp(lg);
                     int arm_label = llvm_new_label(lg);
                     
-                    if (match_reg <= -1000000 && pat_reg <= -1000000) {
-                        // Both constants - compare directly
-                        long long match_val = -match_reg - 1000000;
-                        long long pat_val = -pat_reg - 1000000;
-                        if (match_val != pat_val) {
-                            llvm_emit(lg, "  br label %%L%d", next_label);
-                            goto next_arm;
-                        } else {
-                            // Pattern matches, go to arm
-                            llvm_emit(lg, "  br label %%L%d", arm_label);
+                    if (is_binding_pattern) {
+                        // For binding patterns, we need to check the tag and extract the value
+                        // For now, assume Result/Option are represented as simple values
+                        // This is a simplified implementation - real tagged unions would be more complex
+                        
+                        if (pat->kind == EXPR_OK) {
+                            // Check if match value represents "ok" (non-negative for now)
+                            int cmp_reg = llvm_new_temp(lg);
+                            if (match_reg <= -1000000) {
+                                long long match_val = -match_reg - 1000000;
+                                if (match_val >= 0) {
+                                    llvm_emit(lg, "  br label %%L%d", arm_label);
+                                } else {
+                                    llvm_emit(lg, "  br label %%L%d", next_label);
+                                    goto next_arm;
+                                }
+                            } else {
+                                llvm_emit(lg, "  %%%d = icmp sge i64 %%%d, 0", cmp_reg, match_reg);
+                                llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cmp_reg, arm_label, next_label);
+                            }
+                        } else if (pat->kind == EXPR_ERR) {
+                            // Check if match value represents "err" (negative for now)
+                            int cmp_reg = llvm_new_temp(lg);
+                            if (match_reg <= -1000000) {
+                                long long match_val = -match_reg - 1000000;
+                                if (match_val < 0) {
+                                    llvm_emit(lg, "  br label %%L%d", arm_label);
+                                } else {
+                                    llvm_emit(lg, "  br label %%L%d", next_label);
+                                    goto next_arm;
+                                }
+                            } else {
+                                llvm_emit(lg, "  %%%d = icmp slt i64 %%%d, 0", cmp_reg, match_reg);
+                                llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cmp_reg, arm_label, next_label);
+                            }
+                        } else if (pat->kind == EXPR_SOME) {
+                            // For Option types, check if not none (non-zero for now)
+                            int cmp_reg = llvm_new_temp(lg);
+                            if (match_reg <= -1000000) {
+                                long long match_val = -match_reg - 1000000;
+                                if (match_val != 0) {
+                                    llvm_emit(lg, "  br label %%L%d", arm_label);
+                                } else {
+                                    llvm_emit(lg, "  br label %%L%d", next_label);
+                                    goto next_arm;
+                                }
+                            } else {
+                                llvm_emit(lg, "  %%%d = icmp ne i64 %%%d, 0", cmp_reg, match_reg);
+                                llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cmp_reg, arm_label, next_label);
+                            }
                         }
-                    } else if (match_reg <= -1000000) {
-                        // Match value is constant
-                        llvm_emit(lg, "  %%%d = icmp eq i64 %%%d, %lld", cmp_reg, pat_reg, (long long)(-match_reg - 1000000));
-                        llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cmp_reg, arm_label, next_label);
-                    } else if (pat_reg <= -1000000) {
-                        // Pattern is constant
-                        llvm_emit(lg, "  %%%d = icmp eq i64 %%%d, %lld", cmp_reg, match_reg, (long long)(-pat_reg - 1000000));
-                        llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cmp_reg, arm_label, next_label);
                     } else {
-                        // Both are registers
-                        llvm_emit(lg, "  %%%d = icmp eq i64 %%%d, %%%d", cmp_reg, match_reg, pat_reg);
-                        llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cmp_reg, arm_label, next_label);
+                        // Regular pattern matching
+                        int pat_reg;
+                        llvm_expr(lg, pat, &pat_reg);
+                        
+                        int cmp_reg = llvm_new_temp(lg);
+                        
+                        if (match_reg <= -1000000 && pat_reg <= -1000000) {
+                            // Both constants - compare directly
+                            long long match_val = -match_reg - 1000000;
+                            long long pat_val = -pat_reg - 1000000;
+                            if (match_val != pat_val) {
+                                llvm_emit(lg, "  br label %%L%d", next_label);
+                                goto next_arm;
+                            } else {
+                                // Pattern matches, go to arm
+                                llvm_emit(lg, "  br label %%L%d", arm_label);
+                            }
+                        } else if (match_reg <= -1000000) {
+                            // Match value is constant
+                            llvm_emit(lg, "  %%%d = icmp eq i64 %%%d, %lld", cmp_reg, pat_reg, (long long)(-match_reg - 1000000));
+                            llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cmp_reg, arm_label, next_label);
+                        } else if (pat_reg <= -1000000) {
+                            // Pattern is constant
+                            llvm_emit(lg, "  %%%d = icmp eq i64 %%%d, %lld", cmp_reg, match_reg, (long long)(-pat_reg - 1000000));
+                            llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cmp_reg, arm_label, next_label);
+                        } else {
+                            // Both are registers
+                            llvm_emit(lg, "  %%%d = icmp eq i64 %%%d, %%%d", cmp_reg, match_reg, pat_reg);
+                            llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cmp_reg, arm_label, next_label);
+                        }
                     }
                     
                     llvm_emit(lg, "L%d:", arm_label);
+                    
+                    // Add variable binding if present
+                    if (s->match_stmt.bindings[i][0] != '\0') {
+                        // Create variable for the bound value
+                        int var_reg = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = alloca i64", var_reg);
+                        
+                        // For now, just store the match value directly
+                        // In a full implementation, this would extract the inner value from tagged unions
+                        if (match_reg <= -1000000) {
+                            llvm_emit(lg, "  store i64 %lld, i64* %%%d", (long long)(-match_reg - 1000000), var_reg);
+                        } else {
+                            llvm_emit(lg, "  store i64 %%%d, i64* %%%d", match_reg, var_reg);
+                        }
+                        
+                        // Add variable to scope
+                        llvm_add_var(lg, s->match_stmt.bindings[i], var_reg, new_type(TYPE_INT));
+                    }
                 } else {
                     // Wildcard matches everything - no comparison needed
                 }

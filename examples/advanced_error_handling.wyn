@@ -1,0 +1,191 @@
+# Advanced Error Handling Examples
+
+import result
+import io
+import net
+
+# Example 1: File processing with error handling
+fn process_file(filename: str) -> [int] {
+    print("Processing file: " + filename)
+    
+    # Simulate file reading (would use actual io.read in real code)
+    if filename == "missing.txt" {
+        return result.make_err(-1)
+    }
+    
+    # Simulate processing
+    const line_count = 42
+    return result.make_ok(line_count)
+}
+
+# Example 2: Network operation with error handling
+fn fetch_data(url: str) -> [int] {
+    print("Fetching data from: " + url)
+    
+    # Simulate network request (would use actual net.http_get in real code)
+    if url == "http://invalid.com" {
+        return result.make_err(-2)
+    }
+    
+    # Simulate successful response
+    const data_size = 1024
+    return result.make_ok(data_size)
+}
+
+# Example 3: Chained operations with error propagation
+fn process_and_upload(filename: str, url: str) -> [int] {
+    # Step 1: Process file
+    const process_result = process_file(filename)
+    if result.is_err(process_result) == 1 {
+        print("File processing failed")
+        return process_result  # Propagate error
+    }
+    
+    const line_count = result.unwrap(process_result)
+    print("File processed, lines: " + int_to_str(line_count))
+    
+    # Step 2: Upload data
+    const upload_result = fetch_data(url)
+    if result.is_err(upload_result) == 1 {
+        print("Upload failed")
+        return upload_result  # Propagate error
+    }
+    
+    const upload_size = result.unwrap(upload_result)
+    print("Upload successful, size: " + int_to_str(upload_size))
+    
+    # Return combined result
+    return result.make_ok(line_count + upload_size)
+}
+
+# Example 4: Configuration with Option types
+fn get_config(key: str) -> [int] {
+    print("Getting config for: " + key)
+    
+    # Simulate configuration lookup
+    if key == "timeout" {
+        return result.make_some(30)
+    } else if key == "retries" {
+        return result.make_some(3)
+    } else {
+        return result.make_none()
+    }
+}
+
+fn configure_system() {
+    print("Configuring system...")
+    
+    const timeout_config = get_config("timeout")
+    if result.is_some(timeout_config) == 1 {
+        const timeout = result.unwrap_option(timeout_config)
+        print("Timeout set to: " + int_to_str(timeout))
+    } else {
+        print("Using default timeout")
+    }
+    
+    const invalid_config = get_config("invalid_key")
+    if result.is_none(invalid_config) == 1 {
+        print("Invalid config key handled gracefully")
+    }
+}
+
+# Example 5: Error recovery patterns
+fn retry_operation(max_attempts: int) -> [int] {
+    let attempts = 0
+    
+    while attempts < max_attempts {
+        attempts = attempts + 1
+        print("Attempt " + int_to_str(attempts))
+        
+        # Simulate operation that might fail
+        if attempts < 3 {
+            print("Operation failed, retrying...")
+        } else {
+            print("Operation succeeded!")
+            return result.make_ok(attempts)
+        }
+    }
+    
+    print("All attempts failed")
+    return result.make_err(-1)
+}
+
+# Example 6: Validation chain
+fn validate_input(input: str) -> [int] {
+    print("Validating input: " + input)
+    
+    # Check length
+    if input.len() < 3 {
+        print("Input too short")
+        return result.make_err(-1)
+    }
+    
+    # Check content (simplified)
+    if input == "invalid" {
+        print("Invalid content")
+        return result.make_err(-2)
+    }
+    
+    print("Input valid")
+    return result.make_ok(input.len())
+}
+
+fn main() {
+    print("=== Advanced Error Handling Examples ===")
+    
+    # Example 1: File processing
+    print("\n1. File Processing:")
+    const file_result = process_file("data.txt")
+    if result.is_ok(file_result) == 1 {
+        const lines = result.unwrap(file_result)
+        print("Successfully processed " + int_to_str(lines) + " lines")
+    }
+    
+    const missing_result = process_file("missing.txt")
+    if result.is_err(missing_result) == 1 {
+        print("Missing file handled gracefully")
+    }
+    
+    # Example 2: Network operations
+    print("\n2. Network Operations:")
+    const net_result = fetch_data("http://api.example.com")
+    if result.is_ok(net_result) == 1 {
+        const size = result.unwrap(net_result)
+        print("Downloaded " + int_to_str(size) + " bytes")
+    }
+    
+    # Example 3: Chained operations
+    print("\n3. Chained Operations:")
+    const chain_result = process_and_upload("data.txt", "http://api.example.com")
+    if result.is_ok(chain_result) == 1 {
+        const total = result.unwrap(chain_result)
+        print("Total result: " + int_to_str(total))
+    }
+    
+    # Example 4: Configuration
+    print("\n4. Configuration:")
+    configure_system()
+    
+    # Example 5: Retry patterns
+    print("\n5. Retry Patterns:")
+    const retry_result = retry_operation(5)
+    if result.is_ok(retry_result) == 1 {
+        const attempts = result.unwrap(retry_result)
+        print("Succeeded after " + int_to_str(attempts) + " attempts")
+    }
+    
+    # Example 6: Validation
+    print("\n6. Input Validation:")
+    const valid_result = validate_input("hello_world")
+    if result.is_ok(valid_result) == 1 {
+        print("Input validation passed")
+    }
+    
+    const invalid_result = validate_input("invalid")
+    if result.is_err(invalid_result) == 1 {
+        print("Invalid input caught")
+    }
+    
+    print("\n=== Examples Complete ===")
+    print("These patterns show how to build robust, error-safe applications in Wyn!")
+}

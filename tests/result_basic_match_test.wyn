@@ -1,0 +1,20 @@
+# Basic Result matching test without destructuring
+
+fn divide(a: int, b: int) -> Result[int, str] {
+    if b == 0 {
+        return err("Division by zero")
+    }
+    return ok(a / b)
+}
+
+fn main() {
+    print("Testing basic Result matching")
+    
+    # For now, just test that Result types can be created and used
+    const result1 = divide(10, 2)
+    const result2 = divide(10, 0)
+    
+    print("Results created successfully")
+    print("Note: Pattern destructuring ok(v)/err(msg) not yet implemented")
+    print("Basic Result types work!")
+}

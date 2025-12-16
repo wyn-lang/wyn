@@ -1,0 +1,54 @@
+# Docker API for Wyn
+# Container management operations
+
+import os
+
+# Container operations
+fn run(image: str, name: str) -> str {
+    const cmd = "docker run -d --name " + name + " " + image
+    return os.exec_output(cmd)
+}
+
+fn stop(container: str) -> bool {
+    const cmd = "docker stop " + container
+    return os.exec(cmd) == 0
+}
+
+fn start(container: str) -> bool {
+    const cmd = "docker start " + container
+    return os.exec(cmd) == 0
+}
+
+fn remove(container: str) -> bool {
+    const cmd = "docker rm " + container
+    return os.exec(cmd) == 0
+}
+
+# Image operations
+fn pull(image: str) -> bool {
+    const cmd = "docker pull " + image
+    return os.exec(cmd) == 0
+}
+
+fn build(dockerfile_path: str, tag: str) -> bool {
+    const cmd = "docker build -t " + tag + " " + dockerfile_path
+    return os.exec(cmd) == 0
+}
+
+# Information
+fn ps() -> str {
+    return os.exec_output("docker ps")
+}
+
+fn images() -> str {
+    return os.exec_output("docker images")
+}
+
+fn logs(container: str) -> str {
+    const cmd = "docker logs " + container
+    return os.exec_output(cmd)
+}
+
+fn main() {
+    print("Docker API for Wyn - Container operations available")
+}
