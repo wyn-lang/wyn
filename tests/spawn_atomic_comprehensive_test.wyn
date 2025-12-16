@@ -19,7 +19,7 @@ fn test_multiple_operations() {
     spawn { mul_counter = mul_counter * 2 }
     spawn { mul_counter = mul_counter * 3 }
     
-    sleep_ms(200)
+    task_join_all()
     
     assert(add_counter == 30)
     assert(sub_counter == 70)

@@ -15,7 +15,7 @@ fn test_multiple_captures() {
         c = c + 3
     }
     
-    sleep_ms(100)
+    task_join_all()
     assert(a == 1)
     assert(b == 2)
     assert(c == 3)
@@ -31,7 +31,7 @@ fn test_mixed_types() {
         result = x
     }
     
-    sleep_ms(100)
+    task_join_all()
     assert(counter == 1)
     assert(result == 42)
 }

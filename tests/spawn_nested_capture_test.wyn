@@ -21,6 +21,6 @@ fn test_multiple_spawns() {
         sum = sum + val3
     }
     
-    sleep_ms(200)
+    task_join_all()
     assert(sum == 30)
 }

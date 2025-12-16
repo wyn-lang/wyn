@@ -46,6 +46,6 @@ fn test_shared_counter() {
         counter = counter + 1
     }
     
-    sleep_ms(200)
+    task_join_all()
     assert(counter == 10)
 }

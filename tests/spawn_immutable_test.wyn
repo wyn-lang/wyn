@@ -12,7 +12,7 @@ fn main() {
         result = x
     }
     
-    sleep_ms(100)
+    task_join_all()
     
     print("After spawn: x=")
     print(x)

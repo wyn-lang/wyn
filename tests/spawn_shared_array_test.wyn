@@ -30,7 +30,7 @@ fn test_multiple_variables() {
         v4 = 40
     }
     
-    sleep_ms(200)
+    task_join_all()
     assert(v0 == 0)
     assert(v1 == 10)
     assert(v2 == 20)

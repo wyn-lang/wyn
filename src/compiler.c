@@ -3045,6 +3045,7 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     strcmp(e->ident, "getpid") == 0 || strcmp(e->ident, "time_now") == 0 ||
                     strcmp(e->ident, "sleep_ms") == 0 || strcmp(e->ident, "sleep") == 0 ||
                     strcmp(e->ident, "clock") == 0 || strcmp(e->ident, "random") == 0 || strcmp(e->ident, "exit") == 0 ||
+                    strcmp(e->ident, "task_await") == 0 || strcmp(e->ident, "task_join_all") == 0 ||
                     strcmp(e->ident, "gpu_device_count") == 0) {
                     return new_type(TYPE_FUNCTION);
                 }
@@ -3773,6 +3774,9 @@ static bool tc1_is_builtin(const char* name) {
     // Time builtins
     if (strcmp(name, "time_now") == 0 || strcmp(name, "sleep_ms") == 0 || strcmp(name, "sleep") == 0) return true;
     if (strcmp(name, "clock") == 0 || strcmp(name, "random") == 0) return true;
+    
+    // Task management builtins
+    if (strcmp(name, "task_await") == 0 || strcmp(name, "task_join_all") == 0) return true;
     
     // GPU builtins
     if (strcmp(name, "gpu_device_count") == 0) return true;
@@ -5611,6 +5615,20 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                            (e->binary.right->kind == EXPR_IDENT && 
                                             llvm_get_var_type(lg, e->binary.right->ident) &&
                                             llvm_get_var_type(lg, e->binary.right->ident)->kind == TYPE_STR);
+                        
+                        // Check for string array indexing
+                        if (e->binary.left->kind == EXPR_INDEX && e->binary.left->index.object->kind == EXPR_IDENT) {
+                            Type* arr_type = llvm_get_var_type(lg, e->binary.left->index.object->ident);
+                            if (arr_type && arr_type->kind == TYPE_ARRAY && arr_type->inner && arr_type->inner->kind == TYPE_STR) {
+                                left_is_str = true;
+                            }
+                        }
+                        if (e->binary.right->kind == EXPR_INDEX && e->binary.right->index.object->kind == EXPR_IDENT) {
+                            Type* arr_type = llvm_get_var_type(lg, e->binary.right->index.object->ident);
+                            if (arr_type && arr_type->kind == TYPE_ARRAY && arr_type->inner && arr_type->inner->kind == TYPE_STR) {
+                                right_is_str = true;
+                            }
+                        }
                         
                         // Check for known string-returning function calls
                         if (e->binary.left->kind == EXPR_CALL && e->binary.left->call.func->kind == EXPR_IDENT) {
@@ -7915,6 +7933,8 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i64 @time_now()");
     llvm_emit(&lg, "declare void @sleep_ms(i64)");
     llvm_emit(&lg, "declare void @exit_wyn(i64)");
+    llvm_emit(&lg, "declare void @task_await(i64)");
+    llvm_emit(&lg, "declare void @task_join_all()");
     llvm_emit(&lg, "declare i64 @min_int(i64, i64)");
     llvm_emit(&lg, "declare i64 @max_int(i64, i64)");
     llvm_emit(&lg, "declare i64 @abs_int(i64)");
@@ -8500,7 +8520,7 @@ int main(int argc, char** argv) {
     
     // Link
     if (!compile_only) {
-        snprintf(cmd, 512, "clang %s build/builtins_runtime.o build/array_runtime.o build/spawn_runtime.o build/channels_runtime.o -lpthread -o %s", obj_file, output_file);
+        snprintf(cmd, 512, "clang %s build/builtins_runtime.o build/array_runtime.o build/spawn_runtime.o build/channels_runtime.o build/task_runtime.o -lpthread -o %s", obj_file, output_file);
         if (system(cmd) != 0) {
             fprintf(stderr, "Linking failed\n");
             return 1;

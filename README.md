@@ -23,7 +23,7 @@ The language is **production-ready** with **100% passing test suite**:
 - ✅ Database operations (SQLite)
 - ✅ Testing framework
 - ✅ Package manager (install from GitHub)
-- ✅ Concurrency (spawn, channels)
+- ✅ Concurrency (spawn, channels) with **automatic task synchronization**
 - ✅ String arrays with indexing
 - ✅ Pattern matching
 - ✅ Developer tools (REPL, LSP, formatter)
@@ -190,6 +190,45 @@ See [LSP Setup Guide](docs/LSP_SETUP.md).
 
    💡 Use int_to_str() to convert int to string
 ```
+
+## Concurrency
+
+Wyn provides **production-ready concurrency** with automatic task synchronization:
+
+```wyn
+import time
+
+fn main() {
+    # Spawn parallel tasks
+    spawn {
+        print("Task 1 running...")
+        sleep_ms(100)
+        print("Task 1 done!")
+    }
+    
+    spawn {
+        print("Task 2 running...")
+        sleep_ms(200)
+        print("Task 2 done!")
+    }
+    
+    print("Main thread continues...")
+    
+    # Option 1: Manual synchronization (when needed mid-function)
+    task_join_all()  # Wait for all spawned tasks
+    
+    # Option 2: Automatic synchronization (at program exit)
+    # Runtime automatically waits for all tasks when main() exits
+}
+```
+
+**Key Features:**
+- **Fire-and-forget spawning** - just use `spawn { ... }`
+- **Automatic synchronization** - runtime waits for all tasks at program exit
+- **Manual synchronization** - use `task_join_all()` when needed mid-function
+- **True parallelism** - 1.3M tasks/sec with M:N scheduler
+- **Thread safety** - built-in mutex and condition variable support
+- **Clean exit** - all spawned tasks complete before program termination
 
 ## Building
 
