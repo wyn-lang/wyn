@@ -1975,3 +1975,93 @@ char* str_trim(const char* str) {
     result[len] = '\0';
     return result;
 }
+
+// Array functional operations
+// Note: These take function pointers for callbacks
+
+int64_t* array_filter(int64_t* arr, int64_t (*predicate)(int64_t)) {
+    if (!arr) {
+        int64_t* empty = malloc(sizeof(int64_t) * 2);
+        empty[0] = 0;
+        empty[1] = 0;
+        return empty;
+    }
+    
+    int64_t len = arr[0];
+    int64_t* temp = malloc(sizeof(int64_t) * (len + 2));
+    int64_t count = 0;
+    
+    for (int64_t i = 0; i < len; i++) {
+        if (predicate(arr[i + 2])) {
+            temp[count + 2] = arr[i + 2];
+            count++;
+        }
+    }
+    
+    temp[0] = count;
+    temp[1] = count;
+    return temp;
+}
+
+int64_t* array_map(int64_t* arr, int64_t (*mapper)(int64_t)) {
+    if (!arr) {
+        int64_t* empty = malloc(sizeof(int64_t) * 2);
+        empty[0] = 0;
+        empty[1] = 0;
+        return empty;
+    }
+    
+    int64_t len = arr[0];
+    int64_t* result = malloc(sizeof(int64_t) * (len + 2));
+    result[0] = len;
+    result[1] = len;
+    
+    for (int64_t i = 0; i < len; i++) {
+        result[i + 2] = mapper(arr[i + 2]);
+    }
+    
+    return result;
+}
+
+int64_t array_reduce(int64_t* arr, int64_t (*reducer)(int64_t, int64_t), int64_t initial) {
+    if (!arr) return initial;
+    
+    int64_t len = arr[0];
+    int64_t acc = initial;
+    
+    for (int64_t i = 0; i < len; i++) {
+        acc = reducer(acc, arr[i + 2]);
+    }
+    
+    return acc;
+}
+
+// Simpler command execution with arguments array
+char* exec_args_wyn(const char* program, int64_t* args) {
+    if (!args) return strdup("");
+    
+    char cmd[4096];
+    int len = snprintf(cmd, sizeof(cmd), "%s", program);
+    
+    int64_t arg_count = args[0];
+    for (int64_t i = 0; i < arg_count && len < sizeof(cmd) - 2; i++) {
+        const char* arg = (const char*)args[i + 2];
+        len += snprintf(cmd + len, sizeof(cmd) - len, " %s", arg);
+    }
+    
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) return strdup("");
+    
+    char* result = malloc(65536);
+    size_t total = 0;
+    size_t bytes;
+    
+    while ((bytes = fread(result + total, 1, 4096, pipe)) > 0) {
+        total += bytes;
+        if (total + 4096 > 65536) break;
+    }
+    
+    result[total] = '\0';
+    pclose(pipe);
+    return result;
+}

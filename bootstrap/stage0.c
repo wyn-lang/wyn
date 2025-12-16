@@ -861,6 +861,7 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "setenv") == 0) return "setenv_wyn";
         if (strcmp(function, "exec") == 0) return "exec_wyn";
         if (strcmp(function, "exec_output") == 0) return "exec_output_wyn";
+        if (strcmp(function, "exec_args") == 0) return "exec_args_wyn";
         if (strcmp(function, "exit") == 0) return "exit_wyn";
         if (strcmp(function, "args") == 0) return "args_wyn";
         if (strcmp(function, "cwd") == 0) return "cwd_wyn";
@@ -11549,6 +11550,7 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                           strcmp(function, "getenv") == 0 ||
                                           strcmp(function, "cwd") == 0 ||
                                           strcmp(function, "exec_output") == 0 ||
+                                          strcmp(function, "exec_args") == 0 ||
                                           strcmp(function, "parse") == 0 ||
                                           strcmp(function, "stringify") == 0 ||
                                           strcmp(function, "get_string") == 0 ||
@@ -13340,6 +13342,7 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i64 @setenv_wyn(i8*, i8*)");
     llvm_emit(&lg, "declare i64 @exec_wyn(i8*)");
     llvm_emit(&lg, "declare i8* @exec_output_wyn(i8*)");
+    llvm_emit(&lg, "declare i8* @exec_args_wyn(i8*, i64*)");
     llvm_emit(&lg, "declare void @command_start(i8*)");
     llvm_emit(&lg, "declare void @command_arg(i8*)");
     llvm_emit(&lg, "declare i64 @command_run()");
