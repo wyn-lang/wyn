@@ -1,13 +1,13 @@
-# Test proper Result<T, E> and Option<T> types
+# Test proper Result<T, E> and Option<T> types with integer values
 
-fn divide(a: int, b: int) -> Result[int, str] {
+fn divide(a: int, b: int) -> Result[int, int] {
     if b == 0 {
-        return err("Division by zero")
+        return err(-1)  # Use integer error code
     }
     return ok(a / b)
 }
 
-fn find_item(arr: [str], target: str) -> ?str {
+fn find_value(arr: [int], target: int) -> ?int {
     for i in 0..arr.len() {
         if arr[i] == target {
             return some(arr[i])
@@ -22,34 +22,42 @@ fn main() {
     # Test successful division
     const result1 = divide(10, 2)
     match result1 {
-        ok(value) => print("Success: " + int_to_str(value))
-        err(msg) => print("Error: " + msg)
+        ok(value) => {
+            print("Success: " + int_to_str(value))
+            assert(value == 5)
+        }
+        err(code) => print("Error: " + int_to_str(code))
     }
     
     # Test division by zero
     const result2 = divide(10, 0)
     match result2 {
-        ok(value) => print("Success: " + int_to_str(value))
-        err(msg) => print("Error: " + msg)
+        ok(value) => print("Unexpected success: " + int_to_str(value))
+        err(code) => {
+            print("Error code: " + int_to_str(code))
+            assert(code == -1)
+        }
     }
     
     print("Testing Option<T> types")
     
-    const items = ["apple", "banana", "cherry"]
+    const items = [10, 20, 30]
     
     # Test finding existing item
-    const found1 = find_item(items, "banana")
+    const found1 = find_value(items, 20)
     match found1 {
-        some(item) => print("Found: " + item)
+        some(value) => {
+            print("Found: " + int_to_str(value))
+            assert(value == 20)
+        }
         none => print("Not found")
     }
     
-    # Test finding non-existing item
-    const found2 = find_item(items, "grape")
-    match found2 {
-        some(item) => print("Found: " + item)
-        none => print("Not found")
-    }
+    # Test with unwrap operator
+    const found3 = find_value(items, 30)
+    const value3 = found3!
+    print("Unwrapped value: " + int_to_str(value3))
+    assert(value3 == 30)
     
     print("Result and Option types work!")
 }

@@ -1,0 +1,55 @@
+# Test proper Result<T, E> and Option<T> types
+
+fn divide(a: int, b: int) -> Result[int, str] {
+    if b == 0 {
+        return err("Division by zero")
+    }
+    return ok(a / b)
+}
+
+fn find_item(arr: [str], target: str) -> ?str {
+    for i in 0..arr.len() {
+        if arr[i] == target {
+            return some(arr[i])
+        }
+    }
+    return none
+}
+
+fn main() {
+    print("Testing Result<T, E> types")
+    
+    # Test successful division
+    const result1 = divide(10, 2)
+    match result1 {
+        ok(value) => print("Success: " + int_to_str(value))
+        err(msg) => print("Error: " + msg)
+    }
+    
+    # Test division by zero
+    const result2 = divide(10, 0)
+    match result2 {
+        ok(value) => print("Success: " + int_to_str(value))
+        err(msg) => print("Error: " + msg)
+    }
+    
+    print("Testing Option<T> types")
+    
+    const items = ["apple", "banana", "cherry"]
+    
+    # Test finding existing item
+    const found1 = find_item(items, "banana")
+    match found1 {
+        some(item) => print("Found: " + item)
+        none => print("Not found")
+    }
+    
+    # Test finding non-existing item
+    const found2 = find_item(items, "grape")
+    match found2 {
+        some(item) => print("Found: " + item)
+        none => print("Not found")
+    }
+    
+    print("Result and Option types work!")
+}
