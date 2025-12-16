@@ -1875,25 +1875,11 @@ int64_t command_arg_chain(int64_t cmd, const char* arg) {
 }
 
 int64_t command_run_chain(int64_t cmd) {
-    return system(g_cmd_builder.command);
+    return exec_command(g_cmd_builder.command);
 }
 
 char* command_output_chain(int64_t cmd) {
-    FILE* pipe = popen(g_cmd_builder.command, "r");
-    if (!pipe) return strdup("");
-    
-    char* result = malloc(65536);
-    size_t total = 0;
-    size_t bytes;
-    
-    while ((bytes = fread(result + total, 1, 4096, pipe)) > 0) {
-        total += bytes;
-        if (total + 4096 > 65536) break;
-    }
-    
-    result[total] = '\0';
-    pclose(pipe);
-    return result;
+    return exec_command_output(g_cmd_builder.command);
 }
 
 // Old API (keep for compatibility)
@@ -1911,25 +1897,11 @@ void command_arg(const char* arg) {
 }
 
 int64_t command_run() {
-    return system(g_cmd_builder.command);
+    return exec_command(g_cmd_builder.command);
 }
 
 char* command_output() {
-    FILE* pipe = popen(g_cmd_builder.command, "r");
-    if (!pipe) return strdup("");
-    
-    char* result = malloc(65536);
-    size_t total = 0;
-    size_t bytes;
-    
-    while ((bytes = fread(result + total, 1, 4096, pipe)) > 0) {
-        total += bytes;
-        if (total + 4096 > 65536) break;
-    }
-    
-    result[total] = '\0';
-    pclose(pipe);
-    return result;
+    return exec_command_output(g_cmd_builder.command);
 }
 
 // CLI argument parsing
@@ -2239,29 +2211,14 @@ int64_t sqlite_exec(int64_t db, const char* sql) {
     const char* db_path = (const char*)db;
     char cmd[4096];
     snprintf(cmd, sizeof(cmd), "sqlite3 %s '%s' 2>/dev/null", db_path, sql);
-    return system(cmd) == 0 ? 1 : 0;
+    return (exec_command(cmd) == 0) ? 1 : 0;
 }
 
 char* sqlite_query(int64_t db, const char* sql) {
     const char* db_path = (const char*)db;
     char cmd[4096];
     snprintf(cmd, sizeof(cmd), "sqlite3 -json %s '%s' 2>/dev/null", db_path, sql);
-    
-    FILE* pipe = popen(cmd, "r");
-    if (!pipe) return strdup("[]");
-    
-    char* result = malloc(65536);
-    size_t total = 0;
-    size_t bytes;
-    
-    while ((bytes = fread(result + total, 1, 4096, pipe)) > 0) {
-        total += bytes;
-        if (total + 4096 > 65536) break;
-    }
-    
-    result[total] = '\0';
-    pclose(pipe);
-    return result;
+    return exec_command_output(cmd);
 }
 
 int64_t sqlite_close(int64_t db) {
@@ -2391,3 +2348,18 @@ int64_t* array_new() {
     arr[1] = 0;  // capacity
     return arr;
 }
+
+// Windows socket initialization
+#ifdef _WIN32
+static int winsock_initialized = 0;
+
+void init_winsock() {
+    if (!winsock_initialized) {
+        WSADATA wsa_data;
+        WSAStartup(MAKEWORD(2, 2), &wsa_data);
+        winsock_initialized = 1;
+    }
+}
+#else
+void init_winsock() { /* No-op on Unix */ }
+#endif
