@@ -5,13 +5,13 @@
 ## Current Status
 
 ### ✅ Completed Today (2025-12-16)
-- **Type system fixed** - String variables work correctly
-- **Ternary operator** - condition ? true_val : false_val
-- String utilities: upper(), lower(), trim()
-- Array functional operations: filter(), map(), reduce() (runtime ready)
-- Simpler command API: os.exec_args()
-- Package manager design complete
-- Test suite: 33/33 passing (100%)
+- **Type system fixed** - String variables work correctly ✅
+- **Ternary operator** - condition ? true_val : false_val ✅
+- **Array operations** - reverse(), append(), prepend(), contains() ✅
+- String utilities: upper(), lower(), trim() ✅
+- Simpler command API: os.exec_args() ✅
+- Package manager design complete ✅
+- Test suite: 33/33 passing (100%) ✅
 
 ### ✅ Completed Yesterday (2025-12-15)
 - Unified CLI binary (`wyn` command)
