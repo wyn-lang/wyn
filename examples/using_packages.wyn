@@ -1,0 +1,31 @@
+// Using Wyn packages demonstration
+// Shows how to use installed packages
+
+// Note: These imports would work after installing packages:
+// wyn pkg install github.com/wyn-lang/aws
+// wyn pkg install github.com/wyn-lang/docker
+
+// For now, this is a demonstration of the syntax
+
+fn main() {
+    print("=== Using Packages Demo ===")
+    
+    // Example 1: AWS S3
+    // import aws.s3
+    // const buckets = aws.s3.list_buckets()
+    // aws.s3.upload("my-bucket", "file.txt", "/local/file.txt")
+    
+    // Example 2: PostgreSQL
+    // import postgres
+    // const conn = postgres.connect("postgresql://localhost/mydb")
+    // const rows = postgres.query(conn, "SELECT * FROM users")
+    
+    // Example 3: Docker
+    // import docker
+    // docker.run("nginx", "my-nginx")
+    // const logs = docker.logs("my-nginx")
+    // docker.stop("my-nginx")
+    
+    print("Package system ready!")
+    print("Install packages with: wyn pkg install github.com/wyn-lang/package")
+}
