@@ -1,170 +1,160 @@
 # Wyn Language - Current Status
 
-## 🎉 Production Ready!
+**Last Updated:** December 16, 2025
 
-Wyn is a **complete infrastructure/DevOps programming language** with comprehensive stdlib and excellent developer experience.
+## Quick Stats
 
-## Statistics
+- **Version:** 0.2.0
+- **Modules:** 16
+- **Functions:** 120+
+- **Test Suite:** 33/33 passing (100%)
+- **Examples:** 100+
 
-- **Infrastructure Functions**: 99 (ALL REAL)
-- **Standard Library Modules**: 11
-- **Test Suite**: 109/109 passing (100%)
-- **Examples**: 82
-- **Tests**: 27
-- **Lines of Compiler Code**: ~12,000 (bootstrap/stage0.c)
+## Language Features
 
-## What Wyn Can Do
-
-### Infrastructure & DevOps ✅
-- File I/O (read, write, delete, mkdir, stat)
-- Process management (exec, env vars, cwd, pid)
-- HTTP client (GET, POST, PUT, DELETE, HEAD)
-- HTTP server (create, accept, parse, respond)
-- TCP/UDP sockets
-- DNS resolution
-- JSON parsing
-- Regular expressions
-- Compression (gzip, tar)
-- Cryptography (AES-256, HMAC, hashing)
-- Collections (HashMap, Set)
-- Logging (structured with levels)
-- Encoding (base64, hex, URL)
-- Time operations (timestamps, formatting)
-
-### Language Features ✅
-- Variables (let/const)
-- Functions with recursion
-- Control flow (if/else, while, for, break, continue)
-- Arrays with indexing (including negative)
-- String arrays with full indexing
+### ✅ Complete
+- Types: int, str, bool, float, arrays
+- Functions with default parameters
+- First-class functions (lambdas)
+- Ternary operator: `x > 3 ? "yes" : "no"`
+- Control flow: if, while, for, match
 - Structs and enums
 - Pattern matching
-- Type inference
-- Concurrency (spawn, channels, 1.3M tasks/sec)
-- All operators (arithmetic, bitwise, comparison, logical, power)
-- In operator for arrays
-
-### Developer Experience ✅
-- Beautiful error messages with suggestions
-- REPL (interactive shell)
-- LSP server (IDE support)
-- Code formatter/validator
-- Comprehensive documentation
-- API reference
-- 100% test coverage
-
-## IDE Support
-
-Wyn works with:
-- ✅ VS Code (extension available)
-- ✅ Neovim (lspconfig integration)
-- ✅ Emacs (lsp-mode)
-- ✅ Sublime Text (LSP package)
-
-Features:
-- Syntax highlighting
-- Auto-completion
-- Error diagnostics
-- Document sync
-
-## Installation
-
-```bash
-# Build compiler
-make
-
-# Install LSP for IDE support
-./scripts/install_lsp.sh
-
-# Run REPL
-./build/wyn-repl
-
-# Compile programs
-./build/wync program.wyn
-./a.out
-```
-
-## Example Usage
-
-### HTTP Server
-```wyn
-import net
-
-fn main() {
-    const server: int = net.server_create(8080)
-    const client: int = net.server_accept(server)
-    const path: str = net.parse_path(net.server_read_request(client))
-    net.server_send_response(client, 200, "Hello!")
-    net.server_close_client(client)
-}
-```
-
-### File Processing
-```wyn
-import io
-import regex
-
-fn main() {
-    const content: str = io.read("/var/log/app.log")
-    const errors: int = regex.count(content, "ERROR")
-    print("Found errors:")
-    print(errors)
-}
-```
-
-### Data Processing
-```wyn
-import collections
-import json
-
-fn main() {
-    const map: str = collections.hashmap_new()
-    collections.hashmap_put(map, "status", "ok")
-    const val: str = collections.hashmap_get(map, "status")
-    print(val)
-}
-```
-
-## Performance
-
-- **Compilation**: 0.3-0.5s for typical programs
-- **Concurrency**: 1.3M tasks/sec
-- **Memory**: 8KB per task
-- **Startup**: <100ms
-
-## What's Next
-
-### In Progress (Agent):
+- Concurrency (spawn blocks)
 - String interpolation
-- Multi-line strings
 - Pipe operator
 
-### Planned:
-- Generics (partial implementation exists)
-- Default parameters (partial implementation exists)
-- Lambda expressions
-- Package manager
+### ⚠️ Partial
+- List comprehensions (parser done, codegen TODO)
+- Method chaining (pseudo-chaining works)
+- Generics (partially implemented)
+- String/array slicing (implemented, needs testing)
 
-## Production Ready
+### ❌ Not Started
+- Traits/interfaces
+- Async/await
+- Macros
+- Reflection
+
+## Standard Library (16 modules, 120+ functions)
+
+1. **io** (16) - File operations, copy, move, chmod, glob
+2. **os** (16) - Process, environment, commands
+3. **net** (23) - HTTP, TCP, UDP
+4. **json** (5) - Parse, stringify
+5. **time** (7) - Timestamps, formatting
+6. **log** (5) - Structured logging
+7. **encoding** (6) - Base64, hex, URL
+8. **hash** (3) - SHA256, MD5, SHA1
+9. **compress** (7) - Gzip, tar
+10. **regex** (4) - Pattern matching
+11. **collections** (13) - HashMap, Set
+12. **crypto** (5) - AES-256, HMAC
+13. **cli** (4) - Argument parsing
+14. **array** (5) - Operations
+15. **database** (4) - SQLite
+16. **http** (6) - Routing
+17. **testing** (5) - Assertions
+
+## Developer Tools
+
+- ✅ **Unified CLI** - Single `wyn` binary
+- ✅ **REPL** - Interactive shell
+- ✅ **LSP** - IDE support (basic)
+- ✅ **Formatter** - Syntax validation
+- ✅ **Package Manager** - Install from GitHub
+- ✅ **Shebang support** - Executable scripts
+- ✅ **Inline execution** - `wyn -e 'code'`
+
+## Platform Support
+
+- ✅ **macOS** - Fully tested
+- ✅ **Linux** - Fully tested
+- ❌ **Windows** - Analysis done, not implemented
+
+## Package Manager
+
+**Status:** Phase 1 complete
+
+```bash
+wyn pkg install github.com/user/repo  # ✅ Works
+wyn pkg list                          # ✅ Works
+wyn pkg update                        # ✅ Works
+```
+
+Packages installed to: `~/.wyn/packages/`
+
+## What's Production Ready
+
+✅ Core language
+✅ Basic stdlib (io, os, net, json, time)
+✅ Database operations (SQLite)
+✅ HTTP routing
+✅ Testing framework
+✅ CLI tools
+✅ Shell scripting features
+
+## What's Not Ready
+
+❌ Windows support
+❌ Package ecosystem (manager works, no packages yet)
+❌ Advanced features (true method chaining, comprehensions)
+❌ Error handling (Result/Option types)
+
+## Use Cases
 
 Wyn is ready for:
-- ✅ System automation scripts
-- ✅ DevOps tooling
-- ✅ Infrastructure monitoring
-- ✅ API clients and servers
-- ✅ Log processing
-- ✅ Configuration management
-- ✅ Build and deployment tools
-- ✅ Microservices
-- ✅ CLI applications
+- ✅ Shell scripts (bash replacement)
+- ✅ DevOps automation
+- ✅ System administration
+- ✅ API clients
+- ✅ Simple web services
+- ✅ Database scripts
+- ✅ File processing
+- ⚠️ Cross-platform tools (macOS/Linux only)
 
-## Community
+## Getting Started
 
-- Documentation: `docs/`
-- Examples: `examples/`
-- Tests: `tests/`
-- API Reference: `docs/API_REFERENCE.md`
-- LSP Setup: `docs/LSP_SETUP.md`
+```bash
+# Build
+make
+
+# Run a script
+./build/wyn run script.wyn
+
+# Install a package
+./build/wyn pkg install github.com/user/package
+
+# Interactive shell
+./build/wyn repl
+
+# Inline execution
+./build/wyn -e 'print(42)'
+```
+
+## Documentation
+
+- **README.md** - Quick start and overview
+- **TODO.md** - Current priorities
+- **VISION.md** - Strategic direction
+- **docs/** - Detailed documentation
+  - sessions/ - Development sessions
+  - status/ - Progress reports
+  - features/ - Feature documentation
+  - design/ - Design documents
+  - archive/ - Historical docs
+
+## Next Priorities
+
+1. Windows support
+2. True method chaining
+3. Complete list comprehensions
+4. Build package ecosystem
+5. Community building
+
+## Contributing
+
+See TODO.md for current tasks and priorities.
 
 ## License
 

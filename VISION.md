@@ -1,5 +1,8 @@
 # Wyn Language - Vision & Roadmap
 
+**Last Updated:** December 16, 2025
+**Progress:** 45% complete
+
 ## Mission Statement
 
 **"The universal DevOps language - replace bash/Python/PowerShell with one compiled, cross-platform tool"**
@@ -205,7 +208,7 @@ fn add(a: int, b: int) -> int {  // Required
 
 ## Killer Features for DevOps
 
-### 1. Shebang Support
+### 1. Shebang Support ✅ DONE
 ```wyn
 #!/usr/bin/env wyn run
 import os
@@ -217,13 +220,13 @@ fn main() {
 
 Make `.wyn` files executable like Python/bash.
 
-### 2. Embedded Mode
+### 2. Embedded Mode ✅ DONE
 ```bash
 # Run Wyn inline
 wyn -e 'print(os.exec_output("uptime"))'
 ```
 
-### 3. Enhanced REPL
+### 3. Enhanced REPL ✅ DONE
 ```bash
 $ wyn repl
 wyn> import os
@@ -234,7 +237,7 @@ wyn> files.len()
 42
 ```
 
-### 4. Script Caching
+### 4. Script Caching ⚠️ TODO
 ```bash
 # First run: compiles
 $ wyn run deploy.wyn
@@ -246,7 +249,7 @@ $ wyn run deploy.wyn
 Deploying...  # Instant!
 ```
 
-### 5. Cross-Compilation
+### 5. Cross-Compilation ⚠️ TODO
 ```bash
 # Build for all platforms
 $ wyn build --target linux-amd64 deploy.wyn
@@ -302,18 +305,20 @@ What Go does well, Wyn must match:
 
 ## Standard Library Priorities
 
-### Tier 1: Essential (Complete ✅)
-- io, os, net, json, time, log, encoding, hash, compress, regex, collections, crypto, cli
+### Tier 1: Essential ✅ COMPLETE
+- io, os, net, json, time, log, encoding, hash, compress, regex, collections, crypto, cli, array
 
-### Tier 2: DevOps Critical (Next 3 months)
-- [ ] **http** - Framework with routing, middleware
-- [ ] **test** - Testing framework
-- [ ] **config** - YAML, TOML, env file parsing
+### Tier 2: DevOps Critical ✅ MOSTLY COMPLETE
+- [x] **http** - Framework with routing ✅
+- [x] **testing** - Testing framework ✅
+- [x] **cli** - Argument parsing ✅
+- [x] **database** - SQLite driver ✅
+- [ ] **config** - YAML, TOML parsing (partial)
 - [ ] **template** - Text templating
 - [ ] **ssh** - SSH client/server
 - [ ] **git** - Git operations
 
-### Tier 3: Core Utilities (6+ months)
+### Tier 3: Core Utilities
 - [ ] **email** - SMTP client
 - [ ] **xml** - XML parsing
 - [ ] **csv** - CSV parsing

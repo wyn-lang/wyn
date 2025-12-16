@@ -9,7 +9,7 @@ Wyn is a **production-ready infrastructure/DevOps language** that combines:
 - **Simplicity:** Clean, expressive syntax
 - **Multi-platform:** ARM64, x86_64, and more via LLVM
 - **Concurrency:** Go-style green threads (1.3M tasks/sec)
-- **Complete Stdlib:** 107+ infrastructure functions, ALL REAL
+- **Complete Stdlib:** 120+ infrastructure functions, ALL REAL
 - **Universal:** Replace bash, Python, and PowerShell with one language
 
 ## 🎉 Production Ready
@@ -18,8 +18,11 @@ The language is **production-ready** with **100% passing test suite**:
 - ✅ All core language features
 - ✅ Default parameters (`fn greet(name: str = "World")`)
 - ✅ First-class functions (`const add = lambda x, y: x + y`)
-- ✅ 12 standard library modules (107+ functions)
-- ✅ HTTP client and server
+- ✅ 16 standard library modules (120+ functions)
+- ✅ HTTP client and server with routing
+- ✅ Database operations (SQLite)
+- ✅ Testing framework
+- ✅ Package manager (install from GitHub)
 - ✅ Concurrency (spawn, channels)
 - ✅ String arrays with indexing
 - ✅ Pattern matching
@@ -32,9 +35,9 @@ The language is **production-ready** with **100% passing test suite**:
 
 ## Test Suite Status
 
-- **Total**: 109/109 passing (100%)
-- **Examples**: 82/82
-- **Tests**: 27/27
+- **Total**: 33/33 passing (100%)
+- **Examples**: 100+
+- **Tests**: 33
 
 ## Quick Start
 
@@ -116,10 +119,10 @@ fn main() {
 
 ## Standard Library
 
-### Complete Modules (107+ functions, ALL REAL):
+### Complete Modules (120+ functions, ALL REAL):
 
 - **io** (16) - File operations, directories, copy, move, chmod, glob
-- **os** (12) - Process, environment, system, command builder
+- **os** (16) - Process, environment, system, command builder
 - **net** (23) - HTTP client/server, TCP, UDP
 - **json** (5) - Parsing, stringify
 - **time** (7) - Timestamps, formatting, sleep
@@ -131,8 +134,12 @@ fn main() {
 - **collections** (13) - HashMap, Set
 - **crypto** (5) - AES-256, HMAC, random
 - **cli** (4) - Argument parsing, flags
+- **array** (5) - Operations (reverse, append, prepend, contains)
+- **database** (4) - SQLite operations
+- **http** (6) - Routing framework
+- **testing** (5) - Test assertions
 
-Plus: **string**, **array**, **math**, **task**, **core**, **result**
+Plus: **string**, **math**, **task**, **core**, **result**
 
 See [API Reference](docs/API_REFERENCE.md) for complete documentation.
 
