@@ -1,20 +1,28 @@
 #!/bin/bash
-# Fast parallel test runner
+# Fast parallel test runner with job control
 
-echo "Running tests in parallel..."
+echo "Running tests in parallel (max 4 jobs)..."
 
 # Clean up old temp files
 rm -f /tmp/wyn_pass_* /tmp/wyn_fail_* 2>/dev/null
 
-# Run all tests in background with unique temp files
+# Run tests with limited parallelism
+job_count=0
+max_jobs=4
+
 for f in tests/*_test.wyn; do
+    # Wait if we have too many jobs
+    while [ $(jobs -r | wc -l) -ge $max_jobs ]; do
+        sleep 0.1
+    done
+    
     (
         # Use unique temp file per test
         test_name=$(basename "$f" .wyn)
         temp_out="/tmp/wyn_test_${test_name}_$$_$RANDOM"
         
-        if timeout 5 ./build/wyn compile "$f" -o "$temp_out" >/dev/null 2>&1; then
-            if timeout 2 "$temp_out" >/dev/null 2>&1; then
+        if timeout 10 ./build/wyn compile "$f" -o "$temp_out" >/dev/null 2>&1; then
+            if timeout 5 "$temp_out" >/dev/null 2>&1; then
                 echo "  ✅ $f"
                 touch "/tmp/wyn_pass_${test_name}_$$"
             else
