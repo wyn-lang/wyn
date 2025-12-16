@@ -7295,11 +7295,19 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
         
         case EXPR_UNWRAP: {
             // Unwrap operator: expr!
-            // For now, just return the operand value directly
-            // In a full implementation, this would check for errors and panic if needed
+            // Calls result_unwrap_simple to extract value from Result
             int operand_reg;
             llvm_expr(lg, e->unary.operand, &operand_reg);
-            *result_reg = operand_reg;
+            
+            int t = llvm_new_temp(lg);
+            if (operand_reg <= -1000000) {
+                // Constant value - just return it
+                llvm_emit(lg, "  %%%d = add i64 0, %lld", t, (long long)(-operand_reg - 1000000));
+            } else {
+                // Call unwrap function
+                llvm_emit(lg, "  %%%d = call i64 @result_unwrap_simple(i64 %%%d)", t, operand_reg);
+            }
+            *result_reg = t;
             break;
         }
         
