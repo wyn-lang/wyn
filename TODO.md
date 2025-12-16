@@ -4,21 +4,32 @@
 
 ## Current Status
 
-### ✅ Completed Today (2025-12-15)
+### ✅ Completed Today (2025-12-16)
+- **Type system fixed** - String variables work correctly
+- **Ternary operator** - condition ? true_val : false_val
+- String utilities: upper(), lower(), trim()
+- Array functional operations: filter(), map(), reduce() (runtime ready)
+- Simpler command API: os.exec_args()
+- Package manager design complete
+- Test suite: 33/33 passing (100%)
+
+### ✅ Completed Yesterday (2025-12-15)
 - Unified CLI binary (`wyn` command)
 - First-class functions (lambdas in variables)
 - 8 infrastructure examples
 - File operations: `io.copy()`, `io.move()`, `io.chmod()`
 - Glob patterns: `io.glob("*.wyn")`
 - Shebang support: `#!/usr/bin/env wyn run`
-- Windows compatibility analysis (see WINDOWS_COMPAT.md)
-- Vision and roadmap documentation
+- Inline execution: `wyn -e 'code'`
+- CLI argument parsing module
+- Command builder API
+- Windows compatibility analysis
 
 ### ✅ Previously Completed
-- All 3 tiers of stdlib (99 functions)
-- Test suite: 120/120 passing (100%)
+- All 3 tiers of stdlib (107+ functions)
 - Default parameters
 - REPL, LSP, Formatter
+- 12 modules
 
 ## Immediate Priorities (Next 2 Weeks)
 
@@ -64,30 +75,30 @@ const result = "hello world"
 ```
 
 ### 🐍 High Priority: Python-Style Features
-- [ ] **Ternary operator:** `const x = condition ? "yes" : "no"`
+- [x] **Ternary operator:** `const x = condition ? "yes" : "no"` ✅
 - [ ] **List comprehensions:** `const evens = [x for x in numbers if x % 2 == 0]`
-- [ ] **Functional array operations:** `arr.filter(fn).map(fn).reduce(fn)`
+- [x] **Functional array operations:** `arr.filter(fn).map(fn).reduce(fn)` ✅ (runtime ready, needs syntax)
 
 **Why:** Essential for Python replacement, developers expect these
 
 **Examples:**
 ```wyn
-// Ternary
+// Ternary ✅ DONE
 const status = age >= 18 ? "adult" : "minor"
 const max = a > b ? a : b
 
-// List comprehensions
+// List comprehensions (TODO)
 const squares = [x * x for x in [1, 2, 3, 4, 5]]
 const evens = [x for x in numbers if x % 2 == 0]
 
-// Functional operations
+// Functional operations (runtime ready, needs syntax)
 const evens = numbers.filter(lambda x: x % 2 == 0)
 const doubled = numbers.map(lambda x: x * 2)
 const sum = numbers.reduce(lambda acc, x: acc + x, 0)
 ```
 
 ### 📦 High Priority: Package System
-- [ ] Design package format
+- [x] **Design package format** ✅ (see PACKAGE_MANAGER_DESIGN.md)
 - [ ] Implement `wyn pkg install`
 - [ ] Implement `wyn pkg publish`
 - [ ] Create package registry (or use GitHub)
