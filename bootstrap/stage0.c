@@ -11090,7 +11090,15 @@ static bool llvm_is_array_expr(LLVMGen* lg, Expr* e) {
             const char* func = e->call.func->ident;
             return strcmp(func, "str_split") == 0;
         } else if (e->call.func->kind == EXPR_FIELD) {
+            const char* module = e->call.func->field.object->ident;
             const char* func = e->call.func->field.field;
+            // Check array module functions
+            if (strcmp(module, "array") == 0) {
+                return (strcmp(func, "reverse") == 0 || strcmp(func, "append") == 0 ||
+                       strcmp(func, "prepend") == 0 || strcmp(func, "filter") == 0 ||
+                       strcmp(func, "map") == 0 || strcmp(func, "slice") == 0);
+            }
+            // Check other array-returning functions
             return (strcmp(func, "glob") == 0 || strcmp(func, "split") == 0 ||
                    strcmp(func, "list_files") == 0 || strcmp(func, "list_dir") == 0);
         }
@@ -11517,6 +11525,12 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                               llvm_get_var_type(lg, e->call.args[i]->ident) &&
                                               llvm_get_var_type(lg, e->call.args[i]->ident)->kind == TYPE_STR));
                         
+                        // Check if argument is an array (use i64* type)
+                        bool is_array_arg = (e->call.args[i]->kind == EXPR_ARRAY ||
+                                            (e->call.args[i]->kind == EXPR_IDENT &&
+                                             llvm_get_var_type(lg, e->call.args[i]->ident) &&
+                                             llvm_get_var_type(lg, e->call.args[i]->ident)->kind == TYPE_ARRAY));
+                        
                         // Check if argument is result of string-returning function
                         if (e->call.args[i]->kind == EXPR_CALL && e->call.args[i]->call.func->kind == EXPR_IDENT) {
                             const char* called_func = e->call.args[i]->call.func->ident;
@@ -11537,6 +11551,8 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                         
                         if (is_string_arg || force_string) {
                             snprintf(arg_str, 128, "i8* %%%d", arg_reg);
+                        } else if (is_array_arg) {
+                            snprintf(arg_str, 128, "i64* %%%d", arg_reg);
                         } else if (arg_reg <= -1000000) {
                             snprintf(arg_str, 128, "i64 %lld", (long long)(-arg_reg - 1000000));
                         } else {
@@ -11830,6 +11846,12 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                               llvm_get_var_type(lg, actual_args[i]->ident) &&
                                               llvm_get_var_type(lg, actual_args[i]->ident)->kind == TYPE_STR));
                         
+                        // Check if argument should be i64* (array)
+                        bool is_array_arg = (actual_args[i]->kind == EXPR_ARRAY ||
+                                            (actual_args[i]->kind == EXPR_IDENT &&
+                                             llvm_get_var_type(lg, actual_args[i]->ident) &&
+                                             llvm_get_var_type(lg, actual_args[i]->ident)->kind == TYPE_ARRAY));
+                        
                         // Check if argument is a string-returning function call
                         if (actual_args[i]->kind == EXPR_CALL) {
                             if (actual_args[i]->call.func->kind == EXPR_IDENT) {
@@ -11871,6 +11893,8 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                             } else {
                                 snprintf(arg_str, 128, "i64 %%%d", arg_reg);
                             }
+                        } else if (is_array_arg) {
+                            snprintf(arg_str, 128, "i64* %%%d", arg_reg);
                         } else if (arg_reg <= -1000000) {
                             snprintf(arg_str, 128, "i64 %lld", (long long)(-arg_reg - 1000000));
                         } else {
