@@ -1,0 +1,41 @@
+// Ternary operator demonstration
+// Shows the ? : conditional expression
+
+fn main() {
+    print("=== Ternary Operator Demo ===")
+    
+    // Example 1: Simple condition
+    const age = 25
+    const status = age >= 18 ? "adult" : "minor"
+    print(status)
+    
+    // Example 2: Finding maximum
+    const a = 42
+    const b = 17
+    const max = a > b ? a : b
+    print(max)
+    
+    // Example 3: Grade assignment
+    const score = 85
+    let grade = "F"
+    if score >= 90 {
+        grade = "A"
+    } else if score >= 80 {
+        grade = "B"
+    } else if score >= 70 {
+        grade = "C"
+    }
+    print(grade)
+    
+    // Example 4: String formatting
+    const count = 5
+    const plural = count == 1 ? "item" : "items"
+    print(plural)
+    
+    // Example 5: Boolean to string
+    const is_valid = 1 == 1
+    const validation = is_valid ? "Valid" : "Invalid"
+    print(validation)
+    
+    print("Ternary operator works!")
+}

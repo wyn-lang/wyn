@@ -1,0 +1,43 @@
+// String operations demonstration
+// Shows string variables, concatenation, and type system
+
+fn main() {
+    print("=== String Operations Demo ===")
+    
+    // String literals
+    const greeting = "Hello"
+    const name = "World"
+    print(greeting)
+    print(name)
+    
+    // String concatenation
+    const message = greeting + " " + name
+    print(message)
+    
+    // String with numbers
+    const count = 42
+    const count_msg = "Count: " + int_to_str(count)
+    print(count_msg)
+    
+    // String assignment and mutation
+    let dynamic = "Start"
+    print(dynamic)
+    dynamic = dynamic + " -> Middle"
+    print(dynamic)
+    dynamic = dynamic + " -> End"
+    print(dynamic)
+    
+    // Multiple concatenations
+    const part1 = "One"
+    const part2 = "Two"
+    const part3 = "Three"
+    const combined = part1 + "-" + part2 + "-" + part3
+    print(combined)
+    
+    // String with ternary
+    const is_admin = 1 == 1
+    const role = is_admin ? "Administrator" : "User"
+    print(role)
+    
+    print("String operations work perfectly!")
+}
