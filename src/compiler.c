@@ -7692,11 +7692,25 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
                 for (int i = 0; i < cap_count; i++) {
                     int var_idx = llvm_find_var(lg, s->spawn.captured_vars[i]);
                     if (var_idx >= 0) {
+                        Type* var_type = llvm_get_var_type(lg, s->spawn.captured_vars[i]);
+                        
                         int addr_t = llvm_new_temp(lg);
                         int cast_t = llvm_new_temp(lg);
                         llvm_emit(lg, "  %%%d = getelementptr i8, i8* %%%d, i64 %d", addr_t, ctx_t, i * 8);
-                        llvm_emit(lg, "  %%%d = bitcast i8* %%%d to i64**", cast_t, addr_t);
-                        llvm_emit(lg, "  store i64* %%%d, i64** %%%d", var_idx, cast_t);
+                        
+                        if (var_type && var_type->kind == TYPE_STR) {
+                            // String variable - store i8**
+                            llvm_emit(lg, "  %%%d = bitcast i8* %%%d to i8***", cast_t, addr_t);
+                            llvm_emit(lg, "  store i8** %%%d, i8*** %%%d", var_idx, cast_t);
+                        } else if (var_type && var_type->kind == TYPE_ARRAY) {
+                            // Array variable - store i64***
+                            llvm_emit(lg, "  %%%d = bitcast i8* %%%d to i64***", cast_t, addr_t);
+                            llvm_emit(lg, "  store i64** %%%d, i64*** %%%d", var_idx, cast_t);
+                        } else {
+                            // Integer variable - store i64**
+                            llvm_emit(lg, "  %%%d = bitcast i8* %%%d to i64**", cast_t, addr_t);
+                            llvm_emit(lg, "  store i64* %%%d, i64** %%%d", var_idx, cast_t);
+                        }
                     }
                 }
                 
@@ -8206,6 +8220,13 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
         // Load captured variables from context
         if (cap_count > 0) {
             for (int j = 0; j < cap_count; j++) {
+                // Get variable type from original scope
+                Type* var_type = NULL;
+                for (int k = 0; k < lg.module->function_count; k++) {
+                    // Find the variable type (simplified - assumes it's in main)
+                    // In practice, would need better scope tracking
+                }
+                
                 // Add variable to spawn function scope
                 strcpy(lg.vars[lg.var_count], s->spawn.captured_vars[j]);
                 
@@ -8216,9 +8237,14 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
                 lg.var_regs[lg.var_count] = var_t;
                 
                 fprintf(lg.out, "  %%%d = getelementptr i8, i8* %%ctx, i64 %d\n", addr_t, j * 8);
+                
+                // For now, assume all captured vars are i64 (integers)
+                // TODO: Track and use actual types
                 fprintf(lg.out, "  %%%d = bitcast i8* %%%d to i64**\n", cast_t, addr_t);
                 fprintf(lg.out, "  %%%d = load i64*, i64** %%%d\n", var_t, cast_t);
                 
+                // Store type as int for now
+                lg.var_types[lg.var_count] = new_type(TYPE_INT);
                 lg.var_count++;
             }
         }
@@ -8454,7 +8480,7 @@ int main(int argc, char** argv) {
     
     // Compile LLVM IR to object file
     char obj_file[256];
-    snprintf(obj_file, 256, "/tmp/wyn_%d.o", getpid());
+    snprintf(obj_file, 256, "/tmp/wyn_%d_%d.o", getpid(), rand());
     char cmd[512];
     snprintf(cmd, 512, "/opt/homebrew/opt/llvm/bin/llc -filetype=obj %s -o %s", ir_file, obj_file);
     if (system(cmd) != 0) {
