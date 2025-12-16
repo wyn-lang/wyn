@@ -634,7 +634,7 @@ typedef enum {
     EXPR_BINARY, EXPR_UNARY, EXPR_CALL, EXPR_INDEX, EXPR_FIELD,
     EXPR_ARRAY, EXPR_MAP, EXPR_TUPLE, EXPR_LAMBDA, EXPR_STRUCT,
     EXPR_IF, EXPR_MATCH, EXPR_SOME, EXPR_NONE, EXPR_OK, EXPR_ERR,
-    EXPR_UNWRAP, EXPR_TRY, EXPR_DEFAULT, EXPR_SLICE, EXPR_ADDR, EXPR_DEREF, EXPR_AWAIT, EXPR_TERNARY
+    EXPR_UNWRAP, EXPR_TRY, EXPR_DEFAULT, EXPR_SLICE, EXPR_ADDR, EXPR_DEREF, EXPR_AWAIT, EXPR_TERNARY, EXPR_COMPREHENSION
 } ExprKind;
 
 struct Expr {
@@ -662,6 +662,7 @@ struct Expr {
         struct { char params[8][MAX_IDENT_LEN]; Type* param_types[8]; int param_count; Type* return_type; Stmt** body; int body_count; int id; } lambda;
         struct { Expr* future; } await_expr;
         struct { Expr* cond; Expr* true_val; Expr* false_val; } ternary;
+        struct { Expr* expr; char var[MAX_IDENT_LEN]; Expr* iter; Expr* condition; } comprehension;
     };
 };
 
@@ -1651,18 +1652,54 @@ static Expr* parse_primary(Parser* p) {
         return first;
     }
     
-    // Array literal
+    // Array literal or list comprehension
     if (parser_match(p, TOK_LBRACKET)) {
-        Expr* e = new_expr(EXPR_ARRAY, line, col);
-        e->array.elements = malloc(sizeof(Expr*) * 256);
-        e->array.count = 0;
-        if (!parser_check(p, TOK_RBRACKET)) {
-            do {
+        // Check if this is a list comprehension: [expr for var in iter]
+        // We need to peek ahead to see if there's a 'for' keyword
+        int saved_pos = p->lexer->pos;
+        int saved_line = p->lexer->line;
+        int saved_col = p->lexer->column;
+        
+        // Try to parse first element
+        Expr* first_expr = parse_expr(p);
+        
+        // Check if 'for' follows
+        if (parser_check(p, TOK_FOR)) {
+            // This is a list comprehension
+            parser_advance(p);  // consume 'for'
+            
+            Expr* comp = new_expr(EXPR_COMPREHENSION, line, col);
+            comp->comprehension.expr = first_expr;
+            
+            Token var = parser_expect(p, TOK_IDENT, "variable name");
+            strcpy(comp->comprehension.var, var.ident);
+            
+            parser_expect(p, TOK_IN, "in");
+            comp->comprehension.iter = parse_expr(p);
+            
+            // Optional 'if' condition
+            if (parser_match(p, TOK_IF)) {
+                comp->comprehension.condition = parse_expr(p);
+            } else {
+                comp->comprehension.condition = NULL;
+            }
+            
+            parser_expect(p, TOK_RBRACKET, "]");
+            return comp;
+        } else {
+            // Regular array literal
+            Expr* e = new_expr(EXPR_ARRAY, line, col);
+            e->array.elements = malloc(sizeof(Expr*) * 256);
+            e->array.count = 0;
+            e->array.elements[e->array.count++] = first_expr;
+            
+            while (parser_match(p, TOK_COMMA)) {
+                if (parser_check(p, TOK_RBRACKET)) break;
                 e->array.elements[e->array.count++] = parse_expr(p);
-            } while (parser_match(p, TOK_COMMA));
+            }
+            parser_expect(p, TOK_RBRACKET, "]");
+            return e;
         }
-        parser_expect(p, TOK_RBRACKET, "]");
-        return e;
     }
     
     // Map literal
@@ -3234,6 +3271,30 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                 tc_error(tc, e->line, e->column, "ternary branches have different types");
             }
             return true_t;
+        }
+        
+        case EXPR_COMPREHENSION: {
+            // List comprehension: [expr for var in iter if condition]
+            Type* iter_type = tc_check_expr(tc, e->comprehension.iter);
+            if (iter_type->kind != TYPE_ARRAY) {
+                tc_error(tc, e->line, e->column, "comprehension iterator must be array");
+            }
+            
+            // Add loop variable to scope (simplified - just check expr)
+            Type* elem_type = iter_type->inner ? iter_type->inner : new_type(TYPE_INT);
+            Type* expr_type = tc_check_expr(tc, e->comprehension.expr);
+            
+            if (e->comprehension.condition) {
+                Type* cond_type = tc_check_expr(tc, e->comprehension.condition);
+                if (cond_type->kind != TYPE_BOOL) {
+                    tc_error(tc, e->line, e->column, "comprehension condition must be bool");
+                }
+            }
+            
+            // Return array of expr type
+            Type* result = new_type(TYPE_ARRAY);
+            result->inner = expr_type;
+            return result;
         }
         
         case EXPR_SOME: {
