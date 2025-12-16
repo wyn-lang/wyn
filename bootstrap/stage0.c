@@ -3303,16 +3303,27 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                 tc_error(tc, e->line, e->column, "comprehension iterator must be array");
             }
             
-            // Add loop variable to scope (simplified - just check expr)
+            // Add loop variable to scope
             Type* elem_type = iter_type->inner ? iter_type->inner : new_type(TYPE_INT);
+            int saved_symbol_count = tc->symbol_count;
+            strcpy(tc->symbols[tc->symbol_count].name, e->comprehension.var);
+            tc->symbols[tc->symbol_count].type = elem_type;
+            tc->symbols[tc->symbol_count].scope_depth = tc->scope_depth;
+            tc->symbol_count++;
+            
+            // Check expression with loop variable in scope
             Type* expr_type = tc_check_expr(tc, e->comprehension.expr);
             
+            // Check condition if present
             if (e->comprehension.condition) {
                 Type* cond_type = tc_check_expr(tc, e->comprehension.condition);
                 if (cond_type->kind != TYPE_BOOL) {
                     tc_error(tc, e->line, e->column, "comprehension condition must be bool");
                 }
             }
+            
+            // Remove loop variable from scope
+            tc->symbol_count = saved_symbol_count;
             
             // Return array of expr type
             Type* result = new_type(TYPE_ARRAY);
@@ -11169,6 +11180,7 @@ static bool llvm_is_string_expr(LLVMGen* lg, Expr* e) {
 static bool llvm_is_array_expr(LLVMGen* lg, Expr* e) {
     if (!e) return false;
     if (e->kind == EXPR_ARRAY) return true;
+    if (e->kind == EXPR_COMPREHENSION) return true;  // List comprehensions return arrays
     if (e->kind == EXPR_IDENT) {
         Type* t = llvm_get_var_type(lg, e->ident);
         return t && t->kind == TYPE_ARRAY;
@@ -12562,6 +12574,129 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
             llvm_emit(lg, "  %%%d = phi %s [ %s, %%L%d ], [ %s, %%L%d ]", 
                      t, phi_type, true_str, label_true, false_str, label_false);
             *result_reg = t;
+            break;
+        }
+        
+        case EXPR_COMPREHENSION: {
+            // List comprehension: [expr for var in iter if condition]
+            
+            // Create empty array
+            int result_arr = llvm_new_temp(lg);
+            llvm_emit(lg, "  %%%d = call i64* @array_new()", result_arr);
+            
+            // Allocate pointer to track current array
+            int arr_ptr = llvm_new_temp(lg);
+            llvm_emit(lg, "  %%%d = alloca i64*", arr_ptr);
+            llvm_emit(lg, "  store i64* %%%d, i64** %%%d", result_arr, arr_ptr);
+            
+            // Get iterator
+            int iter_reg;
+            llvm_expr(lg, e->comprehension.iter, &iter_reg);
+            
+            // Get length
+            int len_ptr = llvm_new_temp(lg);
+            llvm_emit(lg, "  %%%d = getelementptr i64, i64* %%%d, i64 0", len_ptr, iter_reg);
+            int len_val = llvm_new_temp(lg);
+            llvm_emit(lg, "  %%%d = load i64, i64* %%%d", len_val, len_ptr);
+            
+            // Loop index
+            int loop_idx = llvm_new_temp(lg);
+            llvm_emit(lg, "  %%%d = alloca i64", loop_idx);
+            llvm_emit(lg, "  store i64 0, i64* %%%d", loop_idx);
+            
+            // Labels
+            int loop_start = lg->label_count++;
+            int loop_body = lg->label_count++;
+            int loop_end = lg->label_count++;
+            
+            llvm_emit(lg, "  br label %%L%d", loop_start);
+            llvm_emit(lg, "L%d:", loop_start);
+            
+            // Check condition
+            int i_val = llvm_new_temp(lg);
+            llvm_emit(lg, "  %%%d = load i64, i64* %%%d", i_val, loop_idx);
+            int loop_cond = llvm_new_temp(lg);
+            llvm_emit(lg, "  %%%d = icmp slt i64 %%%d, %%%d", loop_cond, i_val, len_val);
+            llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", loop_cond, loop_body, loop_end);
+            
+            llvm_emit(lg, "L%d:", loop_body);
+            
+            // Get element
+            int idx_plus_2 = llvm_new_temp(lg);
+            llvm_emit(lg, "  %%%d = add i64 %%%d, 2", idx_plus_2, i_val);
+            int elem_ptr = llvm_new_temp(lg);
+            llvm_emit(lg, "  %%%d = getelementptr i64, i64* %%%d, i64 %%%d", elem_ptr, iter_reg, idx_plus_2);
+            int elem_val = llvm_new_temp(lg);
+            llvm_emit(lg, "  %%%d = load i64, i64* %%%d", elem_val, elem_ptr);
+            
+            // Add loop variable
+            int var_alloca = llvm_new_temp(lg);
+            llvm_emit(lg, "  %%%d = alloca i64", var_alloca);
+            llvm_emit(lg, "  store i64 %%%d, i64* %%%d", elem_val, var_alloca);
+            int saved_var_count = lg->var_count;
+            llvm_add_var(lg, e->comprehension.var, var_alloca, new_type(TYPE_INT));
+            
+            // Handle filter
+            if (e->comprehension.condition) {
+                int filter_reg;
+                llvm_expr(lg, e->comprehension.condition, &filter_reg);
+                
+                int append_label = lg->label_count++;
+                int skip_label = lg->label_count++;
+                
+                bool is_comparison = (e->comprehension.condition->kind == EXPR_BINARY);
+                if (is_comparison) {
+                    llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", filter_reg, append_label, skip_label);
+                } else {
+                    int cond_i1 = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = icmp ne i64 %%%d, 0", cond_i1, filter_reg);
+                    llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cond_i1, append_label, skip_label);
+                }
+                
+                llvm_emit(lg, "L%d:", append_label);
+                
+                // Evaluate expression
+                int expr_reg;
+                llvm_expr(lg, e->comprehension.expr, &expr_reg);
+                
+                // Load current array, append, store back
+                int curr_arr = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = load i64*, i64** %%%d", curr_arr, arr_ptr);
+                int new_arr = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = call i64* @array_append_elem(i64* %%%d, i64 %%%d)", new_arr, curr_arr, expr_reg);
+                llvm_emit(lg, "  store i64* %%%d, i64** %%%d", new_arr, arr_ptr);
+                
+                llvm_emit(lg, "  br label %%L%d", skip_label);
+                llvm_emit(lg, "L%d:", skip_label);
+            } else {
+                // No filter
+                int expr_reg;
+                llvm_expr(lg, e->comprehension.expr, &expr_reg);
+                
+                int curr_arr = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = load i64*, i64** %%%d", curr_arr, arr_ptr);
+                int new_arr = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = call i64* @array_append_elem(i64* %%%d, i64 %%%d)", new_arr, curr_arr, expr_reg);
+                llvm_emit(lg, "  store i64* %%%d, i64** %%%d", new_arr, arr_ptr);
+            }
+            
+            // Remove loop variable
+            lg->var_count = saved_var_count;
+            
+            // Increment
+            int next_i = llvm_new_temp(lg);
+            llvm_emit(lg, "  %%%d = add i64 %%%d, 1", next_i, i_val);
+            llvm_emit(lg, "  store i64 %%%d, i64* %%%d", next_i, loop_idx);
+            llvm_emit(lg, "  br label %%L%d", loop_start);
+            
+            // End
+            llvm_emit(lg, "L%d:", loop_end);
+            
+            // Load final result
+            int final_arr = llvm_new_temp(lg);
+            llvm_emit(lg, "  %%%d = load i64*, i64** %%%d", final_arr, arr_ptr);
+            
+            *result_reg = final_arr;
             break;
         }
         

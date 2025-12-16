@@ -1,0 +1,29 @@
+// List comprehension demonstration
+// Python-style list comprehensions
+
+fn main() {
+    print("=== List Comprehension Demo ===")
+    
+    const numbers = [1, 2, 3, 4, 5]
+    
+    // Example 1: Map (transform all elements)
+    const doubled = [x * 2 for x in numbers]
+    print("Doubled:")
+    print(doubled[0])
+    print(doubled[1])
+    print(doubled[2])
+    
+    // Example 2: Filter (select elements)
+    const evens = [x for x in numbers if x % 2 == 0]
+    print("Evens:")
+    print(evens[0])
+    print(evens[1])
+    
+    // Example 3: Filter and transform
+    const big_squared = [x * x for x in numbers if x > 3]
+    print("Big squared:")
+    print(big_squared[0])
+    print(big_squared[1])
+    
+    print("List comprehensions work!")
+}
