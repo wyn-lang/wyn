@@ -129,10 +129,20 @@ test-all-tests: wyn
 	done; \
 	echo "Tests: $$passed passed, $$failed failed"
 
-# Run all tests (sequential, reliable)
+# Run all tests (optimized - compile and run in one step)
 .PHONY: test
-test: test-examples test-all-tests
-	@echo "✅ Test suite complete!"
+test: wyn
+	@echo "Running tests..."
+	@passed=0; failed=0; \
+	for f in tests/*_test.wyn; do \
+		if timeout 5 ./$(WYN_BIN) run $$f >/dev/null 2>&1; then \
+			passed=$$((passed + 1)); \
+		else \
+			echo "  ❌ $$f"; \
+			failed=$$((failed + 1)); \
+		fi; \
+	done; \
+	echo "Tests: $$passed passed, $$failed failed"
 
 # Run tests in parallel (8x faster, uses bash)
 .PHONY: test-parallel

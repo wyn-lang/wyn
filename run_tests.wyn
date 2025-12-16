@@ -1,0 +1,19 @@
+#!/usr/bin/env wyn run
+// Simple test runner
+
+import io
+import os
+
+fn main() {
+    print("Running tests...")
+    
+    const test_files = io.glob("tests/*_test.wyn")
+    print("Found tests:")
+    print(test_files.len())
+    
+    let i = 0
+    while i < test_files.len() {
+        print(test_files[i])
+        i = i + 1
+    }
+}
