@@ -327,8 +327,8 @@ int run_pkg(int argc, char** argv) {
         printf("Commands:\n");
         printf("  wyn pkg install <package>  - Install a package\n");
         printf("  wyn pkg list               - List installed packages\n");
-        printf("  wyn pkg update             - Update all packages\n\n");
-        printf("Note: Package manager is under development\n");
+        printf("  wyn pkg update             - Update all packages\n");
+        printf("  wyn pkg search <query>     - Search for packages\n\n");
         return 0;
     }
     
@@ -336,21 +336,79 @@ int run_pkg(int argc, char** argv) {
     
     if (strcmp(subcmd, "list") == 0) {
         printf("Installed packages:\n");
-        printf("  (none - package manager coming soon)\n");
+        
+        // Check if ~/.wyn/packages exists
+        char pkg_dir[512];
+        snprintf(pkg_dir, sizeof(pkg_dir), "%s/.wyn/packages", getenv("HOME"));
+        
+        char cmd[1024];
+        snprintf(cmd, sizeof(cmd), "ls -1 %s 2>/dev/null || echo '  (none installed)'", pkg_dir);
+        system(cmd);
         return 0;
     }
     else if (strcmp(subcmd, "install") == 0) {
         if (argc < 3) {
             fprintf(stderr, "Error: 'install' requires a package name\n");
+            fprintf(stderr, "Example: wyn pkg install github.com/user/package\n");
             return 1;
         }
-        printf("Installing %s...\n", argv[2]);
-        printf("(Package manager coming soon)\n");
-        return 0;
+        
+        const char* package = argv[2];
+        printf("Installing %s...\n", package);
+        
+        // Create ~/.wyn/packages directory
+        char pkg_dir[512];
+        snprintf(pkg_dir, sizeof(pkg_dir), "%s/.wyn/packages", getenv("HOME"));
+        
+        char mkdir_cmd[1024];
+        snprintf(mkdir_cmd, sizeof(mkdir_cmd), "mkdir -p %s", pkg_dir);
+        system(mkdir_cmd);
+        
+        // Parse package URL (github.com/user/repo format)
+        if (strncmp(package, "github.com/", 11) == 0) {
+            // Extract user/repo
+            const char* user_repo = package + 11;
+            
+            // Clone from GitHub
+            char clone_cmd[2048];
+            snprintf(clone_cmd, sizeof(clone_cmd), 
+                    "cd %s && git clone --depth 1 https://%s.git 2>&1", 
+                    pkg_dir, package);
+            
+            int result = system(clone_cmd);
+            if (result == 0) {
+                printf("✓ Installed %s\n", package);
+                printf("  Location: %s/%s\n", pkg_dir, strrchr(user_repo, '/') + 1);
+                return 0;
+            } else {
+                fprintf(stderr, "✗ Failed to install %s\n", package);
+                return 1;
+            }
+        } else {
+            fprintf(stderr, "Error: Package must be in format github.com/user/repo\n");
+            return 1;
+        }
     }
     else if (strcmp(subcmd, "update") == 0) {
         printf("Updating packages...\n");
-        printf("(Package manager coming soon)\n");
+        
+        char pkg_dir[512];
+        snprintf(pkg_dir, sizeof(pkg_dir), "%s/.wyn/packages", getenv("HOME"));
+        
+        char cmd[1024];
+        snprintf(cmd, sizeof(cmd), 
+                "for dir in %s/*/; do echo \"Updating $(basename $dir)...\"; cd \"$dir\" && git pull; done",
+                pkg_dir);
+        system(cmd);
+        return 0;
+    }
+    else if (strcmp(subcmd, "search") == 0) {
+        if (argc < 3) {
+            fprintf(stderr, "Error: 'search' requires a query\n");
+            return 1;
+        }
+        printf("Searching for '%s'...\n", argv[2]);
+        printf("(Search not yet implemented - check github.com/topics/wyn-package)\n");
         return 0;
     }
     else {
