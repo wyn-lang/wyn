@@ -1107,6 +1107,14 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "get_arg") == 0) return "cli_get_arg";
         if (strcmp(function, "get_positional") == 0) return "cli_get_positional";
         if (strcmp(function, "arg_count") == 0) return "cli_arg_count";
+    } else if (strcmp(module, "array") == 0) {
+        if (strcmp(function, "reverse") == 0) return "array_reverse";
+        if (strcmp(function, "append") == 0) return "array_append_elem";
+        if (strcmp(function, "prepend") == 0) return "array_prepend_elem";
+        if (strcmp(function, "contains") == 0) return "array_contains_elem";
+        if (strcmp(function, "filter") == 0) return "array_filter";
+        if (strcmp(function, "map") == 0) return "array_map";
+        if (strcmp(function, "reduce") == 0) return "array_reduce";
         if (strcmp(function, "generate_random_bytes") == 0) return "generate_random_bytes";
         if (strcmp(function, "hmac_sha256") == 0) return "hmac_sha256";
         if (strcmp(function, "verify_signature") == 0) return "verify_signature";
@@ -11593,7 +11601,10 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                           strcmp(function, "parse_body") == 0);
                     
                     bool returns_array = (strcmp(function, "split") == 0 ||
-                                         strcmp(function, "glob") == 0);
+                                         strcmp(function, "glob") == 0 ||
+                                         strcmp(function, "reverse") == 0 ||
+                                         strcmp(function, "append") == 0 ||
+                                         strcmp(function, "prepend") == 0);
                     
                     int t = llvm_new_temp(lg);
                     if (returns_string) {
@@ -13353,6 +13364,10 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i64 @cli_arg_count()");
     llvm_emit(&lg, "declare i8* @str_slice(i8*, i64, i64)");
     llvm_emit(&lg, "declare i64* @array_slice(i64*, i64, i64)");
+    llvm_emit(&lg, "declare i64* @array_reverse(i64*)");
+    llvm_emit(&lg, "declare i64* @array_append_elem(i64*, i64)");
+    llvm_emit(&lg, "declare i64* @array_prepend_elem(i64*, i64)");
+    llvm_emit(&lg, "declare i64 @array_contains_elem(i64*, i64)");
     llvm_emit(&lg, "declare i8** @args_wyn()");
     llvm_emit(&lg, "declare i8* @cwd_wyn()");
     llvm_emit(&lg, "declare i64 @chdir_wyn(i8*)");

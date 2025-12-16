@@ -2065,3 +2065,63 @@ char* exec_args_wyn(const char* program, int64_t* args) {
     pclose(pipe);
     return result;
 }
+
+// Simple array utilities (no function pointers needed)
+
+int64_t* array_reverse(int64_t* arr) {
+    if (!arr) {
+        int64_t* empty = malloc(sizeof(int64_t) * 2);
+        empty[0] = 0;
+        empty[1] = 0;
+        return empty;
+    }
+    
+    int64_t len = arr[0];
+    int64_t* result = malloc(sizeof(int64_t) * (len + 2));
+    result[0] = len;
+    result[1] = len;
+    
+    for (int64_t i = 0; i < len; i++) {
+        result[i + 2] = arr[len - 1 - i + 2];
+    }
+    
+    return result;
+}
+
+int64_t* array_append_elem(int64_t* arr, int64_t value) {
+    int64_t len = arr ? arr[0] : 0;
+    int64_t* result = malloc(sizeof(int64_t) * (len + 3));
+    result[0] = len + 1;
+    result[1] = len + 1;
+    
+    for (int64_t i = 0; i < len; i++) {
+        result[i + 2] = arr[i + 2];
+    }
+    result[len + 2] = value;
+    
+    return result;
+}
+
+int64_t* array_prepend_elem(int64_t* arr, int64_t value) {
+    int64_t len = arr ? arr[0] : 0;
+    int64_t* result = malloc(sizeof(int64_t) * (len + 3));
+    result[0] = len + 1;
+    result[1] = len + 1;
+    result[2] = value;
+    
+    for (int64_t i = 0; i < len; i++) {
+        result[i + 3] = arr[i + 2];
+    }
+    
+    return result;
+}
+
+int64_t array_contains_elem(int64_t* arr, int64_t value) {
+    if (!arr) return 0;
+    
+    int64_t len = arr[0];
+    for (int64_t i = 0; i < len; i++) {
+        if (arr[i + 2] == value) return 1;
+    }
+    return 0;
+}
