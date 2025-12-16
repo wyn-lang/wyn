@@ -7294,40 +7294,21 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
                 // Check function's return type
                 Type* ret_type = lg->current_function ? lg->current_function->return_type : NULL;
                 
-                // If returning a variable that's an alloca, we need to load it first
-                // This happens in generic instantiated functions
-                bool need_load = (s->ret.value->kind == EXPR_IDENT && val_reg >= 0);
-                
                 if (val_reg <= -1000000) {
                     llvm_emit(lg, "  ret i64 %lld", (long long)(-val_reg - 1000000));
                 } else {
-                    // Check if we need to load the value first
-                    if (need_load) {
-                        int loaded_reg = llvm_new_temp(lg);
-                        if (ret_type && ret_type->kind == TYPE_STR) {
-                            llvm_emit(lg, "  %%%d = load i8*, i8** %%%d", loaded_reg, val_reg);
-                            llvm_emit(lg, "  ret i8* %%%d", loaded_reg);
-                        } else if (ret_type && ret_type->kind == TYPE_ARRAY) {
-                            llvm_emit(lg, "  %%%d = load i64*, i64** %%%d", loaded_reg, val_reg);
-                            llvm_emit(lg, "  ret i64* %%%d", loaded_reg);
-                        } else if (ret_type && ret_type->kind == TYPE_FLOAT) {
-                            llvm_emit(lg, "  %%%d = load double, double* %%%d", loaded_reg, val_reg);
-                            llvm_emit(lg, "  ret double %%%d", loaded_reg);
-                        } else {
-                            llvm_emit(lg, "  %%%d = load i64, i64* %%%d", loaded_reg, val_reg);
-                            llvm_emit(lg, "  ret i64 %%%d", loaded_reg);
-                        }
+                    // Emit return with correct type
+                    // Note: llvm_expr should have already loaded the value
+                    // But in some cases (generic instantiated functions), it returns the alloca
+                    // We detect this and load if needed
+                    if (ret_type && ret_type->kind == TYPE_STR) {
+                        llvm_emit(lg, "  ret i8* %%%d", val_reg);
+                    } else if (ret_type && ret_type->kind == TYPE_ARRAY) {
+                        llvm_emit(lg, "  ret i64* %%%d", val_reg);
+                    } else if (ret_type && ret_type->kind == TYPE_FLOAT) {
+                        llvm_emit(lg, "  ret double %%%d", val_reg);
                     } else {
-                        // Value is already loaded (from expression)
-                        if (ret_type && ret_type->kind == TYPE_STR) {
-                            llvm_emit(lg, "  ret i8* %%%d", val_reg);
-                        } else if (ret_type && ret_type->kind == TYPE_ARRAY) {
-                            llvm_emit(lg, "  ret i64* %%%d", val_reg);
-                        } else if (ret_type && ret_type->kind == TYPE_FLOAT) {
-                            llvm_emit(lg, "  ret double %%%d", val_reg);
-                        } else {
-                            llvm_emit(lg, "  ret i64 %%%d", val_reg);
-                        }
+                        llvm_emit(lg, "  ret i64 %%%d", val_reg);
                     }
                 }
             } else {
@@ -8176,7 +8157,29 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
         
         // Generate body
         for (int j = 0; j < generic_fn->body_count; j++) {
-            llvm_stmt(&lg, generic_fn->body[j]);
+            Stmt* stmt = generic_fn->body[j];
+            
+            // Special handling for return statements in generic functions
+            if (stmt->kind == STMT_RETURN && stmt->ret.value && stmt->ret.value->kind == EXPR_IDENT) {
+                // Returning a parameter - need to load it
+                int var_reg = llvm_find_var(&lg, stmt->ret.value->ident);
+                if (var_reg >= 0) {
+                    int loaded = llvm_new_temp(&lg);
+                    if (concrete_type->kind == TYPE_STR) {
+                        llvm_emit(&lg, "  %%%d = load i8*, i8** %%%d", loaded, var_reg);
+                        llvm_emit(&lg, "  ret i8* %%%d", loaded);
+                    } else if (concrete_type->kind == TYPE_ARRAY) {
+                        llvm_emit(&lg, "  %%%d = load i64*, i64** %%%d", loaded, var_reg);
+                        llvm_emit(&lg, "  ret i64* %%%d", loaded);
+                    } else {
+                        llvm_emit(&lg, "  %%%d = load i64, i64* %%%d", loaded, var_reg);
+                        llvm_emit(&lg, "  ret i64 %%%d", loaded);
+                    }
+                    continue;  // Skip normal statement generation
+                }
+            }
+            
+            llvm_stmt(&lg, stmt);
         }
         
         // Restore state
