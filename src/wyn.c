@@ -6,7 +6,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-// Compiler entry point (from stage0.c)
+// Compiler entry point (from compiler.c)
 extern int compiler_main(int argc, char** argv);
 
 // Forward declarations for subcommands

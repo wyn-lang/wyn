@@ -24,17 +24,16 @@ CFLAGS += -mmacosx-version-min=11.0
 endif
 
 # Directories
-BOOTSTRAP_DIR = bootstrap
+SRC_DIR = src
 BUILD_DIR = build
 RUNTIME_DIR = runtime
-SRC_DIR = src
 TESTS_DIR = tests
 EXAMPLES_DIR = examples
 PREFIX ?= /usr/local
 
 # Unified Wyn binary
 WYN_CLI_SRC = $(SRC_DIR)/wyn.c
-WYN_COMPILER_SRC = $(BOOTSTRAP_DIR)/stage0.c
+WYN_COMPILER_SRC = $(SRC_DIR)/compiler.c
 WYN_BIN = $(BUILD_DIR)/wyn
 
 # Runtime libraries
