@@ -8,21 +8,22 @@
 ### ✅ Completed
 - Unified CLI binary
 - First-class functions (lambdas)
-- Ternary operator
-- Type system fixes (strings/arrays)
-- Array operations (reverse, append, prepend, contains)
-- String utilities (upper, lower, trim)
-- Database module (SQLite)
-- HTTP framework (routing)
-- Testing framework
-- Package manager Phase 1 (install, list, update)
-- Pseudo-chaining API
+- **Ternary operator** ✅
+- **Type system fixes** (strings/arrays) ✅
+- **Array operations** (reverse, append, prepend, contains) ✅
+- **String utilities** (upper, lower, trim) ✅
+- **Database module** (SQLite) ✅
+- **HTTP framework** (routing) ✅
+- **Testing framework** ✅
+- **Package manager Phase 1** (install, list, update) ✅
+- **List comprehensions** ✅
+- **Method chaining** ✅
 - File operations (copy, move, chmod, glob)
 - CLI argument parsing
 - Shebang support
 - Inline execution
 
-**Result:** 16 modules, 120+ functions, 33/33 tests passing (100%)
+**Result:** 16 modules, 120+ functions, 35/35 tests passing (100%)
 
 ## Immediate Priorities
 
@@ -33,13 +34,13 @@
    - [ ] Fix line endings
    - [ ] CI/CD for Windows
 
-2. **Complete List Comprehensions**
+2. ~~**Complete List Comprehensions**~~ ✅ DONE
    - [x] Parser ✅
-   - [ ] Codegen (array mutation issues)
+   - [x] Codegen ✅
 
-3. **True Method Chaining**
+3. ~~**True Method Chaining**~~ ✅ DONE
    - [x] Pseudo-chaining ✅
-   - [ ] Real `.method().method()` syntax
+   - [x] Real `.method().method()` syntax ✅
 
 ### 🎯 High Priority
 4. **Package Ecosystem**
