@@ -1,0 +1,14 @@
+#!/usr/bin/env wyn run
+# CPU benchmark - Fibonacci
+
+fn fib(n: int) -> int {
+    if n <= 1 {
+        return n
+    }
+    return fib(n - 1) + fib(n - 2)
+}
+
+fn main() {
+    const result = fib(35)
+    print("fib(35) = " + int_to_str(result))
+}

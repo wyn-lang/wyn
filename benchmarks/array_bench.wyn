@@ -1,0 +1,14 @@
+#!/usr/bin/env wyn run
+# Array operations benchmark
+
+fn main() {
+    let sum: int = 0
+    let i: int = 0
+    
+    while i < 1000000 {
+        sum = sum + i
+        i = i + 1
+    }
+    
+    print("Sum of 1M integers: " + int_to_str(sum))
+}

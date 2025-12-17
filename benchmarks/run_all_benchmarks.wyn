@@ -1,0 +1,102 @@
+#!/usr/bin/env wyn run
+# Comprehensive benchmark runner for Wyn
+# Compares against Python, Node.js, and Go
+
+import os
+import time
+
+fn benchmark_wyn(name: str, file: str) -> int {
+    print("  Wyn: ", false)
+    
+    # Compile
+    const compile_cmd = "./build/wyn compile -o /tmp/bench_wyn " + file
+    os.exec(compile_cmd)
+    
+    # Run and time
+    const start = time.now()
+    os.exec("/tmp/bench_wyn")
+    const elapsed = time.now() - start
+    
+    print(int_to_str(elapsed) + "ms")
+    return elapsed
+}
+
+fn benchmark_python(name: str, file: str) -> int {
+    print("  Python: ", false)
+    
+    const start = time.now()
+    os.exec("python3 " + file)
+    const elapsed = time.now() - start
+    
+    print(int_to_str(elapsed) + "ms")
+    return elapsed
+}
+
+fn benchmark_node(name: str, file: str) -> int {
+    print("  Node.js: ", false)
+    
+    const start = time.now()
+    os.exec("node " + file)
+    const elapsed = time.now() - start
+    
+    print(int_to_str(elapsed) + "ms")
+    return elapsed
+}
+
+fn benchmark_go(name: str, file: str) -> int {
+    print("  Go: ", false)
+    
+    # Compile
+    os.exec("go build -o /tmp/bench_go " + file)
+    
+    # Run and time
+    const start = time.now()
+    os.exec("/tmp/bench_go")
+    const elapsed = time.now() - start
+    
+    print(int_to_str(elapsed) + "ms")
+    return elapsed
+}
+
+fn run_benchmark_suite(name: str, wyn_file: str, py_file: str, node_file: str, go_file: str) {
+    print("=== " + name + " ===")
+    
+    const wyn_time = benchmark_wyn(name, wyn_file)
+    const py_time = benchmark_python(name, py_file)
+    const node_time = benchmark_node(name, node_file)
+    const go_time = benchmark_go(name, go_file)
+    
+    print("  Speedup vs Python: " + int_to_str(py_time / wyn_time) + "x")
+    print("  Speedup vs Node: " + int_to_str(node_time / wyn_time) + "x")
+    
+    if wyn_time < go_time {
+        print("  ✓ Faster than Go!")
+    }
+    
+    print("")
+}
+
+fn main() {
+    print("=== Wyn Performance Benchmarks ===")
+    print("")
+    
+    # Concurrency benchmark
+    run_benchmark_suite(
+        "Concurrency (1000 tasks)",
+        "benchmarks/concurrency/concurrency.wyn",
+        "benchmarks/concurrency/concurrent_python.py",
+        "benchmarks/concurrency/concurrent_node.js",
+        "benchmarks/concurrency/concurrency.go"
+    )
+    
+    # CPU benchmark
+    run_benchmark_suite(
+        "CPU Intensive",
+        "benchmarks/concurrency/cpu_intensive.wyn",
+        "benchmarks/cpu/fib.py",
+        "benchmarks/cpu/fib.js",
+        "benchmarks/concurrency/cpu_intensive.go"
+    )
+    
+    print("=== Benchmark Complete ===")
+}
