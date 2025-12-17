@@ -1,0 +1,27 @@
+# HashMap operations benchmark
+
+fn main() {
+    const map = collections.hashmap_new()
+    
+    let i: int = 0
+    while i < 10000 {
+        const key = "key" + int_to_str(i)
+        const value = "value" + int_to_str(i)
+        collections.hashmap_put(map, key, value)
+        i = i + 1
+    }
+    
+    # Retrieve all
+    let j: int = 0
+    let found: int = 0
+    while j < 10000 {
+        const key = "key" + int_to_str(j)
+        const value = collections.hashmap_get(map, key)
+        if value != "" {
+            found = found + 1
+        }
+        j = j + 1
+    }
+    
+    print(found)
+}

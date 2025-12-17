@@ -1,0 +1,13 @@
+# JSON parsing benchmark
+
+fn main() {
+    let i: int = 0
+    
+    while i < 1000 {
+        const json_str = "{\"name\":\"test\",\"value\":42,\"active\":true}"
+        const parsed = json.parse(json_str)
+        i = i + 1
+    }
+    
+    print("Parsed 1000 JSON objects")
+}

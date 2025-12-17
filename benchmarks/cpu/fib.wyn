@@ -1,4 +1,4 @@
-import std/io
+# Optimized Fibonacci benchmark
 
 fn fib(n: int) -> int {
     if n <= 1 {
@@ -8,8 +8,6 @@ fn fib(n: int) -> int {
 }
 
 fn main() {
-    const result: int = fib(35)
-    io.print("fib(35) = ")
+    const result = fib(35)
     print(result)
-    io.print("")
 }

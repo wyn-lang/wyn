@@ -1,0 +1,13 @@
+# String operations benchmark
+
+fn main() {
+    let result: str = ""
+    let i: int = 0
+    
+    while i < 10000 {
+        result = result + "x"
+        i = i + 1
+    }
+    
+    print(result.len())
+}

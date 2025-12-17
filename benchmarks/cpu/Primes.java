@@ -12,9 +12,9 @@ public class Primes {
     
     public static void main(String[] args) {
         int count = 0;
-        for (int i = 0; i < 1000000; i++) {
-            if (isPrime(i)) count++;
+        for (int n = 2; n < 100000; n++) {
+            if (isPrime(n)) count++;
         }
-        System.out.println("Primes found: " + count);
+        System.out.println(count);
     }
 }

@@ -1,0 +1,14 @@
+# File I/O benchmark
+
+fn main() {
+    const content = "test data for benchmark\n"
+    
+    let i: int = 0
+    while i < 1000 {
+        io.write("/tmp/bench_test.txt", content)
+        const read_content = io.read("/tmp/bench_test.txt")
+        i = i + 1
+    }
+    
+    print("Completed 1000 file operations")
+}
