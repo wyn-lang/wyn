@@ -1,8 +1,0 @@
-# hash Module
-
-std/hash.wyn
-Cryptographic hash functions
-All functions are mapped to runtime implementations via compiler
-
-## Functions
-

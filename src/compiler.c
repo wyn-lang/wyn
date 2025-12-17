@@ -3181,14 +3181,30 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
             // Handle method calls (obj.method())
             if (e->call.func->kind == EXPR_FIELD) {
                 const char* method_name = e->call.func->field.field;
-                // Check for primitive type methods first
+                // String methods
                 if (strcmp(method_name, "len") == 0) return new_type(TYPE_INT);
+                if (strcmp(method_name, "upper") == 0) return new_type(TYPE_STR);
+                if (strcmp(method_name, "lower") == 0) return new_type(TYPE_STR);
+                if (strcmp(method_name, "trim") == 0) return new_type(TYPE_STR);
+                if (strcmp(method_name, "contains") == 0) return new_type(TYPE_BOOL);
+                if (strcmp(method_name, "starts_with") == 0) return new_type(TYPE_BOOL);
+                if (strcmp(method_name, "ends_with") == 0) return new_type(TYPE_BOOL);
+                if (strcmp(method_name, "split") == 0) return new_type(TYPE_ARRAY);
+                if (strcmp(method_name, "replace") == 0) return new_type(TYPE_STR);
+                if (strcmp(method_name, "index_of") == 0) return new_type(TYPE_INT);
+                // Int methods
                 if (strcmp(method_name, "abs") == 0) return new_type(TYPE_INT);
                 if (strcmp(method_name, "to_str") == 0) return new_type(TYPE_STR);
                 if (strcmp(method_name, "to_int") == 0) return new_type(TYPE_INT);
                 if (strcmp(method_name, "to_float") == 0) return new_type(TYPE_FLOAT);
-                if (strcmp(method_name, "contains") == 0) return new_type(TYPE_BOOL);
-                if (strcmp(method_name, "index_of") == 0) return new_type(TYPE_INT);
+                // Float methods
+                if (strcmp(method_name, "floor") == 0) return new_type(TYPE_INT);
+                if (strcmp(method_name, "ceil") == 0) return new_type(TYPE_INT);
+                if (strcmp(method_name, "round") == 0) return new_type(TYPE_INT);
+                // Array methods
+                if (strcmp(method_name, "get") == 0) return new_type(TYPE_INT);
+                if (strcmp(method_name, "reverse") == 0) return new_type(TYPE_ARRAY);
+                if (strcmp(method_name, "append") == 0) return new_type(TYPE_ARRAY);
                 // Look up method in all structs
                 for (int i = 0; i < tc->module->struct_count; i++) {
                     StructDef* s = &tc->module->structs[i];
@@ -3952,13 +3968,30 @@ static Type* tc1_check_expr(TypeChecker1* tc, Expr* e) {
             
             if (e->call.func->kind == EXPR_FIELD) {
                 const char* method_name = e->call.func->field.field;
+                // String methods
                 if (strcmp(method_name, "len") == 0) return new_type(TYPE_INT);
+                if (strcmp(method_name, "upper") == 0) return new_type(TYPE_STR);
+                if (strcmp(method_name, "lower") == 0) return new_type(TYPE_STR);
+                if (strcmp(method_name, "trim") == 0) return new_type(TYPE_STR);
+                if (strcmp(method_name, "contains") == 0) return new_type(TYPE_BOOL);
+                if (strcmp(method_name, "starts_with") == 0) return new_type(TYPE_BOOL);
+                if (strcmp(method_name, "ends_with") == 0) return new_type(TYPE_BOOL);
+                if (strcmp(method_name, "split") == 0) return new_type(TYPE_ARRAY);
+                if (strcmp(method_name, "replace") == 0) return new_type(TYPE_STR);
+                if (strcmp(method_name, "index_of") == 0) return new_type(TYPE_INT);
+                // Int methods
                 if (strcmp(method_name, "abs") == 0) return new_type(TYPE_INT);
                 if (strcmp(method_name, "to_str") == 0) return new_type(TYPE_STR);
                 if (strcmp(method_name, "to_int") == 0) return new_type(TYPE_INT);
                 if (strcmp(method_name, "to_float") == 0) return new_type(TYPE_FLOAT);
-                if (strcmp(method_name, "contains") == 0) return new_type(TYPE_BOOL);
-                if (strcmp(method_name, "index_of") == 0) return new_type(TYPE_INT);
+                // Float methods
+                if (strcmp(method_name, "floor") == 0) return new_type(TYPE_INT);
+                if (strcmp(method_name, "ceil") == 0) return new_type(TYPE_INT);
+                if (strcmp(method_name, "round") == 0) return new_type(TYPE_INT);
+                // Array methods
+                if (strcmp(method_name, "get") == 0) return new_type(TYPE_INT);
+                if (strcmp(method_name, "reverse") == 0) return new_type(TYPE_ARRAY);
+                if (strcmp(method_name, "append") == 0) return new_type(TYPE_ARRAY);
                 
                 for (int i = 0; i < tc->module->struct_count; i++) {
                     StructDef* s = &tc->module->structs[i];
@@ -6640,11 +6673,125 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     llvm_emit(lg, "  %%%d = call i64 @str_to_int(i8* %%%d)", t, obj_reg);
                     *result_reg = t;
                 } else if (strcmp(method_name, "to_str") == 0) {
-                    // Handle num.to_str()
+                    // Handle num.to_str() or bool.to_str()
                     int obj_reg;
                     llvm_expr(lg, e->call.func->field.object, &obj_reg);
                     int t = llvm_new_temp(lg);
-                    llvm_emit(lg, "  %%%d = call i8* @int_to_str(i64 %%%d)", t, obj_reg);
+                    if (obj_reg <= -1000000) {
+                        // Constant value
+                        long long const_val = -obj_reg - 1000000;
+                        llvm_emit(lg, "  %%%d = call i8* @int_to_str(i64 %lld)", t, const_val);
+                    } else {
+                        llvm_emit(lg, "  %%%d = call i8* @int_to_str(i64 %%%d)", t, obj_reg);
+                    }
+                    *result_reg = t;
+                } else if (strcmp(method_name, "upper") == 0) {
+                    // Handle str.upper()
+                    int obj_reg;
+                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                    int t = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = call i8* @str_upper(i8* %%%d)", t, obj_reg);
+                    *result_reg = t;
+                } else if (strcmp(method_name, "lower") == 0) {
+                    // Handle str.lower()
+                    int obj_reg;
+                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                    int t = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = call i8* @str_lower(i8* %%%d)", t, obj_reg);
+                    *result_reg = t;
+                } else if (strcmp(method_name, "trim") == 0) {
+                    // Handle str.trim()
+                    int obj_reg;
+                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                    int t = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = call i8* @str_trim(i8* %%%d)", t, obj_reg);
+                    *result_reg = t;
+                } else if (strcmp(method_name, "contains") == 0) {
+                    // Handle str.contains(substr) or arr.contains(item)
+                    int obj_reg;
+                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                    
+                    // Get the argument
+                    int arg_reg;
+                    if (e->call.arg_count > 0) {
+                        llvm_expr(lg, e->call.args[0], &arg_reg);
+                    }
+                    
+                    int t = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = call i64 @str_contains(i8* %%%d, i8* %%%d)", t, obj_reg, arg_reg);
+                    *result_reg = t;
+                } else if (strcmp(method_name, "starts_with") == 0) {
+                    // Handle str.starts_with(prefix)
+                    int obj_reg;
+                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                    
+                    int arg_reg;
+                    if (e->call.arg_count > 0) {
+                        llvm_expr(lg, e->call.args[0], &arg_reg);
+                    }
+                    
+                    int t = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = call i64 @str_starts_with(i8* %%%d, i8* %%%d)", t, obj_reg, arg_reg);
+                    *result_reg = t;
+                } else if (strcmp(method_name, "ends_with") == 0) {
+                    // Handle str.ends_with(suffix)
+                    int obj_reg;
+                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                    
+                    int arg_reg;
+                    if (e->call.arg_count > 0) {
+                        llvm_expr(lg, e->call.args[0], &arg_reg);
+                    }
+                    
+                    int t = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = call i64 @str_ends_with(i8* %%%d, i8* %%%d)", t, obj_reg, arg_reg);
+                    *result_reg = t;
+                } else if (strcmp(method_name, "get") == 0) {
+                    // Handle arr.get(index)
+                    int obj_reg;
+                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                    
+                    int index_reg;
+                    if (e->call.arg_count > 0) {
+                        llvm_expr(lg, e->call.args[0], &index_reg);
+                    }
+                    
+                    // Array access: arr[index+2] (skip length and capacity)
+                    int offset_reg = llvm_new_temp(lg);
+                    if (index_reg <= -1000000) {
+                        // Constant index
+                        long long const_idx = -index_reg - 1000000;
+                        llvm_emit(lg, "  %%%d = add i64 %lld, 2", offset_reg, const_idx);
+                    } else {
+                        llvm_emit(lg, "  %%%d = add i64 %%%d, 2", offset_reg, index_reg);
+                    }
+                    
+                    int elem_ptr = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = getelementptr i64, i64* %%%d, i64 %%%d", elem_ptr, obj_reg, offset_reg);
+                    
+                    int t = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = load i64, i64* %%%d", t, elem_ptr);
+                    *result_reg = t;
+                } else if (strcmp(method_name, "floor") == 0) {
+                    // Handle float.floor()
+                    int obj_reg;
+                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                    int t = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = call i64 @floor_wyn(i64 %%%d)", t, obj_reg);
+                    *result_reg = t;
+                } else if (strcmp(method_name, "ceil") == 0) {
+                    // Handle float.ceil()
+                    int obj_reg;
+                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                    int t = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = call i64 @ceil_wyn(i64 %%%d)", t, obj_reg);
+                    *result_reg = t;
+                } else if (strcmp(method_name, "round") == 0) {
+                    // Handle float.round()
+                    int obj_reg;
+                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                    int t = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = call i64 @round_wyn(i64 %%%d)", t, obj_reg);
                     *result_reg = t;
                 } else {
                     // Unknown method - generate zero register
@@ -8398,6 +8545,12 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i8* @str_upper(i8*)");
     llvm_emit(&lg, "declare i8* @str_lower(i8*)");
     llvm_emit(&lg, "declare i8* @str_trim(i8*)");
+    llvm_emit(&lg, "declare i64 @str_contains(i8*, i8*)");
+    llvm_emit(&lg, "declare i64 @str_starts_with(i8*, i8*)");
+    llvm_emit(&lg, "declare i64 @str_ends_with(i8*, i8*)");
+    llvm_emit(&lg, "declare i64 @floor_wyn(i64)");
+    llvm_emit(&lg, "declare i64 @ceil_wyn(i64)");
+    llvm_emit(&lg, "declare i64 @round_wyn(i64)");
     llvm_emit(&lg, "declare i64 @clock_wyn()");
     llvm_emit(&lg, "declare i64 @random_wyn()");
     llvm_emit(&lg, "declare i64 @time_now()");

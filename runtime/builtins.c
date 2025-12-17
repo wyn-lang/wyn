@@ -12,6 +12,7 @@
 #include <dirent.h>
 #include <stdint.h>
 #include <sys/time.h>
+#include <math.h>
 
 // Platform-specific includes
 #ifdef _WIN32
@@ -406,22 +407,7 @@ char* getcwd_wyn() {
     return getcwd(buf, sizeof(buf)) ? strdup(buf) : strdup("");
 }
 
-// Math functions (these are provided by libm, just declare them)
-extern double sinf(double);
-extern double cosf(double);
-extern double tanf(double);
-extern double asinf(double);
-extern double acosf(double);
-extern double atanf(double);
-extern double atan2f(double, double);
-extern double floorf(double);
-extern double ceilf(double);
-extern double roundf(double);
-extern double logf(double);
-extern double log10f(double);
-extern double expf(double);
-extern double sqrtf(double);
-extern double powf(double, double);
+// Math functions are provided by math.h
 
 long long abs_int(long long n) {
     return n < 0 ? -n : n;
@@ -2048,6 +2034,46 @@ char* str_trim(const char* str) {
     char* result = malloc(len + 1);
     memcpy(result, str, len);
     result[len] = '\0';
+    return result;
+}
+
+int64_t str_contains(const char* str, const char* substr) {
+    return strstr(str, substr) != NULL ? 1 : 0;
+}
+
+int64_t str_starts_with(const char* str, const char* prefix) {
+    size_t len_prefix = strlen(prefix);
+    size_t len_str = strlen(str);
+    if (len_prefix > len_str) return 0;
+    return strncmp(str, prefix, len_prefix) == 0 ? 1 : 0;
+}
+
+int64_t str_ends_with(const char* str, const char* suffix) {
+    size_t len_suffix = strlen(suffix);
+    size_t len_str = strlen(str);
+    if (len_suffix > len_str) return 0;
+    return strcmp(str + len_str - len_suffix, suffix) == 0 ? 1 : 0;
+}
+
+// Math functions for floats (stored as i64 bit patterns)
+int64_t floor_wyn(int64_t val) {
+    double d;
+    memcpy(&d, &val, sizeof(double));
+    int64_t result = (int64_t)floor(d);
+    return result;
+}
+
+int64_t ceil_wyn(int64_t val) {
+    double d;
+    memcpy(&d, &val, sizeof(double));
+    int64_t result = (int64_t)ceil(d);
+    return result;
+}
+
+int64_t round_wyn(int64_t val) {
+    double d;
+    memcpy(&d, &val, sizeof(double));
+    int64_t result = (int64_t)round(d);
     return result;
 }
 
