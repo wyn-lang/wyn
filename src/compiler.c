@@ -5489,9 +5489,12 @@ static bool llvm_is_float_expr(LLVMGen* lg, Expr* e) {
         case EXPR_FLOAT: return true;
         case EXPR_INT: return false;
         case EXPR_IDENT: {
-            // Check if variable is float type using conservative heuristic
+            // Check if variable is float type
+            Type* t = llvm_get_var_type(lg, e->ident);
+            if (t && t->kind == TYPE_FLOAT) return true;
+            // Conservative heuristic for untyped variables
             return strstr(e->ident, "float") != NULL || 
-                   (strlen(e->ident) > 0 && e->ident[strlen(e->ident)-1] == 'f');
+                   (strlen(e->ident) > 1 && e->ident[strlen(e->ident)-1] == 'f' && strcmp(e->ident, "self") != 0);
         }
         case EXPR_BINARY:
             return llvm_is_float_expr(lg, e->binary.left) || llvm_is_float_expr(lg, e->binary.right);
@@ -5526,12 +5529,23 @@ static bool llvm_is_string_expr(LLVMGen* lg, Expr* e) {
         } else if (e->call.func->kind == EXPR_FIELD) {
             const char* func = e->call.func->field.field;
             // Check if this is a string-returning method (regardless of object)
-            return (strcmp(func, "upper") == 0 || strcmp(func, "lower") == 0 ||
-                   strcmp(func, "trim") == 0 || strcmp(func, "read") == 0 ||
-                   strcmp(func, "sqlite_query") == 0 || strcmp(func, "exec_output") == 0 ||
-                   strcmp(func, "http_get") == 0 || strcmp(func, "server_read_request") == 0 ||
-                   strcmp(func, "parse_method") == 0 || strcmp(func, "parse_path") == 0 ||
-                   strcmp(func, "parse_body") == 0 || strcmp(func, "output") == 0);
+            if (strcmp(func, "upper") == 0 || strcmp(func, "lower") == 0 ||
+                strcmp(func, "trim") == 0 || strcmp(func, "read") == 0 ||
+                strcmp(func, "sqlite_query") == 0 || strcmp(func, "exec_output") == 0 ||
+                strcmp(func, "http_get") == 0 || strcmp(func, "server_read_request") == 0 ||
+                strcmp(func, "parse_method") == 0 || strcmp(func, "parse_path") == 0 ||
+                strcmp(func, "parse_body") == 0 || strcmp(func, "output") == 0 ||
+                strcmp(func, "replace") == 0 || strcmp(func, "to_str") == 0) {
+                return true;
+            }
+            
+            // Check for extension methods that return strings
+            for (int i = 0; i < lg->module->function_count; i++) {
+                FnDef* fn = &lg->module->functions[i];
+                if (fn->is_extension && strcmp(fn->extension_method, func) == 0) {
+                    return fn->return_type && fn->return_type->kind == TYPE_STR;
+                }
+            }
         }
     }
     return false;
@@ -6908,6 +6922,9 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                             
                             if (is_string_obj) {
                                 snprintf(args, sizeof(args), "i8* %%%d", obj_reg);
+                            } else if (obj_reg <= -1000000) {
+                                // Constant object (like 5.squared())
+                                snprintf(args, sizeof(args), "i64 %lld", (long long)(-obj_reg - 1000000));
                             } else {
                                 snprintf(args, sizeof(args), "i64 %%%d", obj_reg);
                             }
@@ -8534,7 +8551,20 @@ static void llvm_function(LLVMGen* lg, FnDef* f) {
         char params[1024] = "";
         for (int i = 0; i < f->param_count; i++) {
             char param[128];
-            snprintf(param, 128, "i64 %%param.%s", f->params[i].name);
+            
+            // For extension methods, first parameter (self) needs correct type
+            if (f->is_extension && i == 0 && strcmp(f->params[i].name, "self") == 0) {
+                const char* self_type = "i64";
+                if (strcmp(f->extension_type, "str") == 0) {
+                    self_type = "i8*";
+                } else if (strcmp(f->extension_type, "array") == 0) {
+                    self_type = "i64*";
+                }
+                snprintf(param, 128, "%s %%param.%s", self_type, f->params[i].name);
+            } else {
+                snprintf(param, 128, "i64 %%param.%s", f->params[i].name);
+            }
+            
             if (i > 0) strcat(params, ", ");
             strcat(params, param);
         }
@@ -8561,10 +8591,35 @@ static void llvm_function(LLVMGen* lg, FnDef* f) {
     
     // Allocate and store parameters
     for (int i = 0; i < f->param_count; i++) {
-        int alloca_reg = llvm_new_temp(lg);
-        llvm_emit(lg, "  %%%d = alloca i64", alloca_reg);
-        llvm_emit(lg, "  store i64 %%param.%s, i64* %%%d", f->params[i].name, alloca_reg);
-        llvm_add_var(lg, f->params[i].name, alloca_reg, f->params[i].type);
+        // For extension methods, self parameter needs correct type
+        if (f->is_extension && i == 0 && strcmp(f->params[i].name, "self") == 0) {
+            if (strcmp(f->extension_type, "str") == 0) {
+                // String self parameter
+                int alloca_reg = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = alloca i8*", alloca_reg);
+                llvm_emit(lg, "  store i8* %%param.%s, i8** %%%d", f->params[i].name, alloca_reg);
+                llvm_add_var(lg, f->params[i].name, alloca_reg, new_type(TYPE_STR));
+            } else if (strcmp(f->extension_type, "array") == 0) {
+                // Array self parameter
+                int alloca_reg = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = alloca i64*", alloca_reg);
+                llvm_emit(lg, "  store i64* %%param.%s, i64** %%%d", f->params[i].name, alloca_reg);
+                Type* arr_type = new_type(TYPE_ARRAY);
+                llvm_add_var(lg, f->params[i].name, alloca_reg, arr_type);
+            } else {
+                // Int, bool, etc - use i64
+                int alloca_reg = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = alloca i64", alloca_reg);
+                llvm_emit(lg, "  store i64 %%param.%s, i64* %%%d", f->params[i].name, alloca_reg);
+                llvm_add_var(lg, f->params[i].name, alloca_reg, f->params[i].type);
+            }
+        } else {
+            // Regular parameter
+            int alloca_reg = llvm_new_temp(lg);
+            llvm_emit(lg, "  %%%d = alloca i64", alloca_reg);
+            llvm_emit(lg, "  store i64 %%param.%s, i64* %%%d", f->params[i].name, alloca_reg);
+            llvm_add_var(lg, f->params[i].name, alloca_reg, f->params[i].type);
+        }
     }
     
     for (int i = 0; i < f->body_count; i++) {

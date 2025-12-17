@@ -1,0 +1,49 @@
+// Extension Methods - Add custom methods to any type!
+// Python/JavaScript style: fn TypeName.method(self)
+
+fn int.squared(self) -> int {
+    return self * self
+}
+
+fn int.cubed(self) -> int {
+    return self * self * self
+}
+
+fn int.double(self) -> int {
+    return self * 2
+}
+
+fn int.is_even(self) -> int {
+    return self % 2 == 0 ? 1 : 0
+}
+
+fn int.is_positive(self) -> int {
+    return self > 0 ? 1 : 0
+}
+
+fn main() {
+    print("=== Extension Methods Demo ===")
+    
+    // Call on literals
+    print(5.squared())          // 25
+    print(3.cubed())            // 27
+    print(21.double())          // 42
+    
+    // Call on variables
+    const num = 7
+    print(num.squared())        // 49
+    print(num.is_even())        // 0 (false)
+    
+    const even = 8
+    print(even.is_even())       // 1 (true)
+    
+    // Chain with built-in methods
+    const neg = -10
+    print(neg.abs().squared())  // 100
+    
+    const val = -5
+    print(val.abs().double())   // 10
+    print(val.is_positive())    // 0 (false)
+    
+    print("Extension methods are powerful!")
+}

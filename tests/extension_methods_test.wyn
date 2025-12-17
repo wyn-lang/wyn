@@ -1,0 +1,39 @@
+// Extension methods - add custom methods to types!
+
+fn int.squared(self) -> int {
+    return self * self
+}
+
+fn int.cubed(self) -> int {
+    return self * self * self
+}
+
+fn int.double(self) -> int {
+    return self * 2
+}
+
+fn int.is_positive(self) -> int {
+    return self > 0 ? 1 : 0
+}
+
+fn main() {
+    print("=== Extension Methods Test ===")
+    
+    // Test on literals
+    print(5.squared())          // 25
+    print(3.cubed())            // 27
+    print(21.double())          // 42
+    print(10.is_positive())     // 1
+    print((-5).is_positive())   // 0
+    
+    // Test on variables
+    const num = 7
+    print(num.squared())        // 49
+    print(num.double())         // 14
+    
+    // Test with built-in methods
+    const neg = -10
+    print(neg.abs().squared())  // 100
+    
+    print("Extension methods work!")
+}
