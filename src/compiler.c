@@ -714,6 +714,9 @@ struct FnDef {
     bool is_async;
     char generics[MAX_GENERICS][MAX_IDENT_LEN];
     int generic_count;
+    bool is_extension;
+    char extension_type[MAX_IDENT_LEN];
+    char extension_method[MAX_IDENT_LEN];
 };
 
 typedef struct {
@@ -2430,7 +2433,22 @@ static FnDef* parse_function(Parser* p, bool is_pub, bool is_async) {
     
     parser_expect(p, TOK_FN, "fn");
     Token name = parser_expect(p, TOK_IDENT, "function name");
-    strcpy(fn->name, name.ident);
+    
+    // Check for extension method: fn TypeName.method_name
+    if (parser_match(p, TOK_DOT)) {
+        // This is an extension method
+        char type_name[MAX_IDENT_LEN];
+        strcpy(type_name, name.ident);
+        
+        Token method_name = parser_expect(p, TOK_IDENT, "method name");
+        // Store as "TypeName__method_name" internally
+        snprintf(fn->name, MAX_IDENT_LEN, "%s__%s", type_name, method_name.ident);
+        fn->is_extension = true;
+        strcpy(fn->extension_type, type_name);
+        strcpy(fn->extension_method, method_name.ident);
+    } else {
+        strcpy(fn->name, name.ident);
+    }
     
     // Generic parameters
     if (parser_match(p, TOK_LBRACKET)) {
@@ -3205,6 +3223,19 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                 if (strcmp(method_name, "get") == 0) return new_type(TYPE_INT);
                 if (strcmp(method_name, "reverse") == 0) return new_type(TYPE_ARRAY);
                 if (strcmp(method_name, "append") == 0) return new_type(TYPE_ARRAY);
+                
+                // Look up extension methods
+                Type* obj_type = tc_check_expr(tc, e->call.func->field.object);
+                const char* obj_type_name = type_name(obj_type);
+                for (int i = 0; i < tc->module->function_count; i++) {
+                    FnDef* fn = &tc->module->functions[i];
+                    if (fn->is_extension && 
+                        strcmp(fn->extension_type, obj_type_name) == 0 &&
+                        strcmp(fn->extension_method, method_name) == 0) {
+                        return fn->return_type ? fn->return_type : new_type(TYPE_ANY);
+                    }
+                }
+                
                 // Look up method in all structs
                 for (int i = 0; i < tc->module->struct_count; i++) {
                     StructDef* s = &tc->module->structs[i];
@@ -3992,6 +4023,18 @@ static Type* tc1_check_expr(TypeChecker1* tc, Expr* e) {
                 if (strcmp(method_name, "get") == 0) return new_type(TYPE_INT);
                 if (strcmp(method_name, "reverse") == 0) return new_type(TYPE_ARRAY);
                 if (strcmp(method_name, "append") == 0) return new_type(TYPE_ARRAY);
+                
+                // Look up extension methods
+                Type* obj_type = tc1_check_expr(tc, e->call.func->field.object);
+                const char* obj_type_name = type_name(obj_type);
+                for (int i = 0; i < tc->module->function_count; i++) {
+                    FnDef* fn = &tc->module->functions[i];
+                    if (fn->is_extension && 
+                        strcmp(fn->extension_type, obj_type_name) == 0 &&
+                        strcmp(fn->extension_method, method_name) == 0) {
+                        return fn->return_type ? fn->return_type : new_type(TYPE_ANY);
+                    }
+                }
                 
                 for (int i = 0; i < tc->module->struct_count; i++) {
                     StructDef* s = &tc->module->structs[i];
@@ -6848,10 +6891,64 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     }
                     *result_reg = t;
                 } else {
-                    // Unknown method - generate zero register
-                    int t = llvm_new_temp(lg);
-                    llvm_emit(lg, "  %%%d = add i64 0, 0", t);
-                    *result_reg = t;
+                    // Check for extension methods
+                    const char* method_name = e->call.func->field.field;
+                    bool found_extension = false;
+                    
+                    for (int i = 0; i < lg->module->function_count; i++) {
+                        FnDef* fn = &lg->module->functions[i];
+                        if (fn->is_extension && strcmp(fn->extension_method, method_name) == 0) {
+                            // Call extension method with object as first parameter
+                            int obj_reg;
+                            llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                            
+                            // Build argument list
+                            char args[2048];
+                            bool is_string_obj = llvm_is_string_expr(lg, e->call.func->field.object);
+                            
+                            if (is_string_obj) {
+                                snprintf(args, sizeof(args), "i8* %%%d", obj_reg);
+                            } else {
+                                snprintf(args, sizeof(args), "i64 %%%d", obj_reg);
+                            }
+                            
+                            // Add remaining arguments
+                            for (int j = 0; j < e->call.arg_count; j++) {
+                                int arg_reg;
+                                llvm_expr(lg, e->call.args[j], &arg_reg);
+                                
+                                char arg_str[128];
+                                bool is_string_arg = llvm_is_string_expr(lg, e->call.args[j]);
+                                
+                                if (is_string_arg) {
+                                    snprintf(arg_str, 128, ", i8* %%%d", arg_reg);
+                                } else if (arg_reg <= -1000000) {
+                                    snprintf(arg_str, 128, ", i64 %lld", (long long)(-arg_reg - 1000000));
+                                } else {
+                                    snprintf(arg_str, 128, ", i64 %%%d", arg_reg);
+                                }
+                                strcat(args, arg_str);
+                            }
+                            
+                            // Determine return type
+                            int t = llvm_new_temp(lg);
+                            if (fn->return_type && fn->return_type->kind == TYPE_STR) {
+                                llvm_emit(lg, "  %%%d = call i8* @%s(%s)", t, fn->name, args);
+                            } else {
+                                llvm_emit(lg, "  %%%d = call i64 @%s(%s)", t, fn->name, args);
+                            }
+                            *result_reg = t;
+                            found_extension = true;
+                            break;
+                        }
+                    }
+                    
+                    if (!found_extension) {
+                        // Unknown method - generate zero register
+                        int t = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = add i64 0, 0", t);
+                        *result_reg = t;
+                    }
                 }
             } else {
                 // Unknown function call - generate zero register
