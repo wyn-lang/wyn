@@ -46,9 +46,12 @@ true || false  # true (or)
 "Hello".upper()          # "HELLO"
 "Hello".lower()          # "hello"
 
-# String interpolation (coming soon)
+# String concatenation (current method)
 const name = "World"
 print("Hello " + name)   # Hello World
+
+# String interpolation with {var} syntax exists but has bugs
+# Use concatenation for now: "Hello " + name
 
 ####################################
 # 2. Variables
