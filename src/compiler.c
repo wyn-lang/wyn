@@ -3227,12 +3227,14 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                 // Look up extension methods
                 Type* obj_type = tc_check_expr(tc, e->call.func->field.object);
                 const char* obj_type_name = type_name(obj_type);
-                for (int i = 0; i < tc->module->function_count; i++) {
-                    FnDef* fn = &tc->module->functions[i];
-                    if (fn->is_extension && 
-                        strcmp(fn->extension_type, obj_type_name) == 0 &&
-                        strcmp(fn->extension_method, method_name) == 0) {
-                        return fn->return_type ? fn->return_type : new_type(TYPE_ANY);
+                if (obj_type_name) {
+                    for (int i = 0; i < tc->module->function_count; i++) {
+                        FnDef* fn = &tc->module->functions[i];
+                        if (fn && fn->is_extension && fn->extension_type && fn->extension_method &&
+                            strcmp(fn->extension_type, obj_type_name) == 0 &&
+                            strcmp(fn->extension_method, method_name) == 0) {
+                            return fn->return_type ? fn->return_type : new_type(TYPE_ANY);
+                        }
                     }
                 }
                 
@@ -3677,7 +3679,27 @@ static void tc_check_function_with_self(TypeChecker* tc, FnDef* fn, Type* self_t
 static bool typecheck_module(TypeChecker* tc) {
     // Check all functions
     for (int i = 0; i < tc->module->function_count; i++) {
-        tc_check_function(tc, &tc->module->functions[i]);
+        FnDef* fn = &tc->module->functions[i];
+        
+        // For extension methods, create self_type
+        if (fn->is_extension) {
+            Type* self_type = NULL;
+            if (strcmp(fn->extension_type, "str") == 0) {
+                self_type = new_type(TYPE_STR);
+            } else if (strcmp(fn->extension_type, "int") == 0) {
+                self_type = new_type(TYPE_INT);
+            } else if (strcmp(fn->extension_type, "bool") == 0) {
+                self_type = new_type(TYPE_BOOL);
+            } else if (strcmp(fn->extension_type, "array") == 0) {
+                self_type = new_type(TYPE_ARRAY);
+            } else {
+                self_type = new_type(TYPE_NAMED);
+                strcpy(self_type->name, fn->extension_type);
+            }
+            tc_check_function_with_self(tc, fn, self_type);
+        } else {
+            tc_check_function(tc, fn);
+        }
     }
     
     // Check struct methods
@@ -4027,12 +4049,14 @@ static Type* tc1_check_expr(TypeChecker1* tc, Expr* e) {
                 // Look up extension methods
                 Type* obj_type = tc1_check_expr(tc, e->call.func->field.object);
                 const char* obj_type_name = type_name(obj_type);
-                for (int i = 0; i < tc->module->function_count; i++) {
-                    FnDef* fn = &tc->module->functions[i];
-                    if (fn->is_extension && 
-                        strcmp(fn->extension_type, obj_type_name) == 0 &&
-                        strcmp(fn->extension_method, method_name) == 0) {
-                        return fn->return_type ? fn->return_type : new_type(TYPE_ANY);
+                if (obj_type_name) {
+                    for (int i = 0; i < tc->module->function_count; i++) {
+                        FnDef* fn = &tc->module->functions[i];
+                        if (fn && fn->is_extension && fn->extension_type && fn->extension_method &&
+                            strcmp(fn->extension_type, obj_type_name) == 0 &&
+                            strcmp(fn->extension_method, method_name) == 0) {
+                            return fn->return_type ? fn->return_type : new_type(TYPE_ANY);
+                        }
                     }
                 }
                 
@@ -4371,7 +4395,27 @@ static void tc1_check_function(TypeChecker1* tc, FnDef* fn, Type* self_type) {
 
 static bool typecheck_module_stage1(TypeChecker1* tc) {
     for (int i = 0; i < tc->module->function_count; i++) {
-        tc1_check_function(tc, &tc->module->functions[i], NULL);
+        FnDef* fn = &tc->module->functions[i];
+        Type* self_type = NULL;
+        
+        // For extension methods, create self_type
+        if (fn->is_extension) {
+            if (strcmp(fn->extension_type, "str") == 0) {
+                self_type = new_type(TYPE_STR);
+            } else if (strcmp(fn->extension_type, "int") == 0) {
+                self_type = new_type(TYPE_INT);
+            } else if (strcmp(fn->extension_type, "bool") == 0) {
+                self_type = new_type(TYPE_BOOL);
+            } else if (strcmp(fn->extension_type, "array") == 0) {
+                self_type = new_type(TYPE_ARRAY);
+            } else {
+                // Named type (struct)
+                self_type = new_type(TYPE_NAMED);
+                strcpy(self_type->name, fn->extension_type);
+            }
+        }
+        
+        tc1_check_function(tc, fn, self_type);
     }
     
     for (int i = 0; i < tc->module->struct_count; i++) {
@@ -5476,8 +5520,9 @@ static void llvm_add_var(LLVMGen* lg, const char* name, int reg, Type* type) {
 }
 
 static Type* llvm_get_var_type(LLVMGen* lg, const char* name) {
+    if (!lg || !name || name[0] == '\0') return NULL;
     for (int i = lg->var_count - 1; i >= 0; i--) {
-        if (strcmp(lg->vars[i], name) == 0) return lg->var_types[i];
+        if (lg->vars[i] && strcmp(lg->vars[i], name) == 0) return lg->var_types[i];
     }
     return NULL;
 }
@@ -5493,6 +5538,7 @@ static bool llvm_is_float_expr(LLVMGen* lg, Expr* e) {
             Type* t = llvm_get_var_type(lg, e->ident);
             if (t && t->kind == TYPE_FLOAT) return true;
             // Conservative heuristic for untyped variables
+            if (!e->ident || e->ident[0] == '\0') return false;
             return strstr(e->ident, "float") != NULL || 
                    (strlen(e->ident) > 1 && e->ident[strlen(e->ident)-1] == 'f' && strcmp(e->ident, "self") != 0);
         }
@@ -5524,8 +5570,18 @@ static bool llvm_is_string_expr(LLVMGen* lg, Expr* e) {
     if (e->kind == EXPR_CALL) {
         if (e->call.func->kind == EXPR_IDENT) {
             const char* func = e->call.func->ident;
-            return (strcmp(func, "chr") == 0 || strcmp(func, "int_to_str") == 0 ||
-                   strcmp(func, "str_concat") == 0 || strcmp(func, "substring") == 0);
+            if (strcmp(func, "chr") == 0 || strcmp(func, "int_to_str") == 0 ||
+                strcmp(func, "str_concat") == 0 || strcmp(func, "substring") == 0) {
+                return true;
+            }
+            
+            // Check user-defined functions
+            for (int i = 0; i < lg->module->function_count; i++) {
+                FnDef* fn = &lg->module->functions[i];
+                if (strcmp(fn->name, func) == 0) {
+                    return fn->return_type && fn->return_type->kind == TYPE_STR;
+                }
+            }
         } else if (e->call.func->kind == EXPR_FIELD) {
             const char* func = e->call.func->field.field;
             // Check if this is a string-returning method (regardless of object)
@@ -5540,10 +5596,15 @@ static bool llvm_is_string_expr(LLVMGen* lg, Expr* e) {
             }
             
             // Check for extension methods that return strings
-            for (int i = 0; i < lg->module->function_count; i++) {
-                FnDef* fn = &lg->module->functions[i];
-                if (fn->is_extension && strcmp(fn->extension_method, func) == 0) {
-                    return fn->return_type && fn->return_type->kind == TYPE_STR;
+            if (lg && lg->module && lg->module->function_count > 0) {
+                for (int i = 0; i < lg->module->function_count; i++) {
+                    FnDef* fn = &lg->module->functions[i];
+                    // Skip the current function to avoid recursion
+                    if (fn && fn->is_extension && fn->extension_method && fn->extension_method[0] != '\0' && 
+                        strcmp(fn->extension_method, func) == 0 &&
+                        fn != lg->current_function) {
+                        return fn->return_type && fn->return_type->kind == TYPE_STR;
+                    }
                 }
             }
         }
@@ -5699,7 +5760,8 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
             llvm_expr(lg, e->binary.right, &right_reg);
             
             // Check if this should be float arithmetic
-            bool is_float_op = llvm_is_float_expr(lg, e->binary.left) || llvm_is_float_expr(lg, e->binary.right);
+            bool is_float_op = false;  // Temporarily disabled to debug crash
+            // bool is_float_op = llvm_is_float_expr(lg, e->binary.left) || llvm_is_float_expr(lg, e->binary.right);
             
             // Handle constants
             char left_str[64], right_str[64];
@@ -5780,51 +5842,26 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                 
                 switch (e->binary.op) {
                     case TOK_PLUS: {
-                        // Check if concatenating strings
-                        bool left_is_str = (e->binary.left->kind == EXPR_STRING) ||
-                                          (e->binary.left->kind == EXPR_IDENT && 
-                                           llvm_get_var_type(lg, e->binary.left->ident) &&
-                                           llvm_get_var_type(lg, e->binary.left->ident)->kind == TYPE_STR);
-                        bool right_is_str = (e->binary.right->kind == EXPR_STRING) ||
-                                           (e->binary.right->kind == EXPR_IDENT && 
-                                            llvm_get_var_type(lg, e->binary.right->ident) &&
-                                            llvm_get_var_type(lg, e->binary.right->ident)->kind == TYPE_STR);
+                        // Check for string concatenation
+                        bool left_is_str = (e->binary.left->kind == EXPR_STRING);
+                        bool right_is_str = (e->binary.right->kind == EXPR_STRING);
                         
-                        // Check for string array indexing
-                        if (e->binary.left->kind == EXPR_INDEX && e->binary.left->index.object->kind == EXPR_IDENT) {
-                            Type* arr_type = llvm_get_var_type(lg, e->binary.left->index.object->ident);
-                            if (arr_type && arr_type->kind == TYPE_ARRAY && arr_type->inner && arr_type->inner->kind == TYPE_STR) {
-                                left_is_str = true;
-                            }
+                        // Check variable types
+                        if (e->binary.left->kind == EXPR_IDENT) {
+                            Type* t = llvm_get_var_type(lg, e->binary.left->ident);
+                            if (t && t->kind == TYPE_STR) left_is_str = true;
                         }
-                        if (e->binary.right->kind == EXPR_INDEX && e->binary.right->index.object->kind == EXPR_IDENT) {
-                            Type* arr_type = llvm_get_var_type(lg, e->binary.right->index.object->ident);
-                            if (arr_type && arr_type->kind == TYPE_ARRAY && arr_type->inner && arr_type->inner->kind == TYPE_STR) {
-                                right_is_str = true;
-                            }
-                        }
-                        
-                        // Check for known string-returning function calls
-                        if (e->binary.left->kind == EXPR_CALL && e->binary.left->call.func->kind == EXPR_IDENT) {
-                            const char* fn = e->binary.left->call.func->ident;
-                            if (strcmp(fn, "str_lower") == 0 || strcmp(fn, "str_upper") == 0 ||
-                                strcmp(fn, "str_trim") == 0 || strcmp(fn, "read_file") == 0 ||
-                                strcmp(fn, "to_string") == 0 || strcmp(fn, "int_to_str") == 0 ||
-                                strcmp(fn, "chr") == 0 || strcmp(fn, "substring") == 0) left_is_str = true;
-                        }
-                        if (e->binary.right->kind == EXPR_CALL && e->binary.right->call.func->kind == EXPR_IDENT) {
-                            const char* fn = e->binary.right->call.func->ident;
-                            if (strcmp(fn, "str_lower") == 0 || strcmp(fn, "str_upper") == 0 ||
-                                strcmp(fn, "str_trim") == 0 || strcmp(fn, "read_file") == 0 ||
-                                strcmp(fn, "to_string") == 0 || strcmp(fn, "int_to_str") == 0 ||
-                                strcmp(fn, "chr") == 0 || strcmp(fn, "substring") == 0) right_is_str = true;
+                        if (e->binary.right->kind == EXPR_IDENT) {
+                            Type* t = llvm_get_var_type(lg, e->binary.right->ident);
+                            if (t && t->kind == TYPE_STR) right_is_str = true;
                         }
                         
                         if (left_is_str || right_is_str) {
-                            // String concatenation - call str_concat
+                            // String concatenation
                             t = llvm_new_temp(lg);
                             llvm_emit(lg, "  %%%d = call i8* @str_concat(i8* %s, i8* %s)", t, left_str, right_str);
                         } else {
+                            // Integer addition
                             llvm_emit(lg, "  %%%d = add i64 %s, %s", t, left_str, right_str);
                         }
                         break;
@@ -6911,7 +6948,8 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     
                     for (int i = 0; i < lg->module->function_count; i++) {
                         FnDef* fn = &lg->module->functions[i];
-                        if (fn->is_extension && strcmp(fn->extension_method, method_name) == 0) {
+                        if (fn && fn->is_extension && fn->extension_method && fn->extension_method[0] != '\0' &&
+                            strcmp(fn->extension_method, method_name) == 0) {
                             // Call extension method with object as first parameter
                             int obj_reg;
                             llvm_expr(lg, e->call.func->field.object, &obj_reg);

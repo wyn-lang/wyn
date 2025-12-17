@@ -1,6 +1,7 @@
-// Extension Methods - Add custom methods to any type!
-// Python/JavaScript style: fn TypeName.method(self)
+// Extension Methods - Python/JavaScript style!
+// Add custom methods to ANY type
 
+// Int extensions
 fn int.squared(self) -> int {
     return self * self
 }
@@ -9,41 +10,62 @@ fn int.cubed(self) -> int {
     return self * self * self
 }
 
-fn int.double(self) -> int {
-    return self * 2
+fn int.plus(self, n: int) -> int {
+    return self + n
 }
 
 fn int.is_even(self) -> int {
     return self % 2 == 0 ? 1 : 0
 }
 
-fn int.is_positive(self) -> int {
-    return self > 0 ? 1 : 0
+// String extensions
+fn str.shout(self) -> str {
+    return self.upper() + "!!!"
+}
+
+fn str.whisper(self) -> str {
+    return self.lower() + "..."
+}
+
+fn str.wrap(self, left: str, right: str) -> str {
+    return left + self + right
+}
+
+fn str.repeat_times(self, times: int) -> str {
+    let result = ""
+    let i = 0
+    while i < times {
+        result = result + self
+        i = i + 1
+    }
+    return result
 }
 
 fn main() {
     print("=== Extension Methods Demo ===")
     
-    // Call on literals
-    print(5.squared())          // 25
-    print(3.cubed())            // 27
-    print(21.double())          // 42
+    // Int extensions
+    print(5.squared())              // 25
+    print(3.cubed())                // 27
+    print(5.plus(10))               // 15
+    print(4.is_even())              // 1 (true)
+    print(5.is_even())              // 0 (false)
     
-    // Call on variables
+    // String extensions
+    print("hello".shout())          // "HELLO!!!"
+    print("WORLD".whisper())        // "world..."
+    print("test".wrap("[", "]"))    // "[test]"
+    print("ha".repeat_times(3))     // "hahaha"
+    
+    // Method chaining
+    print((-10).abs().squared())    // 100
+    
+    // Variables
     const num = 7
-    print(num.squared())        // 49
-    print(num.is_even())        // 0 (false)
+    print(num.squared())            // 49
     
-    const even = 8
-    print(even.is_even())       // 1 (true)
+    const text = "wyn"
+    print(text.shout())             // "WYN!!!"
     
-    // Chain with built-in methods
-    const neg = -10
-    print(neg.abs().squared())  // 100
-    
-    const val = -5
-    print(val.abs().double())   // 10
-    print(val.is_positive())    // 0 (false)
-    
-    print("Extension methods are powerful!")
+    print("Extension methods are incredibly powerful!")
 }
