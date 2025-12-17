@@ -42,9 +42,20 @@ true || false  # true (or)
 
 # Strings
 "Hello" + " " + "World"  # "Hello World"
-"Hello".len()            # 5
-"Hello".upper()          # "HELLO"
-"Hello".lower()          # "hello"
+"Hello".len()            # 5 (method works)
+
+# String functions (use module syntax with import string)
+import string
+
+const upper = string.upper("hello")      # "HELLO"
+const lower = string.lower("HELLO")      # "hello"
+const has = string.contains("hello", "ll")  # true
+const parts = string.split("a,b,c", ",")    # ["a", "b", "c"]
+
+# Built-in string functions (no import needed)
+const parts = str_split("a,b,c", ",")    # ["a", "b", "c"]
+const joined = str_concat("Hello", " World")  # "Hello World"
+const pos = str_find("hello", "ll")      # 2
 
 # String concatenation (current method)
 const name = "World"
