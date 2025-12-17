@@ -6746,6 +6746,35 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     int t = llvm_new_temp(lg);
                     llvm_emit(lg, "  %%%d = call i64 @str_ends_with(i8* %%%d, i8* %%%d)", t, obj_reg, arg_reg);
                     *result_reg = t;
+                } else if (strcmp(method_name, "split") == 0) {
+                    // Handle str.split(sep)
+                    int obj_reg;
+                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                    
+                    int sep_reg;
+                    if (e->call.arg_count > 0) {
+                        llvm_expr(lg, e->call.args[0], &sep_reg);
+                    }
+                    
+                    int t = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = call i64* @str_split(i8* %%%d, i8* %%%d)", t, obj_reg, sep_reg);
+                    *result_reg = t;
+                } else if (strcmp(method_name, "replace") == 0) {
+                    // Handle str.replace(old, new)
+                    int obj_reg;
+                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                    
+                    int old_reg, new_reg;
+                    if (e->call.arg_count > 0) {
+                        llvm_expr(lg, e->call.args[0], &old_reg);
+                    }
+                    if (e->call.arg_count > 1) {
+                        llvm_expr(lg, e->call.args[1], &new_reg);
+                    }
+                    
+                    int t = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = call i8* @str_replace(i8* %%%d, i8* %%%d, i8* %%%d)", t, obj_reg, old_reg, new_reg);
+                    *result_reg = t;
                 } else if (strcmp(method_name, "get") == 0) {
                     // Handle arr.get(index)
                     int obj_reg;

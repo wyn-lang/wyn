@@ -19,7 +19,7 @@ fn main() {
     const docker2 = os.arg(docker, "ps")
     const docker3 = os.arg(docker2, "-a")
     const result = os.run(docker3)
-    print("Docker exit code: " + int_to_str(result))
+    print("Docker exit code: " + result.to_str())
     
     print("Chaining works!")
 }

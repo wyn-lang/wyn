@@ -1,19 +1,19 @@
 fn main() {
-    const s: str = int_to_str(42)
+    const s: str = 42.to_str()
     print(s)
     
     const n: int = str_to_int("123")
     assert(n == 123)
     
     # Test negative
-    const neg: str = int_to_str(-99)
+    const neg: str = -99.to_str()
     print(neg)
     
     const neg_n: int = str_to_int("-456")
     assert(neg_n == -456)
     
     # Test zero
-    const zero: str = int_to_str(0)
+    const zero: str = 0.to_str()
     print(zero)
     
     assert(str_to_int("0") == 0)

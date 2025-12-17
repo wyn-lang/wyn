@@ -18,7 +18,7 @@ fn main() {
     }
     
     task_join_all()
-    print("  Count: " + int_to_str(count))
+    print("  Count: " + count.to_str())
     print("")
     
     # Example 2: Accumulator closure
@@ -33,7 +33,7 @@ fn main() {
     total = total + values[3]
     total = total + values[4]
     
-    print("  Total: " + int_to_str(total))
+    print("  Total: " + total.to_str())
     print("")
     
     # Example 3: Multiple variable capture
@@ -47,7 +47,7 @@ fn main() {
     }
     
     task_join_all()
-    print("  x + y = " + int_to_str(result))
+    print("  x + y = " + result.to_str())
     print("")
     
     print("Closures enable powerful functional patterns!")

@@ -42,7 +42,7 @@ fn process_and_upload(filename: str, url: str) -> [int] {
     }
     
     const line_count = result.unwrap(process_result)
-    print("File processed, lines: " + int_to_str(line_count))
+    print("File processed, lines: " + line_count.to_str())
     
     # Step 2: Upload data
     const upload_result = fetch_data(url)
@@ -52,7 +52,7 @@ fn process_and_upload(filename: str, url: str) -> [int] {
     }
     
     const upload_size = result.unwrap(upload_result)
-    print("Upload successful, size: " + int_to_str(upload_size))
+    print("Upload successful, size: " + upload_size.to_str())
     
     # Return combined result
     return result.make_ok(line_count + upload_size)
@@ -78,7 +78,7 @@ fn configure_system() {
     const timeout_config = get_config("timeout")
     if result.is_some(timeout_config) == 1 {
         const timeout = result.unwrap_option(timeout_config)
-        print("Timeout set to: " + int_to_str(timeout))
+        print("Timeout set to: " + timeout.to_str())
     } else {
         print("Using default timeout")
     }
@@ -95,7 +95,7 @@ fn retry_operation(max_attempts: int) -> [int] {
     
     while attempts < max_attempts {
         attempts = attempts + 1
-        print("Attempt " + int_to_str(attempts))
+        print("Attempt " + attempts.to_str())
         
         # Simulate operation that might fail
         if attempts < 3 {
@@ -138,7 +138,7 @@ fn main() {
     const file_result = process_file("data.txt")
     if result.is_ok(file_result) == 1 {
         const lines = result.unwrap(file_result)
-        print("Successfully processed " + int_to_str(lines) + " lines")
+        print("Successfully processed " + lines.to_str() + " lines")
     }
     
     const missing_result = process_file("missing.txt")
@@ -151,7 +151,7 @@ fn main() {
     const net_result = fetch_data("http://api.example.com")
     if result.is_ok(net_result) == 1 {
         const size = result.unwrap(net_result)
-        print("Downloaded " + int_to_str(size) + " bytes")
+        print("Downloaded " + size.to_str() + " bytes")
     }
     
     # Example 3: Chained operations
@@ -159,7 +159,7 @@ fn main() {
     const chain_result = process_and_upload("data.txt", "http://api.example.com")
     if result.is_ok(chain_result) == 1 {
         const total = result.unwrap(chain_result)
-        print("Total result: " + int_to_str(total))
+        print("Total result: " + total.to_str())
     }
     
     # Example 4: Configuration
@@ -171,7 +171,7 @@ fn main() {
     const retry_result = retry_operation(5)
     if result.is_ok(retry_result) == 1 {
         const attempts = result.unwrap(retry_result)
-        print("Succeeded after " + int_to_str(attempts) + " attempts")
+        print("Succeeded after " + attempts.to_str() + " attempts")
     }
     
     # Example 6: Validation

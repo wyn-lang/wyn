@@ -46,9 +46,9 @@ fn main() {
     
     print("")
     print("All tasks completed!")
-    print("Task 1: " + int_to_str(task1_done))
-    print("Task 2: " + int_to_str(task2_done))
-    print("Task 3: " + int_to_str(task3_done))
+    print("Task 1: " + task1_done.to_str())
+    print("Task 2: " + task2_done.to_str())
+    print("Task 3: " + task3_done.to_str())
     print("")
     print("Async/await pattern enables concurrent execution!")
 }

@@ -79,7 +79,7 @@ fn main() {
             print("✓ Health check passed")
             attempts = 100  # Break loop
         } else {
-            print("Waiting for service... (attempt " + int_to_str(attempts + 1) + "/10)")
+            print("Waiting for service... (attempt " + attempts + 1.to_str() + "/10)")
             sleep_ms(2000)
             attempts = attempts + 1
         }

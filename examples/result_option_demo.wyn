@@ -25,7 +25,7 @@ fn main() {
     // Test Result
     const res1 = divide(10, 2)
     if result.is_ok(res1) == 1 {
-        print("10 / 2 = " + int_to_str(result.unwrap(res1)))
+        print("10 / 2 = " + result.unwrap(res1.to_str()))
     }
     
     const res2 = divide(10, 0)
@@ -37,7 +37,7 @@ fn main() {
     const numbers = [1, 2, 3, 4, 5]
     const found = find_in_array(numbers, 3)
     if result.is_some(found) == 1 {
-        print("Found at index: " + int_to_str(result.unwrap_option(found)))
+        print("Found at index: " + result.unwrap_option(found.to_str()))
     }
     
     const not_found = find_in_array(numbers, 10)

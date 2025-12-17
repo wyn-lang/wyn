@@ -20,7 +20,7 @@ fn main() {
     os.command_arg("ps")
     os.command_arg("-a")
     const result = os.command_run()
-    print("Docker command exit code: " + int_to_str(result))
+    print("Docker command exit code: " + result.to_str())
     
     // Example 3: Git command
     print("Getting git status...")

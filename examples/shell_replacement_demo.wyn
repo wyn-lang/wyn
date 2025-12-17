@@ -41,7 +41,7 @@ fn main() {
     // 3. Glob patterns
     print("3. File Patterns:")
     const wyn_files = io.glob("examples/*.wyn")
-    print("  Found " + int_to_str(wyn_files.len()) + " .wyn files")
+    print("  Found " + wyn_files.len(.to_str()) + " .wyn files")
     
     // 4. Command execution
     print("4. Command Execution:")

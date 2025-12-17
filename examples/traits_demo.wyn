@@ -2,7 +2,7 @@
 
 # Trait: Printable
 fn print_int(value: int) {
-    print("Integer: " + int_to_str(value))
+    print("Integer: " + value.to_str())
 }
 
 fn print_str(value: str) {
@@ -44,15 +44,15 @@ fn main() {
     # Test Comparable trait
     const cmp1 = compare_int(10, 5)
     assert(cmp1 == 1)
-    print("10 > 5: " + int_to_str(cmp1))
+    print("10 > 5: " + cmp1.to_str())
     
     const cmp2 = compare_int(3, 8)
     assert(cmp2 == -1)
-    print("3 < 8: " + int_to_str(cmp2))
+    print("3 < 8: " + cmp2.to_str())
     
     const cmp3 = compare_str("hello", "hello")
     assert(cmp3 == 0)
-    print("hello == hello: " + int_to_str(cmp3))
+    print("hello == hello: " + cmp3.to_str())
     
     print("Trait-like behavior works!")
 }

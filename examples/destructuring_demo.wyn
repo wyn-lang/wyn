@@ -24,23 +24,23 @@ fn main() {
     const length = response[1]
     const timestamp = response[2]
     
-    print("  Status: " + int_to_str(status))
-    print("  Length: " + int_to_str(length))
-    print("  Timestamp: " + int_to_str(timestamp))
+    print("  Status: " + status.to_str())
+    print("  Length: " + length.to_str())
+    print("  Timestamp: " + timestamp.to_str())
     print("")
     
     # 2. Result destructuring
     print("2. Result Destructuring:")
     const result1 = divide_safe(10, 2)
     match result1 {
-        ok(value) => print("  Success: " + int_to_str(value))
-        err(code) => print("  Error: " + int_to_str(code))
+        ok(value) => print("  Success: " + value.to_str())
+        err(code) => print("  Error: " + code.to_str())
     }
     
     const result2 = divide_safe(10, 0)
     match result2 {
-        ok(value) => print("  Success: " + int_to_str(value))
-        err(code) => print("  Error code: " + int_to_str(code))
+        ok(value) => print("  Success: " + value.to_str())
+        err(code) => print("  Error code: " + code.to_str())
     }
     print("")
     
@@ -48,13 +48,13 @@ fn main() {
     print("3. Option Destructuring:")
     const some_value = some(42)
     match some_value {
-        some(v) => print("  Got value: " + int_to_str(v))
+        some(v) => print("  Got value: " + v.to_str())
         none => print("  No value")
     }
     
     const no_value = none
     match no_value {
-        some(v) => print("  Got value: " + int_to_str(v))
+        some(v) => print("  Got value: " + v.to_str())
         none => print("  No value (expected)")
     }
     
