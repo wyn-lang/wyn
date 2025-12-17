@@ -38,9 +38,9 @@ The language is **production-ready** with **100% passing test suite** and **comp
 
 ## Test Suite Status
 
-- **Total**: 48/48 passing (100%)
+- **Total**: 49/49 passing (100%)
 - **Examples**: 100+
-- **Tests**: 48
+- **Tests**: 49
 
 ## Quick Start
 
@@ -320,8 +320,9 @@ Wyn excels at:
 | Core Language | ✅ 100% Complete |
 | LLVM Backend | ✅ 100% Working |
 | Standard Library | ✅ 16 Modules (120+ functions) |
-| Test Suite | ✅ 100% Passing (48/48) |
+| Test Suite | ✅ 100% Passing (49/49) |
 | Package Ecosystem | ✅ 3 Official Packages |
+| Advanced Features | ✅ Destructuring, Traits, Async, Closures |
 | Developer Tools | ✅ REPL, LSP, Formatter |
 | Documentation | ✅ Complete |
 
