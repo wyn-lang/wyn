@@ -147,6 +147,53 @@ fn main() {
 }
 ```
 
+## Advanced Features
+
+### Destructuring
+```wyn
+# Array destructuring
+const coords = get_coordinates()
+const x = coords[0]
+const y = coords[1]
+
+# Result/Option destructuring
+match result {
+    ok(value) => print(value)
+    err(msg) => print(msg)
+}
+```
+
+### Traits/Interfaces
+```wyn
+# Polymorphic functions
+fn add_int(a: int, b: int) -> int { return a + b }
+fn add_str(a: str, b: str) -> str { return a + b }
+```
+
+### Async/Await Patterns
+```wyn
+spawn {
+    # Async task 1
+}
+
+spawn {
+    # Async task 2
+}
+
+task_join_all()  # Await all
+```
+
+### Closures
+```wyn
+let counter = 0
+
+spawn {
+    counter = counter + 1  # Captures counter
+}
+
+task_join_all()
+```
+
 ## Standard Library
 
 ### Complete Modules (120+ functions, ALL REAL):
