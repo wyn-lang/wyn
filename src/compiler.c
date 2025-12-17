@@ -6793,6 +6793,31 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     int t = llvm_new_temp(lg);
                     llvm_emit(lg, "  %%%d = call i64 @round_wyn(i64 %%%d)", t, obj_reg);
                     *result_reg = t;
+                } else if (strcmp(method_name, "reverse") == 0) {
+                    // Handle arr.reverse()
+                    int obj_reg;
+                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                    int t = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = call i64* @array_reverse(i64* %%%d)", t, obj_reg);
+                    *result_reg = t;
+                } else if (strcmp(method_name, "append") == 0) {
+                    // Handle arr.append(item)
+                    int obj_reg;
+                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                    
+                    int item_reg;
+                    if (e->call.arg_count > 0) {
+                        llvm_expr(lg, e->call.args[0], &item_reg);
+                    }
+                    
+                    int t = llvm_new_temp(lg);
+                    if (item_reg <= -1000000) {
+                        long long const_val = -item_reg - 1000000;
+                        llvm_emit(lg, "  %%%d = call i64* @array_append_elem(i64* %%%d, i64 %lld)", t, obj_reg, const_val);
+                    } else {
+                        llvm_emit(lg, "  %%%d = call i64* @array_append_elem(i64* %%%d, i64 %%%d)", t, obj_reg, item_reg);
+                    }
+                    *result_reg = t;
                 } else {
                     // Unknown method - generate zero register
                     int t = llvm_new_temp(lg);

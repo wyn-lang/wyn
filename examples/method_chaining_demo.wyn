@@ -1,36 +1,41 @@
 // Method chaining demonstration
-// Shows fluent API style
-
-import os
+// Shows how to use methods on values
 
 fn main() {
     print("=== Method Chaining Demo ===")
     
-    // Example 1: Simple command chain
-    const output1 = os.command("echo").arg("Hello").arg("World").output()
-    print("Output 1: " + output1)
+    // String methods
+    const messy = "  HELLO WORLD  "
+    const trimmed = messy.trim()
+    const clean = trimmed.lower()
+    print(clean)  // "hello world"
     
-    // Example 2: Docker-style command
-    const output2 = os.command("echo").arg("docker").arg("ps").arg("-a").output()
-    print("Output 2: " + output2)
+    // More string methods
+    const input = "  Mixed Case String  "
+    const step1 = input.trim()
+    const result = step1.upper()
+    print(result)  // "MIXED CASE STRING"
     
-    // Example 3: Git-style command
-    const output3 = os.command("echo").arg("git").arg("status").output()
-    print("Output 3: " + output3)
+    // Direct method calls
+    print("hello".upper())  // "HELLO"
+    print("WORLD".lower())  // "world"
+    print("  spaces  ".trim())  // "spaces"
     
-    // Example 4: Run instead of output
-    const exit_code = os.command("echo").arg("test").run()
-    print("Exit code: " + int_to_str(exit_code))
+    // Array methods
+    const numbers = [1, 2, 3, 4, 5]
+    const length = numbers.len()
+    print(length.to_str() + " elements")
     
-    // Example 5: Long chain
-    const output4 = os.command("echo")
-        .arg("This")
-        .arg("is")
-        .arg("a")
-        .arg("long")
-        .arg("chain")
-        .output()
-    print("Output 4: " + output4)
+    // Int methods
+    const negative = -42
+    const positive = negative.abs()
+    print("Absolute: " + positive.to_str())
     
-    print("Method chaining works perfectly!")
+    // Bool checks
+    const has_hello: bool = "hello world".contains("hello")
+    if has_hello {
+        print("Contains 'hello'!")
+    }
+    
+    print("Method calls work perfectly!")
 }

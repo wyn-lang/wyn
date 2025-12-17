@@ -16,7 +16,7 @@ fn main() {
     
     // String with numbers
     const count = 42
-    const count_msg = "Count: " + int_to_str(count)
+    const count_msg = "Count: " + count.to_str()
     print(count_msg)
     
     // String assignment and mutation
