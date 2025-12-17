@@ -74,6 +74,45 @@ fn deploy() {
 ### 6. ~~Standard Library Gaps~~ ✅ FIXED
 **Status:** SQLite, HTTP framework, testing framework all implemented
 
+### 7. **Object-Oriented Method Syntax** ⚠️ CRITICAL
+**Current Problem:**
+```wyn
+# Current (verbose, unintuitive)
+const upper = string.upper("hello")
+const reversed = array.reverse([1,2,3])
+const has = string.contains("hello", "ll")
+
+# What we want (clean, intuitive)
+const upper = "hello".upper()
+const reversed = [1,2,3].reverse()
+const has = "hello".contains("ll")
+```
+
+**Status:** 
+- Parser supports method syntax
+- Type checker handles it correctly
+- LLVM codegen is broken (only `.len()` works)
+
+**What's Needed:**
+- Fix LLVM codegen for all method calls
+- Implement for all types: int, str, bool, array, set, hash, Result, Option
+- Convert entire stdlib to method syntax
+- Update all examples and documentation
+
+**Priority:** HIGH - This is a major usability improvement
+
+**Impact:** 
+- Makes Wyn feel like Python/JavaScript
+- Dramatically improves developer experience
+- More intuitive for new users
+- Cleaner, more readable code
+
+**Estimated Effort:** 8-12 hours
+- Fix LLVM method call codegen
+- Test all types
+- Update stdlib
+- Update examples
+
 ## Design Decisions
 
 ### Memory Model
@@ -116,7 +155,20 @@ fn add(a: int, b: int) -> int {  // Required
 - [x] Package manager
 - [x] 100% test pass rate
 
-### Month 3: Package Ecosystem & Publishing
+### Month 3: Object-Oriented Method Syntax ⚠️ CRITICAL
+- [ ] Fix LLVM codegen for method calls on all types
+- [ ] Implement `.method()` syntax for strings
+- [ ] Implement `.method()` syntax for arrays
+- [ ] Implement `.method()` syntax for int, bool, float
+- [ ] Implement `.method()` syntax for collections (set, hash)
+- [ ] Implement `.method()` syntax for Result/Option
+- [ ] Convert entire stdlib to method syntax
+- [ ] Update all examples and tests
+- [ ] Update all documentation
+
+**Goal:** `"hello".upper()` instead of `string.upper("hello")` for ALL types
+
+### Month 4: Package Ecosystem & Publishing
 - [ ] Publish 3 official packages to GitHub
 - [ ] Create package registry/discovery
 - [ ] Test installation workflow
@@ -177,7 +229,15 @@ What Python does well, Wyn must match:
 - [x] JSON parsing: `json.parse()`
 - [x] File I/O: `io.read()`, `io.write()`
 - [x] String operations: split, replace, etc.
-- [ ] File operations: copy, move, chmod
+- [x] File operations: copy, move, chmod
+- [ ] **Object-oriented syntax:** `"hello".upper()` not `string.upper("hello")`
+- [ ] Method chaining: `"hello".upper().split("").join("")`
+- [ ] List comprehensions (implemented but needs polish)
+- [ ] Dict/Map literals: `{"key": "value"}`
+- [ ] Context managers (or equivalent)
+- [ ] Decorators (or equivalent)
+
+**CRITICAL:** Object-oriented method syntax is the #1 usability improvement needed
 - [ ] Method chaining
 - [ ] List comprehensions (or equivalent)
 - [ ] Dict/Map literals

@@ -56,6 +56,15 @@
 1. ~~**Error Handling System**~~ ✅ COMPLETE
 2. ~~**Package Ecosystem**~~ ✅ COMPLETE
 3. ~~**100% Test Pass Rate**~~ ✅ COMPLETE
+4. **Object-Oriented Method Syntax** ⚠️ HIGH PRIORITY
+   - [ ] Fix LLVM codegen for string methods (`.upper()`, `.lower()`, `.contains()`)
+   - [ ] Fix LLVM codegen for array methods (`.reverse()`, `.append()`, `.contains()`)
+   - [ ] Implement for all types (int, str, bool, array, set, hash, etc.)
+   - [ ] Convert all stdlib to use method syntax
+   - [ ] Update all examples and tests
+   - **Goal:** `"hello".upper()` instead of `string.upper("hello")`
+   - **Impact:** Dramatically improves developer experience
+   - **Status:** Partially working (`.len()` works), needs LLVM fixes
 
 ### 🎯 High Priority
 1. **Package Publishing**
