@@ -1,0 +1,59 @@
+#!/usr/bin/env wyn run
+# Production DevOps Example - Service Deployment
+
+import os
+
+fn main() {
+    print("=== Service Deployment Automation ===")
+    print("")
+    
+    const service = "my-api"
+    const version = "v2.0.0"
+    
+    print("Deploying: " + service + " " + version)
+    print("")
+    
+    # Build Docker image
+    print("[1/3] Building image...")
+    const build_cmd = "docker build -t " + service + ":" + version + " ."
+    const build_result = os.exec(build_cmd)
+    
+    if build_result == 0 {
+        print("✓ Build successful")
+    } else {
+        print("✗ Build failed")
+        os.exit(1)
+    }
+    print("")
+    
+    # Deploy container
+    print("[2/3] Deploying container...")
+    const deploy_cmd = "docker run -d --name " + service + " " + service + ":" + version
+    const deploy_result = os.exec(deploy_cmd)
+    
+    if deploy_result == 0 {
+        print("✓ Deployment successful")
+    } else {
+        print("✗ Deployment failed")
+        os.exit(1)
+    }
+    print("")
+    
+    # Verify
+    print("[3/3] Verifying deployment...")
+    sleep_ms(2000)
+    
+    const verify_cmd = "docker ps | grep " + service
+    const verify_result = os.exec(verify_cmd)
+    
+    if verify_result == 0 {
+        print("✓ Service is running")
+    } else {
+        print("✗ Service not running")
+        os.exit(1)
+    }
+    
+    print("")
+    print("=== Deployment Complete ===")
+    print("Service " + service + " version " + version + " is live!")
+}
