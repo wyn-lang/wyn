@@ -1,0 +1,47 @@
+# Test async/await-like behavior using spawn blocks
+
+fn async_task(id: int, result_ptr: int) {
+    # Simulate async work
+    let i: int = 0
+    while i < 1000 {
+        i = i + 1
+    }
+    
+    # Store result (simulating async completion)
+    # In real async/await, this would be a future
+}
+
+fn main() {
+    print("Testing async/await-like behavior")
+    
+    # Spawn async tasks
+    let result1: int = 0
+    let result2: int = 0
+    let result3: int = 0
+    
+    spawn {
+        result1 = 10
+    }
+    
+    spawn {
+        result2 = 20
+    }
+    
+    spawn {
+        result3 = 30
+    }
+    
+    # Await all tasks
+    task_join_all()
+    
+    # Verify results
+    print("Result 1: " + int_to_str(result1))
+    print("Result 2: " + int_to_str(result2))
+    print("Result 3: " + int_to_str(result3))
+    
+    assert(result1 == 10)
+    assert(result2 == 20)
+    assert(result3 == 30)
+    
+    print("Async/await-like behavior works!")
+}

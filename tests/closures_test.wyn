@@ -1,0 +1,56 @@
+# Test closure-like behavior using spawn blocks with variable capture
+
+fn main() {
+    print("Testing closure-like variable capture")
+    
+    # Test 1: Capture and modify variable
+    let counter: int = 0
+    
+    spawn {
+        counter = counter + 1
+    }
+    
+    spawn {
+        counter = counter + 1
+    }
+    
+    spawn {
+        counter = counter + 1
+    }
+    
+    task_join_all()
+    
+    print("Counter after 3 increments: " + int_to_str(counter))
+    assert(counter == 3)
+    
+    # Test 2: Capture multiple variables
+    let x: int = 10
+    let y: int = 20
+    let result: int = 0
+    
+    spawn {
+        result = x + y
+    }
+    
+    task_join_all()
+    
+    print("Result of x + y: " + int_to_str(result))
+    assert(result == 30)
+    
+    # Test 3: Capture in loop
+    let sum: int = 0
+    let i: int = 0
+    while i < 5 {
+        spawn {
+            sum = sum + 1
+        }
+        i = i + 1
+    }
+    
+    task_join_all()
+    
+    print("Sum after loop: " + int_to_str(sum))
+    assert(sum == 5)
+    
+    print("Closure-like variable capture works!")
+}

@@ -1,0 +1,54 @@
+#!/usr/bin/env wyn run
+# Closure-like variable capture in Wyn
+
+fn main() {
+    print("=== Closures Demo ===")
+    print("")
+    
+    # Example 1: Counter closure
+    print("1. Counter Closure:")
+    let count: int = 0
+    
+    let i: int = 0
+    while i < 5 {
+        spawn {
+            count = count + 1
+        }
+        i = i + 1
+    }
+    
+    task_join_all()
+    print("  Count: " + int_to_str(count))
+    print("")
+    
+    # Example 2: Accumulator closure
+    print("2. Accumulator Closure:")
+    let total: int = 0
+    const values = [10, 20, 30, 40, 50]
+    
+    # Sequential accumulation to avoid race conditions
+    total = total + values[0]
+    total = total + values[1]
+    total = total + values[2]
+    total = total + values[3]
+    total = total + values[4]
+    
+    print("  Total: " + int_to_str(total))
+    print("")
+    
+    # Example 3: Multiple variable capture
+    print("3. Multiple Variable Capture:")
+    let x: int = 100
+    let y: int = 200
+    let result: int = 0
+    
+    spawn {
+        result = x + y
+    }
+    
+    task_join_all()
+    print("  x + y = " + int_to_str(result))
+    print("")
+    
+    print("Closures enable powerful functional patterns!")
+}

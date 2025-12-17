@@ -1,0 +1,54 @@
+#!/usr/bin/env wyn run
+# Async/await-like concurrency using spawn blocks
+
+import time
+
+fn main() {
+    print("=== Async/Await Demo ===")
+    print("")
+    
+    print("Starting 3 async tasks...")
+    
+    let task1_done: int = 0
+    let task2_done: int = 0
+    let task3_done: int = 0
+    
+    # Spawn async task 1
+    spawn {
+        print("  Task 1: Starting...")
+        sleep_ms(100)
+        task1_done = 1
+        print("  Task 1: Complete!")
+    }
+    
+    # Spawn async task 2
+    spawn {
+        print("  Task 2: Starting...")
+        sleep_ms(150)
+        task2_done = 1
+        print("  Task 2: Complete!")
+    }
+    
+    # Spawn async task 3
+    spawn {
+        print("  Task 3: Starting...")
+        sleep_ms(50)
+        task3_done = 1
+        print("  Task 3: Complete!")
+    }
+    
+    print("Main thread continues...")
+    print("")
+    
+    # Await all tasks (like await Promise.all())
+    print("Waiting for all tasks...")
+    task_join_all()
+    
+    print("")
+    print("All tasks completed!")
+    print("Task 1: " + int_to_str(task1_done))
+    print("Task 2: " + int_to_str(task2_done))
+    print("Task 3: " + int_to_str(task3_done))
+    print("")
+    print("Async/await pattern enables concurrent execution!")
+}
