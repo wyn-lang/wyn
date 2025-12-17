@@ -1,6 +1,7 @@
 # Wyn Language - Vision & Roadmap
 
-**Last Updated:** December 17, 2025
+**Official Website:** [wynlang.com](https://wynlang.com)  
+**Last Updated:** December 17, 2025  
 **Progress:** 90% complete
 
 ## Mission Statement
@@ -373,12 +374,13 @@ fn main() {
 - "Compiled scripts that just work"
 
 ### Launch Plan
-1. **Blog post:** "Why I built Wyn"
-2. **Show HN:** Demo with real examples
-3. **Reddit:** r/devops, r/programming
-4. **Twitter:** Thread with examples
-5. **YouTube:** Tutorial series
-6. **Conferences:** DevOps Days, KubeCon
+1. **Website:** Launch wynlang.com with docs and examples
+2. **Blog post:** "Why I built Wyn"
+3. **Show HN:** Demo with real examples
+4. **Reddit:** r/devops, r/programming
+5. **Twitter:** Thread with examples
+6. **YouTube:** Tutorial series
+7. **Conferences:** DevOps Days, KubeCon
 
 ## Open Questions
 

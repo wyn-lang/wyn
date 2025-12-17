@@ -1,5 +1,7 @@
 # Wyn Language - TODO
 
+**Official Website:** [wynlang.com](https://wynlang.com)
+
 > **See [VISION.md](VISION.md) for long-term roadmap and strategic direction.**
 > **See [STATUS.md](STATUS.md) for current capabilities.**
 
@@ -134,8 +136,9 @@
 
 ## Community
 
+- [x] Domain acquired: wynlang.com ✅
+- [ ] Launch website at wynlang.com
 - [ ] Make repository public
-- [ ] Create website
 - [ ] Write blog post
 - [ ] Post to Show HN
 - [ ] Create Discord/forum

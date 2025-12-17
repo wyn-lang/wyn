@@ -1,5 +1,6 @@
 # Changelog v0.3.0 - Production Ready Release
 
+**Official Website:** [wynlang.com](https://wynlang.com)  
 **Release Date:** December 17, 2025  
 **Status:** Production Ready  
 **Test Pass Rate:** 100% (49/49 tests)
@@ -127,10 +128,11 @@ Planned features:
 
 ## Links
 
-- Repository: (pending public release)
-- Documentation: docs/
-- Examples: examples/
-- Packages: packages/
+- **Website:** [wynlang.com](https://wynlang.com)
+- **Repository:** (pending public release)
+- **Documentation:** docs/
+- **Examples:** examples/
+- **Packages:** packages/
 
 ---
 
