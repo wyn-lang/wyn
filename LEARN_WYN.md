@@ -79,14 +79,16 @@ const numbers: [int] = [1, 2, 3, 4, 5]
 const names: [str] = ["Alice", "Bob", "Charlie"]
 
 # Array operations
-numbers.len()            # 5
+numbers.len()            # 5 (method syntax)
 numbers[0]               # 1 (indexing)
 numbers[4]               # 5
 
-# Array functions
+# Array module functions (import array)
+import array
+
 const reversed = array.reverse(numbers)
 const appended = array.append(numbers, 6)
-const contains = array.contains(numbers, 3)  # true
+const has_three = array.contains(numbers, 3)  # true
 
 ####################################
 # 4. Control Flow
