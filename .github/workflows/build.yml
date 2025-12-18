@@ -7,36 +7,21 @@ on:
     branches: [main]
 
 jobs:
-  build-and-test:
-    strategy:
-      matrix:
-        os: [macos-latest, ubuntu-latest]
-    
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
+  build-macos:
+    runs-on: macos-latest
+    timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup LLVM (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          # macOS runners have LLVM pre-installed
-          echo "LLVM already available at /opt/homebrew/opt/llvm"
-          export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
-          llvm-config --version || brew install llvm
-
-      - name: Setup LLVM (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y llvm-14 clang-14
-          sudo ln -sf /usr/bin/llvm-config-14 /usr/bin/llvm-config
+      - name: Setup LLVM
+        uses: KyleMayes/install-llvm-action@v2
+        with:
+          version: "18"
+          cached: true
 
       - name: Build Compiler
-        run: |
-          export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
-          make
+        run: make
 
       - name: Run Test Suite
         run: make test
@@ -51,5 +36,37 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: wyn-${{ matrix.os }}
+          name: wyn-macos
+          path: build/wyn
+
+  build-linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup LLVM
+        uses: KyleMayes/install-llvm-action@v2
+        with:
+          version: "18"
+          cached: true
+
+      - name: Build Compiler
+        run: make
+
+      - name: Run Test Suite
+        run: make test
+
+      - name: Test Examples
+        run: |
+          ./build/wyn run examples/hello.wyn
+          ./build/wyn run examples/fibonacci.wyn
+          ./build/wyn run examples/extension_methods.wyn
+
+      - name: Upload Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wyn-linux
           path: build/wyn
