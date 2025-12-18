@@ -1,0 +1,32 @@
+// File system operations demo
+// Shows clean fs module API (Node.js style)
+
+import fs
+
+fn main() {
+    print("=== File System Demo ===")
+    
+    // Write file
+    const path = "/tmp/wyn_demo.txt"
+    fs.write(path, "Hello, Wyn!")
+    print("File written")
+    
+    // Read file
+    print(fs.read(path))
+    
+    // Check if exists
+    if fs.exists(path) == 1 {
+        print("File exists!")
+    }
+    
+    // Copy file
+    fs.copy(path, "/tmp/wyn_backup.txt")
+    print("File copied")
+    
+    // Delete files
+    fs.delete(path)
+    fs.delete("/tmp/wyn_backup.txt")
+    print("Files deleted")
+    
+    print("File system operations complete!")
+}

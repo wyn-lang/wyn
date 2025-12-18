@@ -930,6 +930,7 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "args") == 0) return "args";
         if (strcmp(function, "args") == 0) return "args";
     } else if (strcmp(module, "io") == 0) {
+        // Console I/O only
         if (strcmp(function, "print") == 0) return "print";
         if (strcmp(function, "println") == 0) return "println";
         if (strcmp(function, "print_str") == 0) return "print_str";
@@ -938,34 +939,32 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "print_newline") == 0) return "print_newline";
         if (strcmp(function, "read_line") == 0) return "read_line";
         if (strcmp(function, "input") == 0) return "input";
+    } else if (strcmp(module, "fs") == 0) {
         // File operations
         if (strcmp(function, "read") == 0) return "read_file";
         if (strcmp(function, "write") == 0) return "write_file";
         if (strcmp(function, "append") == 0) return "append_file";
         if (strcmp(function, "delete") == 0) return "delete_file";
         if (strcmp(function, "exists") == 0) return "file_exists";
-        if (strcmp(function, "read_file") == 0) return "read_file";
-        if (strcmp(function, "delete") == 0) return "delete_file";
         if (strcmp(function, "size") == 0) return "file_size";
+        if (strcmp(function, "copy") == 0) return "file_copy";
+        if (strcmp(function, "move") == 0) return "file_move";
+        if (strcmp(function, "chmod") == 0) return "file_chmod";
+        if (strcmp(function, "glob") == 0) return "file_glob";
+        // Directory operations
         if (strcmp(function, "mkdir") == 0) return "mkdir_wyn";
         if (strcmp(function, "rmdir") == 0) return "rmdir_wyn";
+        if (strcmp(function, "list_dir") == 0) return "list_dir";
         if (strcmp(function, "is_dir") == 0) return "is_dir_wyn";
         if (strcmp(function, "is_file") == 0) return "is_file_wyn";
+        // Legacy names for compatibility
+        if (strcmp(function, "read_file") == 0) return "read_file";
         if (strcmp(function, "write_file") == 0) return "write_file";
         if (strcmp(function, "append_file") == 0) return "append_file";
         if (strcmp(function, "delete_file") == 0) return "delete_file";
         if (strcmp(function, "file_exists") == 0) return "file_exists";
         if (strcmp(function, "file_size") == 0) return "file_size";
-        if (strcmp(function, "is_dir") == 0) return "is_dir";
-        if (strcmp(function, "list_dir") == 0) return "list_dir";
-        if (strcmp(function, "mkdir") == 0) return "mkdir";
-        if (strcmp(function, "rmdir") == 0) return "rmdir";
-        // Additional file operations
-        if (strcmp(function, "copy") == 0) return "file_copy";
-        if (strcmp(function, "move") == 0) return "file_move";
-        if (strcmp(function, "chmod") == 0) return "file_chmod";
-        if (strcmp(function, "glob") == 0) return "file_glob";
-    } else if (strcmp(module, "fs") == 0) {
+    } else if (strcmp(module, "fs_old") == 0) {
         if (strcmp(function, "read_file") == 0) return "read_file";
         if (strcmp(function, "delete") == 0) return "delete_file";
         if (strcmp(function, "size") == 0) return "file_size";

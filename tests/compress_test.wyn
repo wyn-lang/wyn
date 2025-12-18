@@ -1,5 +1,5 @@
 import compress
-import io
+import fs
 
 fn main() {
     print("Compress module test")
@@ -8,14 +8,14 @@ fn main() {
     const test_file: str = "/tmp/wyn_test.txt"
     const gz_file: str = "/tmp/wyn_test.txt.gz"
     
-    io.write(test_file, "Hello compression!")
+    fs.write(test_file, "Hello compression!")
     
     const gzip_ok: int = compress.gzip_file(test_file, gz_file)
     if gzip_ok == 1 {
         print("Gzip: OK")
     }
     
-    const exists: int = io.exists(gz_file)
+    const exists: int = fs.exists(gz_file)
     if exists == 1 {
         print("Gzip file exists: OK")
     }
@@ -28,9 +28,9 @@ fn main() {
     }
     
     # Cleanup
-    io.delete(test_file)
-    io.delete(gz_file)
-    io.delete(tar_file)
+    fs.delete(test_file)
+    fs.delete(gz_file)
+    fs.delete(tar_file)
     
     print("Compress module test complete")
 }

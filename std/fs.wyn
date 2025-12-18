@@ -1,0 +1,22 @@
+# std/fs.wyn
+# File system operations
+# All functions are mapped to runtime implementations via compiler
+
+# File Operations:
+#   fs.read(path) -> str
+#   fs.write(path, content) -> int
+#   fs.append(path, content) -> int
+#   fs.delete(path) -> int
+#   fs.exists(path) -> int
+#   fs.size(path) -> int
+#   fs.copy(src, dest) -> int
+#   fs.move(src, dest) -> int
+#   fs.chmod(path, mode) -> int
+#   fs.glob(pattern) -> array[str]
+
+# Directory Operations:
+#   fs.mkdir(path) -> int
+#   fs.rmdir(path) -> int
+#   fs.list_dir(path) -> array[str]
+#   fs.is_dir(path) -> int
+#   fs.is_file(path) -> int
