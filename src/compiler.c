@@ -9418,7 +9418,7 @@ int main(int argc, char** argv) {
     
     // Link
     if (!compile_only) {
-        snprintf(cmd, 512, "clang %s build/builtins_runtime.o build/array_runtime.o build/spawn_runtime.o build/channels_runtime.o build/task_runtime.o -lpthread -o %s", obj_file, output_file);
+        snprintf(cmd, 512, "clang -fPIE %s build/builtins_runtime.o build/array_runtime.o build/spawn_runtime.o build/channels_runtime.o build/task_runtime.o -lpthread -o %s", obj_file, output_file);
         if (system(cmd) != 0) {
             fprintf(stderr, "Linking failed\n");
             return 1;
