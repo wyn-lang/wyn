@@ -2,6 +2,9 @@
 // This file provides the runtime implementations of builtin functions
 // that are called from compiled Wyn programs.
 
+#define _POSIX_C_SOURCE 200809L
+#define _XOPEN_SOURCE 700
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -584,7 +587,7 @@ int64_t udp_send_wyn(const char* host, int port, const char* data) {
         return 0;
     }
     
-    memcpy(&serv_addr.sin_addr.s_addr, server->h_addr, server->h_length);
+    memcpy(&serv_addr.sin_addr.s_addr, server->h_addr_list[0], server->h_length);
     
     ssize_t sent = sendto(sockfd, data, strlen(data), 0,
                           (struct sockaddr*)&serv_addr, sizeof(serv_addr));
@@ -1505,7 +1508,7 @@ int tcp_connect_wyn(const char* host, int port) {
         return -1;
     }
     
-    memcpy(&serv_addr.sin_addr.s_addr, server->h_addr, server->h_length);
+    memcpy(&serv_addr.sin_addr.s_addr, server->h_addr_list[0], server->h_length);
     
     if (connect(sockfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
         close(sockfd);
