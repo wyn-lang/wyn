@@ -23,6 +23,11 @@ ifeq ($(UNAME_S),Darwin)
 CFLAGS += -mmacosx-version-min=11.0
 endif
 
+# Add -fPIC for Linux (Position Independent Code)
+ifeq ($(UNAME_S),Linux)
+CFLAGS += -fPIC
+endif
+
 # Directories
 SRC_DIR = src
 BUILD_DIR = build
