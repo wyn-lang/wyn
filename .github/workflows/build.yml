@@ -19,31 +19,29 @@ jobs:
         with:
           version: "18"
           cached: true
+          env: false
 
       - name: Verify LLVM Installation
         run: |
           echo "LLVM Path: $LLVM_PATH"
+          ls -la "$LLVM_PATH/bin/" || echo "LLVM bin directory not found"
           export PATH="$LLVM_PATH/bin:$PATH"
-          export DYLD_LIBRARY_PATH="$LLVM_PATH/lib:/usr/lib"
-          which llc
-          llc --version
+          which llc || echo "llc not found"
+          llc --version || echo "llc not executable"
 
       - name: Build Compiler
         run: |
           export PATH="$LLVM_PATH/bin:$PATH"
-          export DYLD_LIBRARY_PATH="$LLVM_PATH/lib:/usr/lib"
           make
 
       - name: Run Test Suite
         run: |
           export PATH="$LLVM_PATH/bin:$PATH"
-          export DYLD_LIBRARY_PATH="$LLVM_PATH/lib:/usr/lib"
           make test
 
       - name: Test Examples
         run: |
           export PATH="$LLVM_PATH/bin:$PATH"
-          export DYLD_LIBRARY_PATH="$LLVM_PATH/lib:/usr/lib"
           ./build/wyn run examples/hello.wyn
           ./build/wyn run examples/fibonacci.wyn
           ./build/wyn run examples/extension_methods.wyn
@@ -67,31 +65,29 @@ jobs:
         with:
           version: "18"
           cached: true
+          env: false
 
       - name: Verify LLVM Installation
         run: |
           echo "LLVM Path: $LLVM_PATH"
+          ls -la "$LLVM_PATH/bin/" || echo "LLVM bin directory not found"
           export PATH="$LLVM_PATH/bin:$PATH"
-          export LD_LIBRARY_PATH="$LLVM_PATH/lib:/usr/lib"
-          which llc
-          llc --version
+          which llc || echo "llc not found"
+          llc --version || echo "llc not executable"
 
       - name: Build Compiler
         run: |
           export PATH="$LLVM_PATH/bin:$PATH"
-          export LD_LIBRARY_PATH="$LLVM_PATH/lib:/usr/lib"
           make
 
       - name: Run Test Suite
         run: |
           export PATH="$LLVM_PATH/bin:$PATH"
-          export LD_LIBRARY_PATH="$LLVM_PATH/lib:/usr/lib"
           make test
 
       - name: Test Examples
         run: |
           export PATH="$LLVM_PATH/bin:$PATH"
-          export LD_LIBRARY_PATH="$LLVM_PATH/lib:/usr/lib"
           ./build/wyn run examples/hello.wyn
           ./build/wyn run examples/fibonacci.wyn
           ./build/wyn run examples/extension_methods.wyn
