@@ -3,7 +3,7 @@
 // Shows how Wyn can replace bash/shell scripts
 
 import os
-import io
+import fs
 import cli
 
 fn main() {
@@ -28,11 +28,11 @@ fn main() {
     // 2. File operations
     print("2. File Operations:")
     const test_file = "/tmp/wyn_test.txt"
-    io.write(test_file, "Hello from Wyn!")
+    fs.write(test_file, "Hello from Wyn!")
     print("  Created: " + test_file)
     
     const backup = "/tmp/wyn_test_backup.txt"
-    io.copy(test_file, backup)
+    fs.copy(test_file, backup)
     print("  Backed up to: " + backup)
     
     io.chmod(test_file, 644)
@@ -68,8 +68,8 @@ fn main() {
     }
     
     // Cleanup
-    io.delete(test_file)
-    io.delete(backup)
+    fs.delete(test_file)
+    fs.delete(backup)
     
     print("Demo complete! Wyn can replace bash/shell scripts.")
 }

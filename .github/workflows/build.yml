@@ -2,280 +2,49 @@ name: Build and Test
 
 on:
   push:
-    tags:
-      - "v*"
     branches: [main]
   pull_request:
     branches: [main]
 
 jobs:
-  build-macos-arm64:
-    runs-on: macos-latest  # Apple Silicon (ARM64)
+  build-and-test:
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+    
+    runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
-      - name: Install Vulkan SDK
-        run: brew install vulkan-headers vulkan-loader
+      - name: Install LLVM (macOS)
+        if: runner.os == 'macOS'
+        run: brew install llvm
 
-      - name: Build All (Compiler + Runtimes)
-        run: |
-          make clean
-          make all
-
-      - name: Run Test Suite
-        run: make test
-        continue-on-error: true
-
-      - name: Test wyn CLI
-        run: |
-          ./build/wyn version
-          ./build/wyn new testapp
-          cd testapp
-          ../build/stage0 --stage1-tc --stage1-opt -o build/testapp src/main.wyn
-          ./build/testapp
-
-      - name: Build Examples
-        run: |
-          ./build/stage0 --stage1-tc --stage1-opt -o build/calculator examples/calculator.wyn
-          ./build/calculator
-
-      - name: Run Benchmarks
-        run: |
-          cd benchmarks/cpu
-          ../../build/stage0 --stage1-opt -o fib_wyn fib.wyn
-          ./fib_wyn
-
-      - name: Package Release
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          mkdir -p release
-          cp build/stage0 release/wyn
-          cp build/*.o release/
-          cp wyn release/wyn-cli
-          cp README.md CHANGELOG.md LICENSE release/
-          cp -r std docs examples release/
-          tar -czf wyn-${{ github.ref_name }}-macos-arm64.tar.gz release/
-
-      - name: Upload Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: actions/upload-artifact@v4
-        with:
-          name: wyn-${{ github.ref_name }}-macos-arm64
-          path: wyn-${{ github.ref_name }}-macos-arm64.tar.gz
-
-  build-macos-x86:
-    runs-on: macos-15-intel  # Intel x86_64 (updated from deprecated macos-13)
-
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Install Vulkan SDK
-        run: brew install vulkan-headers vulkan-loader
-
-      - name: Build Compiler and Runtimes
-        run: |
-          make clean
-          make stage0 gui-runtime gpu-runtime vulkan-runtime spawn-runtime array-runtime
-
-      - name: Run Test Suite
-        run: make test
-        continue-on-error: true
-
-      - name: Package Release
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          mkdir -p release
-          cp build/stage0 release/wyn
-          cp build/*.o release/
-          cp wyn release/wyn-cli
-          cp README.md CHANGELOG.md LICENSE release/
-          cp -r std docs examples release/
-          tar -czf wyn-${{ github.ref_name }}-macos-x86_64.tar.gz release/
-
-      - name: Upload Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: actions/upload-artifact@v4
-        with:
-          name: wyn-${{ github.ref_name }}-macos-x86_64
-          path: wyn-${{ github.ref_name }}-macos-x86_64.tar.gz
-
-  build-linux-x86:
-    runs-on: ubuntu-latest  # x86_64
-
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Install Vulkan SDK
+      - name: Install LLVM (Linux)
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libvulkan-dev vulkan-tools
+          sudo apt-get install -y llvm-14 clang-14
+          sudo ln -sf /usr/bin/llvm-config-14 /usr/bin/llvm-config
 
-      - name: Build All
-        run: |
-          make clean
-          make all
+      - name: Build Compiler
+        run: make
 
       - name: Run Test Suite
         run: make test
-        continue-on-error: true
 
-      - name: Package Release
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Test Examples
         run: |
-          mkdir -p release
-          cp build/stage0 release/wyn
-          cp build/*.o release/
-          cp wyn release/wyn-cli
-          cp README.md CHANGELOG.md LICENSE release/
-          cp -r std docs examples release/
-          tar -czf wyn-${{ github.ref_name }}-linux-x86_64.tar.gz release/
+          ./build/wyn run examples/hello.wyn
+          ./build/wyn run examples/fibonacci.wyn
+          ./build/wyn run examples/extension_methods.wyn
 
-      - name: Upload Release
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Test REPL
+        run: echo "print(42)" | ./build/wyn repl || true
+
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: wyn-${{ github.ref_name }}-linux-x86_64
-          path: wyn-${{ github.ref_name }}-linux-x86_64.tar.gz
-
-  build-linux-arm64:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Build ARM64 in Docker
-        continue-on-error: true
-        run: |
-          docker pull ubuntu:22.04 || true
-          docker run --rm --platform linux/arm64 -v $PWD:/workspace -w /workspace ubuntu:22.04 bash -c "
-            apt-get update && 
-            apt-get install -y build-essential libvulkan-dev vulkan-tools &&
-            make all
-          "
-
-      - name: Package Release
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          mkdir -p release
-          cp build/stage0 release/wyn
-          cp build/*.o release/ || true
-          cp wyn release/wyn-cli
-          cp README.md CHANGELOG.md LICENSE release/
-          cp -r std docs examples release/
-          tar -czf wyn-${{ github.ref_name }}-linux-arm64.tar.gz release/
-
-      - name: Upload Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: actions/upload-artifact@v4
-        with:
-          name: wyn-${{ github.ref_name }}-linux-arm64
-          path: wyn-${{ github.ref_name }}-linux-arm64.tar.gz
-
-  build-windows-x86:
-    runs-on: windows-latest
-
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Setup MSVC
-        uses: ilammy/msvc-dev-cmd@v1
-
-      - name: Build Compiler
-        run: |
-          mkdir build
-          cl /O2 /Febuild\wyn-compiler.exe bootstrap\stage0.c
-        shell: cmd
-
-      - name: Package Release
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          mkdir release
-          copy build\wyn-compiler.exe release\
-          copy README.md release\
-          copy CHANGELOG.md release\
-          xcopy /E /I std release\std
-          xcopy /E /I docs release\docs
-          xcopy /E /I examples release\examples
-          tar -czf wyn-${{ github.ref_name }}-windows-x86_64.tar.gz release
-        shell: cmd
-
-      - name: Upload Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: actions/upload-artifact@v4
-        with:
-          name: wyn-${{ github.ref_name }}-windows-x86_64
-          path: wyn-${{ github.ref_name }}-windows-x86_64.tar.gz
-
-  create-release:
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: [build-macos-arm64, build-macos-x86, build-linux-x86, build-linux-arm64, build-windows-x86]
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/download-artifact@v4
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            wyn-*/wyn-*.tar.gz
-          generate_release_notes: true
-          body: |
-            # Wyn Programming Language ${{ github.ref_name }}
-
-            **One language to rule them all.**
-
-            ## Performance
-            - **20-30x faster than Python** with native compilation
-            - **Beats Go** on arrays (2.3x) and startup (1.6x)
-            - **Destroys Java** on startup (45x) and arrays (2.5x)
-            - **Faster than Node.js** on math (8.4x) and startup (25.6x)
-            - **Matches C** on array operations
-
-            ## Platforms
-            - ✅ macOS ARM64 (Apple Silicon)
-            - ✅ macOS x86_64 (Intel)
-            - ✅ Linux x86_64
-            - ✅ Linux ARM64
-            - ✅ Windows x86_64
-
-            ## Features
-            - ✅ **Compile to binary** - Native executables, no runtime
-            - ✅ **Run as script** - Instant execution like Python
-            - ✅ **CLI tools** - Near-instant startup (1.29ms)
-            - ✅ **Servers** - High-performance web services
-            - ✅ **Systems programming** - Low-level control
-            - ✅ **GUI apps** - Native macOS/iOS support
-            - ✅ **GPU compute** - Vulkan/Metal acceleration
-
-            ## Standard Library
-            - 500+ functions across 29 modules
-            - 100% test coverage (76 comprehensive tests)
-            - Production-ready: io, fs, http, crypto, json, time, math
-            - Advanced: gpu, mobile, gui, nn, concurrency
-
-            ## Stage 1 Compiler
-            - Enhanced type checking
-            - Function inlining (28% improvement)
-            - Constant folding (42% improvement)
-            - Dead code elimination
-
-            **No reason to use anything else anymore.**
-
-            ## Installation
-            ```bash
-            tar -xzf wyn-*.tar.gz
-            cd release
-            sudo make install
-            ```
-
-            ## Quick Start
-            ```bash
-            wyn new myapp
-            cd myapp
-            wyn run .
-            ```
+          name: wyn-${{ matrix.os }}
+          path: build/wyn

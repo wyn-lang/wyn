@@ -1,7 +1,7 @@
 // File finder using glob patterns
 // Demonstrates shell-style file pattern matching
 
-import io
+import fs
 
 fn main() {
     print("=== File Finder ===")

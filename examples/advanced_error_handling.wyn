@@ -1,14 +1,14 @@
 # Advanced Error Handling Examples
 
 import result
-import io
+import fs
 import net
 
 # Example 1: File processing with error handling
 fn process_file(filename: str) -> [int] {
     print("Processing file: " + filename)
     
-    # Simulate file reading (would use actual io.read in real code)
+    # Simulate file reading (would use actual fs.read in real code)
     if filename == "missing.txt" {
         return result.make_err(-1)
     }

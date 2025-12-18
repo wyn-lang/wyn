@@ -1,4 +1,4 @@
-import io
+import fs
 import os
 import net
 
@@ -8,7 +8,7 @@ fn main() {
     # IO operations
     print("IO Module:")
     const test_file: str = "/tmp/wyn_extended_test.txt"
-    io.write(test_file, "test content")
+    fs.write(test_file, "test content")
     print("File size:")
     print(io.size(test_file))
     
@@ -16,7 +16,7 @@ fn main() {
         print("Is file: yes")
     }
     
-    io.delete(test_file)
+    fs.delete(test_file)
     
     # OS operations
     print("OS Module:")
