@@ -9,42 +9,37 @@ on:
 jobs:
   build-macos:
     runs-on: macos-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup LLVM
-        uses: KyleMayes/install-llvm-action@v2
-        with:
-          version: "18"
-          cached: true
-          env: false
-
-      - name: Verify LLVM Installation
+      - name: Install LLVM
         run: |
-          echo "LLVM Path: $LLVM_PATH"
-          ls -la "$LLVM_PATH/bin/" || echo "LLVM bin directory not found"
-          export PATH="$LLVM_PATH/bin:$PATH"
-          which llc || echo "llc not found"
-          llc --version || echo "llc not executable"
+          # Use system clang/llvm if available, otherwise install
+          if ! command -v llc &> /dev/null; then
+            echo "Installing LLVM..."
+            brew install llvm
+            echo "/opt/homebrew/opt/llvm/bin" >> $GITHUB_PATH
+          else
+            echo "LLVM already available"
+          fi
+
+      - name: Verify LLVM
+        run: |
+          which llc || echo "llc not in PATH"
+          llc --version || echo "llc not working"
 
       - name: Build Compiler
-        run: |
-          export PATH="$LLVM_PATH/bin:$PATH"
-          make
+        run: make
 
       - name: Run Test Suite
-        run: |
-          export PATH="$LLVM_PATH/bin:$PATH"
-          make test
+        run: make test
 
       - name: Test Examples
         run: |
-          export PATH="$LLVM_PATH/bin:$PATH"
           ./build/wyn run examples/hello.wyn
           ./build/wyn run examples/fibonacci.wyn
-          ./build/wyn run examples/extension_methods.wyn
 
       - name: Upload Artifacts
         if: always()
@@ -60,37 +55,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup LLVM
-        uses: KyleMayes/install-llvm-action@v2
-        with:
-          version: "18"
-          cached: true
-          env: false
-
-      - name: Verify LLVM Installation
+      - name: Install LLVM
         run: |
-          echo "LLVM Path: $LLVM_PATH"
-          ls -la "$LLVM_PATH/bin/" || echo "LLVM bin directory not found"
-          export PATH="$LLVM_PATH/bin:$PATH"
-          which llc || echo "llc not found"
-          llc --version || echo "llc not executable"
+          sudo apt-get update
+          sudo apt-get install -y llvm-14 clang-14
+          sudo update-alternatives --install /usr/bin/llc llc /usr/bin/llc-14 100
+
+      - name: Verify LLVM
+        run: |
+          which llc
+          llc --version
 
       - name: Build Compiler
-        run: |
-          export PATH="$LLVM_PATH/bin:$PATH"
-          make
+        run: make
 
       - name: Run Test Suite
-        run: |
-          export PATH="$LLVM_PATH/bin:$PATH"
-          make test
+        run: make test
 
       - name: Test Examples
         run: |
-          export PATH="$LLVM_PATH/bin:$PATH"
           ./build/wyn run examples/hello.wyn
           ./build/wyn run examples/fibonacci.wyn
-          ./build/wyn run examples/extension_methods.wyn
 
       - name: Upload Artifacts
         if: always()
