@@ -1,3 +1,9 @@
 # std/regex.wyn
 # Regular expression pattern matching
 # All functions are mapped to runtime implementations via compiler
+
+# Pattern Matching:
+#   regex.matches(text: str, pattern: str) -> int
+#   regex.find(text: str, pattern: str) -> str
+#   regex.replace(text: str, pattern: str, replacement: str) -> str
+#   regex.count(text: str, pattern: str) -> int

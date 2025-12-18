@@ -1,9 +1,12 @@
-# std/test.wyn
+# std/testing.wyn
 # Testing framework
 # All functions are mapped to runtime implementations via compiler
-#
-# Functions:
-#   assert_eq(a, b, message) -> int - Assert equal
-#   assert_ne(a, b, message) -> int - Assert not equal
-#   assert_true(condition, message) -> int - Assert true
-#   assert_false(condition, message) -> int - Assert false
+
+# Assertions:
+#   testing.assert_eq(actual: int, expected: int, message: str) -> int
+#   testing.assert_ne(actual: int, expected: int, message: str) -> int
+#   testing.assert_true(value: int, message: str) -> int
+#   testing.assert_false(value: int, message: str) -> int
+
+# Summary:
+#   testing.summary() -> int  // Print test results summary

@@ -1,5 +1,10 @@
-// JSON module - Simple JSON parsing and generation
-// Minimal implementation for basic key-value operations
+# std/json.wyn
+# JSON parsing and generation
+# All functions are mapped to runtime implementations via compiler
 
-// Note: Functions are mapped to runtime implementations
-// via the module mapping system in the compiler
+# JSON Operations:
+#   json.parse(json_str: str) -> str
+#   json.stringify(data: str) -> str
+#   json.get_string(json: str, key: str) -> str
+#   json.get_int(json: str, key: str) -> int
+#   json.get_bool(json: str, key: str) -> int

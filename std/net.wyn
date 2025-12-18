@@ -1,4 +1,37 @@
 # std/net.wyn
 # Network operations
 # All functions are mapped to runtime implementations via compiler
-# See docs/NET_API.md for usage guide
+
+# HTTP Client:
+#   net.http_get(url: str) -> str
+#   net.http_post(url: str, body: str) -> str
+#   net.http_put(url: str, body: str) -> str
+#   net.http_delete(url: str) -> str
+#   net.http_head(url: str) -> str
+#   net.http_get_headers(url: str, headers: str) -> str
+
+# TCP:
+#   net.tcp_connect(host: str, port: int) -> int
+#   net.tcp_send(socket: int, data: str) -> int
+#   net.tcp_recv(socket: int, size: int) -> str
+#   net.tcp_close(socket: int) -> int
+
+# UDP:
+#   net.udp_send(host: str, port: int, data: str) -> int
+#   net.udp_recv(port: int, size: int) -> str
+
+# HTTP Server:
+#   net.server_create(port: int) -> int
+#   net.server_accept(server: int) -> int
+#   net.server_read_request(client: int) -> str
+#   net.parse_method(request: str) -> str
+#   net.parse_path(request: str) -> str
+#   net.parse_body(request: str) -> str
+#   net.server_send_response(client: int, status: int, body: str) -> int
+#   net.server_send_json(client: int, status: int, json: str) -> int
+#   net.server_close_client(client: int) -> int
+#   net.server_close(server: int) -> int
+
+# Utilities:
+#   net.resolve_host(hostname: str) -> str
+#   net.get_local_ip() -> str

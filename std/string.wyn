@@ -1,125 +1,29 @@
 # std/string.wyn
 # String manipulation and utility functions
+# All functions are mapped to runtime implementations via compiler
 
-# The builtin functions ord, chr, int_to_str, str_to_int, char_at, str_find, 
-# str_split, str_concat, str_cmp, str_substr are available globally
+# String Methods (use on string values):
+#   "hello".upper() -> str
+#   "HELLO".lower() -> str
+#   "  trim  ".trim() -> str
+#   "hello".contains("ll") -> bool
+#   "hello".starts_with("hel") -> bool
+#   "hello".ends_with("llo") -> bool
+#   "hello".len() -> int
 
-# Note: str_split is a builtin that returns [str]
-# Use it directly: str_split(text, delim)
+# Module Functions:
+#   string.split(s: str, delim: str) -> array[str]
+#   string.find(s: str, substr: str) -> int
+#   string.concat(a: str, b: str) -> str
+#   string.cmp(a: str, b: str) -> int
+#   string.substring(s: str, start: int, len: int) -> str
+#   string.char_at(s: str, index: int) -> str
+#   string.chr(code: int) -> str
+#   string.ord(char: str) -> int
+#   string.from_int(n: int) -> str
+#   string.upper(s: str) -> str
+#   string.lower(s: str) -> str
+#   string.trim(s: str) -> str
 
-# Convert string to uppercase
-pub fn upper(s: str) -> str {
-    let result: str = ""
-    let i: int = 0
-    while i < s.len() {
-        const c: str = s[i:i+1]
-        const code: int = ord(c)
-        if code >= 97 {
-            if code <= 122 {
-                result = result + chr(code - 32)
-            } else {
-                result = result + c
-            }
-        } else {
-            result = result + c
-        }
-        i = i + 1
-    }
-    return result
-}
-
-# Convert string to lowercase
-pub fn lower(s: str) -> str {
-    let result: str = ""
-    let i: int = 0
-    while i < s.len() {
-        const c: str = s[i:i+1]
-        const code: int = ord(c)
-        if code >= 65 {
-            if code <= 90 {
-                result = result + chr(code + 32)
-            } else {
-                result = result + c
-            }
-        } else {
-            result = result + c
-        }
-        i = i + 1
-    }
-    return result
-}
-
-# Check if string starts with prefix
-pub fn starts_with(s: str, prefix: str) -> bool {
-    if prefix.len() > s.len() {
-        return false
-    }
-    return s[0:prefix.len()] == prefix
-}
-
-# Check if string ends with suffix
-pub fn ends_with(s: str, suffix: str) -> bool {
-    if suffix.len() > s.len() {
-        return false
-    }
-    const start: int = s.len() - suffix.len()
-    return s[start:s.len()] == suffix
-}
-
-# Trim whitespace from both ends
-pub fn trim(s: str) -> str {
-    let start: int = 0
-    let end: int = s.len()
-    
-    # Trim start
-    while start < end {
-        const c: str = s[start:start+1]
-        if c == " " or c == "\t" or c == "\n" or c == "\r" {
-            start = start + 1
-        } else {
-            break
-        }
-    }
-    
-    # Trim end
-    while end > start {
-        const c: str = s[end-1:end]
-        if c == " " or c == "\t" or c == "\n" or c == "\r" {
-            end = end - 1
-        } else {
-            break
-        }
-    }
-    
-    return s[start:end]
-}
-
-# Check if string contains substring
-pub fn contains(s: str, substr: str) -> bool {
-    return str_find(s, substr) >= 0
-}
-
-# Find substring in string
-pub fn find(s: str, substr: str) -> int {
-    return str_find(s, substr)
-}
-
-# Split string by delimiter
-pub fn split(s: str, delimiter: str) -> [str] {
-    return str_split(s, delimiter)
-}
-
-# Concatenate two strings
-pub fn concat(a: str, b: str) -> str {
-    return str_concat(a, b)
-}
-
-# Compare two strings
-pub fn cmp(a: str, b: str) -> int {
-    return str_cmp(a, b)
-}
-
-# Get substring
-pub fn substring(s: str, start: int, length: int) -> str {
-    return str_substr(s, start, length)
-}
+# Note: Prefer method syntax over module functions
+# Example: "hello".upper() instead of string.upper("hello")

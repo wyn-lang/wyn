@@ -1,3 +1,15 @@
 # std/encoding.wyn
 # Encoding and decoding functions (base64, hex, URL)
 # All functions are mapped to runtime implementations via compiler
+
+# Base64:
+#   encoding.base64_encode(data: str) -> str
+#   encoding.base64_decode(data: str) -> str
+
+# Hex:
+#   encoding.hex_encode(data: str) -> str
+#   encoding.hex_decode(data: str) -> str
+
+# URL:
+#   encoding.url_encode(data: str) -> str
+#   encoding.url_decode(data: str) -> str
