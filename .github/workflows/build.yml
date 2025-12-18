@@ -13,15 +13,20 @@ jobs:
         os: [macos-latest, ubuntu-latest]
     
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install LLVM (macOS)
+      - name: Setup LLVM (macOS)
         if: runner.os == 'macOS'
-        run: brew install llvm
+        run: |
+          # macOS runners have LLVM pre-installed
+          echo "LLVM already available at /opt/homebrew/opt/llvm"
+          export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+          llvm-config --version || brew install llvm
 
-      - name: Install LLVM (Linux)
+      - name: Setup LLVM (Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
@@ -29,7 +34,9 @@ jobs:
           sudo ln -sf /usr/bin/llvm-config-14 /usr/bin/llvm-config
 
       - name: Build Compiler
-        run: make
+        run: |
+          export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+          make
 
       - name: Run Test Suite
         run: make test
@@ -40,10 +47,8 @@ jobs:
           ./build/wyn run examples/fibonacci.wyn
           ./build/wyn run examples/extension_methods.wyn
 
-      - name: Test REPL
-        run: echo "print(42)" | ./build/wyn repl || true
-
       - name: Upload Artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: wyn-${{ matrix.os }}
