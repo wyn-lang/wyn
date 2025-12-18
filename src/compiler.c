@@ -1445,10 +1445,10 @@ static Type* parse_type(Parser* p) {
     return new_type(TYPE_ANY);
 }
 
-// Helper to check if string has interpolation {expr}
+// Helper to check if string has interpolation ${expr}
 static bool has_interpolation(const char* s) {
     for (int i = 0; s[i]; i++) {
-        if (s[i] == '{' && s[i+1] && s[i+1] != '{') return true;
+        if (s[i] == '$' && s[i+1] == '{') return true;
     }
     return false;
 }
@@ -1460,7 +1460,7 @@ static Expr* parse_interpolated_string(Parser* p, const char* str, int line, int
     int bi = 0;
     
     for (int i = 0; str[i]; i++) {
-        if (str[i] == '{' && str[i+1] && str[i+1] != '{') {
+        if (str[i] == '$' && str[i+1] == '{') {
             // Flush literal part
             if (bi > 0) {
                 buf[bi] = '\0';
@@ -1476,24 +1476,29 @@ static Expr* parse_interpolated_string(Parser* p, const char* str, int line, int
                 }
                 bi = 0;
             }
+            // Skip ${
+            i += 2;
             // Extract variable name
-            i++;
             char var[256];
             int vi = 0;
             while (str[i] && str[i] != '}') {
                 var[vi++] = str[i++];
             }
             var[vi] = '\0';
-            // Create to_string(var) call
+            
+            // Create var.to_str() call for type conversion
             Expr* varexpr = new_expr(EXPR_IDENT, line, col);
             strcpy(varexpr->ident, var);
+            
+            Expr* field = new_expr(EXPR_FIELD, line, col);
+            field->field.object = varexpr;
+            strcpy(field->field.field, "to_str");
+            
             Expr* call = new_expr(EXPR_CALL, line, col);
-            Expr* fn = new_expr(EXPR_IDENT, line, col);
-            strcpy(fn->ident, "to_string");
-            call->call.func = fn;
-            call->call.args = malloc(sizeof(Expr*));
-            call->call.args[0] = varexpr;
-            call->call.arg_count = 1;
+            call->call.func = field;
+            call->call.args = NULL;
+            call->call.arg_count = 0;
+            
             if (!result) result = call;
             else {
                 Expr* cat = new_expr(EXPR_BINARY, line, col);
@@ -3227,6 +3232,7 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                 if (strcmp(method_name, "get") == 0) return new_type(TYPE_INT);
                 if (strcmp(method_name, "reverse") == 0) return new_type(TYPE_ARRAY);
                 if (strcmp(method_name, "append") == 0) return new_type(TYPE_ARRAY);
+                if (strcmp(method_name, "join") == 0) return new_type(TYPE_STR);
                 
                 // Look up extension methods
                 Type* obj_type = tc_check_expr(tc, e->call.func->field.object);
@@ -4049,6 +4055,7 @@ static Type* tc1_check_expr(TypeChecker1* tc, Expr* e) {
                 if (strcmp(method_name, "get") == 0) return new_type(TYPE_INT);
                 if (strcmp(method_name, "reverse") == 0) return new_type(TYPE_ARRAY);
                 if (strcmp(method_name, "append") == 0) return new_type(TYPE_ARRAY);
+                if (strcmp(method_name, "join") == 0) return new_type(TYPE_STR);
                 
                 // Look up extension methods
                 Type* obj_type = tc1_check_expr(tc, e->call.func->field.object);
@@ -5595,7 +5602,8 @@ static bool llvm_is_string_expr(LLVMGen* lg, Expr* e) {
                 strcmp(func, "http_get") == 0 || strcmp(func, "server_read_request") == 0 ||
                 strcmp(func, "parse_method") == 0 || strcmp(func, "parse_path") == 0 ||
                 strcmp(func, "parse_body") == 0 || strcmp(func, "output") == 0 ||
-                strcmp(func, "replace") == 0 || strcmp(func, "to_str") == 0) {
+                strcmp(func, "replace") == 0 || strcmp(func, "to_str") == 0 ||
+                strcmp(func, "join") == 0) {
                 return true;
             }
             
@@ -6771,18 +6779,28 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     llvm_emit(lg, "  %%%d = call i64 @str_to_int(i8* %%%d)", t, obj_reg);
                     *result_reg = t;
                 } else if (strcmp(method_name, "to_str") == 0) {
-                    // Handle num.to_str() or bool.to_str()
+                    // Handle num.to_str() or str.to_str()
                     int obj_reg;
                     llvm_expr(lg, e->call.func->field.object, &obj_reg);
-                    int t = llvm_new_temp(lg);
-                    if (obj_reg <= -1000000) {
-                        // Constant value
-                        long long const_val = -obj_reg - 1000000;
-                        llvm_emit(lg, "  %%%d = call i8* @int_to_str(i64 %lld)", t, const_val);
+                    
+                    // Check if object is a string
+                    bool is_string = llvm_is_string_expr(lg, e->call.func->field.object);
+                    
+                    if (is_string) {
+                        // String.to_str() just returns self
+                        *result_reg = obj_reg;
                     } else {
-                        llvm_emit(lg, "  %%%d = call i8* @int_to_str(i64 %%%d)", t, obj_reg);
+                        // Int/bool.to_str() converts to string
+                        int t = llvm_new_temp(lg);
+                        if (obj_reg <= -1000000) {
+                            // Constant value
+                            long long const_val = -obj_reg - 1000000;
+                            llvm_emit(lg, "  %%%d = call i8* @int_to_str(i64 %lld)", t, const_val);
+                        } else {
+                            llvm_emit(lg, "  %%%d = call i8* @int_to_str(i64 %%%d)", t, obj_reg);
+                        }
+                        *result_reg = t;
                     }
-                    *result_reg = t;
                 } else if (strcmp(method_name, "upper") == 0) {
                     // Handle str.upper()
                     int obj_reg;
@@ -6944,6 +6962,19 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     } else {
                         llvm_emit(lg, "  %%%d = call i64* @array_append_elem(i64* %%%d, i64 %%%d)", t, obj_reg, item_reg);
                     }
+                    *result_reg = t;
+                } else if (strcmp(method_name, "join") == 0) {
+                    // Handle arr.join(sep)
+                    int obj_reg;
+                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                    
+                    int sep_reg;
+                    if (e->call.arg_count > 0) {
+                        llvm_expr(lg, e->call.args[0], &sep_reg);
+                    }
+                    
+                    int t = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = call i8* @array_join(i64* %%%d, i8* %%%d)", t, obj_reg, sep_reg);
                     *result_reg = t;
                 } else {
                     // Check for extension methods
@@ -8831,6 +8862,7 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i8* @str_slice(i8*, i64, i64)");
     llvm_emit(&lg, "declare i64* @array_slice(i64*, i64, i64)");
     llvm_emit(&lg, "declare i64* @array_reverse(i64*)");
+    llvm_emit(&lg, "declare i8* @array_join(i64*, i8*)");
     llvm_emit(&lg, "declare i64* @array_append_elem(i64*, i64)");
     llvm_emit(&lg, "declare i64* @array_prepend_elem(i64*, i64)");
     llvm_emit(&lg, "declare i64 @array_contains_elem(i64*, i64)");

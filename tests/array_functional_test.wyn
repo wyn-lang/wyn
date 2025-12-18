@@ -1,0 +1,18 @@
+fn main() {
+    print("=== Array Functional Methods Test ===")
+    
+    // Test join
+    const numbers = [1, 2, 3, 4, 5]
+    print(numbers.join(", "))
+    print(numbers.join(" - "))
+    
+    // Test with single element
+    const single = [42]
+    print(single.join(", "))
+    
+    // Test with empty separator
+    const digits = [1, 2, 3]
+    print(digits.join(""))
+    
+    print("Array functional methods work!")
+}
