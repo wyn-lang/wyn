@@ -5,7 +5,11 @@
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <string.h>
+
+// Platform-specific includes
+#ifdef __APPLE__
 #include <sys/sysctl.h>
+#endif
 
 // M:N Scheduler Configuration
 #define TASK_STACK_SIZE 8192
@@ -129,12 +133,19 @@ static void* worker_main(void* arg) {
 
 // Get CPU count
 static int get_cpu_count() {
+#ifdef __APPLE__
     int count = 1;
     size_t size = sizeof(count);
     if (sysctlbyname("hw.ncpu", &count, &size, NULL, 0) != 0) {
         count = 4; // Default fallback
     }
     return count;
+#elif defined(__linux__)
+    long count = sysconf(_SC_NPROCESSORS_ONLN);
+    return (count > 0) ? (int)count : 4;
+#else
+    return 4; // Default for other platforms
+#endif
 }
 
 // Initialize queue
