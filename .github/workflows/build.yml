@@ -39,7 +39,7 @@ jobs:
       - name: Test Examples
         run: |
           ./build/wyn run examples/hello.wyn
-          ./build/wyn run examples/fibonacci.wyn
+          ./build/wyn run examples/extension_methods.wyn
 
       - name: Upload Artifacts
         if: always()
@@ -75,7 +75,7 @@ jobs:
       - name: Test Examples
         run: |
           ./build/wyn run examples/hello.wyn
-          ./build/wyn run examples/fibonacci.wyn
+          ./build/wyn run examples/extension_methods.wyn
 
       - name: Upload Artifacts
         if: always()
