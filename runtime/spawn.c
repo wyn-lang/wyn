@@ -5,6 +5,7 @@
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <string.h>
+#include <stdint.h>
 
 // Platform-specific includes
 #ifdef __APPLE__
