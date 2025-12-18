@@ -843,11 +843,6 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "lower") == 0) return "str_lower";
         if (strcmp(function, "trim") == 0) return "str_trim";
     } else if (strcmp(module, "compress") == 0) {
-    } else if (strcmp(module, "regex") == 0) {
-        if (strcmp(function, "matches") == 0) return "regex_matches";
-        if (strcmp(function, "find") == 0) return "regex_find";
-        if (strcmp(function, "replace") == 0) return "regex_replace";
-        if (strcmp(function, "count") == 0) return "regex_count";
         if (strcmp(function, "gzip_file") == 0) return "gzip_file";
         if (strcmp(function, "gunzip_file") == 0) return "gunzip_file";
         if (strcmp(function, "tar_create") == 0) return "tar_create";
@@ -855,6 +850,11 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "tar_list") == 0) return "tar_list";
         if (strcmp(function, "compress_string") == 0) return "compress_string";
         if (strcmp(function, "decompress_string") == 0) return "decompress_string";
+    } else if (strcmp(module, "regex") == 0) {
+        if (strcmp(function, "matches") == 0) return "regex_matches";
+        if (strcmp(function, "find") == 0) return "regex_find";
+        if (strcmp(function, "replace") == 0) return "regex_replace";
+        if (strcmp(function, "count") == 0) return "regex_count";
     } else if (strcmp(module, "time") == 0) {
         if (strcmp(function, "now_unix") == 0) return "now_unix";
         if (strcmp(function, "now_millis") == 0) return "now_millis";
@@ -939,6 +939,11 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "read_line") == 0) return "read_line";
         if (strcmp(function, "input") == 0) return "input";
         // File operations
+        if (strcmp(function, "read") == 0) return "read_file";
+        if (strcmp(function, "write") == 0) return "write_file";
+        if (strcmp(function, "append") == 0) return "append_file";
+        if (strcmp(function, "delete") == 0) return "delete_file";
+        if (strcmp(function, "exists") == 0) return "file_exists";
         if (strcmp(function, "read_file") == 0) return "read_file";
         if (strcmp(function, "delete") == 0) return "delete_file";
         if (strcmp(function, "size") == 0) return "file_size";

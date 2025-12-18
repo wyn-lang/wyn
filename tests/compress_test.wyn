@@ -10,19 +10,20 @@ fn main() {
     
     io.write(test_file, "Hello compression!")
     
-    const gzip_ok: bool = compress.gzip_file(test_file, gz_file)
-    if gzip_ok == true {
+    const gzip_ok: int = compress.gzip_file(test_file, gz_file)
+    if gzip_ok == 1 {
         print("Gzip: OK")
     }
     
-    if io.exists(gz_file) == true {
+    const exists: int = io.exists(gz_file)
+    if exists == 1 {
         print("Gzip file exists: OK")
     }
     
     # Test tar
     const tar_file: str = "/tmp/wyn_test.tar.gz"
-    const tar_ok: bool = compress.tar_create(tar_file, test_file)
-    if tar_ok == true {
+    const tar_ok: int = compress.tar_create(tar_file, test_file)
+    if tar_ok == 1 {
         print("Tar create: OK")
     }
     
