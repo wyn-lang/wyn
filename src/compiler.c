@@ -9397,7 +9397,20 @@ int main(int argc, char** argv) {
     char obj_file[256];
     snprintf(obj_file, 256, "/tmp/wyn_%d_%d.o", getpid(), rand());
     char cmd[512];
-    snprintf(cmd, 512, "/opt/homebrew/opt/llvm/bin/llc -filetype=obj %s -o %s", ir_file, obj_file);
+    
+    // Try to find llc in various locations
+    const char* llc_path = "llc";  // Default: use PATH
+    if (access("/opt/homebrew/opt/llvm/bin/llc", X_OK) == 0) {
+        llc_path = "/opt/homebrew/opt/llvm/bin/llc";
+    } else if (getenv("LLVM_PATH")) {
+        static char llc_from_env[512];
+        snprintf(llc_from_env, 512, "%s/bin/llc", getenv("LLVM_PATH"));
+        if (access(llc_from_env, X_OK) == 0) {
+            llc_path = llc_from_env;
+        }
+    }
+    
+    snprintf(cmd, 512, "%s -filetype=obj %s -o %s", llc_path, ir_file, obj_file);
     if (system(cmd) != 0) {
         fprintf(stderr, "LLVM compilation failed\n");
         return 1;

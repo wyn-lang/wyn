@@ -21,13 +21,18 @@ jobs:
           cached: true
 
       - name: Build Compiler
-        run: make
+        run: |
+          export PATH="$LLVM_PATH/bin:$PATH"
+          make
 
       - name: Run Test Suite
-        run: make test
+        run: |
+          export PATH="$LLVM_PATH/bin:$PATH"
+          make test
 
       - name: Test Examples
         run: |
+          export PATH="$LLVM_PATH/bin:$PATH"
           ./build/wyn run examples/hello.wyn
           ./build/wyn run examples/fibonacci.wyn
           ./build/wyn run examples/extension_methods.wyn
@@ -53,13 +58,18 @@ jobs:
           cached: true
 
       - name: Build Compiler
-        run: make
+        run: |
+          export PATH="$LLVM_PATH/bin:$PATH"
+          make
 
       - name: Run Test Suite
-        run: make test
+        run: |
+          export PATH="$LLVM_PATH/bin:$PATH"
+          make test
 
       - name: Test Examples
         run: |
+          export PATH="$LLVM_PATH/bin:$PATH"
           ./build/wyn run examples/hello.wyn
           ./build/wyn run examples/fibonacci.wyn
           ./build/wyn run examples/extension_methods.wyn
