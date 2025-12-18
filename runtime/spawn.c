@@ -157,13 +157,13 @@ static void init_queue(WorkQueue* q) {
 }
 
 // Initialize runtime
-void __wyn_runtime_init() {
-    if (atomic_load(&runtime.initialized)) return;
+int64_t __wyn_runtime_init() {
+    if (atomic_load(&runtime.initialized)) return 0;
     
     pthread_mutex_lock(&runtime.init_mutex);
     if (atomic_load(&runtime.initialized)) {
         pthread_mutex_unlock(&runtime.init_mutex);
-        return;
+        return 0;
     }
     
     printf("[Runtime] Initializing M:N scheduler...\n");
@@ -175,7 +175,7 @@ void __wyn_runtime_init() {
     if (!runtime.workers) {
         printf("[Runtime] Failed to allocate workers\n");
         pthread_mutex_unlock(&runtime.init_mutex);
-        return;
+        return 1;
     }
     
     // Initialize global queue
@@ -198,6 +198,7 @@ void __wyn_runtime_init() {
     atomic_store(&runtime.initialized, true);
     printf("[Runtime] M:N scheduler initialized\n");
     pthread_mutex_unlock(&runtime.init_mutex);
+    return 0;
 }
 
 // Shutdown runtime
