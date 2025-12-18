@@ -8752,7 +8752,7 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     // Spawn runtime declarations
     llvm_emit(&lg, "declare i64 @__wyn_spawn(i8*, i8*)");
     llvm_emit(&lg, "declare i64 @__wyn_runtime_init()");
-    llvm_emit(&lg, "declare void @__wyn_runtime_shutdown()");
+    llvm_emit(&lg, "declare i64 @__wyn_runtime_shutdown()");
     llvm_emit(&lg, "declare void @__wyn_yield()");
     llvm_emit(&lg, "declare i64 @__wyn_await(i64)");
     

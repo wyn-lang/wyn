@@ -203,8 +203,8 @@ int64_t __wyn_runtime_init() {
 }
 
 // Shutdown runtime
-void __wyn_runtime_shutdown() {
-    if (!atomic_load(&runtime.initialized)) return;
+int64_t __wyn_runtime_shutdown() {
+    if (!atomic_load(&runtime.initialized)) return 0;
     
     printf("[Runtime] Shutting down scheduler...\n");
     
@@ -224,6 +224,7 @@ void __wyn_runtime_shutdown() {
     free(runtime.workers);
     runtime.workers = NULL;
     atomic_store(&runtime.initialized, false);
+    return 0;
 }
 
 // Spawn a new task
