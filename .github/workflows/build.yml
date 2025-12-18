@@ -15,7 +15,6 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup LLVM
-        id: setup_llvm
         uses: KyleMayes/install-llvm-action@v2
         with:
           version: "18"
@@ -23,28 +22,28 @@ jobs:
 
       - name: Verify LLVM Installation
         run: |
-          echo "LLVM Path: ${{ steps.setup_llvm.outputs.llvm-path }}"
-          export PATH="${{ steps.setup_llvm.outputs.llvm-path }}/bin:$PATH"
-          export DYLD_LIBRARY_PATH="/usr/lib:${{ steps.setup_llvm.outputs.llvm-path }}/lib"
+          echo "LLVM Path: $LLVM_PATH"
+          export PATH="$LLVM_PATH/bin:$PATH"
+          export DYLD_LIBRARY_PATH="$LLVM_PATH/lib:/usr/lib"
           which llc
           llc --version
 
       - name: Build Compiler
         run: |
-          export PATH="${{ steps.setup_llvm.outputs.llvm-path }}/bin:$PATH"
-          export DYLD_LIBRARY_PATH="/usr/lib:${{ steps.setup_llvm.outputs.llvm-path }}/lib"
+          export PATH="$LLVM_PATH/bin:$PATH"
+          export DYLD_LIBRARY_PATH="$LLVM_PATH/lib:/usr/lib"
           make
 
       - name: Run Test Suite
         run: |
-          export PATH="${{ steps.setup_llvm.outputs.llvm-path }}/bin:$PATH"
-          export DYLD_LIBRARY_PATH="/usr/lib:${{ steps.setup_llvm.outputs.llvm-path }}/lib"
+          export PATH="$LLVM_PATH/bin:$PATH"
+          export DYLD_LIBRARY_PATH="$LLVM_PATH/lib:/usr/lib"
           make test
 
       - name: Test Examples
         run: |
-          export PATH="${{ steps.setup_llvm.outputs.llvm-path }}/bin:$PATH"
-          export DYLD_LIBRARY_PATH="/usr/lib:${{ steps.setup_llvm.outputs.llvm-path }}/lib"
+          export PATH="$LLVM_PATH/bin:$PATH"
+          export DYLD_LIBRARY_PATH="$LLVM_PATH/lib:/usr/lib"
           ./build/wyn run examples/hello.wyn
           ./build/wyn run examples/fibonacci.wyn
           ./build/wyn run examples/extension_methods.wyn
@@ -64,7 +63,6 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup LLVM
-        id: setup_llvm
         uses: KyleMayes/install-llvm-action@v2
         with:
           version: "18"
@@ -72,28 +70,28 @@ jobs:
 
       - name: Verify LLVM Installation
         run: |
-          echo "LLVM Path: ${{ steps.setup_llvm.outputs.llvm-path }}"
-          export PATH="${{ steps.setup_llvm.outputs.llvm-path }}/bin:$PATH"
-          export LD_LIBRARY_PATH="/usr/lib:${{ steps.setup_llvm.outputs.llvm-path }}/lib"
+          echo "LLVM Path: $LLVM_PATH"
+          export PATH="$LLVM_PATH/bin:$PATH"
+          export LD_LIBRARY_PATH="$LLVM_PATH/lib:/usr/lib"
           which llc
           llc --version
 
       - name: Build Compiler
         run: |
-          export PATH="${{ steps.setup_llvm.outputs.llvm-path }}/bin:$PATH"
-          export LD_LIBRARY_PATH="/usr/lib:${{ steps.setup_llvm.outputs.llvm-path }}/lib"
+          export PATH="$LLVM_PATH/bin:$PATH"
+          export LD_LIBRARY_PATH="$LLVM_PATH/lib:/usr/lib"
           make
 
       - name: Run Test Suite
         run: |
-          export PATH="${{ steps.setup_llvm.outputs.llvm-path }}/bin:$PATH"
-          export LD_LIBRARY_PATH="/usr/lib:${{ steps.setup_llvm.outputs.llvm-path }}/lib"
+          export PATH="$LLVM_PATH/bin:$PATH"
+          export LD_LIBRARY_PATH="$LLVM_PATH/lib:/usr/lib"
           make test
 
       - name: Test Examples
         run: |
-          export PATH="${{ steps.setup_llvm.outputs.llvm-path }}/bin:$PATH"
-          export LD_LIBRARY_PATH="/usr/lib:${{ steps.setup_llvm.outputs.llvm-path }}/lib"
+          export PATH="$LLVM_PATH/bin:$PATH"
+          export LD_LIBRARY_PATH="$LLVM_PATH/lib:/usr/lib"
           ./build/wyn run examples/hello.wyn
           ./build/wyn run examples/fibonacci.wyn
           ./build/wyn run examples/extension_methods.wyn
