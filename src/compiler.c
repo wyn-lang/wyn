@@ -9410,7 +9410,7 @@ int main(int argc, char** argv) {
         }
     }
     
-    snprintf(cmd, 512, "%s -filetype=obj %s -o %s", llc_path, ir_file, obj_file);
+    snprintf(cmd, 512, "%s -relocation-model=pic -filetype=obj %s -o %s", llc_path, ir_file, obj_file);
     if (system(cmd) != 0) {
         fprintf(stderr, "LLVM compilation failed\n");
         return 1;
