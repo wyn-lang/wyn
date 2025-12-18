@@ -25,22 +25,26 @@ jobs:
         run: |
           echo "LLVM Path: ${{ steps.setup_llvm.outputs.llvm-path }}"
           export PATH="${{ steps.setup_llvm.outputs.llvm-path }}/bin:$PATH"
+          export DYLD_LIBRARY_PATH="/usr/lib:${{ steps.setup_llvm.outputs.llvm-path }}/lib"
           which llc
           llc --version
 
       - name: Build Compiler
         run: |
           export PATH="${{ steps.setup_llvm.outputs.llvm-path }}/bin:$PATH"
+          export DYLD_LIBRARY_PATH="/usr/lib:${{ steps.setup_llvm.outputs.llvm-path }}/lib"
           make
 
       - name: Run Test Suite
         run: |
           export PATH="${{ steps.setup_llvm.outputs.llvm-path }}/bin:$PATH"
+          export DYLD_LIBRARY_PATH="/usr/lib:${{ steps.setup_llvm.outputs.llvm-path }}/lib"
           make test
 
       - name: Test Examples
         run: |
           export PATH="${{ steps.setup_llvm.outputs.llvm-path }}/bin:$PATH"
+          export DYLD_LIBRARY_PATH="/usr/lib:${{ steps.setup_llvm.outputs.llvm-path }}/lib"
           ./build/wyn run examples/hello.wyn
           ./build/wyn run examples/fibonacci.wyn
           ./build/wyn run examples/extension_methods.wyn
@@ -70,22 +74,26 @@ jobs:
         run: |
           echo "LLVM Path: ${{ steps.setup_llvm.outputs.llvm-path }}"
           export PATH="${{ steps.setup_llvm.outputs.llvm-path }}/bin:$PATH"
+          export LD_LIBRARY_PATH="/usr/lib:${{ steps.setup_llvm.outputs.llvm-path }}/lib"
           which llc
           llc --version
 
       - name: Build Compiler
         run: |
           export PATH="${{ steps.setup_llvm.outputs.llvm-path }}/bin:$PATH"
+          export LD_LIBRARY_PATH="/usr/lib:${{ steps.setup_llvm.outputs.llvm-path }}/lib"
           make
 
       - name: Run Test Suite
         run: |
           export PATH="${{ steps.setup_llvm.outputs.llvm-path }}/bin:$PATH"
+          export LD_LIBRARY_PATH="/usr/lib:${{ steps.setup_llvm.outputs.llvm-path }}/lib"
           make test
 
       - name: Test Examples
         run: |
           export PATH="${{ steps.setup_llvm.outputs.llvm-path }}/bin:$PATH"
+          export LD_LIBRARY_PATH="/usr/lib:${{ steps.setup_llvm.outputs.llvm-path }}/lib"
           ./build/wyn run examples/hello.wyn
           ./build/wyn run examples/fibonacci.wyn
           ./build/wyn run examples/extension_methods.wyn
