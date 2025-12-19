@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 
 // Compiler entry point (from compiler.c)
 extern int compiler_main(int argc, char** argv);
@@ -150,7 +151,7 @@ int main(int argc, char** argv) {
         return run_pkg(argc - 1, argv + 1);
     }
     else if (strcmp(cmd, "test") == 0) {
-        // Fast test runner with caching
+        // Ultra-fast test runner with smart caching
         if (argc > 2) {
             // Run specific test file
             char run_cmd[512];
@@ -164,7 +165,7 @@ int main(int argc, char** argv) {
             }
             return result;
         } else {
-            // Fast parallel test execution with caching
+            // Fast parallel test execution with smart caching
             printf("Discovering tests...\n");
             
             // Create cache directory
@@ -193,45 +194,90 @@ int main(int argc, char** argv) {
             }
             
             printf("Found %d test files\n", test_count);
-            printf("Compiling and running in parallel...\n\n");
             
-            // Compile and run in one step, in parallel
-            pid_t pids[256];
+            // Check which tests need recompilation
+            int needs_compile[256] = {0};
+            int compile_count = 0;
+            
+            for (int i = 0; i < test_count; i++) {
+                char cache_bin[512];
+                snprintf(cache_bin, 512, ".wyn/test-cache/%d.bin", i);
+                
+                struct stat src_stat, bin_stat;
+                if (stat(test_files[i], &src_stat) == 0 && stat(cache_bin, &bin_stat) == 0) {
+                    // Check if source is newer than binary
+                    if (src_stat.st_mtime > bin_stat.st_mtime) {
+                        needs_compile[i] = 1;
+                        compile_count++;
+                    }
+                } else {
+                    needs_compile[i] = 1;
+                    compile_count++;
+                }
+            }
+            
+            if (compile_count > 0) {
+                printf("Compiling %d tests in parallel...\n", compile_count);
+                
+                // Compile only changed tests in parallel
+                pid_t compile_pids[256];
+                for (int i = 0; i < test_count; i++) {
+                    if (needs_compile[i]) {
+                        char cache_bin[512];
+                        snprintf(cache_bin, 512, ".wyn/test-cache/%d.bin", i);
+                        
+                        pid_t pid = fork();
+                        if (pid == 0) {
+                            char compile_cmd[1024];
+                            snprintf(compile_cmd, 1024, "%s compile %s -o %s > /dev/null 2>&1", 
+                                     argv[0], test_files[i], cache_bin);
+                            exit(system(compile_cmd) == 0 ? 0 : 1);
+                        } else {
+                            compile_pids[i] = pid;
+                        }
+                    } else {
+                        compile_pids[i] = -1;
+                    }
+                }
+                
+                // Wait for compilation
+                for (int i = 0; i < test_count; i++) {
+                    if (compile_pids[i] > 0) {
+                        waitpid(compile_pids[i], NULL, 0);
+                    }
+                }
+            } else {
+                printf("All tests cached, skipping compilation\n");
+            }
+            
+            printf("Running tests...\n\n");
+            
+            // Run all tests in parallel
+            pid_t run_pids[256];
             int results[256] = {0};
             
             for (int i = 0; i < test_count; i++) {
+                char cache_bin[512];
+                snprintf(cache_bin, 512, ".wyn/test-cache/%d.bin", i);
+                
                 pid_t pid = fork();
                 if (pid == 0) {
-                    // Child: compile and run test
-                    // Use cache directory for compiled binary
-                    char cache_bin[512];
-                    snprintf(cache_bin, 512, ".wyn/test-cache/test_%d", i);
-                    
-                    char compile_cmd[1024];
-                    snprintf(compile_cmd, 1024, "%s compile %s -o %s > /dev/null 2>&1", 
-                             argv[0], test_files[i], cache_bin);
-                    
-                    if (system(compile_cmd) == 0) {
-                        // Run the compiled test
-                        char run_cmd[1024];
-                        snprintf(run_cmd, 1024, "%s > /dev/null 2>&1", cache_bin);
-                        exit(system(run_cmd) == 0 ? 0 : 1);
-                    } else {
-                        exit(1);
-                    }
+                    char run_cmd[1024];
+                    snprintf(run_cmd, 1024, "%s > /dev/null 2>&1", cache_bin);
+                    exit(system(run_cmd) == 0 ? 0 : 1);
                 } else if (pid > 0) {
-                    pids[i] = pid;
+                    run_pids[i] = pid;
                 } else {
-                    pids[i] = -1;
+                    run_pids[i] = -1;
                     results[i] = 1;
                 }
             }
             
             // Collect results
             for (int i = 0; i < test_count; i++) {
-                if (pids[i] > 0) {
+                if (run_pids[i] > 0) {
                     int status;
-                    waitpid(pids[i], &status, 0);
+                    waitpid(run_pids[i], &status, 0);
                     results[i] = WIFEXITED(status) && WEXITSTATUS(status) == 0 ? 0 : 1;
                 }
             }
