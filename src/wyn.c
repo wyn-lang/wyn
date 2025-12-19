@@ -5,6 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/wait.h>
 
 // Compiler entry point (from compiler.c)
 extern int compiler_main(int argc, char** argv);
@@ -163,7 +164,7 @@ int main(int argc, char** argv) {
             }
             return result;
         } else {
-            // Auto-discover and run all test files
+            // Auto-discover and run all test files in parallel
             printf("Discovering tests...\n");
             
             // Find all *_test.wyn files in tests/ directory
@@ -192,15 +193,41 @@ int main(int argc, char** argv) {
             
             printf("Found %d test files\n\n", test_count);
             
+            // Run tests in parallel using fork
             int passed = 0;
             int failed = 0;
+            int results[256] = {0};
+            pid_t pids[256];
             
+            // Start all tests
             for (int i = 0; i < test_count; i++) {
-                char run_cmd[1024];
-                snprintf(run_cmd, 1024, "%s run %s > /dev/null 2>&1", argv[0], test_files[i]);
-                int result = system(run_cmd);
-                
-                if (result == 0) {
+                pid_t pid = fork();
+                if (pid == 0) {
+                    // Child process - run test
+                    char run_cmd[1024];
+                    snprintf(run_cmd, 1024, "%s run %s > /dev/null 2>&1", argv[0], test_files[i]);
+                    int result = system(run_cmd);
+                    exit(result == 0 ? 0 : 1);
+                } else if (pid > 0) {
+                    pids[i] = pid;
+                } else {
+                    fprintf(stderr, "Failed to fork for test %s\n", test_files[i]);
+                    results[i] = 1;
+                }
+            }
+            
+            // Wait for all tests and collect results
+            for (int i = 0; i < test_count; i++) {
+                if (pids[i] > 0) {
+                    int status;
+                    waitpid(pids[i], &status, 0);
+                    results[i] = WIFEXITED(status) && WEXITSTATUS(status) == 0 ? 0 : 1;
+                }
+            }
+            
+            // Print results
+            for (int i = 0; i < test_count; i++) {
+                if (results[i] == 0) {
                     printf("  ✅ %s\n", test_files[i]);
                     passed++;
                 } else {
