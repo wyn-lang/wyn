@@ -1,0 +1,45 @@
+fn main() {
+    print("=== Method Syntax Edge Cases ===")
+    
+    // Chaining multiple methods
+    const text = "  hello world  "
+    const result = text.trim().upper()
+    print(result)
+    
+    // Methods on literals
+    print("test".upper())
+    print((-5).abs())
+    
+    // Methods on expressions
+    const sum = 10 + 20
+    print(sum.to_str())
+    
+    // Nested method calls
+    const nested = "hello".upper().lower()
+    print(nested)
+    
+    // Array methods
+    const arr = [1, 2, 3]
+    print(arr.len())
+    print(arr.get(0))
+    print(arr.get(2))
+    
+    // String methods with args
+    const has_world = "hello world".contains("world")
+    print(has_world)
+    
+    const starts = "hello".starts_with("hel")
+    print(starts)
+    
+    const ends = "hello".ends_with("lo")
+    print(ends)
+    
+    // Empty strings
+    print("".upper())
+    print("".len())
+    
+    // Single char
+    print("a".upper())
+    
+    print("Method syntax edge cases passed!")
+}

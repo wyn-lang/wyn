@@ -1,0 +1,38 @@
+import array
+
+fn main() {
+    print("=== Array Methods Edge Cases ===")
+    
+    // Single element
+    const single = [42]
+    print(single.len())
+    print(single.get(0))
+    print(single.join(", "))
+    
+    // Large array
+    const large = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    print(large.len())
+    print(large.join(" "))
+    
+    // Join with empty separator
+    const nums = [1, 2, 3]
+    print(nums.join(""))
+    
+    // Join with long separator
+    print(nums.join(" -> "))
+    
+    // Reverse
+    const rev = array.reverse(nums)
+    print(rev.join(", "))
+    
+    // Append
+    const with_four = array.append(nums, 4)
+    print(with_four.len())
+    print(with_four.join(", "))
+    
+    // Contains
+    print(array.contains(nums, 2))
+    print(array.contains(nums, 99))
+    
+    print("Array edge cases passed!")
+}

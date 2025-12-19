@@ -1,0 +1,65 @@
+// Extension methods edge cases
+
+// Multiple parameters
+fn int.add(self, n: int) -> int {
+    return self + n
+}
+
+fn int.between(self, min: int, max: int) -> int {
+    if self < min {
+        return 0
+    }
+    if self > max {
+        return 0
+    }
+    return 1
+}
+
+// String with multiple params
+fn str.wrap(self, left: str, right: str) -> str {
+    return left + self + right
+}
+
+// Recursive extension method
+fn int.factorial(self) -> int {
+    if self <= 1 {
+        return 1
+    }
+    return self * (self - 1).factorial()
+}
+
+// Extension calling another extension
+fn int.double(self) -> int {
+    return self + self
+}
+
+fn int.quadruple(self) -> int {
+    return self.double().double()
+}
+
+fn main() {
+    print("=== Extension Methods Edge Cases ===")
+    
+    // Multiple parameters
+    print(5.add(10))
+    print(15.between(10, 20))
+    print(5.between(10, 20))
+    
+    // String with params
+    print("test".wrap("[", "]"))
+    
+    // Recursive
+    print(5.factorial())
+    
+    // Chained extensions
+    print(3.quadruple())
+    
+    // On literals
+    print((-5).add(10))
+    
+    // On expressions
+    const x = 10
+    print((x + 5).double())
+    
+    print("Extension edge cases passed!")
+}
