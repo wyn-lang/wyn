@@ -168,11 +168,18 @@ test-parallel: wyn
 .PHONY: install
 install: all
 	@echo "Installing Wyn to $(PREFIX)/bin..."
-	install -m 755 $(WYN_BIN) $(PREFIX)/bin/wyn
+	@mkdir -p $(PREFIX)/bin
+	@mkdir -p $(PREFIX)/share/wyn
+	@cp $(WYN_BIN) $(PREFIX)/bin/wyn
+	@chmod 755 $(PREFIX)/bin/wyn
 	@echo "Installing stdlib to $(PREFIX)/share/wyn/std..."
-	mkdir -p $(PREFIX)/share/wyn
-	cp -r std $(PREFIX)/share/wyn/
+	@cp -r std $(PREFIX)/share/wyn/
 	@echo "✅ Installation complete!"
+	@echo ""
+	@echo "Wyn is now installed to $(PREFIX)/bin/wyn"
+	@echo "Make sure $(PREFIX)/bin is in your PATH"
+	@echo ""
+	@echo "Try: wyn --help"
 
 # Uninstall from system
 .PHONY: uninstall
