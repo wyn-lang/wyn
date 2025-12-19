@@ -150,7 +150,7 @@ int main(int argc, char** argv) {
         return run_pkg(argc - 1, argv + 1);
     }
     else if (strcmp(cmd, "test") == 0) {
-        // Test runner for user projects
+        // Fast test runner with caching
         if (argc > 2) {
             // Run specific test file
             char run_cmd[512];
@@ -164,10 +164,13 @@ int main(int argc, char** argv) {
             }
             return result;
         } else {
-            // Auto-discover and run all test files in parallel
+            // Fast parallel test execution with caching
             printf("Discovering tests...\n");
             
-            // Find all *_test.wyn files in tests/ directory
+            // Create cache directory
+            system("mkdir -p .wyn/test-cache 2>/dev/null");
+            
+            // Find all test files
             char find_cmd[512];
             snprintf(find_cmd, 512, "find tests -name '*_test.wyn' 2>/dev/null | sort");
             FILE* pipe = popen(find_cmd, "r");
@@ -179,44 +182,52 @@ int main(int argc, char** argv) {
             char test_files[256][512];
             int test_count = 0;
             while (fgets(test_files[test_count], 512, pipe) && test_count < 256) {
-                // Remove newline
                 test_files[test_count][strcspn(test_files[test_count], "\n")] = 0;
                 test_count++;
             }
             pclose(pipe);
             
             if (test_count == 0) {
-                printf("No test files found in tests/ directory\n");
-                printf("Create test files with *_test.wyn naming\n");
+                printf("No test files found\n");
                 return 0;
             }
             
-            printf("Found %d test files\n\n", test_count);
+            printf("Found %d test files\n", test_count);
+            printf("Compiling and running in parallel...\n\n");
             
-            // Run tests in parallel using fork
-            int passed = 0;
-            int failed = 0;
-            int results[256] = {0};
+            // Compile and run in one step, in parallel
             pid_t pids[256];
+            int results[256] = {0};
             
-            // Start all tests
             for (int i = 0; i < test_count; i++) {
                 pid_t pid = fork();
                 if (pid == 0) {
-                    // Child process - run test
-                    char run_cmd[1024];
-                    snprintf(run_cmd, 1024, "%s run %s > /dev/null 2>&1", argv[0], test_files[i]);
-                    int result = system(run_cmd);
-                    exit(result == 0 ? 0 : 1);
+                    // Child: compile and run test
+                    // Use cache directory for compiled binary
+                    char cache_bin[512];
+                    snprintf(cache_bin, 512, ".wyn/test-cache/test_%d", i);
+                    
+                    char compile_cmd[1024];
+                    snprintf(compile_cmd, 1024, "%s compile %s -o %s > /dev/null 2>&1", 
+                             argv[0], test_files[i], cache_bin);
+                    
+                    if (system(compile_cmd) == 0) {
+                        // Run the compiled test
+                        char run_cmd[1024];
+                        snprintf(run_cmd, 1024, "%s > /dev/null 2>&1", cache_bin);
+                        exit(system(run_cmd) == 0 ? 0 : 1);
+                    } else {
+                        exit(1);
+                    }
                 } else if (pid > 0) {
                     pids[i] = pid;
                 } else {
-                    fprintf(stderr, "Failed to fork for test %s\n", test_files[i]);
+                    pids[i] = -1;
                     results[i] = 1;
                 }
             }
             
-            // Wait for all tests and collect results
+            // Collect results
             for (int i = 0; i < test_count; i++) {
                 if (pids[i] > 0) {
                     int status;
@@ -226,6 +237,8 @@ int main(int argc, char** argv) {
             }
             
             // Print results
+            int passed = 0;
+            int failed = 0;
             for (int i = 0; i < test_count; i++) {
                 if (results[i] == 0) {
                     printf("  ✅ %s\n", test_files[i]);
