@@ -142,7 +142,12 @@ test-all-tests: wyn
 # Run all tests (optimized - compile and run in one step)
 .PHONY: test
 test: wyn
-	@echo "Running tests..."
+	@./$(WYN_BIN) test
+
+# Legacy test target (slower, no caching)
+.PHONY: test-legacy
+test-legacy: wyn
+	@echo "Running tests (legacy mode)..."
 	@passed=0; failed=0; \
 	for f in tests/*_test.wyn; do \
 		if timeout 5 ./$(WYN_BIN) run $$f >/dev/null 2>&1; then \
