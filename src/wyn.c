@@ -149,8 +149,70 @@ int main(int argc, char** argv) {
         return run_pkg(argc - 1, argv + 1);
     }
     else if (strcmp(cmd, "test") == 0) {
-        printf("Running test suite...\n");
-        return system("make test");
+        // Test runner for user projects
+        if (argc > 2) {
+            // Run specific test file
+            char run_cmd[512];
+            snprintf(run_cmd, 512, "%s run %s", argv[0], argv[2]);
+            int result = system(run_cmd);
+            
+            if (result == 0) {
+                printf("\n✅ Test passed: %s\n", argv[2]);
+            } else {
+                printf("\n❌ Test failed: %s\n", argv[2]);
+            }
+            return result;
+        } else {
+            // Auto-discover and run all test files
+            printf("Discovering tests...\n");
+            
+            // Find all *_test.wyn files in tests/ directory
+            char find_cmd[512];
+            snprintf(find_cmd, 512, "find tests -name '*_test.wyn' 2>/dev/null | sort");
+            FILE* pipe = popen(find_cmd, "r");
+            if (!pipe) {
+                fprintf(stderr, "Failed to discover tests\n");
+                return 1;
+            }
+            
+            char test_files[256][512];
+            int test_count = 0;
+            while (fgets(test_files[test_count], 512, pipe) && test_count < 256) {
+                // Remove newline
+                test_files[test_count][strcspn(test_files[test_count], "\n")] = 0;
+                test_count++;
+            }
+            pclose(pipe);
+            
+            if (test_count == 0) {
+                printf("No test files found in tests/ directory\n");
+                printf("Create test files with *_test.wyn naming\n");
+                return 0;
+            }
+            
+            printf("Found %d test files\n\n", test_count);
+            
+            int passed = 0;
+            int failed = 0;
+            
+            for (int i = 0; i < test_count; i++) {
+                char run_cmd[1024];
+                snprintf(run_cmd, 1024, "%s run %s > /dev/null 2>&1", argv[0], test_files[i]);
+                int result = system(run_cmd);
+                
+                if (result == 0) {
+                    printf("  ✅ %s\n", test_files[i]);
+                    passed++;
+                } else {
+                    printf("  ❌ %s\n", test_files[i]);
+                    failed++;
+                }
+            }
+            
+            printf("\nTests: %d passed, %d failed\n", passed, failed);
+            
+            return failed > 0 ? 1 : 0;
+        }
     }
     else if (strcmp(cmd, "version") == 0 || strcmp(cmd, "-v") == 0 || strcmp(cmd, "--version") == 0) {
         print_version();

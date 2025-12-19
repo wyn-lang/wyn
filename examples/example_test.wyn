@@ -1,0 +1,22 @@
+// Example test file showing test syntax
+import testing
+
+test "addition works" {
+    testing.assert_eq(1 + 1, 2, "1+1 should equal 2")
+    testing.assert_eq(5 + 5, 10, "5+5 should equal 10")
+}
+
+test "string methods work" {
+    const upper = "hello".upper()
+    testing.assert_eq(upper, "HELLO", "upper should work")
+}
+
+test "array methods work" {
+    const arr = [1, 2, 3]
+    testing.assert_eq(arr.len(), 3, "length should be 3")
+    testing.assert_eq(arr.get(0), 1, "first element should be 1")
+}
+
+fn main() {
+    testing.summary()
+}
