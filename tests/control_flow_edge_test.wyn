@@ -1,0 +1,60 @@
+fn main() {
+    print("=== Control Flow Edge Cases ===")
+    
+    // Nested if
+    const x = 10
+    if x > 5 {
+        if x < 15 {
+            print("Nested if works")
+        }
+    }
+    
+    // If with method calls
+    if "hello".contains("ll") {
+        print("Method in condition works")
+    }
+    
+    // While with break
+    let i = 0
+    while i < 10 {
+        if i == 3 {
+            break
+        }
+        i = i + 1
+    }
+    print(i)
+    
+    // While with continue
+    let j = 0
+    let count = 0
+    while j < 5 {
+        j = j + 1
+        if j == 3 {
+            continue
+        }
+        count = count + 1
+    }
+    print(count)
+    
+    // For loop
+    let sum = 0
+    for k in 0..5 {
+        sum = sum + k
+    }
+    print(sum)
+    
+    // Ternary
+    const result = x > 5 ? "big" : "small"
+    print(result)
+    
+    // Match with multiple arms
+    const val = 2
+    match val {
+        1 => print("one")
+        2 => print("two")
+        3 => print("three")
+        _ => print("other")
+    }
+    
+    print("Control flow edge cases passed!")
+}

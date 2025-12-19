@@ -1,0 +1,41 @@
+fn get_number() -> int {
+    return 42
+}
+
+fn main() {
+    print("=== Type System Edge Cases ===")
+    
+    // Inference from literals
+    const int_val = 42
+    const str_val = "hello"
+    const bool_val = 1 == 1
+    
+    // Inference from operations
+    const sum = 10 + 20
+    const concat = "hello" + " world"
+    const product = 5 * 6
+    
+    // Inference from method calls
+    const upper = "test".upper()
+    const abs_val = (-10).abs()
+    const length = [1,2,3].len()
+    
+    // Inference from function calls
+    const num = get_number()
+    
+    // Inference with ternary
+    const tern = 1 == 1 ? 10 : 20
+    
+    // Print all
+    print(int_val)
+    print(str_val)
+    print(sum)
+    print(concat)
+    print(upper)
+    print(abs_val)
+    print(length)
+    print(num)
+    print(tern)
+    
+    print("Type system edge cases passed!")
+}

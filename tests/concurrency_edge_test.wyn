@@ -1,0 +1,40 @@
+fn main() {
+    print("=== Concurrency Edge Cases ===")
+    
+    // Single spawn
+    spawn {
+        print("Single task")
+    }
+    task_join_all()
+    
+    // Multiple spawns
+    spawn {
+        print("Task 1")
+    }
+    spawn {
+        print("Task 2")
+    }
+    spawn {
+        print("Task 3")
+    }
+    task_join_all()
+    
+    // Spawn with variable capture
+    const x = 42
+    spawn {
+        print(x)
+    }
+    task_join_all()
+    
+    // Spawn in loop
+    let i = 0
+    while i < 3 {
+        spawn {
+            print("Loop task")
+        }
+        i = i + 1
+    }
+    task_join_all()
+    
+    print("Concurrency edge cases passed!")
+}
