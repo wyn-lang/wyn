@@ -1,0 +1,57 @@
+// Wyn Language Showcase - All Major Features
+
+// Extension Methods
+fn int.squared(self) -> int {
+    return self * self
+}
+
+fn str.shout(self) -> str {
+    return self.upper() + "!!!"
+}
+
+fn main() {
+    print("=== Wyn Language Showcase ===")
+    
+    // Type Inference
+    const x = 42
+    const name = "Wyn"
+    
+    // String Interpolation
+    print("Hello ${name}!")
+    print("Value: ${x}")
+    
+    // Method Syntax
+    print("hello".upper())
+    print(42.to_str())
+    
+    // Extension Methods
+    print(5.squared())
+    print("hello".shout())
+    
+    // Array Methods
+    const numbers = [1, 2, 3, 4, 5]
+    print(numbers.join(", "))
+    
+    // Method Chaining
+    print((-10).abs().squared())
+    
+    // Pattern Matching
+    const value = ok(42)
+    match value {
+        ok(n) => print(n)
+        err(e) => print("Error")
+    }
+    
+    // Concurrency
+    spawn {
+        print("Task 1")
+    }
+    
+    spawn {
+        print("Task 2")
+    }
+    
+    task_join_all()
+    
+    print("All features working!")
+}

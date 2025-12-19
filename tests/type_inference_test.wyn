@@ -1,0 +1,35 @@
+fn main() {
+    print("=== Type Inference Test ===")
+    
+    // Literals
+    const x = 42
+    const name = "Alice"
+    const flag = 1 == 1
+    
+    // Expressions
+    const sum = 10 + 20
+    const greeting = "Hello " + "World"
+    const doubled = x * 2
+    
+    // Arrays
+    const numbers = [1, 2, 3]
+    const length = numbers.len()
+    
+    // Method results
+    const upper = "hello".upper()
+    const abs_val = (-10).abs()
+    
+    // String interpolation
+    const message = "Value: ${x}"
+    
+    print(x)
+    print(name)
+    print(sum)
+    print(greeting)
+    print(length)
+    print(upper)
+    print(abs_val)
+    print(message)
+    
+    print("Type inference works!")
+}
