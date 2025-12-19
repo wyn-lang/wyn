@@ -5,12 +5,15 @@ let client;
 
 function activate(context) {
     const serverOptions = {
-        command: 'wyn-lsp',
-        args: []
+        command: 'wyn',
+        args: ['lsp']
     };
 
     const clientOptions = {
-        documentSelector: [{ scheme: 'file', language: 'wyn' }]
+        documentSelector: [{ scheme: 'file', language: 'wyn' }],
+        synchronize: {
+            fileEvents: vscode.workspace.createFileSystemWatcher('**/*.wyn')
+        }
     };
 
     client = new LanguageClient(
@@ -21,6 +24,8 @@ function activate(context) {
     );
 
     client.start();
+    
+    vscode.window.showInformationMessage('Wyn LSP started!');
 }
 
 function deactivate() {

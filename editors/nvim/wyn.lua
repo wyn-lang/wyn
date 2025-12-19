@@ -1,14 +1,17 @@
 -- Wyn language support for Neovim
--- Place in ~/.config/nvim/lua/wyn.lua
+-- Installation:
+--   1. Copy to ~/.config/nvim/lua/wyn.lua
+--   2. Add to init.lua: require('wyn')
+--   3. Install Wyn: sudo make install
 
 local lspconfig = require('lspconfig')
 local configs = require('lspconfig.configs')
 
 -- Define Wyn LSP
-if not configs.wyn_lsp then
-  configs.wyn_lsp = {
+if not configs.wyn then
+  configs.wyn = {
     default_config = {
-      cmd = {'wyn-lsp'},
+      cmd = {'wyn', 'lsp'},
       filetypes = {'wyn'},
       root_dir = function(fname)
         return lspconfig.util.find_git_ancestor(fname) or vim.fn.getcwd()
@@ -19,7 +22,19 @@ if not configs.wyn_lsp then
 end
 
 -- Setup Wyn LSP
-lspconfig.wyn_lsp.setup{}
+lspconfig.wyn.setup{
+  on_attach = function(client, bufnr)
+    -- Enable completion
+    vim.api.nvim_buf_set_option(bufnr, 'omnifunc', 'v:lua.vim.lsp.omnifunc')
+    
+    -- Key mappings
+    local opts = { noremap=true, silent=true, buffer=bufnr }
+    vim.keymap.set('n', 'gd', vim.lsp.buf.definition, opts)
+    vim.keymap.set('n', 'K', vim.lsp.buf.hover, opts)
+    vim.keymap.set('n', '<leader>rn', vim.lsp.buf.rename, opts)
+    vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_action, opts)
+  end,
+}
 
 -- Filetype detection
 vim.filetype.add({
@@ -38,3 +53,5 @@ vim.api.nvim_create_autocmd('FileType', {
     vim.bo.expandtab = true
   end,
 })
+
+print("Wyn language support loaded!")
