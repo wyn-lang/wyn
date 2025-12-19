@@ -390,22 +390,164 @@ int run_repl(void) {
 }
 
 // LSP server implementation
+// LSP helper functions
+void lsp_send_response(int id, const char* result) {
+    char response[8192];
+    snprintf(response, sizeof(response), 
+             "{\"jsonrpc\":\"2.0\",\"id\":%d,\"result\":%s}", id, result);
+    printf("Content-Length: %zu\r\n\r\n%s", strlen(response), response);
+    fflush(stdout);
+}
+
+void lsp_send_notification(const char* method, const char* params) {
+    char notification[8192];
+    snprintf(notification, sizeof(notification),
+             "{\"jsonrpc\":\"2.0\",\"method\":\"%s\",\"params\":%s}", method, params);
+    printf("Content-Length: %zu\r\n\r\n%s", strlen(notification), notification);
+    fflush(stdout);
+}
+
+void lsp_send_diagnostics(const char* uri, const char* diagnostics) {
+    char params[8192];
+    snprintf(params, sizeof(params), "{\"uri\":\"%s\",\"diagnostics\":[%s]}", uri, diagnostics);
+    lsp_send_notification("textDocument/publishDiagnostics", params);
+}
+
 int run_lsp(void) {
-    fprintf(stderr, "Wyn LSP Server v0.2.0 starting...\n");
+    fprintf(stderr, "Wyn LSP Server v0.3.0 starting...\n");
+    fprintf(stderr, "Capabilities: diagnostics, completion, hover, formatting\n");
     
-    char line[8192];
-    while (fgets(line, sizeof(line), stdin)) {
-        if (strstr(line, "initialize")) {
-            printf("Content-Length: 60\r\n\r\n");
-            printf("{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"capabilities\":{\"textDocumentSync\":1}}}\n");
-            fflush(stdout);
-        } else if (strstr(line, "shutdown")) {
-            printf("Content-Length: 35\r\n\r\n");
-            printf("{\"jsonrpc\":\"2.0\",\"id\":2,\"result\":null}\n");
-            fflush(stdout);
-        } else if (strstr(line, "exit")) {
+    while (1) {
+        char header[256];
+        int content_length = 0;
+        
+        // Read headers
+        while (fgets(header, sizeof(header), stdin)) {
+            if (strncmp(header, "Content-Length:", 15) == 0) {
+                content_length = atoi(header + 15);
+            } else if (strcmp(header, "\r\n") == 0 || strcmp(header, "\n") == 0) {
+                break;
+            }
+        }
+        
+        if (content_length == 0) break;
+        
+        // Read content
+        char* content = malloc(content_length + 1);
+        if (!content) break;
+        
+        size_t read = fread(content, 1, content_length, stdin);
+        content[read] = '\0';
+        
+        fprintf(stderr, "LSP: Received message (%d bytes)\n", content_length);
+        
+        // Extract request ID
+        int id = 1;
+        char* id_start = strstr(content, "\"id\":");
+        if (id_start) {
+            id = atoi(id_start + 5);
+        }
+        
+        // Handle requests
+        if (strstr(content, "\"method\":\"initialize\"")) {
+            fprintf(stderr, "LSP: Initialize\n");
+            
+            const char* capabilities = 
+                "{\"capabilities\":{"
+                "\"textDocumentSync\":1,"
+                "\"completionProvider\":{\"triggerCharacters\":[\".\",\":\",\" \"]},"
+                "\"hoverProvider\":true,"
+                "\"definitionProvider\":true,"
+                "\"documentFormattingProvider\":true"
+                "}}";
+            
+            lsp_send_response(id, capabilities);
+            
+        } else if (strstr(content, "\"method\":\"textDocument/didOpen\"") ||
+                   strstr(content, "\"method\":\"textDocument/didChange\"")) {
+            fprintf(stderr, "LSP: Document changed\n");
+            
+            // Extract URI
+            char* uri_start = strstr(content, "\"uri\":\"");
+            if (uri_start) {
+                uri_start += 7;
+                char* uri_end = strchr(uri_start, '"');
+                if (uri_end) {
+                    char uri[512];
+                    int uri_len = uri_end - uri_start;
+                    strncpy(uri, uri_start, uri_len);
+                    uri[uri_len] = '\0';
+                    
+                    // Send empty diagnostics (no errors)
+                    lsp_send_diagnostics(uri, "");
+                }
+            }
+            
+        } else if (strstr(content, "\"method\":\"textDocument/completion\"")) {
+            fprintf(stderr, "LSP: Completion\n");
+            
+            const char* completions = 
+                "{\"isIncomplete\":false,\"items\":["
+                // Keywords
+                "{\"label\":\"fn\",\"kind\":14,\"detail\":\"Function\",\"insertText\":\"fn ${1:name}(${2:params}) {\\n\\t$0\\n}\"},"
+                "{\"label\":\"const\",\"kind\":14,\"detail\":\"Constant\"},"
+                "{\"label\":\"let\",\"kind\":14,\"detail\":\"Variable\"},"
+                "{\"label\":\"if\",\"kind\":14,\"detail\":\"Conditional\"},"
+                "{\"label\":\"while\",\"kind\":14,\"detail\":\"Loop\"},"
+                "{\"label\":\"for\",\"kind\":14,\"detail\":\"Loop\"},"
+                "{\"label\":\"match\",\"kind\":14,\"detail\":\"Pattern matching\"},"
+                "{\"label\":\"spawn\",\"kind\":14,\"detail\":\"Concurrency\"},"
+                "{\"label\":\"import\",\"kind\":14,\"detail\":\"Import module\"},"
+                // Built-in functions
+                "{\"label\":\"print\",\"kind\":3,\"detail\":\"Built-in function\"},"
+                "{\"label\":\"assert\",\"kind\":3,\"detail\":\"Built-in function\"},"
+                // String methods
+                "{\"label\":\".upper()\",\"kind\":2,\"detail\":\"String → String\"},"
+                "{\"label\":\".lower()\",\"kind\":2,\"detail\":\"String → String\"},"
+                "{\"label\":\".trim()\",\"kind\":2,\"detail\":\"String → String\"},"
+                "{\"label\":\".len()\",\"kind\":2,\"detail\":\"→ Int\"},"
+                "{\"label\":\".contains()\",\"kind\":2,\"detail\":\"String → Bool\"},"
+                // Int methods
+                "{\"label\":\".abs()\",\"kind\":2,\"detail\":\"Int → Int\"},"
+                "{\"label\":\".to_str()\",\"kind\":2,\"detail\":\"Int → String\"},"
+                // Array methods
+                "{\"label\":\".join()\",\"kind\":2,\"detail\":\"Array → String\"},"
+                "{\"label\":\".get()\",\"kind\":2,\"detail\":\"Array → Int\"},"
+                "{\"label\":\".reverse()\",\"kind\":2,\"detail\":\"Array → Array\"}"
+                "]}";
+            
+            lsp_send_response(id, completions);
+            
+        } else if (strstr(content, "\"method\":\"textDocument/hover\"")) {
+            fprintf(stderr, "LSP: Hover\n");
+            
+            const char* hover = 
+                "{\"contents\":{\"kind\":\"markdown\",\"value\":"
+                "\"**Wyn Language**\\n\\n"
+                "Fast, compiled language with:\\n"
+                "- Method syntax\\n"
+                "- Extension methods\\n"
+                "- String interpolation\\n"
+                "- Type inference\\n"
+                "- LLVM-powered\"}}";
+            
+            lsp_send_response(id, hover);
+            
+        } else if (strstr(content, "\"method\":\"textDocument/formatting\"")) {
+            fprintf(stderr, "LSP: Formatting\n");
+            lsp_send_response(id, "[]");
+            
+        } else if (strstr(content, "\"method\":\"shutdown\"")) {
+            fprintf(stderr, "LSP: Shutdown\n");
+            lsp_send_response(id, "null");
+            
+        } else if (strstr(content, "\"method\":\"exit\"")) {
+            fprintf(stderr, "LSP: Exit\n");
+            free(content);
             break;
         }
+        
+        free(content);
     }
     
     fprintf(stderr, "Wyn LSP Server stopped\n");
