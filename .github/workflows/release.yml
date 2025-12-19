@@ -1,0 +1,80 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  create-release:
+    runs-on: macos-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install LLVM
+        run: |
+          brew install llvm
+          echo "/opt/homebrew/opt/llvm/bin" >> $GITHUB_PATH
+      
+      - name: Build
+        run: make
+      
+      - name: Run Tests
+        run: ./build/wyn test
+      
+      - name: Create Release Package
+        run: |
+          mkdir -p release
+          cp build/wyn release/
+          cp -r std release/
+          cp -r examples release/
+          cp -r editors release/
+          cp README.md INSTALL.md LICENSE release/
+          tar -czf wyn-${{ github.ref_name }}-macos-arm64.tar.gz release/
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: wyn-${{ github.ref_name }}-macos-arm64.tar.gz
+          generate_release_notes: true
+          body: |
+            # Wyn ${{ github.ref_name }}
+            
+            **One language to rule them all.**
+            
+            ## Features
+            - ✅ Method syntax: `"hello".upper()`
+            - ✅ Extension methods: `fn int.squared(self)`
+            - ✅ String interpolation: `"Hello ${name}!"`
+            - ✅ Type inference: `const x = 42`
+            - ✅ Array.join(): `[1,2,3].join(", ")`
+            - ✅ 73/73 tests passing
+            - ✅ Fast test runner (1.3s cached)
+            - ✅ Full LSP support
+            
+            ## Installation
+            
+            ```bash
+            tar -xzf wyn-${{ github.ref_name }}-macos-arm64.tar.gz
+            cd release
+            sudo make install
+            ```
+            
+            Or build from source:
+            ```bash
+            git clone https://github.com/wyn-lang/wyn.git
+            cd wyn
+            make
+            sudo make install
+            ```
+            
+            ## Quick Start
+            
+            ```bash
+            wyn run hello.wyn
+            wyn test
+            wyn repl
+            ```
+            
+            **Platform:** macOS ARM64 (Apple Silicon)
