@@ -1,0 +1,53 @@
+fn main() {
+    print("=== Closures Edge Cases ===")
+    
+    // Capture single variable
+    let counter = 0
+    spawn {
+        counter = counter + 1
+    }
+    task_join_all()
+    print(counter)
+    
+    // Capture multiple variables
+    let x = 10
+    let y = 20
+    spawn {
+        x = x + 1
+        y = y + 1
+    }
+    task_join_all()
+    print(x)
+    print(y)
+    
+    // Capture in nested spawn
+    let z = 5
+    spawn {
+        spawn {
+            z = z + 1
+        }
+    }
+    task_join_all()
+    print(z)
+    
+    // Capture with method calls
+    let text = "hello"
+    spawn {
+        text = text.upper()
+    }
+    task_join_all()
+    print(text)
+    
+    // Multiple spawns with same variable
+    let shared = 0
+    spawn {
+        shared = shared + 1
+    }
+    spawn {
+        shared = shared + 1
+    }
+    task_join_all()
+    print(shared)
+    
+    print("Closures edge cases passed!")
+}

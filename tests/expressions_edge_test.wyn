@@ -1,0 +1,33 @@
+fn main() {
+    print("=== Expressions Edge Cases ===")
+    
+    // Complex arithmetic
+    print(1 + 2 * 3 - 4 / 2)
+    print((1 + 2) * (3 - 1))
+    
+    // Ternary
+    const val = 1 == 1 ? 15 : 15
+    print(val)
+    
+    // Expression in array
+    const arr = [1 + 1, 2 * 2, 3 - 1]
+    print(arr.join(", "))
+    
+    // Method call in expression
+    const len = "test".len() + 1
+    print(len)
+    
+    // Chained operations
+    const chain = 5 * 2 + 3 - 1
+    print(chain)
+    
+    // Parenthesized expressions
+    const paren = (5 + 3) * (2 + 1)
+    print(paren)
+    
+    // Negative in expression
+    const neg = 10 + (-5)
+    print(neg)
+    
+    print("Expressions edge cases passed!")
+}

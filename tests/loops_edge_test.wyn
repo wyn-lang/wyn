@@ -1,0 +1,39 @@
+fn main() {
+    print("=== Loops Edge Cases ===")
+    
+    // While with break
+    let i = 0
+    while i < 10 {
+        if i == 3 {
+            break
+        }
+        i = i + 1
+    }
+    print(i)
+    
+    // For with break
+    let sum = 0
+    for k in 0..10 {
+        if k == 5 {
+            break
+        }
+        sum = sum + k
+    }
+    print(sum)
+    
+    // Nested loops
+    let nested = 0
+    for x in 0..3 {
+        for y in 0..3 {
+            nested = nested + 1
+        }
+    }
+    print(nested)
+    
+    // Single iteration
+    for q in 0..1 {
+        print("once")
+    }
+    
+    print("Loops edge cases passed!")
+}
