@@ -1,0 +1,43 @@
+fn main() {
+    print("=== Operators Edge Cases ===")
+    
+    // Arithmetic with negatives
+    print((-5) + 10)
+    print((-5) * 2)
+    print(10 - (-5))
+    
+    // Division by 1
+    print(42 / 1)
+    
+    // Modulo
+    print(10 % 3)
+    print(7 % 2)
+    
+    // Comparison with negatives
+    print((-5) < 0 ? 1 : 0)
+    print((-5) > (-10) ? 1 : 0)
+    
+    // Equality
+    print(42 == 42 ? 1 : 0)
+    print(42 != 43 ? 1 : 0)
+    
+    // String comparison
+    print("hello" == "hello" ? 1 : 0)
+    print("hello" != "world" ? 1 : 0)
+    
+    // Chained comparisons
+    const x = 10
+    const check1 = x > 5 ? 1 : 0
+    const check2 = x < 15 ? 1 : 0
+    print(check1)
+    print(check2)
+    
+    // Operator precedence
+    print(2 + 3 * 4)
+    print((2 + 3) * 4)
+    
+    // Unary operators
+    print(-(-5))
+    
+    print("Operators edge cases passed!")
+}

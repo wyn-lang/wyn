@@ -1,0 +1,57 @@
+// Recursive function
+fn fib(n: int) -> int {
+    if n <= 1 {
+        return n
+    }
+    return fib(n - 1) + fib(n - 2)
+}
+
+// Function with default parameters
+fn greet(name: str = "World") -> str {
+    return "Hello " + name
+}
+
+// Function returning Result
+fn safe_divide(a: int, b: int) -> Result[int, str] {
+    if b == 0 {
+        return err("div by zero")
+    }
+    return ok(a / b)
+}
+
+// Function with multiple returns
+fn classify(n: int) -> str {
+    if n < 0 {
+        return "negative"
+    }
+    if n == 0 {
+        return "zero"
+    }
+    return "positive"
+}
+
+fn main() {
+    print("=== Function Edge Cases ===")
+    
+    // Recursion
+    print(fib(5))
+    print(fib(7))
+    
+    // Default parameters
+    print(greet())
+    print(greet("Wyn"))
+    
+    // Result return
+    const r = safe_divide(10, 2)
+    match r {
+        ok(v) => print(v)
+        err(e) => print("error")
+    }
+    
+    // Multiple returns
+    print(classify(-5))
+    print(classify(0))
+    print(classify(10))
+    
+    print("Function edge cases passed!")
+}

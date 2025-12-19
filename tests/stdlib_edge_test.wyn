@@ -1,0 +1,19 @@
+import fs
+import time
+
+fn main() {
+    print("=== Stdlib Edge Cases ===")
+    
+    // File operations
+    const path = "/tmp/wyn_edge_test.txt"
+    fs.write(path, "test")
+    
+    print(fs.exists(path))
+    
+    fs.delete(path)
+    
+    // Time operations
+    print(time.now_unix() > 0 ? 1 : 0)
+    
+    print("Stdlib edge cases passed!")
+}

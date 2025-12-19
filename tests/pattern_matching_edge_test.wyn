@@ -1,0 +1,51 @@
+fn main() {
+    print("=== Pattern Matching Edge Cases ===")
+    
+    // Match with literals
+    const x = 2
+    match x {
+        1 => print("one")
+        2 => print("two")
+        3 => print("three")
+        _ => print("other")
+    }
+    
+    // Match with Result
+    const r1 = ok(42)
+    match r1 {
+        ok(v) => print(v)
+        err(e) => print("error")
+    }
+    
+    // Match with nested patterns
+    const r2 = ok(10)
+    match r2 {
+        ok(v) => {
+            if v > 5 {
+                print("big")
+            }
+        }
+        err(e) => print("error")
+    }
+    
+    // Match with expressions
+    match 1 + 1 {
+        2 => print("correct")
+        _ => print("wrong")
+    }
+    
+    // Match with method calls
+    match "hello".len() {
+        5 => print("five")
+        _ => print("other")
+    }
+    
+    // Match returning values
+    const result = match ok(100) {
+        ok(v) => v
+        err(e) => 0
+    }
+    print(result)
+    
+    print("Pattern matching edge cases passed!")
+}
