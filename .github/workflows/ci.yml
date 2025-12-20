@@ -16,19 +16,19 @@ jobs:
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
     timeout-minutes: 20
-    
+
     strategy:
       fail-fast: false
       matrix:
         config:
           # macOS ARM64 - Primary development platform
           - name: "macOS ARM64 (Apple Silicon)"
-            os: macos-14
+            os: macos-15
             arch: arm64
             llvm_path: "/opt/homebrew/opt/llvm/bin"
             artifact_name: "wyn-macos-arm64"
             test_mode: "full"
-            
+
           # Linux x86_64 - Most common server platform
           - name: "Linux x86_64"
             os: ubuntu-22.04
@@ -36,14 +36,14 @@ jobs:
             llvm_path: "/usr/lib/llvm-18/bin"
             artifact_name: "wyn-linux-x86_64"
             test_mode: "full"
-            
+
           # Windows x86_64 - Most common desktop platform
           - name: "Windows x86_64"
             os: windows-2022
             arch: x86_64
             llvm_path: "C:\\Program Files\\LLVM\\bin"
             artifact_name: "wyn-windows-x86_64"
-            test_mode: "smoke"  # Start with smoke tests, expand once stable
+            test_mode: "smoke" # Start with smoke tests, expand once stable
 
     steps:
       - name: Checkout code
@@ -101,19 +101,19 @@ jobs:
         run: |
           echo "Running full test suite..."
           ./build/wyn test || echo "Some tests failed, continuing..."
-          
+
       - name: Run Smoke Tests (All platforms)
         run: |
           echo "Running smoke tests..."
-          
+
           # Test basic compilation
           echo 'fn main() { print("Hello, Wyn!") }' > test_hello.wyn
           ./build/wyn run test_hello.wyn || echo "Basic test failed"
-          
+
           # Test method syntax
           echo 'fn main() { print("hello".upper()) }' > test_method.wyn
           ./build/wyn run test_method.wyn || echo "Method test failed"
-          
+
           # Test extension methods
           cat > test_extension.wyn << 'EOF'
           fn int.squared(self) -> int {
@@ -168,18 +168,18 @@ jobs:
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
     timeout-minutes: 15
-    
+
     strategy:
       fail-fast: false
       matrix:
         config:
           # macOS x86_64 - Intel Macs
           - name: "macOS x86_64 (Intel)"
-            os: macos-13
+            os: macos-15-intel
             arch: x86_64
             llvm_path: "/usr/local/opt/llvm/bin"
             artifact_name: "wyn-macos-x86_64"
-            
+
           # Linux ARM64 - Cloud ARM instances
           - name: "Linux ARM64"
             os: ubuntu-22.04-arm64
@@ -238,7 +238,7 @@ jobs:
     needs: [tier1-platforms, tier2-platforms]
     runs-on: ubuntu-latest
     if: always()
-    
+
     steps:
       - name: Check results
         run: |
