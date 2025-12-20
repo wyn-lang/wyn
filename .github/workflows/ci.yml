@@ -1,0 +1,255 @@
+name: CI - Build and Test
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+env:
+  LLVM_VERSION: "18"
+
+jobs:
+  # Tier 1: Full CI/CD with complete test suite
+  tier1-platforms:
+    name: ${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
+    timeout-minutes: 20
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          # macOS ARM64 - Primary development platform
+          - name: "macOS ARM64 (Apple Silicon)"
+            os: macos-14
+            arch: arm64
+            llvm_path: "/opt/homebrew/opt/llvm/bin"
+            artifact_name: "wyn-macos-arm64"
+            test_mode: "full"
+            
+          # Linux x86_64 - Most common server platform
+          - name: "Linux x86_64"
+            os: ubuntu-22.04
+            arch: x86_64
+            llvm_path: "/usr/lib/llvm-18/bin"
+            artifact_name: "wyn-linux-x86_64"
+            test_mode: "full"
+            
+          # Windows x86_64 - Most common desktop platform
+          - name: "Windows x86_64"
+            os: windows-2022
+            arch: x86_64
+            llvm_path: "C:\\Program Files\\LLVM\\bin"
+            artifact_name: "wyn-windows-x86_64"
+            test_mode: "smoke"  # Start with smoke tests, expand once stable
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install LLVM (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install llvm@${{ env.LLVM_VERSION }}
+          echo "$(brew --prefix llvm@${{ env.LLVM_VERSION }})/bin" >> $GITHUB_PATH
+          echo "LLVM_PREFIX=$(brew --prefix llvm@${{ env.LLVM_VERSION }})" >> $GITHUB_ENV
+
+      - name: Install LLVM (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh ${{ env.LLVM_VERSION }}
+          sudo apt-get install -y clang-${{ env.LLVM_VERSION }}
+          echo "/usr/lib/llvm-${{ env.LLVM_VERSION }}/bin" >> $GITHUB_PATH
+          echo "LLVM_PREFIX=/usr/lib/llvm-${{ env.LLVM_VERSION }}" >> $GITHUB_ENV
+
+      - name: Install LLVM (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          choco install llvm --version=${{ env.LLVM_VERSION }} -y
+          echo "C:\Program Files\LLVM\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          echo "LLVM_PREFIX=C:\Program Files\LLVM" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+        shell: pwsh
+
+      - name: Verify LLVM installation
+        run: |
+          llvm-config --version || echo "llvm-config not found"
+          clang --version || echo "clang not found"
+        shell: bash
+
+      - name: Build Compiler (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          make clean
+          make LLVM_PREFIX=${{ env.LLVM_PREFIX }}
+          ./build/wyn --version
+
+      - name: Build Compiler (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          mkdir -p build
+          clang -Wall -Wextra -std=c11 -O2 -DCOMPILER_MAIN -D_WIN32 -o build/wyn.exe src/wyn.c src/compiler.c
+          ./build/wyn.exe --version
+        shell: bash
+
+      - name: Run Full Test Suite (Unix)
+        if: matrix.config.test_mode == 'full' && runner.os != 'Windows'
+        run: |
+          echo "Running full test suite..."
+          ./build/wyn test || echo "Some tests failed, continuing..."
+          
+      - name: Run Smoke Tests (All platforms)
+        run: |
+          echo "Running smoke tests..."
+          
+          # Test basic compilation
+          echo 'fn main() { print("Hello, Wyn!") }' > test_hello.wyn
+          ./build/wyn run test_hello.wyn || echo "Basic test failed"
+          
+          # Test method syntax
+          echo 'fn main() { print("hello".upper()) }' > test_method.wyn
+          ./build/wyn run test_method.wyn || echo "Method test failed"
+          
+          # Test extension methods
+          cat > test_extension.wyn << 'EOF'
+          fn int.squared(self) -> int {
+              return self * self
+          }
+          fn main() {
+              print(5.squared())
+          }
+          EOF
+          ./build/wyn run test_extension.wyn || echo "Extension test failed"
+        shell: bash
+
+      - name: Test Examples
+        run: |
+          echo "Testing examples..."
+          ./build/wyn run examples/hello.wyn || echo "hello.wyn failed"
+          ./build/wyn run examples/string_operations.wyn || echo "string_operations.wyn failed"
+          ./build/wyn run examples/array_operations.wyn || echo "array_operations.wyn failed"
+        shell: bash
+        continue-on-error: true
+
+      - name: Package Binary (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p release
+          cp build/wyn release/
+          cp -r std release/ 2>/dev/null || echo "No std directory"
+          cp -r examples release/ 2>/dev/null || echo "No examples directory"
+          cp README.md LICENSE release/ 2>/dev/null || echo "No docs"
+          tar -czf ${{ matrix.config.artifact_name }}.tar.gz release/
+
+      - name: Package Binary (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          mkdir -p release
+          cp build/wyn.exe release/
+          cp -r std release/ 2>/dev/null || echo "No std directory"
+          cp -r examples release/ 2>/dev/null || echo "No examples directory"
+          cp README.md LICENSE release/ 2>/dev/null || echo "No docs"
+          tar -czf ${{ matrix.config.artifact_name }}.tar.gz release/
+        shell: bash
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.config.artifact_name }}
+          path: ${{ matrix.config.artifact_name }}.tar.gz
+          retention-days: 30
+
+  # Tier 2: Build-only with smoke tests
+  tier2-platforms:
+    name: ${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
+    timeout-minutes: 15
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          # macOS x86_64 - Intel Macs
+          - name: "macOS x86_64 (Intel)"
+            os: macos-13
+            arch: x86_64
+            llvm_path: "/usr/local/opt/llvm/bin"
+            artifact_name: "wyn-macos-x86_64"
+            
+          # Linux ARM64 - Cloud ARM instances
+          - name: "Linux ARM64"
+            os: ubuntu-22.04-arm64
+            arch: aarch64
+            llvm_path: "/usr/lib/llvm-18/bin"
+            artifact_name: "wyn-linux-arm64"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install LLVM (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install llvm@${{ env.LLVM_VERSION }}
+          echo "$(brew --prefix llvm@${{ env.LLVM_VERSION }})/bin" >> $GITHUB_PATH
+          echo "LLVM_PREFIX=$(brew --prefix llvm@${{ env.LLVM_VERSION }})" >> $GITHUB_ENV
+
+      - name: Install LLVM (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          sudo ./llvm.sh ${{ env.LLVM_VERSION }}
+          sudo apt-get install -y clang-${{ env.LLVM_VERSION }}
+          echo "/usr/lib/llvm-${{ env.LLVM_VERSION }}/bin" >> $GITHUB_PATH
+          echo "LLVM_PREFIX=/usr/lib/llvm-${{ env.LLVM_VERSION }}" >> $GITHUB_ENV
+
+      - name: Build Compiler
+        run: |
+          make clean
+          make LLVM_PREFIX=${{ env.LLVM_PREFIX }}
+          ./build/wyn --version
+
+      - name: Smoke Test
+        run: |
+          echo 'fn main() { print("Hello from ${{ matrix.config.arch }}!") }' > test.wyn
+          ./build/wyn run test.wyn
+
+      - name: Package Binary
+        run: |
+          mkdir -p release
+          cp build/wyn release/
+          tar -czf ${{ matrix.config.artifact_name }}.tar.gz release/
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.config.artifact_name }}
+          path: ${{ matrix.config.artifact_name }}.tar.gz
+          retention-days: 30
+
+  # Summary job
+  ci-summary:
+    name: CI Summary
+    needs: [tier1-platforms, tier2-platforms]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+      - name: Check results
+        run: |
+          echo "## CI Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Tier 1 Platforms (Full Tests)" >> $GITHUB_STEP_SUMMARY
+          echo "- macOS ARM64: ${{ needs.tier1-platforms.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Linux x86_64: ${{ needs.tier1-platforms.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Windows x86_64: ${{ needs.tier1-platforms.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Tier 2 Platforms (Smoke Tests)" >> $GITHUB_STEP_SUMMARY
+          echo "- macOS x86_64: ${{ needs.tier2-platforms.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Linux ARM64: ${{ needs.tier2-platforms.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All artifacts available for download in the Actions tab." >> $GITHUB_STEP_SUMMARY

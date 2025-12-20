@@ -6,7 +6,23 @@ CFLAGS = -Wall -Wextra -std=c11 -O2
 DEBUG_FLAGS = -g -O0 -DDEBUG
 
 # LLVM Configuration
-LLVM_PREFIX ?= /opt/homebrew/opt/llvm
+# Auto-detect LLVM path based on platform
+UNAME_S := $(shell uname -s 2>/dev/null || echo Windows)
+UNAME_M := $(shell uname -m 2>/dev/null || echo x86_64)
+
+# Default LLVM paths by platform
+ifeq ($(UNAME_S),Darwin)
+  ifeq ($(UNAME_M),arm64)
+    LLVM_PREFIX ?= /opt/homebrew/opt/llvm
+  else
+    LLVM_PREFIX ?= /usr/local/opt/llvm
+  endif
+else ifeq ($(UNAME_S),Linux)
+  LLVM_PREFIX ?= /usr/lib/llvm-18
+else ifeq ($(UNAME_S),Windows)
+  LLVM_PREFIX ?= C:/Program Files/LLVM
+endif
+
 LLVM_CONFIG = $(LLVM_PREFIX)/bin/llvm-config
 LLC = $(LLVM_PREFIX)/bin/llc
 CLANG = clang
@@ -39,7 +55,15 @@ PREFIX ?= /usr/local
 # Unified Wyn binary
 WYN_CLI_SRC = $(SRC_DIR)/wyn.c
 WYN_COMPILER_SRC = $(SRC_DIR)/compiler.c
-WYN_BIN = $(BUILD_DIR)/wyn
+
+# Platform-specific binary extension
+ifeq ($(UNAME_S),Windows)
+  WYN_BIN = $(BUILD_DIR)/wyn.exe
+  EXE_EXT = .exe
+else
+  WYN_BIN = $(BUILD_DIR)/wyn
+  EXE_EXT =
+endif
 
 # Runtime libraries
 SPAWN_RUNTIME_SRC = $(RUNTIME_DIR)/spawn.c

@@ -1,5 +1,10 @@
 # Wyn Programming Language
 
+[![CI](https://github.com/wyn-lang/wyn/actions/workflows/ci.yml/badge.svg)](https://github.com/wyn-lang/wyn/actions/workflows/ci.yml)
+[![Release](https://github.com/wyn-lang/wyn/actions/workflows/release.yml/badge.svg)](https://github.com/wyn-lang/wyn/actions/workflows/release.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-blue)](https://github.com/wyn-lang/wyn)
+
 **Official Website:** [wynlang.com](https://wynlang.com)
 
 Fast, compiled systems language with clean, expressive syntax, powered by LLVM.
