@@ -154,6 +154,9 @@ jobs:
 
       - name: Cross-compile for x86_64
         run: |
+          # Create build directory
+          mkdir -p build
+          
           # Compile for x86_64 using native clang
           clang -target x86_64-apple-macos11.0 -Wall -Wextra -std=c11 -O2 -DCOMPILER_MAIN \
             -o build/wyn src/wyn.c src/compiler.c
@@ -202,8 +205,12 @@ jobs:
           
       - name: Cross-compile for ARM64
         run: |
-          # Compile for ARM64 using clang
-          clang --target=aarch64-linux-gnu -Wall -Wextra -std=c11 -O2 -DCOMPILER_MAIN \
+          # Create build directory
+          mkdir -p build
+          
+          # Compile for ARM64 using clang with proper flags
+          clang --target=aarch64-linux-gnu -Wall -Wextra -std=gnu11 -O2 -DCOMPILER_MAIN \
+            -D_GNU_SOURCE \
             -o build/wyn src/wyn.c src/compiler.c
           
           file build/wyn
