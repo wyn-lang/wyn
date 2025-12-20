@@ -54,6 +54,11 @@ if (Test-Path "$installDir\release\wyn.exe") {
     Move-Item -Path "$installDir\release\wyn.exe" -Destination "$installDir\wyn.exe" -Force
 }
 
+# Move VERSION file
+if (Test-Path "$installDir\release\VERSION") {
+    Move-Item -Path "$installDir\release\VERSION" -Destination "$installDir\VERSION" -Force
+}
+
 # Move std library
 if (Test-Path "$installDir\release\std") {
     Move-Item -Path "$installDir\release\std" -Destination "$installDir\std" -Force

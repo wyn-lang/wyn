@@ -1,5 +1,5 @@
 # Wyn Language Build System
-VERSION = 0.2.0
+VERSION = 0.3.0
 
 CC = cc
 CFLAGS = -Wall -Wextra -std=c11 -O2

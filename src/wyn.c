@@ -44,8 +44,58 @@ int run_fmt(const char* file);
 int run_doc(int argc, char** argv);
 int run_pkg(int argc, char** argv);
 
+// Read version from VERSION file or use default
+const char* get_version(void) {
+    static char version[32] = {0};
+    if (version[0] != '\0') return version;
+    
+    // Try multiple locations for VERSION file
+    const char* paths[] = {
+        "VERSION",                           // Current directory
+        "../VERSION",                        // Parent directory
+        "/usr/local/share/wyn/VERSION",     // Installed location (Unix)
+        NULL
+    };
+    
+    #ifdef _WIN32
+    // Add Windows install location
+    char win_path[512];
+    const char* localappdata = getenv("LOCALAPPDATA");
+    if (localappdata) {
+        snprintf(win_path, sizeof(win_path), "%s\\Wyn\\VERSION", localappdata);
+    }
+    #endif
+    
+    FILE* f = NULL;
+    for (int i = 0; paths[i] != NULL; i++) {
+        f = fopen(paths[i], "r");
+        if (f) break;
+    }
+    
+    #ifdef _WIN32
+    if (!f && localappdata) {
+        f = fopen(win_path, "r");
+    }
+    #endif
+    
+    if (f) {
+        if (fgets(version, sizeof(version), f)) {
+            // Remove newline
+            version[strcspn(version, "\r\n")] = '\0';
+        }
+        fclose(f);
+    }
+    
+    // Fallback to hardcoded version
+    if (version[0] == '\0') {
+        strcpy(version, "0.3.0");
+    }
+    
+    return version;
+}
+
 void print_version(void) {
-    printf("Wyn v0.2.0\n");
+    printf("Wyn v%s\n", get_version());
     printf("Fast, compiled systems language powered by LLVM\n");
 }
 

@@ -110,6 +110,7 @@ jobs:
 
           mkdir -p release
           cp build/wyn release/
+          cp VERSION release/ 2>/dev/null || echo "No VERSION file"
           cp -r std release/ 2>/dev/null || echo "No std directory"
           cp -r examples release/ 2>/dev/null || echo "No examples directory"
           cp -r editors release/ 2>/dev/null || echo "No editors directory"
@@ -127,6 +128,7 @@ jobs:
 
           mkdir -p release
           cp build/wyn.exe release/
+          cp VERSION release/ -ErrorAction SilentlyContinue
           cp -r std release/ -ErrorAction SilentlyContinue
           cp -r examples release/ -ErrorAction SilentlyContinue
           cp -r editors release/ -ErrorAction SilentlyContinue

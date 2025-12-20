@@ -76,10 +76,14 @@ $SUDO mkdir -p "$INSTALL_DIR/bin"
 $SUDO cp "$TEMP_DIR/release/wyn" "$INSTALL_DIR/bin/wyn"
 $SUDO chmod +x "$INSTALL_DIR/bin/wyn"
 
-# Install standard library
+# Install standard library and VERSION file
 if [ -d "$TEMP_DIR/release/std" ]; then
   $SUDO mkdir -p "$INSTALL_DIR/share/wyn"
   $SUDO cp -r "$TEMP_DIR/release/std" "$INSTALL_DIR/share/wyn/"
+fi
+
+if [ -f "$TEMP_DIR/release/VERSION" ]; then
+  $SUDO cp "$TEMP_DIR/release/VERSION" "$INSTALL_DIR/share/wyn/VERSION"
 fi
 
 # Cleanup
