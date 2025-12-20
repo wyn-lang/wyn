@@ -126,15 +126,16 @@ jobs:
             $VERSION = "${{ inputs.version }}"
           }
 
-          mkdir -p release
-          cp build/wyn.exe release/
-          cp VERSION release/ -ErrorAction SilentlyContinue
-          cp -r std release/ -ErrorAction SilentlyContinue
-          cp -r examples release/ -ErrorAction SilentlyContinue
-          cp -r editors release/ -ErrorAction SilentlyContinue
-          cp README.md, INSTALL.md, LICENSE release/ -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path release | Out-Null
+          Copy-Item build/wyn.exe release/ -ErrorAction SilentlyContinue
+          Copy-Item VERSION release/ -ErrorAction SilentlyContinue
+          Copy-Item -Recurse std release/ -ErrorAction SilentlyContinue
+          Copy-Item -Recurse examples release/ -ErrorAction SilentlyContinue
+          Copy-Item -Recurse editors release/ -ErrorAction SilentlyContinue
+          Copy-Item README.md, INSTALL.md, LICENSE release/ -ErrorAction SilentlyContinue
 
-          tar -czf "wyn-${VERSION}-${{ matrix.config.artifact_name }}.tar.gz" release/
+          $archiveName = "wyn-$VERSION-${{ matrix.config.artifact_name }}.tar.gz"
+          tar.exe -czf $archiveName release/
         shell: pwsh
 
       - name: Upload Release Artifact
