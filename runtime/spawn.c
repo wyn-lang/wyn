@@ -167,14 +167,14 @@ int64_t __wyn_runtime_init() {
         return 0;
     }
     
-    printf("[Runtime] Initializing M:N scheduler...\n");
+    // printf("[Runtime] Initializing M:N scheduler...\n");
     
     runtime.worker_count = get_cpu_count();
-    printf("[Runtime] Using %d worker threads\n", runtime.worker_count);
+    // printf("[Runtime] Using %d worker threads\n", runtime.worker_count);
     
     runtime.workers = calloc(runtime.worker_count, sizeof(Worker));
     if (!runtime.workers) {
-        printf("[Runtime] Failed to allocate workers\n");
+        fprintf(stderr, "[Runtime] Failed to allocate workers\n");
         pthread_mutex_unlock(&runtime.init_mutex);
         return 1;
     }
@@ -192,12 +192,12 @@ int64_t __wyn_runtime_init() {
         init_queue(&worker->local_queue);
         
         if (pthread_create(&worker->thread, NULL, worker_main, worker) != 0) {
-            printf("[Runtime] Failed to create worker %d\n", i);
+            fprintf(stderr, "[Runtime] Failed to create worker %d\n", i);
         }
     }
     
     atomic_store(&runtime.initialized, true);
-    printf("[Runtime] M:N scheduler initialized\n");
+    // printf("[Runtime] M:N scheduler initialized\n");
     pthread_mutex_unlock(&runtime.init_mutex);
     return 0;
 }
@@ -206,7 +206,7 @@ int64_t __wyn_runtime_init() {
 int64_t __wyn_runtime_shutdown() {
     if (!atomic_load(&runtime.initialized)) return 0;
     
-    printf("[Runtime] Shutting down scheduler...\n");
+    // printf("[Runtime] Shutting down scheduler...\n");
     
     // Wait for all tasks to complete
     while (atomic_load(&runtime.task_count) > 0) {

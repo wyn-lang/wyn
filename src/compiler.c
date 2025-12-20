@@ -9273,7 +9273,7 @@ int main(int argc, char** argv) {
     bool compile_only = false;
     bool emit_asm = false;
     bool emit_ir = false;
-    bool quiet = false;
+    bool quiet = true;  // Default to quiet mode for clean output
     int opt_level = 0;
     bool stage1_opt = false;  // Enable Stage 1 optimizations
     bool use_stage1_tc = false;  // Use Stage 1 type checker
@@ -9314,6 +9314,8 @@ int main(int argc, char** argv) {
             stage1_opt = true;
         } else if (strcmp(argv[i], "--stage1-opt") == 0) {
             stage1_opt = true;
+        } else if (strcmp(argv[i], "-v") == 0 || strcmp(argv[i], "--verbose") == 0) {
+            quiet = false;
         } else if (strcmp(argv[i], "-q") == 0 || strcmp(argv[i], "--quiet") == 0) {
             quiet = true;
         } else if (strcmp(argv[i], "--stage1-tc") == 0) {
@@ -9457,9 +9459,30 @@ int main(int argc, char** argv) {
         return 1;
     }
     
+    // Find runtime libraries
+    char runtime_path[512] = "build";
+    if (access("build/builtins_runtime.o", F_OK) != 0) {
+        // Try installed location
+        #ifdef __APPLE__
+        strcpy(runtime_path, "/usr/local/share/wyn/runtime");
+        #else
+        strcpy(runtime_path, "/usr/local/share/wyn/runtime");
+        #endif
+        
+        // Check if installed location exists
+        char test_path[512];
+        snprintf(test_path, sizeof(test_path), "%s/builtins_runtime.o", runtime_path);
+        if (access(test_path, F_OK) != 0) {
+            // Fallback to build directory
+            strcpy(runtime_path, "build");
+        }
+    }
+    
     // Link
     if (!compile_only) {
-        snprintf(cmd, 512, "clang -fPIE %s build/builtins_runtime.o build/array_runtime.o build/spawn_runtime.o build/channels_runtime.o build/task_runtime.o -lpthread -lm -o %s", obj_file, output_file);
+        char cmd[2048];  // Increased buffer size for long paths
+        snprintf(cmd, sizeof(cmd), "clang -fPIE %s %s/builtins_runtime.o %s/array_runtime.o %s/spawn_runtime.o %s/channels_runtime.o %s/task_runtime.o -lpthread -lm -o %s", 
+                 obj_file, runtime_path, runtime_path, runtime_path, runtime_path, runtime_path, output_file);
         if (system(cmd) != 0) {
             fprintf(stderr, "Linking failed\n");
             return 1;

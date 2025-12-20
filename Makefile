@@ -194,16 +194,20 @@ install: all
 	@echo "Installing Wyn to $(PREFIX)/bin..."
 	@mkdir -p $(PREFIX)/bin
 	@mkdir -p $(PREFIX)/share/wyn
+	@mkdir -p $(PREFIX)/share/wyn/runtime
 	@cp $(WYN_BIN) $(PREFIX)/bin/wyn
 	@chmod 755 $(PREFIX)/bin/wyn
 	@echo "Installing stdlib to $(PREFIX)/share/wyn/std..."
 	@cp -r std $(PREFIX)/share/wyn/
+	@echo "Installing runtime libraries to $(PREFIX)/share/wyn/runtime..."
+	@cp $(BUILD_DIR)/*.o $(PREFIX)/share/wyn/runtime/ 2>/dev/null || echo "No runtime objects"
+	@cp VERSION $(PREFIX)/share/wyn/ 2>/dev/null || echo "No VERSION file"
 	@echo "✅ Installation complete!"
 	@echo ""
 	@echo "Wyn is now installed to $(PREFIX)/bin/wyn"
 	@echo "Make sure $(PREFIX)/bin is in your PATH"
 	@echo ""
-	@echo "Try: wyn --help"
+	@echo "Try: wyn version"
 
 # Uninstall from system
 .PHONY: uninstall
