@@ -21,6 +21,8 @@
   #define O_WRONLY _O_WRONLY
   #define STDOUT_FILENO 1
   #define STDERR_FILENO 2
+  #define WIFEXITED(status) 1
+  #define WEXITSTATUS(status) (status)
   typedef int pid_t;
   // Windows doesn't have fork, these functions will fail gracefully
   static inline pid_t fork(void) { return -1; }
