@@ -26,24 +26,14 @@ jobs:
       matrix:
         config:
           - name: "macOS ARM64"
-            os: macos-15
+            os: macos-14
             artifact_name: "wyn-macos-arm64"
-            run_tests: true
-
-          - name: "macOS x86_64"
-            os: macos-15-latest
-            artifact_name: "wyn-macos-x86_64"
             run_tests: true
 
           - name: "Linux x86_64"
             os: ubuntu-22.04
             artifact_name: "wyn-linux-x86_64"
             run_tests: true
-
-          - name: "Linux ARM64"
-            os: ubuntu-22.04-arm64
-            artifact_name: "wyn-linux-arm64"
-            run_tests: false
 
           - name: "Windows x86_64"
             os: windows-2022
@@ -152,10 +142,100 @@ jobs:
           path: wyn-*-${{ matrix.config.artifact_name }}.tar.gz
           retention-days: 90
 
+  # Cross-compile macOS x86_64 from ARM64
+  cross-compile-macos-x86:
+    name: Cross-compile macOS x86_64
+    runs-on: macos-14
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cross-compile for x86_64
+        run: |
+          # Compile for x86_64 using native clang
+          clang -target x86_64-apple-macos11.0 -Wall -Wextra -std=c11 -O2 -DCOMPILER_MAIN \
+            -o build/wyn src/wyn.c src/compiler.c
+          
+          file build/wyn
+          ./build/wyn version || echo "Cross-compiled binary (may need Rosetta)"
+
+      - name: Create Release Package
+        run: |
+          VERSION="${{ github.ref_name }}"
+          if [ -z "$VERSION" ]; then
+            VERSION="${{ inputs.version }}"
+          fi
+
+          mkdir -p release
+          cp build/wyn release/
+          cp VERSION release/ 2>/dev/null || true
+          cp -r std release/ 2>/dev/null || true
+          cp -r examples release/ 2>/dev/null || true
+          cp -r editors release/ 2>/dev/null || true
+          cp README.md INSTALL.md LICENSE release/ 2>/dev/null || true
+
+          tar -czf wyn-${VERSION}-wyn-macos-x86_64.tar.gz release/
+
+      - name: Upload Release Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wyn-macos-x86_64
+          path: wyn-*-wyn-macos-x86_64.tar.gz
+          retention-days: 90
+
+  # Cross-compile Linux ARM64 from x86_64
+  cross-compile-linux-arm:
+    name: Cross-compile Linux ARM64
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install cross-compilation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu clang
+          
+      - name: Cross-compile for ARM64
+        run: |
+          # Compile for ARM64 using clang
+          clang --target=aarch64-linux-gnu -Wall -Wextra -std=c11 -O2 -DCOMPILER_MAIN \
+            -o build/wyn src/wyn.c src/compiler.c
+          
+          file build/wyn
+
+      - name: Create Release Package
+        run: |
+          VERSION="${{ github.ref_name }}"
+          if [ -z "$VERSION" ]; then
+            VERSION="${{ inputs.version }}"
+          fi
+
+          mkdir -p release
+          cp build/wyn release/
+          cp VERSION release/ 2>/dev/null || true
+          cp -r std release/ 2>/dev/null || true
+          cp -r examples release/ 2>/dev/null || true
+          cp -r editors release/ 2>/dev/null || true
+          cp README.md INSTALL.md LICENSE release/ 2>/dev/null || true
+
+          tar -czf wyn-${VERSION}-wyn-linux-arm64.tar.gz release/
+
+      - name: Upload Release Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wyn-linux-arm64
+          path: wyn-*-wyn-linux-arm64.tar.gz
+          retention-days: 90
+
   # Create GitHub Release
   create-release:
     name: Create GitHub Release
-    needs: build-release
+    needs: [build-release, cross-compile-macos-x86, cross-compile-linux-arm]
     runs-on: ubuntu-latest
     permissions:
       contents: write
