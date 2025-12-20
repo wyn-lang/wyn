@@ -3553,6 +3553,12 @@ static void tc_check_stmt(TypeChecker* tc, Stmt* s) {
                 }
             }
             
+            // Special case: array += item (append operation)
+            if (s->assign.op == TOK_PLUSEQ && target->kind == TYPE_ARRAY) {
+                // For arrays, += means append, allow it
+                break;
+            }
+            
             if (!types_equal(target, value) && target->kind != TYPE_ANY && value->kind != TYPE_ANY) {
                 tc_error(tc, s->line, s->column, "type mismatch in assignment");
             }
@@ -4296,6 +4302,13 @@ static void tc1_check_stmt(TypeChecker1* tc, Stmt* s) {
                               s->assign.target->ident);
                     tc1_suggest(tc, "declare with 'let mut' to make it mutable");
                 }
+            }
+            
+            // Special case: array += item (append operation)
+            if (s->assign.op == TOK_PLUSEQ && target->kind == TYPE_ARRAY) {
+                // For arrays, += means append, so value type should match element type
+                // We allow this without strict type checking for now
+                break;
             }
             
             if (!types_equal(target, value) && target->kind != TYPE_ANY && value->kind != TYPE_ANY) {
@@ -8026,43 +8039,83 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
                     
                     // Handle compound assignments (+=, -=, etc.)
                     if (s->assign.op != TOK_EQ) {
-                        // Load current value
-                        int curr_reg = llvm_new_temp(lg);
-                        llvm_emit(lg, "  %%%d = load i64, i64* %%%d", curr_reg, var_reg);
-                        
-                        // Evaluate RHS
-                        int val_reg;
-                        llvm_expr(lg, s->assign.value, &val_reg);
-                        
-                        // Perform operation
-                        int result_reg = llvm_new_temp(lg);
-                        if (val_reg <= -1000000) {
-                            // RHS is a constant
-                            long long const_val = -val_reg - 1000000;
-                            if (s->assign.op == TOK_PLUSEQ) {
-                                llvm_emit(lg, "  %%%d = add i64 %%%d, %lld", result_reg, curr_reg, const_val);
-                            } else if (s->assign.op == TOK_MINUSEQ) {
-                                llvm_emit(lg, "  %%%d = sub i64 %%%d, %lld", result_reg, curr_reg, const_val);
-                            } else if (s->assign.op == TOK_STAREQ) {
-                                llvm_emit(lg, "  %%%d = mul i64 %%%d, %lld", result_reg, curr_reg, const_val);
-                            } else if (s->assign.op == TOK_SLASHEQ) {
-                                llvm_emit(lg, "  %%%d = sdiv i64 %%%d, %lld", result_reg, curr_reg, const_val);
+                        // Check if this is an array += operation
+                        Type* var_type = llvm_get_var_type(lg, s->assign.target->ident);
+                        if (var_type && var_type->kind == TYPE_ARRAY && s->assign.op == TOK_PLUSEQ) {
+                            // Array += item means append
+                            // Load current array (as i64, then cast to pointer)
+                            int curr_i64 = llvm_new_temp(lg);
+                            llvm_emit(lg, "  %%%d = load i64, i64* %%%d", curr_i64, var_reg);
+                            
+                            // Cast to i64* for array_append
+                            int curr_ptr = llvm_new_temp(lg);
+                            llvm_emit(lg, "  %%%d = inttoptr i64 %%%d to i64*", curr_ptr, curr_i64);
+                            
+                            // Evaluate item to append
+                            int item_reg;
+                            llvm_expr(lg, s->assign.value, &item_reg);
+                            
+                            // Call array_append
+                            int result_ptr = llvm_new_temp(lg);
+                            bool is_string_item = llvm_is_string_expr(lg, s->assign.value);
+                            if (is_string_item) {
+                                int ptr_to_int = llvm_new_temp(lg);
+                                llvm_emit(lg, "  %%%d = ptrtoint i8* %%%d to i64", ptr_to_int, item_reg);
+                                llvm_emit(lg, "  %%%d = call i64* @array_append(i64* %%%d, i64 %%%d)", result_ptr, curr_ptr, ptr_to_int);
+                            } else {
+                                if (item_reg <= -1000000) {
+                                    // Constant item
+                                    long long const_val = -item_reg - 1000000;
+                                    llvm_emit(lg, "  %%%d = call i64* @array_append(i64* %%%d, i64 %lld)", result_ptr, curr_ptr, const_val);
+                                } else {
+                                    llvm_emit(lg, "  %%%d = call i64* @array_append(i64* %%%d, i64 %%%d)", result_ptr, curr_ptr, item_reg);
+                                }
                             }
+                            
+                            // Cast back to i64 and store
+                            int result_i64 = llvm_new_temp(lg);
+                            llvm_emit(lg, "  %%%d = ptrtoint i64* %%%d to i64", result_i64, result_ptr);
+                            llvm_emit(lg, "  store i64 %%%d, i64* %%%d", result_i64, var_reg);
                         } else {
-                            // RHS is a register
-                            if (s->assign.op == TOK_PLUSEQ) {
-                                llvm_emit(lg, "  %%%d = add i64 %%%d, %%%d", result_reg, curr_reg, val_reg);
-                            } else if (s->assign.op == TOK_MINUSEQ) {
-                                llvm_emit(lg, "  %%%d = sub i64 %%%d, %%%d", result_reg, curr_reg, val_reg);
-                            } else if (s->assign.op == TOK_STAREQ) {
-                                llvm_emit(lg, "  %%%d = mul i64 %%%d, %%%d", result_reg, curr_reg, val_reg);
-                            } else if (s->assign.op == TOK_SLASHEQ) {
-                                llvm_emit(lg, "  %%%d = sdiv i64 %%%d, %%%d", result_reg, curr_reg, val_reg);
+                            // Numeric compound assignment
+                            // Load current value
+                            int curr_reg = llvm_new_temp(lg);
+                            llvm_emit(lg, "  %%%d = load i64, i64* %%%d", curr_reg, var_reg);
+                            
+                            // Evaluate RHS
+                            int val_reg;
+                            llvm_expr(lg, s->assign.value, &val_reg);
+                            
+                            // Perform operation
+                            int result_reg = llvm_new_temp(lg);
+                            if (val_reg <= -1000000) {
+                                // RHS is a constant
+                                long long const_val = -val_reg - 1000000;
+                                if (s->assign.op == TOK_PLUSEQ) {
+                                    llvm_emit(lg, "  %%%d = add i64 %%%d, %lld", result_reg, curr_reg, const_val);
+                                } else if (s->assign.op == TOK_MINUSEQ) {
+                                    llvm_emit(lg, "  %%%d = sub i64 %%%d, %lld", result_reg, curr_reg, const_val);
+                                } else if (s->assign.op == TOK_STAREQ) {
+                                    llvm_emit(lg, "  %%%d = mul i64 %%%d, %lld", result_reg, curr_reg, const_val);
+                                } else if (s->assign.op == TOK_SLASHEQ) {
+                                    llvm_emit(lg, "  %%%d = sdiv i64 %%%d, %lld", result_reg, curr_reg, const_val);
+                                }
+                            } else {
+                                // RHS is a register
+                                if (s->assign.op == TOK_PLUSEQ) {
+                                    llvm_emit(lg, "  %%%d = add i64 %%%d, %%%d", result_reg, curr_reg, val_reg);
+                                } else if (s->assign.op == TOK_MINUSEQ) {
+                                    llvm_emit(lg, "  %%%d = sub i64 %%%d, %%%d", result_reg, curr_reg, val_reg);
+                                } else if (s->assign.op == TOK_STAREQ) {
+                                    llvm_emit(lg, "  %%%d = mul i64 %%%d, %%%d", result_reg, curr_reg, val_reg);
+                                } else if (s->assign.op == TOK_SLASHEQ) {
+                                    llvm_emit(lg, "  %%%d = sdiv i64 %%%d, %%%d", result_reg, curr_reg, val_reg);
+                                }
                             }
+                            
+                            // Store result
+                            llvm_emit(lg, "  store i64 %%%d, i64* %%%d", result_reg, var_reg);
                         }
-                        
-                        // Store result
-                        llvm_emit(lg, "  store i64 %%%d, i64* %%%d", result_reg, var_reg);
                     } else {
                         // Regular assignment
                         int val_reg;
