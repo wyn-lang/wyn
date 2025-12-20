@@ -8,9 +8,23 @@
 #ifdef _WIN32
   #include <io.h>
   #include <process.h>
+  #include <fcntl.h>
   #define access _access
+  #define dup _dup
+  #define dup2 _dup2
+  #define open _open
+  #define close _close
+  #define popen _popen
+  #define pclose _pclose
   #define F_OK 0
   #define X_OK 0
+  #define O_WRONLY _O_WRONLY
+  #define STDOUT_FILENO 1
+  #define STDERR_FILENO 2
+  typedef int pid_t;
+  // Windows doesn't have fork, these functions will fail gracefully
+  static inline pid_t fork(void) { return -1; }
+  static inline pid_t waitpid(pid_t pid, int *status, int options) { (void)pid; (void)status; (void)options; return -1; }
 #else
   #include <unistd.h>
   #include <fcntl.h>

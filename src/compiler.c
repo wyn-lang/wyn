@@ -29,6 +29,15 @@
 #include <stdbool.h>
 #include <ctype.h>
 #include <stdarg.h>
+
+#ifdef _WIN32
+  #include <io.h>
+  #define access _access
+  #define X_OK 0
+#else
+  #include <unistd.h>
+#endif
+
 #include "windows_compat.h"
 
 #define MAX_TOKEN_LEN 256
