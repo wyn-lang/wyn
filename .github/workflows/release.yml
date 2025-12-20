@@ -127,21 +127,22 @@ jobs:
           }
 
           # Create release directory
-          New-Item -ItemType Directory -Force -Path release | Out-Null
+          $releaseDir = ".\release"
+          New-Item -ItemType Directory -Force -Path $releaseDir | Out-Null
           
           # Copy files only if they exist
-          if (Test-Path "build/wyn.exe") { Copy-Item "build/wyn.exe" "release/" }
-          if (Test-Path "VERSION") { Copy-Item "VERSION" "release/" }
-          if (Test-Path "std") { Copy-Item -Recurse "std" "release/" }
-          if (Test-Path "examples") { Copy-Item -Recurse "examples" "release/" }
-          if (Test-Path "editors") { Copy-Item -Recurse "editors" "release/" }
-          if (Test-Path "README.md") { Copy-Item "README.md" "release/" }
-          if (Test-Path "INSTALL.md") { Copy-Item "INSTALL.md" "release/" }
-          if (Test-Path "LICENSE") { Copy-Item "LICENSE" "release/" }
+          if (Test-Path "build\wyn.exe") { Copy-Item "build\wyn.exe" "$releaseDir\" }
+          if (Test-Path "VERSION") { Copy-Item "VERSION" "$releaseDir\" }
+          if (Test-Path "std") { Copy-Item -Recurse "std" "$releaseDir\" }
+          if (Test-Path "examples") { Copy-Item -Recurse "examples" "$releaseDir\" }
+          if (Test-Path "editors") { Copy-Item -Recurse "editors" "$releaseDir\" }
+          if (Test-Path "README.md") { Copy-Item "README.md" "$releaseDir\" }
+          if (Test-Path "INSTALL.md") { Copy-Item "INSTALL.md" "$releaseDir\" }
+          if (Test-Path "LICENSE") { Copy-Item "LICENSE" "$releaseDir\" }
 
-          # Create archive
+          # Create archive using Windows paths
           $archiveName = "wyn-$VERSION-${{ matrix.config.artifact_name }}.tar.gz"
-          tar.exe -czf $archiveName release/
+          & tar.exe -czf $archiveName ".\release"
         shell: pwsh
 
       - name: Upload Release Artifact
