@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Install Wyn - Multi-Platform Installation</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .install-section {
+      background: #f5f5f5;
+      padding: 30px;
+      border-radius: 10px;
+      margin: 20px 0;
+    }
+    .command-box {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 15px 20px;
+      border-radius: 5px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 15px 0;
+    }
+    .copy-btn {
+      background: #007acc;
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .copy-btn:hover {
+      background: #005a9e;
+    }
+    .platform-tabs {
+      display: flex;
+      gap: 10px;
+      margin: 20px 0;
+    }
+    .platform-tab {
+      padding: 10px 20px;
+      border: 2px solid #ddd;
+      background: white;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .platform-tab.active {
+      background: #007acc;
+      color: white;
+      border-color: #007acc;
+    }
+    .platform-tab:hover {
+      border-color: #007acc;
+    }
+    .platform-content {
+      display: none;
+    }
+    .platform-content.active {
+      display: block;
+    }
+    .download-links {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      margin: 20px 0;
+    }
+    .download-link {
+      padding: 15px;
+      background: white;
+      border: 2px solid #ddd;
+      border-radius: 5px;
+      text-align: center;
+      text-decoration: none;
+      color: #333;
+      transition: all 0.2s;
+    }
+    .download-link:hover {
+      border-color: #007acc;
+      background: #f0f8ff;
+    }
+    .note {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Install Wyn</h1>
+  <p>Fast, simple, universal programming language for all platforms.</p>
+
+  <div class="install-section">
+    <h2>Quick Install</h2>
+    
+    <div class="platform-tabs">
+      <button class="platform-tab active" onclick="showPlatform('unix')">macOS / Linux</button>
+      <button class="platform-tab" onclick="showPlatform('windows')">Windows</button>
+      <button class="platform-tab" onclick="showPlatform('manual')">Manual Download</button>
+    </div>
+
+    <!-- Unix/macOS/Linux -->
+    <div id="unix-content" class="platform-content active">
+      <h3>Install via curl (Recommended)</h3>
+      <div class="command-box">
+        <code id="unix-cmd">curl -fsSL https://wynlang.com/install.sh | sh</code>
+        <button class="copy-btn" onclick="copyCommand('unix-cmd')">Copy</button>
+      </div>
+      
+      <div class="note">
+        <strong>What this does:</strong>
+        <ul>
+          <li>Detects your platform (macOS/Linux) and architecture (ARM64/x86_64)</li>
+          <li>Downloads the latest release from GitHub</li>
+          <li>Installs to <code>/usr/local/bin</code></li>
+          <li>May require sudo password</li>
+        </ul>
+      </div>
+
+      <h4>Alternative: Homebrew (Coming Soon)</h4>
+      <div class="command-box">
+        <code>brew install wyn-lang/tap/wyn</code>
+        <button class="copy-btn" onclick="copyCommand(this.previousElementSibling)">Copy</button>
+      </div>
+    </div>
+
+    <!-- Windows -->
+    <div id="windows-content" class="platform-content">
+      <h3>Install via PowerShell (Recommended)</h3>
+      <div class="command-box">
+        <code id="windows-cmd">irm wynlang.com/install.ps1 | iex</code>
+        <button class="copy-btn" onclick="copyCommand('windows-cmd')">Copy</button>
+      </div>
+      
+      <div class="note">
+        <strong>What this does:</strong>
+        <ul>
+          <li>Downloads the latest Windows release from GitHub</li>
+          <li>Installs to <code>%LOCALAPPDATA%\Wyn</code></li>
+          <li>Adds to your PATH automatically</li>
+          <li>Restart terminal after installation</li>
+        </ul>
+      </div>
+
+      <h4>Alternative: Chocolatey (Coming Soon)</h4>
+      <div class="command-box">
+        <code>choco install wyn</code>
+        <button class="copy-btn" onclick="copyCommand(this.previousElementSibling)">Copy</button>
+      </div>
+    </div>
+
+    <!-- Manual Download -->
+    <div id="manual-content" class="platform-content">
+      <h3>Direct Downloads</h3>
+      <p>Download the binary for your platform:</p>
+      
+      <div class="download-links">
+        <a href="https://github.com/wyn-lang/wyn/releases/latest/download/wyn-macos-arm64.tar.gz" class="download-link">
+          <strong>macOS ARM64</strong><br>
+          <small>Apple Silicon (M1/M2/M3)</small>
+        </a>
+        <a href="https://github.com/wyn-lang/wyn/releases/latest/download/wyn-macos-x86_64.tar.gz" class="download-link">
+          <strong>macOS x86_64</strong><br>
+          <small>Intel Macs</small>
+        </a>
+        <a href="https://github.com/wyn-lang/wyn/releases/latest/download/wyn-linux-x86_64.tar.gz" class="download-link">
+          <strong>Linux x86_64</strong><br>
+          <small>Most Linux systems</small>
+        </a>
+        <a href="https://github.com/wyn-lang/wyn/releases/latest/download/wyn-linux-arm64.tar.gz" class="download-link">
+          <strong>Linux ARM64</strong><br>
+          <small>ARM servers/devices</small>
+        </a>
+        <a href="https://github.com/wyn-lang/wyn/releases/latest/download/wyn-windows-x86_64.tar.gz" class="download-link">
+          <strong>Windows x86_64</strong><br>
+          <small>64-bit Windows</small>
+        </a>
+      </div>
+
+      <h4>Manual Installation Steps</h4>
+      <ol>
+        <li>Download the appropriate archive for your platform</li>
+        <li>Extract: <code>tar -xzf wyn-*.tar.gz</code></li>
+        <li>Move binary to PATH:
+          <ul>
+            <li>Unix: <code>sudo mv release/wyn /usr/local/bin/</code></li>
+            <li>Windows: Add <code>release</code> folder to your PATH</li>
+          </ul>
+        </li>
+        <li>Verify: <code>wyn --version</code></li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="install-section">
+    <h2>Verify Installation</h2>
+    <div class="command-box">
+      <code>wyn --version</code>
+      <button class="copy-btn" onclick="copyCommand(this.previousElementSibling)">Copy</button>
+    </div>
+    
+    <h3>Quick Start</h3>
+    <div class="command-box">
+      <code>echo 'fn main() { print("Hello, Wyn!") }' > hello.wyn && wyn run hello.wyn</code>
+      <button class="copy-btn" onclick="copyCommand(this.previousElementSibling)">Copy</button>
+    </div>
+  </div>
+
+  <div class="install-section">
+    <h2>Next Steps</h2>
+    <ul>
+      <li><a href="https://wynlang.com/learn">Learn Wyn</a> - Tutorial and language guide</li>
+      <li><a href="https://wynlang.com/examples">Examples</a> - Code examples</li>
+      <li><a href="https://wynlang.com/stdlib">Standard Library</a> - API documentation</li>
+      <li><a href="https://github.com/wyn-lang/wyn">GitHub</a> - Source code and issues</li>
+    </ul>
+  </div>
+
+  <script>
+    // Auto-detect platform
+    function detectPlatform() {
+      const platform = navigator.platform.toLowerCase();
+      const userAgent = navigator.userAgent.toLowerCase();
+      
+      if (platform.includes('win') || userAgent.includes('windows')) {
+        showPlatform('windows');
+      } else if (platform.includes('mac') || platform.includes('darwin')) {
+        showPlatform('unix');
+      } else if (platform.includes('linux')) {
+        showPlatform('unix');
+      }
+    }
+
+    function showPlatform(platform) {
+      // Hide all content
+      document.querySelectorAll('.platform-content').forEach(el => {
+        el.classList.remove('active');
+      });
+      document.querySelectorAll('.platform-tab').forEach(el => {
+        el.classList.remove('active');
+      });
+      
+      // Show selected
+      document.getElementById(platform + '-content').classList.add('active');
+      event?.target?.classList.add('active');
+    }
+
+    function copyCommand(elementOrId) {
+      const element = typeof elementOrId === 'string' 
+        ? document.getElementById(elementOrId)
+        : elementOrId;
+      
+      const text = element.textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = element.nextElementSibling || event.target;
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => {
+          btn.textContent = originalText;
+        }, 2000);
+      });
+    }
+
+    // Auto-detect on load
+    detectPlatform();
+  </script>
+</body>
+</html>
