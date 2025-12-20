@@ -3,10 +3,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/wait.h>
 #include <sys/stat.h>
+
+#ifdef _WIN32
+  #include <io.h>
+  #include <process.h>
+  #define access _access
+  #define F_OK 0
+  #define X_OK 0
+#else
+  #include <unistd.h>
+  #include <fcntl.h>
+  #include <sys/wait.h>
+#endif
 
 // Compiler entry point (from compiler.c)
 extern int compiler_main(int argc, char** argv);

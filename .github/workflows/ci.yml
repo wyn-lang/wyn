@@ -91,7 +91,8 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           mkdir -p build
-          clang -Wall -Wextra -std=c11 -O2 -DCOMPILER_MAIN -D_WIN32 -o build/wyn.exe src/wyn.c src/compiler.c
+          # Add Windows-specific defines to suppress warnings and fix missing headers
+          clang -Wall -Wextra -std=c11 -O2 -DCOMPILER_MAIN -D_WIN32 -D_CRT_SECURE_NO_WARNINGS -Wno-deprecated-declarations -o build/wyn.exe src/wyn.c src/compiler.c
           ./build/wyn.exe --version
         shell: bash
 
