@@ -667,7 +667,7 @@ struct Expr {
         struct { Expr* func; Expr** args; int arg_count; Type** type_args; int type_arg_count; } call;
         struct { Expr* object; Expr* index; bool safe; } index;
         struct { Expr* object; char field[MAX_IDENT_LEN]; } field;
-        struct { Expr** elements; int count; } array;
+        struct { Expr** elements; int count; bool is_empty_literal; } array;
         struct { char** keys; Expr** values; int count; } map;
         struct { char name[MAX_IDENT_LEN]; char fields[MAX_FIELDS][MAX_IDENT_LEN]; Expr* values[MAX_FIELDS]; int count; Type** type_args; int type_arg_count; } struct_lit;
         struct { Expr* cond; Expr* then_expr; Expr* else_expr; } if_expr;
@@ -1716,6 +1716,16 @@ static Expr* parse_primary(Parser* p) {
     
     // Array literal or list comprehension
     if (parser_match(p, TOK_LBRACKET)) {
+        // Check for empty array: []
+        if (parser_check(p, TOK_RBRACKET)) {
+            parser_advance(p);  // consume ]
+            Expr* e = new_expr(EXPR_ARRAY, line, col);
+            e->array.elements = malloc(sizeof(Expr*) * 256);
+            e->array.count = 0;
+            e->array.is_empty_literal = true;  // Mark as empty for type inference
+            return e;
+        }
+        
         // Check if this is a list comprehension: [expr for var in iter]
         // We need to peek ahead to see if there's a 'for' keyword
         int saved_pos = p->lexer->pos;
@@ -1753,6 +1763,7 @@ static Expr* parse_primary(Parser* p) {
             Expr* e = new_expr(EXPR_ARRAY, line, col);
             e->array.elements = malloc(sizeof(Expr*) * 256);
             e->array.count = 0;
+            e->array.is_empty_literal = false;
             e->array.elements[e->array.count++] = first_expr;
             
             while (parser_match(p, TOK_COMMA)) {
