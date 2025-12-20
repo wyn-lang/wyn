@@ -126,14 +126,20 @@ jobs:
             $VERSION = "${{ inputs.version }}"
           }
 
+          # Create release directory
           New-Item -ItemType Directory -Force -Path release | Out-Null
-          Copy-Item build/wyn.exe release/ -ErrorAction SilentlyContinue
-          Copy-Item VERSION release/ -ErrorAction SilentlyContinue
-          Copy-Item -Recurse std release/ -ErrorAction SilentlyContinue
-          Copy-Item -Recurse examples release/ -ErrorAction SilentlyContinue
-          Copy-Item -Recurse editors release/ -ErrorAction SilentlyContinue
-          Copy-Item README.md, INSTALL.md, LICENSE release/ -ErrorAction SilentlyContinue
+          
+          # Copy files only if they exist
+          if (Test-Path "build/wyn.exe") { Copy-Item "build/wyn.exe" "release/" }
+          if (Test-Path "VERSION") { Copy-Item "VERSION" "release/" }
+          if (Test-Path "std") { Copy-Item -Recurse "std" "release/" }
+          if (Test-Path "examples") { Copy-Item -Recurse "examples" "release/" }
+          if (Test-Path "editors") { Copy-Item -Recurse "editors" "release/" }
+          if (Test-Path "README.md") { Copy-Item "README.md" "release/" }
+          if (Test-Path "INSTALL.md") { Copy-Item "INSTALL.md" "release/" }
+          if (Test-Path "LICENSE") { Copy-Item "LICENSE" "release/" }
 
+          # Create archive
           $archiveName = "wyn-$VERSION-${{ matrix.config.artifact_name }}.tar.gz"
           tar.exe -czf $archiveName release/
         shell: pwsh
