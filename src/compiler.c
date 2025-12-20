@@ -3060,7 +3060,7 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                 // Check if it's a function name
                 if (tc_lookup_fn(tc, e->ident)) return new_type(TYPE_FUNCTION);
                 // Check if it's a builtin function
-                if (strcmp(e->ident, "print") == 0 || strcmp(e->ident, "println") == 0 || strcmp(e->ident, "print_str") == 0 ||
+                if (strcmp(e->ident, "print") == 0 || strcmp(e->ident, "println") == 0 || strcmp(e->ident, "print_raw") == 0 || strcmp(e->ident, "print_str") == 0 ||
                     strcmp(e->ident, "assert") == 0 || strcmp(e->ident, "args") == 0 || 
                     strcmp(e->ident, "syscall") == 0 || strcmp(e->ident, "len") == 0 ||
                     strcmp(e->ident, "ord") == 0 || strcmp(e->ident, "chr") == 0 ||
@@ -3806,7 +3806,7 @@ static Symbol* tc1_lookup(TypeChecker1* tc, const char* name) {
 
 static bool tc1_is_builtin(const char* name) {
     // Core builtins
-    if (strcmp(name, "print") == 0 || strcmp(name, "println") == 0 || strcmp(name, "print_str") == 0 || strcmp(name, "assert") == 0 || strcmp(name, "args") == 0) return true;
+    if (strcmp(name, "print") == 0 || strcmp(name, "println") == 0 || strcmp(name, "print_raw") == 0 || strcmp(name, "print_str") == 0 || strcmp(name, "assert") == 0 || strcmp(name, "args") == 0) return true;
     if (strcmp(name, "min") == 0 || strcmp(name, "max") == 0) return true;
     
     // String builtins
@@ -6330,6 +6330,40 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                 int nl = llvm_new_temp(lg);
                 llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([2 x i8], [2 x i8]* @.fmt.newline, i32 0, i32 0))", nl);
                 // Print returns void, generate zero register for consistency
+                int t = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = add i64 0, 0", t);
+                *result_reg = t;
+                break;
+            }
+            
+            // print_raw: print without newline
+            if (e->call.func->kind == EXPR_IDENT && strcmp(e->call.func->ident, "print_raw") == 0) {
+                for (int i = 0; i < e->call.arg_count; i++) {
+                    int arg_reg;
+                    llvm_expr(lg, e->call.args[i], &arg_reg);
+                    
+                    int t = llvm_new_temp(lg);
+                    if (e->call.args[i]->kind == EXPR_STRING) {
+                        llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* %%%d)", t, arg_reg);
+                    } else if (llvm_is_float_expr(lg, e->call.args[i])) {
+                        char arg_str[64];
+                        if (arg_reg <= -1000000) {
+                            snprintf(arg_str, 64, "%f", (double)(-arg_reg - 1000000));
+                        } else {
+                            snprintf(arg_str, 64, "%%%d", arg_reg);
+                        }
+                        llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.float, i32 0, i32 0), double %s)", t, arg_str);
+                    } else {
+                        char arg_str[64];
+                        if (arg_reg <= -1000000) {
+                            snprintf(arg_str, 64, "%lld", (long long)(-arg_reg - 1000000));
+                        } else {
+                            snprintf(arg_str, 64, "%%%d", arg_reg);
+                        }
+                        llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.int, i32 0, i32 0), i64 %s)", t, arg_str);
+                    }
+                }
+                // No newline for print_raw
                 int t = llvm_new_temp(lg);
                 llvm_emit(lg, "  %%%d = add i64 0, 0", t);
                 *result_reg = t;
