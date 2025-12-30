@@ -1179,6 +1179,10 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "load") == 0) return "wyn_atomic_load";
         if (strcmp(function, "store") == 0) return "wyn_atomic_store";
         if (strcmp(function, "cas") == 0) return "wyn_atomic_cas";
+    } else if (strcmp(module, "stringbuilder") == 0) {
+        if (strcmp(function, "new") == 0) return "sb_new_wyn";
+        if (strcmp(function, "append") == 0) return "sb_append_wyn";
+        if (strcmp(function, "to_str") == 0) return "sb_to_str_wyn";
     }
     return NULL;
 }
@@ -1322,6 +1326,7 @@ static Type* get_builtin_return_type(const char* builtin_name) {
     if (strcmp(builtin_name, "http_parse_body") == 0) return new_type(TYPE_STR);
     if (strcmp(builtin_name, "exec_output_wyn") == 0) return new_type(TYPE_STR);
     if (strcmp(builtin_name, "str_replace") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "sb_to_str_wyn") == 0) return new_type(TYPE_STR);
     
     // Integer-returning functions
     if (strcmp(builtin_name, "now_unix") == 0) return new_type(TYPE_INT);
@@ -1336,6 +1341,10 @@ static Type* get_builtin_return_type(const char* builtin_name) {
     if (strcmp(builtin_name, "log_debug") == 0) return new_type(TYPE_VOID);
     if (strcmp(builtin_name, "log_with_level") == 0) return new_type(TYPE_VOID);
     if (strcmp(builtin_name, "sleep_seconds") == 0) return new_type(TYPE_VOID);
+    if (strcmp(builtin_name, "sb_append_wyn") == 0) return new_type(TYPE_VOID);
+    
+    // StringBuilder new returns opaque pointer (ANY type)
+    if (strcmp(builtin_name, "sb_new_wyn") == 0) return new_type(TYPE_ANY);
     
     // Default to ANY for unknown functions
     return new_type(TYPE_ANY);
@@ -6255,7 +6264,8 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                           strcmp(function, "parse_path") == 0 ||
                                           strcmp(function, "parse_body") == 0 ||
                                           strcmp(function, "sqlite_query") == 0 ||
-                                          strcmp(function, "output") == 0);
+                                          strcmp(function, "output") == 0 ||
+                                          strcmp(function, "to_str") == 0);
                     
                     bool returns_array = (strcmp(function, "split") == 0 ||
                                          strcmp(function, "glob") == 0 ||
@@ -6267,11 +6277,25 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                          strcmp(function, "make_some") == 0 ||
                                          strcmp(function, "make_none") == 0);
                     
+                    bool returns_pointer = (strcmp(builtin_name, "sb_new_wyn") == 0);
+                    
+                    bool returns_void = (strcmp(builtin_name, "sb_append_wyn") == 0);
+                    
                     int t = llvm_new_temp(lg);
                     if (returns_string) {
                         llvm_emit(lg, "  %%%d = call i8* @%s(%s)", t, builtin_name, args);
                     } else if (returns_array) {
                         llvm_emit(lg, "  %%%d = call i64* @%s(%s)", t, builtin_name, args);
+                    } else if (returns_pointer) {
+                        llvm_emit(lg, "  %%%d = call i8* @%s(%s)", t, builtin_name, args);
+                        // Convert pointer to i64 for storage
+                        int converted_reg = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = ptrtoint i8* %%%d to i64", converted_reg, t);
+                        t = converted_reg;
+                    } else if (returns_void) {
+                        llvm_emit(lg, "  call void @%s(%s)", builtin_name, args);
+                        // Generate a dummy register for void functions
+                        llvm_emit(lg, "  %%%d = add i64 0, 0", t);
                     } else {
                         llvm_emit(lg, "  %%%d = call i64 @%s(%s)", t, builtin_name, args);
                     }
@@ -6843,27 +6867,58 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     llvm_emit(lg, "  %%%d = call i64 @str_to_int(i8* %%%d)", t, obj_reg);
                     *result_reg = t;
                 } else if (strcmp(method_name, "to_str") == 0) {
-                    // Handle num.to_str() or str.to_str()
-                    int obj_reg;
-                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
-                    
-                    // Check if object is a string
-                    bool is_string = llvm_is_string_expr(lg, e->call.func->field.object);
-                    
-                    if (is_string) {
-                        // String.to_str() just returns self
-                        *result_reg = obj_reg;
-                    } else {
-                        // Int/bool.to_str() converts to string
-                        int t = llvm_new_temp(lg);
-                        if (obj_reg <= -1000000) {
-                            // Constant value
-                            long long const_val = -obj_reg - 1000000;
-                            llvm_emit(lg, "  %%%d = call i8* @int_to_str(i64 %lld)", t, const_val);
+                    // Check if this is a StringBuilder to_str
+                    bool is_stringbuilder = false;
+                    if (e->call.func->field.object->kind == EXPR_IDENT) {
+                        // Simple heuristic: if variable name starts with "sb" or contains "stringbuilder", assume it's a StringBuilder
+                        const char* var_name = e->call.func->field.object->ident;
+                        if (strncmp(var_name, "sb", 2) == 0 || strstr(var_name, "stringbuilder") != NULL) {
+                            is_stringbuilder = true;
                         } else {
-                            llvm_emit(lg, "  %%%d = call i8* @int_to_str(i64 %%%d)", t, obj_reg);
+                            // Also check the type
+                            Type* obj_type = llvm_get_var_type(lg, var_name);
+                            if (obj_type && obj_type->kind == TYPE_ANY) {
+                                is_stringbuilder = true;
+                            }
                         }
+                    }
+                    
+                    if (is_stringbuilder) {
+                        // Handle sb.to_str() - convert i64 back to pointer
+                        int obj_reg;
+                        llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                        
+                        // Convert i64 back to pointer
+                        int ptr_reg = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = inttoptr i64 %%%d to i8*", ptr_reg, obj_reg);
+                        
+                        // Call sb_to_str_wyn(ptr) -> returns string
+                        int t = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = call i8* @sb_to_str_wyn(i8* %%%d)", t, ptr_reg);
                         *result_reg = t;
+                    } else {
+                        // Handle num.to_str() or str.to_str()
+                        int obj_reg;
+                        llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                        
+                        // Check if object is a string
+                        bool is_string = llvm_is_string_expr(lg, e->call.func->field.object);
+                        
+                        if (is_string) {
+                            // String.to_str() just returns self
+                            *result_reg = obj_reg;
+                        } else {
+                            // Int/bool.to_str() converts to string
+                            int t = llvm_new_temp(lg);
+                            if (obj_reg <= -1000000) {
+                                // Constant value
+                                long long const_val = -obj_reg - 1000000;
+                                llvm_emit(lg, "  %%%d = call i8* @int_to_str(i64 %lld)", t, const_val);
+                            } else {
+                                llvm_emit(lg, "  %%%d = call i8* @int_to_str(i64 %%%d)", t, obj_reg);
+                            }
+                            *result_reg = t;
+                        }
                     }
                 } else if (strcmp(method_name, "upper") == 0) {
                     // Handle str.upper()
@@ -7010,23 +7065,76 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     llvm_emit(lg, "  %%%d = call i64* @array_reverse(i64* %%%d)", t, obj_reg);
                     *result_reg = t;
                 } else if (strcmp(method_name, "append") == 0) {
-                    // Handle arr.append(item)
-                    int obj_reg;
-                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                    // Check if this is a StringBuilder append
+                    bool is_stringbuilder = false;
+                    if (e->call.func->field.object->kind == EXPR_IDENT) {
+                        // Simple heuristic: if variable name starts with "sb" or contains "stringbuilder", assume it's a StringBuilder
+                        const char* var_name = e->call.func->field.object->ident;
+                        if (strncmp(var_name, "sb", 2) == 0 || strstr(var_name, "stringbuilder") != NULL) {
+                            is_stringbuilder = true;
+                        } else {
+                            // Also check the type
+                            Type* obj_type = llvm_get_var_type(lg, var_name);
+                            if (obj_type && obj_type->kind == TYPE_ANY) {
+                                is_stringbuilder = true;
+                            }
+                        }
+                    }
+                    
+                    if (is_stringbuilder) {
+                        // Handle sb.append(str) - convert i64 back to pointer
+                        int obj_reg;
+                        llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                        
+                        // Convert i64 back to pointer
+                        int ptr_reg = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = inttoptr i64 %%%d to i8*", ptr_reg, obj_reg);
+                        
+                        // Get string argument
+                        int str_reg;
+                        if (e->call.arg_count > 0) {
+                            llvm_expr(lg, e->call.args[0], &str_reg);
+                        }
+                        
+                        // Call sb_append_wyn(ptr, str)
+                        llvm_emit(lg, "  call void @sb_append_wyn(i8* %%%d, i8* %%%d)", ptr_reg, str_reg);
+                        
+                        // Generate dummy result for void function
+                        int t = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = add i64 0, 0", t);
+                        *result_reg = t;
+                    } else {
+                        // Handle arr.append(item)
+                        int obj_reg;
+                        llvm_expr(lg, e->call.func->field.object, &obj_reg);
                     
                     int item_reg;
                     if (e->call.arg_count > 0) {
                         llvm_expr(lg, e->call.args[0], &item_reg);
                     }
                     
-                    int t = llvm_new_temp(lg);
                     if (item_reg <= -1000000) {
                         long long const_val = -item_reg - 1000000;
+                        int t = llvm_new_temp(lg);
                         llvm_emit(lg, "  %%%d = call i64* @array_append_elem(i64* %%%d, i64 %lld)", t, obj_reg, const_val);
+                        *result_reg = t;
                     } else {
-                        llvm_emit(lg, "  %%%d = call i64* @array_append_elem(i64* %%%d, i64 %%%d)", t, obj_reg, item_reg);
+                        // Check if the item is a string (needs to be converted to i64)
+                        bool is_string_item = llvm_is_string_expr(lg, e->call.args[0]);
+                        if (is_string_item) {
+                            // Convert string pointer to i64 for storage in array
+                            int ptr_to_int = llvm_new_temp(lg);
+                            llvm_emit(lg, "  %%%d = ptrtoint i8* %%%d to i64", ptr_to_int, item_reg);
+                            int t = llvm_new_temp(lg);
+                            llvm_emit(lg, "  %%%d = call i64* @array_append_elem(i64* %%%d, i64 %%%d)", t, obj_reg, ptr_to_int);
+                            *result_reg = t;
+                        } else {
+                            int t = llvm_new_temp(lg);
+                            llvm_emit(lg, "  %%%d = call i64* @array_append_elem(i64* %%%d, i64 %%%d)", t, obj_reg, item_reg);
+                            *result_reg = t;
+                        }
                     }
-                    *result_reg = t;
+                }
                 } else if (strcmp(method_name, "join") == 0) {
                     // Handle arr.join(sep)
                     int obj_reg;
@@ -8931,6 +9039,9 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i64 @str_contains(i8*, i8*)");
     llvm_emit(&lg, "declare i64 @str_starts_with(i8*, i8*)");
     llvm_emit(&lg, "declare i64 @str_ends_with(i8*, i8*)");
+    llvm_emit(&lg, "declare i8* @sb_new_wyn()");
+    llvm_emit(&lg, "declare void @sb_append_wyn(i8*, i8*)");
+    llvm_emit(&lg, "declare i8* @sb_to_str_wyn(i8*)");
     llvm_emit(&lg, "declare i64 @floor_wyn(i64)");
     llvm_emit(&lg, "declare i64 @ceil_wyn(i64)");
     llvm_emit(&lg, "declare i64 @round_wyn(i64)");

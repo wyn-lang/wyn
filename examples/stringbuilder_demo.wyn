@@ -1,0 +1,48 @@
+#!/usr/bin/env wyn
+# StringBuilder Demo - Efficient string building
+
+import stringbuilder
+import string
+
+fn main() {
+    print("=== StringBuilder Demo ===")
+
+    # Basic usage
+    let sb = stringbuilder.new()
+    sb.append("hello")
+    sb.append(" ")
+    sb.append("world")
+    let result = sb.to_str()
+    print("Basic: " + result)
+
+    # Building a larger string
+    let sb2 = stringbuilder.new()
+    for i in 1..5 {
+        sb2.append("Item " + string.from_int(i))
+        if i < 4 {
+            sb2.append(", ")
+        }
+    }
+    let list_str = sb2.to_str()
+    print("List: " + list_str)
+
+    # Performance comparison demo
+    print("\n=== Performance Comparison ===")
+
+    # StringBuilder approach (efficient)
+    let sb3 = stringbuilder.new()
+    for i in 1..100 {
+        sb3.append("x")
+    }
+    let efficient = sb3.to_str()
+    print("StringBuilder: " + string.from_int(efficient.len()) + " chars")
+
+    # Traditional concatenation (inefficient for large strings)
+    let traditional = ""
+    for i in 1..100 {
+        traditional = traditional + "x"
+    }
+    print("Traditional: " + string.from_int(traditional.len()) + " chars")
+
+    print("Both methods produce same result: " + string.from_int(efficient == traditional ? 1 : 0))
+}

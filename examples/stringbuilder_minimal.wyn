@@ -1,0 +1,9 @@
+#!/usr/bin/env wyn
+# Minimal StringBuilder test
+
+import stringbuilder
+
+fn main() {
+    let sb = stringbuilder.new()
+    print("StringBuilder created")
+}

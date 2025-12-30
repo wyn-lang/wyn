@@ -2616,3 +2616,18 @@ int64_t option_unwrap(int64_t* option_arr) {
     if (array_len(option_arr) < 2) return 0;
     return array_get(option_arr, 1);
 }
+
+// StringBuilder functions
+#include "stringbuilder.c"
+
+void* sb_new_wyn() {
+    return sb_new();
+}
+
+void sb_append_wyn(void* sb_ptr, const char* str) {
+    sb_append((StringBuilder*)sb_ptr, str);
+}
+
+char* sb_to_str_wyn(void* sb_ptr) {
+    return sb_to_str((StringBuilder*)sb_ptr);
+}

@@ -1,0 +1,10 @@
+#!/usr/bin/env wyn
+# StringBuilder append test
+
+import stringbuilder
+
+fn main() {
+    let sb = stringbuilder.new()
+    sb.append("hello")
+    print("StringBuilder append test")
+}

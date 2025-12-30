@@ -1,0 +1,21 @@
+# std/stringbuilder.wyn
+# Efficient string building for concatenating multiple strings
+# Avoids O(n²) performance of repeated string concatenation
+
+# Module Functions:
+#   stringbuilder.new() -> StringBuilder
+#   sb.append(str: str) -> void
+#   sb.to_str() -> str
+
+# Usage Example:
+#   import stringbuilder
+#   let sb = stringbuilder.new()
+#   sb.append("hello")
+#   sb.append(" ")
+#   sb.append("world")
+#   let result = sb.to_str()  // "hello world"
+
+# Performance:
+#   - append() is O(1) amortized
+#   - to_str() is O(n) where n is total character count
+#   - Total: O(n) instead of O(n²) for repeated concatenation

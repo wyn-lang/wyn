@@ -1,0 +1,66 @@
+#!/usr/bin/env wyn
+# StringBuilder Tests
+
+import stringbuilder
+import testing
+import string
+
+fn main() {
+    testing.describe("StringBuilder") {
+        testing.it("creates empty StringBuilder") {
+            let sb = stringbuilder.new()
+            let result = sb.to_str()
+            testing.assert_eq(result, "")
+        }
+        
+        testing.it("appends single string") {
+            let sb = stringbuilder.new()
+            sb.append("hello")
+            let result = sb.to_str()
+            testing.assert_eq(result, "hello")
+        }
+        
+        testing.it("appends multiple strings") {
+            let sb = stringbuilder.new()
+            sb.append("hello")
+            sb.append(" ")
+            sb.append("world")
+            let result = sb.to_str()
+            testing.assert_eq(result, "hello world")
+        }
+        
+        testing.it("handles empty strings") {
+            let sb = stringbuilder.new()
+            sb.append("")
+            sb.append("test")
+            sb.append("")
+            let result = sb.to_str()
+            testing.assert_eq(result, "test")
+        }
+        
+        testing.it("builds large strings efficiently") {
+            let sb = stringbuilder.new()
+            for i in 1..10 {
+                sb.append("x")
+            }
+            let result = sb.to_str()
+            # Just check that we get a non-empty result
+            testing.assert_eq(result, "xxxxxxxxx")
+        }
+        
+        testing.it("produces same result as traditional concatenation") {
+            let sb = stringbuilder.new()
+            let traditional = ""
+            
+            let parts = ["Hello", " ", "beautiful", " ", "world", "!"]
+            for part in parts {
+                sb.append(part)
+                traditional = traditional + part
+            }
+            
+            let sb_result = sb.to_str()
+            testing.assert_eq(sb_result, traditional)
+            testing.assert_eq(sb_result, "Hello beautiful world!")
+        }
+    }
+}
