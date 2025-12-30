@@ -1428,6 +1428,7 @@ static Type* parse_type(Parser* p) {
         if (strcmp(name.ident, "str") == 0) return new_type(TYPE_STR);
         if (strcmp(name.ident, "bool") == 0) return new_type(TYPE_BOOL);
         if (strcmp(name.ident, "byte") == 0) return new_type(TYPE_BYTE);
+        if (strcmp(name.ident, "array") == 0) return new_type(TYPE_ARRAY);
         if (strcmp(name.ident, "any") == 0) return new_type(TYPE_ANY);
         
         // Handle Result[T, E] specially
@@ -7196,6 +7197,8 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                             int t = llvm_new_temp(lg);
                             if (fn->return_type && fn->return_type->kind == TYPE_STR) {
                                 llvm_emit(lg, "  %%%d = call i8* @%s(%s)", t, fn->name, args);
+                            } else if (fn->return_type && fn->return_type->kind == TYPE_ARRAY) {
+                                llvm_emit(lg, "  %%%d = call i64* @%s(%s)", t, fn->name, args);
                             } else {
                                 llvm_emit(lg, "  %%%d = call i64 @%s(%s)", t, fn->name, args);
                             }
