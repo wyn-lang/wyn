@@ -5362,6 +5362,60 @@ static void resolve_imports(Module* m, const char* base_path) {
             }
         }
     }
+    
+    // Auto-import core modules if not already imported
+    const char* core_modules[] = {"array", "fs", "os", "string"};
+    int core_count = 4;
+    
+    for (int c = 0; c < core_count; c++) {
+        const char* core_module = core_modules[c];
+        
+        // Check if already imported
+        bool already_imported = false;
+        for (int i = 0; i < m->import_count; i++) {
+            if (strcmp(m->imports[i].path, core_module) == 0) {
+                already_imported = true;
+                break;
+            }
+        }
+        
+        if (!already_imported) {
+            // Auto-import this core module
+            char full_path[512];
+            snprintf(full_path, 512, "std/%s.wyn", core_module);
+            FILE* f = fopen(full_path, "rb");
+            
+            if (f) {
+                fseek(f, 0, SEEK_END);
+                long size = ftell(f);
+                fseek(f, 0, SEEK_SET);
+                char* src = malloc(size + 1);
+                fread(src, 1, size, f);
+                src[size] = '\0';
+                fclose(f);
+                
+                Lexer* lex = lexer_new(src, full_path);
+                Parser* p = parser_new(lex, full_path);
+                Module* imported = parse_module(p);
+                
+                if (!p->had_error) {
+                    // Merge functions
+                    for (int j = 0; j < imported->function_count; j++) {
+                        m->functions[m->function_count++] = imported->functions[j];
+                    }
+                    // Merge structs
+                    for (int j = 0; j < imported->struct_count; j++) {
+                        m->structs[m->struct_count++] = imported->structs[j];
+                    }
+                    
+                    // Add to imports list for tracking
+                    strcpy(m->imports[m->import_count].path, core_module);
+                    m->imports[m->import_count].alias[0] = '\0';
+                    m->import_count++;
+                }
+            }
+        }
+    }
 }
 
 // Complete LLVM Backend for Wyn Compiler
