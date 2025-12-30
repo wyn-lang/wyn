@@ -4781,7 +4781,6 @@ static bool should_inline(FnDef* fn) {
 }
 
 static Expr* clone_expr(Expr* e);
-static Stmt* clone_stmt(Stmt* s);
 
 static Expr* clone_expr(Expr* e) {
     if (!e) return NULL;
@@ -4808,30 +4807,6 @@ static Expr* clone_expr(Expr* e) {
             break;
         case EXPR_FIELD:
             c->field.object = clone_expr(e->field.object);
-            break;
-        default: break;
-    }
-    return c;
-}
-
-static Stmt* clone_stmt(Stmt* s) {
-    if (!s) return NULL;
-    Stmt* c = malloc(sizeof(Stmt));
-    memcpy(c, s, sizeof(Stmt));
-    
-    switch (s->kind) {
-        case STMT_LET:
-            c->let.value = clone_expr(s->let.value);
-            break;
-        case STMT_ASSIGN:
-            c->assign.target = clone_expr(s->assign.target);
-            c->assign.value = clone_expr(s->assign.value);
-            break;
-        case STMT_EXPR:
-            c->expr.expr = clone_expr(s->expr.expr);
-            break;
-        case STMT_RETURN:
-            c->ret.value = clone_expr(s->ret.value);
             break;
         default: break;
     }
@@ -4953,40 +4928,6 @@ static void inline_pass(Module* m) {
         }
     }
 }
-
-// ============================================================================
-// Stage 1 Optimizer - Loop Unrolling
-// ============================================================================
-
-static bool can_unroll_loop(Stmt* s) {
-    if (s->kind != STMT_FOR) return false;
-    if (s->for_stmt.body_count > 5) return false; // Only unroll small loops
-    
-    // Check if iterator is a simple range
-    Expr* iter = s->for_stmt.iter;
-    if (iter->kind == EXPR_BINARY && 
-        (iter->binary.op == TOK_DOTDOT || iter->binary.op == TOK_DOTDOTEQ)) {
-        // Check if range is small constant
-        if (iter->binary.left->kind == EXPR_INT && iter->binary.right->kind == EXPR_INT) {
-            int start = iter->binary.left->int_val;
-            int end = iter->binary.right->int_val;
-            int count = end - start;
-            return count > 0 && count <= 4; // Unroll up to 4 iterations
-        }
-    }
-    return false;
-}
-
-static void optimize_loop_unrolling(Module* m) {
-    // Mark loops that can be unrolled
-    // Actual unrolling happens in codegen
-    // For now, just a placeholder for future optimization
-    (void)m;
-}
-
-// ============================================================================
-// LLVM CODEGEN - IR Generation (Lines 5037-9572)
-// ============================================================================
 
 // ============================================================================
 // Variable Capture Analysis for spawn
