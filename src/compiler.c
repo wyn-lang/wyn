@@ -2073,13 +2073,6 @@ static Expr* parse_postfix(Parser* p) {
 static Expr* parse_unary(Parser* p) {
     int line = p->current.line, col = p->current.column;
     
-    // Await: await expr
-    if (parser_match(p, TOK_AWAIT)) {
-        Expr* e = new_expr(EXPR_AWAIT, line, col);
-        e->await_expr.future = parse_unary(p);
-        return e;
-    }
-    
     // Address-of: &expr
     if (parser_match(p, TOK_AMPERSAND)) {
         Expr* e = new_expr(EXPR_ADDR, line, col);
@@ -2257,13 +2250,6 @@ static Stmt* parse_stmt(Parser* p) {
         return new_stmt(STMT_CONTINUE, line, col);
     }
     
-    // Defer
-    if (parser_match(p, TOK_DEFER)) {
-        Stmt* s = new_stmt(STMT_DEFER, line, col);
-        s->defer.expr = parse_expr(p);
-        return s;
-    }
-    
     // Spawn
     if (parser_match(p, TOK_SPAWN)) {
         Stmt* s = new_stmt(STMT_SPAWN, line, col);
@@ -2299,10 +2285,10 @@ static Stmt* parse_stmt(Parser* p) {
         return s;
     }
     
-    // For statement (including parallel for)
-    if (parser_check(p, TOK_FOR) || parser_check(p, TOK_PARALLEL)) {
+    // For statement
+    if (parser_check(p, TOK_FOR)) {
         Stmt* s = new_stmt(STMT_FOR, line, col);
-        s->for_stmt.is_parallel = parser_match(p, TOK_PARALLEL);
+        s->for_stmt.is_parallel = false;
         parser_expect(p, TOK_FOR, "for");
         Token var = parser_expect(p, TOK_IDENT, "variable name");
         strcpy(s->for_stmt.var, var.ident);
@@ -2617,25 +2603,6 @@ static FnDef* parse_method_sig(Parser* p) {
     return fn;
 }
 
-static InterfaceDef* parse_interface(Parser* p, bool is_pub) {
-    InterfaceDef* i = calloc(1, sizeof(InterfaceDef));
-    i->is_pub = is_pub;
-    
-    parser_expect(p, TOK_INTERFACE, "interface");
-    Token name = parser_expect(p, TOK_IDENT, "interface name");
-    strcpy(i->name, name.ident);
-    
-    parser_expect(p, TOK_LBRACE, "{");
-    i->methods = malloc(sizeof(FnDef) * 32);
-    while (!parser_check(p, TOK_RBRACE) && !parser_check(p, TOK_EOF)) {
-        FnDef* method = parse_method_sig(p);
-        i->methods[i->method_count++] = *method;
-        free(method);
-    }
-    parser_expect(p, TOK_RBRACE, "}");
-    return i;
-}
-
 static TestDef* parse_test(Parser* p) {
     TestDef* t = calloc(1, sizeof(TestDef));
     parser_expect(p, TOK_TEST, "test");
@@ -2708,24 +2675,17 @@ static Module* parse_module(Parser* p) {
     
     while (!parser_check(p, TOK_EOF)) {
         bool is_pub = parser_match(p, TOK_PUB);
-        bool is_async = parser_match(p, TOK_ASYNC);
         
         if (parser_check(p, TOK_IMPORT)) {
             m->imports[m->import_count++] = *parse_import(p);
         } else if (parser_check(p, TOK_FN)) {
-            m->functions[m->function_count++] = *parse_function(p, is_pub, is_async);
+            m->functions[m->function_count++] = *parse_function(p, is_pub, false);
         } else if (parser_check(p, TOK_STRUCT)) {
             m->structs[m->struct_count++] = *parse_struct(p, is_pub);
         } else if (parser_check(p, TOK_ENUM)) {
             m->enums[m->enum_count++] = *parse_enum(p, is_pub);
-        } else if (parser_check(p, TOK_INTERFACE)) {
-            m->interfaces[m->interface_count++] = *parse_interface(p, is_pub);
         } else if (parser_check(p, TOK_TEST)) {
             m->tests[m->test_count++] = *parse_test(p);
-        } else if (parser_check(p, TOK_BENCH)) {
-            // Skip bench for now
-            while (!parser_check(p, TOK_RBRACE) && !parser_check(p, TOK_EOF)) parser_advance(p);
-            if (parser_check(p, TOK_RBRACE)) parser_advance(p);
         } else {
             // Try to parse as a top-level statement
             if (!parser_check(p, TOK_EOF) && !parser_check(p, TOK_NEWLINE)) {
