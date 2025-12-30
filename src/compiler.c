@@ -3173,6 +3173,7 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                 if (strcmp(method_name, "round") == 0) return new_type(TYPE_INT);
                 // Array methods
                 if (strcmp(method_name, "get") == 0) return new_type(TYPE_INT);
+                if (strcmp(method_name, "get_str") == 0) return new_type(TYPE_STR);
                 if (strcmp(method_name, "reverse") == 0) return new_type(TYPE_ARRAY);
                 if (strcmp(method_name, "append") == 0) return new_type(TYPE_ARRAY);
                 if (strcmp(method_name, "join") == 0) return new_type(TYPE_STR);
@@ -4002,6 +4003,7 @@ static Type* tc1_check_expr(TypeChecker1* tc, Expr* e) {
                 if (strcmp(method_name, "round") == 0) return new_type(TYPE_INT);
                 // Array methods
                 if (strcmp(method_name, "get") == 0) return new_type(TYPE_INT);
+                if (strcmp(method_name, "get_str") == 0) return new_type(TYPE_STR);
                 if (strcmp(method_name, "reverse") == 0) return new_type(TYPE_ARRAY);
                 if (strcmp(method_name, "append") == 0) return new_type(TYPE_ARRAY);
                 if (strcmp(method_name, "join") == 0) return new_type(TYPE_STR);
@@ -5558,7 +5560,7 @@ static bool llvm_is_string_expr(LLVMGen* lg, Expr* e) {
                 strcmp(func, "parse_method") == 0 || strcmp(func, "parse_path") == 0 ||
                 strcmp(func, "parse_body") == 0 || strcmp(func, "output") == 0 ||
                 strcmp(func, "replace") == 0 || strcmp(func, "to_str") == 0 ||
-                strcmp(func, "join") == 0) {
+                strcmp(func, "join") == 0 || strcmp(func, "get_str") == 0) {
                 return true;
             }
             
@@ -6951,6 +6953,35 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     
                     int t = llvm_new_temp(lg);
                     llvm_emit(lg, "  %%%d = load i64, i64* %%%d", t, elem_ptr);
+                    *result_reg = t;
+                } else if (strcmp(method_name, "get_str") == 0) {
+                    // Handle arr.get_str(index) - for string arrays
+                    int obj_reg;
+                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                    
+                    int index_reg;
+                    if (e->call.arg_count > 0) {
+                        llvm_expr(lg, e->call.args[0], &index_reg);
+                    }
+                    
+                    // Array access: arr[index+2]
+                    int offset_reg = llvm_new_temp(lg);
+                    if (index_reg <= -1000000) {
+                        long long const_idx = -index_reg - 1000000;
+                        llvm_emit(lg, "  %%%d = add i64 %lld, 2", offset_reg, const_idx);
+                    } else {
+                        llvm_emit(lg, "  %%%d = add i64 %%%d, 2", offset_reg, index_reg);
+                    }
+                    
+                    int elem_ptr = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = getelementptr i64, i64* %%%d, i64 %%%d", elem_ptr, obj_reg, offset_reg);
+                    
+                    int i64_val = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = load i64, i64* %%%d", i64_val, elem_ptr);
+                    
+                    // Cast i64 to i8* for string
+                    int t = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = inttoptr i64 %%%d to i8*", t, i64_val);
                     *result_reg = t;
                 } else if (strcmp(method_name, "floor") == 0) {
                     // Handle float.floor()
