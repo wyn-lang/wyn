@@ -802,8 +802,6 @@ struct Module {
     int impl_count;
     TestDef* tests;
     int test_count;
-    Stmt** top_level_stmts;
-    int top_level_count;
 };
 
 // ============================================================================
@@ -2761,7 +2759,6 @@ static Module* parse_module(Parser* p) {
     m->enums = malloc(sizeof(EnumDef) * 64);
     m->interfaces = malloc(sizeof(InterfaceDef) * 32);
     m->tests = malloc(sizeof(TestDef) * 128);
-    m->top_level_stmts = malloc(sizeof(Stmt*) * 256);
     
     while (!parser_check(p, TOK_EOF)) {
         bool is_pub = parser_match(p, TOK_PUB);
@@ -2784,15 +2781,7 @@ static Module* parse_module(Parser* p) {
             while (!parser_check(p, TOK_RBRACE) && !parser_check(p, TOK_EOF)) parser_advance(p);
             if (parser_check(p, TOK_RBRACE)) parser_advance(p);
         } else {
-            // Try to parse as a top-level statement
-            if (!parser_check(p, TOK_EOF) && !parser_check(p, TOK_NEWLINE)) {
-                Stmt* stmt = parse_stmt(p);
-                if (stmt) {
-                    m->top_level_stmts[m->top_level_count++] = stmt;
-                }
-            } else {
-                parser_advance(p); // Skip newlines and unknown tokens
-            }
+            parser_advance(p); // Skip unknown
         }
     }
     return m;
@@ -8962,11 +8951,6 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
         }
     }
     
-    // Collect strings from top-level statements
-    for (int i = 0; i < m->top_level_count; i++) {
-        collect_strings_stmt(&strings, m->top_level_stmts[i]);
-    }
-    
     LLVMGen lg = {0};
     lg.out = out;
     lg.module = m;
@@ -9266,29 +9250,6 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare void @http_server_close_client(i64)");
     llvm_emit(&lg, "declare void @http_server_close(i64)");
     llvm_emit(&lg, "");
-    
-    // Check if we need to generate an implicit main function
-    bool has_main = false;
-    for (int i = 0; i < m->function_count; i++) {
-        if (strcmp(m->functions[i].name, "main") == 0) {
-            has_main = true;
-            break;
-        }
-    }
-    
-    // Generate implicit main function if we have top-level statements and no explicit main
-    if (!has_main && m->top_level_count > 0) {
-        // Create a synthetic main function
-        FnDef* main_fn = &m->functions[m->function_count++];
-        strcpy(main_fn->name, "main");
-        main_fn->param_count = 0;
-        main_fn->return_type = new_type(TYPE_INT);
-        main_fn->body = m->top_level_stmts;
-        main_fn->body_count = m->top_level_count;
-        main_fn->is_pub = false;
-        main_fn->is_async = false;
-        main_fn->generic_count = 0;
-    }
     
     // Generate functions (skip generic functions - they're instantiated separately)
     for (int i = 0; i < m->function_count; i++) {

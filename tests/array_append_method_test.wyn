@@ -1,0 +1,26 @@
+// Test: Array .append() method syntax
+
+fn main() {
+    // Test 1: Basic append
+    let s = [1]
+    s = s.append(2)
+    s = s.append(3)
+    print(s.len())  // 3
+    
+    // Test 2: Method chaining
+    let chained = [1].append(2).append(3).append(4)
+    print(chained.len())  // 4
+    
+    // Test 3: Empty array
+    let empty = []
+    empty = empty.append(10)
+    empty = empty.append(20)
+    print(empty.len())  // 2
+    
+    // Test 4: In loop
+    let loop_arr = []
+    for i in 0..5 {
+        loop_arr = loop_arr.append(i)
+    }
+    print(loop_arr.len())  // 5
+}
