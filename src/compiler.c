@@ -69,6 +69,10 @@ typedef struct EnumDef EnumDef;
 typedef struct Module Module;
 
 // ============================================================================
+// LEXER - Tokenization (Lines 71-624)
+// ============================================================================
+
+// ============================================================================
 // Token Types
 // ============================================================================
 
@@ -81,21 +85,17 @@ typedef enum {
     TOK_STRING,
     TOK_RAW_STRING,
     TOK_MULTILINE_STRING,
-    TOK_BYTE,
     
     // Keywords
     TOK_FN,
     TOK_STRUCT,
     TOK_ENUM,
-    TOK_INTERFACE,
-    TOK_IMPL,
     TOK_LET,
     TOK_MUT,
     TOK_CONST,
     TOK_PUB,
     TOK_IF,
     TOK_ELSE,
-    TOK_THEN,
     TOK_MATCH,
     TOK_FOR,
     TOK_WHILE,
@@ -113,19 +113,12 @@ typedef enum {
     TOK_OK,
     TOK_ERR,
     TOK_SELF,
-    TOK_SELF_TYPE,
-    TOK_DEFER,
     TOK_SPAWN,
-    TOK_PARALLEL,
-    TOK_ASYNC,
-    TOK_AWAIT,
     TOK_AND,
     TOK_OR,
     TOK_NOT,
     TOK_TEST,
-    TOK_BENCH,
     TOK_ASSERT,
-    TOK_LAMBDA,
     
     // Operators
     TOK_PLUS,
@@ -208,21 +201,21 @@ struct Lexer {
 };
 
 static const char* keywords[] = {
-    "fn", "struct", "enum", "interface", "impl", "let", "mut", "const", "pub",
-    "if", "else", "then", "match", "for", "while", "in",
+    "fn", "struct", "enum", "let", "mut", "const", "pub",
+    "if", "else", "match", "for", "while", "in",
     "break", "continue", "return", "import", "from", "as",
     "true", "false", "none", "some", "ok", "err", "self", "Self",
-    "try", "catch", "defer", "spawn", "parallel", "async", "await", "yield",
-    "and", "or", "not", "test", "bench", "assert", "lambda"
+    "try", "catch", "spawn", "yield",
+    "and", "or", "not", "test", "assert"
 };
 
 static const TokenKind keyword_tokens[] = {
-    TOK_FN, TOK_STRUCT, TOK_ENUM, TOK_INTERFACE, TOK_IMPL, TOK_LET, TOK_MUT, TOK_CONST, TOK_PUB,
-    TOK_IF, TOK_ELSE, TOK_THEN, TOK_MATCH, TOK_FOR, TOK_WHILE, TOK_IN,
+    TOK_FN, TOK_STRUCT, TOK_ENUM, TOK_LET, TOK_MUT, TOK_CONST, TOK_PUB,
+    TOK_IF, TOK_ELSE, TOK_MATCH, TOK_FOR, TOK_WHILE, TOK_IN,
     TOK_BREAK, TOK_CONTINUE, TOK_RETURN, TOK_IMPORT, TOK_FROM, TOK_AS,
-    TOK_TRUE, TOK_FALSE, TOK_NONE, TOK_SOME, TOK_OK, TOK_ERR, TOK_SELF, TOK_SELF_TYPE,
-    TOK_DEFER, TOK_SPAWN, TOK_PARALLEL, TOK_ASYNC, TOK_AWAIT,
-    TOK_AND, TOK_OR, TOK_NOT, TOK_TEST, TOK_BENCH, TOK_ASSERT, TOK_LAMBDA
+    TOK_TRUE, TOK_FALSE, TOK_NONE, TOK_SOME, TOK_OK, TOK_ERR, TOK_SELF,
+    TOK_SPAWN,
+    TOK_AND, TOK_OR, TOK_NOT, TOK_TEST, TOK_ASSERT
 };
 
 #define NUM_KEYWORDS (sizeof(keywords) / sizeof(keywords[0]))
@@ -335,7 +328,7 @@ static Token lexer_scan_number(Lexer* l) {
         char next = lexer_peek_char(l, 1);
         if (next == 'x' || next == 'X') {
             // Hex literal
-            t.kind = TOK_BYTE;
+            t.kind = TOK_INT;
             lexer_advance(l); lexer_advance(l); // skip 0x
             while (l->pos < l->len && (isxdigit(lexer_char(l)) || lexer_char(l) == '_')) {
                 if (lexer_char(l) != '_' && i < 63) {
@@ -348,7 +341,7 @@ static Token lexer_scan_number(Lexer* l) {
             return t;
         } else if (next == 'b' || next == 'B') {
             // Binary literal
-            t.kind = TOK_BYTE;
+            t.kind = TOK_INT;
             lexer_advance(l); lexer_advance(l); // skip 0b
             while (l->pos < l->len && (lexer_char(l) == '0' || lexer_char(l) == '1' || lexer_char(l) == '_')) {
                 if (lexer_char(l) != '_' && i < 63) {
@@ -620,6 +613,10 @@ Token lexer_peek(Lexer* l) {
     l->has_peek = true;
     return l->peek;
 }
+
+// ============================================================================
+// PARSER - AST Generation (Lines 624-2862)
+// ============================================================================
 
 // ============================================================================
 // AST Node Types
@@ -1191,19 +1188,6 @@ static const char* map_module_function(const char* module, const char* function)
 
 // Helper: Check if a call expression is calling a specific builtin
 // Handles both direct calls (func()) and module calls (module.func())
-static bool is_builtin_call(Expr* call_func, const char* builtin_name) {
-    if (call_func->kind == EXPR_IDENT) {
-        return strcmp(call_func->ident, builtin_name) == 0;
-    }
-    if (call_func->kind == EXPR_FIELD && call_func->field.object->kind == EXPR_IDENT) {
-        const char* module = call_func->field.object->ident;
-        const char* function = call_func->field.field;
-        const char* mapped = map_module_function(module, function);
-        return mapped && strcmp(mapped, builtin_name) == 0;
-    }
-    return false;
-}
-
 static void parser_error(Parser* p, const char* fmt, ...) {
     p->had_error = true;
     fprintf(stderr, "\n");
@@ -1808,17 +1792,6 @@ static Expr* parse_primary(Parser* p) {
         return e;
     }
     
-    // If expression (ternary)
-    if (parser_match(p, TOK_IF)) {
-        Expr* e = new_expr(EXPR_IF, line, col);
-        e->if_expr.cond = parse_expr(p);
-        parser_expect(p, TOK_THEN, "then");
-        e->if_expr.then_expr = parse_expr(p);
-        parser_expect(p, TOK_ELSE, "else");
-        e->if_expr.else_expr = parse_expr(p);
-        return e;
-    }
-    
     // Match expression
     if (parser_match(p, TOK_MATCH)) {
         Expr* e = new_expr(EXPR_MATCH, line, col);
@@ -1842,36 +1815,6 @@ static Expr* parse_primary(Parser* p) {
             e->match_expr.arm_count++;
         }
         parser_expect(p, TOK_RBRACE, "}");
-        return e;
-    }
-    
-    // Python-style Lambda: lambda x, y: expr or lambda: expr
-    if (parser_match(p, TOK_LAMBDA)) {
-        Expr* e = new_expr(EXPR_LAMBDA, line, col);
-        e->lambda.param_count = 0;
-        e->lambda.return_type = NULL;
-        e->lambda.id = p->lambda_count++;
-        
-        // Parse parameters (no parentheses, no types)
-        if (!parser_check(p, TOK_COLON)) {
-            do {
-                Token name = parser_expect(p, TOK_IDENT, "parameter name");
-                strcpy(e->lambda.params[e->lambda.param_count], name.ident);
-                e->lambda.param_types[e->lambda.param_count] = NULL; // Type inference
-                e->lambda.param_count++;
-            } while (parser_match(p, TOK_COMMA));
-        }
-        
-        parser_expect(p, TOK_COLON, ":");
-        
-        // Parse single expression body
-        Expr* body_expr = parse_expr(p);
-        e->lambda.body = malloc(sizeof(Stmt*) * 1);
-        e->lambda.body_count = 1;
-        Stmt* ret_stmt = new_stmt(STMT_RETURN, line, col);
-        ret_stmt->ret.value = body_expr;
-        e->lambda.body[0] = ret_stmt;
-        
         return e;
     }
     
@@ -2799,8 +2742,6 @@ static Module* parse_module(Parser* p) {
 }
 
 // AST printing for debugging
-static void print_indent(int depth) { for (int i = 0; i < depth; i++) printf("  "); }
-
 static void print_type(Type* t) {
     if (!t) { printf("?"); return; }
     switch (t->kind) {
@@ -2873,6 +2814,10 @@ static void print_module(Module* m) {
         printf("  test \"%s\"\n", m->tests[i].name);
     }
 }
+
+// ============================================================================
+// TYPE CHECKER - Type System (Lines 2862-5037)
+// ============================================================================
 
 // ============================================================================
 // Error Reporting
@@ -5078,6 +5023,10 @@ static void optimize_loop_unrolling(Module* m) {
     // For now, just a placeholder for future optimization
     (void)m;
 }
+
+// ============================================================================
+// LLVM CODEGEN - IR Generation (Lines 5037-9572)
+// ============================================================================
 
 // ============================================================================
 // Variable Capture Analysis for spawn
@@ -8359,8 +8308,43 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
         }
         
         case STMT_EXPR: {
-            int dummy;
-            llvm_expr(lg, s->expr.expr, &dummy);
+            // Check if this is an array method call that should modify the variable in place
+            if (s->expr.expr->kind == EXPR_CALL && 
+                s->expr.expr->call.func->kind == EXPR_FIELD &&
+                s->expr.expr->call.func->field.object->kind == EXPR_IDENT) {
+                
+                const char* method_name = s->expr.expr->call.func->field.field;
+                const char* var_name = s->expr.expr->call.func->field.object->ident;
+                
+                // Check if this is an array method that returns a new array
+                if (strcmp(method_name, "append") == 0 || strcmp(method_name, "reverse") == 0) {
+                    // Generate the method call
+                    int result_reg;
+                    llvm_expr(lg, s->expr.expr, &result_reg);
+                    
+                    // Find the variable and update it with the result
+                    for (int i = lg->var_count - 1; i >= 0; i--) {
+                        if (strcmp(lg->vars[i], var_name) == 0) {
+                            // Store the result back to the variable
+                            if (result_reg <= -1000000) {
+                                llvm_emit(lg, "  store i64 %lld, i64* %%%d", 
+                                         (long long)(-result_reg - 1000000), lg->var_regs[i]);
+                            } else {
+                                llvm_emit(lg, "  store i64* %%%d, i64** %%%d", result_reg, lg->var_regs[i]);
+                            }
+                            break;
+                        }
+                    }
+                } else {
+                    // Regular expression statement
+                    int dummy;
+                    llvm_expr(lg, s->expr.expr, &dummy);
+                }
+            } else {
+                // Regular expression statement
+                int dummy;
+                llvm_expr(lg, s->expr.expr, &dummy);
+            }
             break;
         }
         
