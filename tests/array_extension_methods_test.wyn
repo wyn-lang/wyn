@@ -6,7 +6,7 @@ fn array.append(self, item: int) -> array {
 
 fn main() {
     # Test basic extension method
-    let s = [1, 2, 3]
+    var s = [1, 2, 3]
     s = s.append(4)
     
     if s.len() != 4 {

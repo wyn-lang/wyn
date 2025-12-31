@@ -2,7 +2,7 @@ fn main() {
     print("=== Closures Edge Cases ===")
     
     // Capture single variable
-    let counter = 0
+    var counter = 0
     spawn {
         counter = counter + 1
     }
@@ -10,8 +10,8 @@ fn main() {
     print(counter)
     
     // Capture multiple variables
-    let x = 10
-    let y = 20
+    var x = 10
+    var y = 20
     spawn {
         x = x + 1
         y = y + 1
@@ -21,7 +21,7 @@ fn main() {
     print(y)
     
     // Capture in nested spawn
-    let z = 5
+    var z = 5
     spawn {
         spawn {
             z = z + 1
@@ -31,7 +31,7 @@ fn main() {
     print(z)
     
     // Capture with method calls
-    let text = "hello"
+    var text = "hello"
     spawn {
         text = text.upper()
     }
@@ -39,7 +39,7 @@ fn main() {
     print(text)
     
     // Multiple spawns with same variable
-    let shared = 0
+    var shared = 0
     spawn {
         shared = shared + 1
     }

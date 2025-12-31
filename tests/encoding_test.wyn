@@ -3,23 +3,23 @@ import encoding
 fn main() {
     print("Testing encoding module...\n")
     
-    let text: str = "Hello"
+    var text: str = "Hello"
     
     // Test base64
-    let b64: str = encoding.base64_encode(text)
-    let decoded: str = encoding.base64_decode(b64)
+    var b64: str = encoding.base64_encode(text)
+    var decoded: str = encoding.base64_decode(b64)
     print("Base64 encode/decode: ")
     print(decoded)
     print("\n")
     
     // Test hex
-    let hex: str = encoding.hex_encode(text)
+    var hex: str = encoding.hex_encode(text)
     print("Hex encoded: ")
     print(hex)
     print("\n")
     
     // Test URL encoding
-    let url: str = encoding.url_encode("hello world")
+    var url: str = encoding.url_encode("hello world")
     print("URL encoded: ")
     print(url)
     print("\n")

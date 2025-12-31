@@ -4,28 +4,28 @@ fn main() {
     print("Testing string iteration...")
     
     // Test basic string iteration
-    let result = ""
+    var result = ""
     for c in "abc" {
         result = result + c
     }
     print("Result: " + result)
     
     // Test empty string
-    let empty_count = 0
+    var empty_count = 0
     for c in "" {
         empty_count = empty_count + 1
     }
     print("Empty string count: " + int_to_str(empty_count))
     
     // Test single character
-    let single_result = ""
+    var single_result = ""
     for c in "x" {
         single_result = single_result + c
     }
     print("Single char result: " + single_result)
     
     // Test longer string
-    let hello_result = ""
+    var hello_result = ""
     for c in "hello" {
         hello_result = hello_result + c
     }

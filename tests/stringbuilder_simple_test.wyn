@@ -7,8 +7,8 @@ fn main() {
     print("=== StringBuilder Tests ===")
     
     # Test 1: Empty StringBuilder
-    let sb1 = stringbuilder.new()
-    let result1 = sb1.to_str()
+    var sb1 = stringbuilder.new()
+    var result1 = sb1.to_str()
     if result1 == "" {
         print("✓ Empty StringBuilder test passed")
     } else {
@@ -16,9 +16,9 @@ fn main() {
     }
     
     # Test 2: Single append
-    let sb2 = stringbuilder.new()
+    var sb2 = stringbuilder.new()
     sb2.append("hello")
-    let result2 = sb2.to_str()
+    var result2 = sb2.to_str()
     if result2 == "hello" {
         print("✓ Single append test passed")
     } else {
@@ -26,11 +26,11 @@ fn main() {
     }
     
     # Test 3: Multiple appends
-    let sb3 = stringbuilder.new()
+    var sb3 = stringbuilder.new()
     sb3.append("hello")
     sb3.append(" ")
     sb3.append("world")
-    let result3 = sb3.to_str()
+    var result3 = sb3.to_str()
     if result3 == "hello world" {
         print("✓ Multiple append test passed")
     } else {
@@ -38,11 +38,11 @@ fn main() {
     }
     
     # Test 4: Empty string append
-    let sb4 = stringbuilder.new()
+    var sb4 = stringbuilder.new()
     sb4.append("")
     sb4.append("test")
     sb4.append("")
-    let result4 = sb4.to_str()
+    var result4 = sb4.to_str()
     if result4 == "test" {
         print("✓ Empty string append test passed")
     } else {

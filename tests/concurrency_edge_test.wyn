@@ -27,7 +27,7 @@ fn main() {
     task_join_all()
     
     // Spawn in loop
-    let i = 0
+    var i = 0
     while i < 3 {
         spawn {
             print("Loop task")

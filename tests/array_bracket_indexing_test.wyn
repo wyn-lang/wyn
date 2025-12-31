@@ -2,7 +2,7 @@
 
 fn main() {
     // Test 1: Integer array indexing
-    let nums = []
+    var nums = []
     nums.append(1)
     nums.append(2)
     nums.append(3)
@@ -12,7 +12,7 @@ fn main() {
     print(nums[2])  // 3
     
     // Test 2: String array indexing
-    let names = []
+    var names = []
     names.append("Alice")
     names.append("Bob")
     names.append("Charlie")

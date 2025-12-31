@@ -2,7 +2,7 @@ import os
 
 fn main() {
     // Test environment variables
-    let path: str = os.getenv("PATH")
+    var path: str = os.getenv("PATH")
     print("PATH exists: ")
     if path.len() > 0 {
         print(1)
@@ -11,7 +11,7 @@ fn main() {
     }
     
     // Test current directory
-    let dir: str = os.cwd()
+    var dir: str = os.cwd()
     print("Current dir: ")
     if dir.len() > 0 {
         print(1)
@@ -20,7 +20,7 @@ fn main() {
     }
     
     // Test command execution (safe command)
-    let result: int = os.exec("echo test > /dev/null")
+    var result: int = os.exec("echo test > /dev/null")
     print("Command result: ")
     if result == 0 {
         print(1)

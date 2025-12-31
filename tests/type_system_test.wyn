@@ -16,7 +16,7 @@ fn main() {
     print(z)
     
     // Test 4: String assignment
-    let result = "start"
+    var result = "start"
     result = result + " middle"
     result = result + " end"
     print(result)

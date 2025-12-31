@@ -2,7 +2,7 @@
 
 fn main() {
     // Test 1: append() method
-    let items = []
+    var items = []
     items.append("a")
     items.append("b")
     items.append("c")
@@ -14,7 +14,7 @@ fn main() {
     print(items[2])  // c
     
     // Test 3: in loop
-    let nums = []
+    var nums = []
     for i in 0..5 {
         nums.append(i)
     }
@@ -23,12 +23,12 @@ fn main() {
     print(nums[4])     // 4
     
     // Test 4: mixed types
-    let ints = []
+    var ints = []
     ints.append(10)
     ints.append(20)
     print(ints[0])  // 10
     
-    let strs = []
+    var strs = []
     strs.append("x")
     strs.append("y")
     print(strs[0])  // x

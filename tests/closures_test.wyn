@@ -4,7 +4,7 @@ fn main() {
     print("Testing closure-like variable capture")
     
     # Test 1: Capture and modify variable
-    let counter: int = 0
+    var counter: int = 0
     
     spawn {
         counter = counter + 1
@@ -24,9 +24,9 @@ fn main() {
     assert(counter == 3)
     
     # Test 2: Capture multiple variables
-    let x: int = 10
-    let y: int = 20
-    let result: int = 0
+    var x: int = 10
+    var y: int = 20
+    var result: int = 0
     
     spawn {
         result = x + y
@@ -38,8 +38,8 @@ fn main() {
     assert(result == 30)
     
     # Test 3: Capture in loop
-    let sum: int = 0
-    let i: int = 0
+    var sum: int = 0
+    var i: int = 0
     while i < 5 {
         spawn {
             sum = sum + 1

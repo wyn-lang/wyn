@@ -3,26 +3,26 @@
 
 fn main() {
     # Multiple loops with same variable name
-    let sum1: int = 0
+    var sum1: int = 0
     for i in 0..5 {
         sum1 += i
     }
     assert(sum1 == 10)
     
-    let sum2: int = 0
+    var sum2: int = 0
     for i in 0..5 {
         sum2 += i
     }
     assert(sum2 == 10)
     
-    let sum3: int = 0
+    var sum3: int = 0
     for i in 0..5 {
         sum3 += i
     }
     assert(sum3 == 10)
     
     # Nested loops with different variable names
-    let total: int = 0
+    var total: int = 0
     for i in 0..3 {
         for j in 0..2 {
             total += j
@@ -31,7 +31,7 @@ fn main() {
     assert(total == 3)
     
     # Loop with break, then another loop
-    let count1: int = 0
+    var count1: int = 0
     for i in 0..10 {
         if i == 5 {
             break
@@ -40,7 +40,7 @@ fn main() {
     }
     assert(count1 == 5)
     
-    let count2: int = 0
+    var count2: int = 0
     for i in 0..10 {
         if i == 3 {
             break
@@ -50,7 +50,7 @@ fn main() {
     assert(count2 == 3)
     
     # Loop with continue
-    let even_sum: int = 0
+    var even_sum: int = 0
     for i in 0..10 {
         if i % 2 == 1 {
             continue

@@ -2,11 +2,11 @@
 
 fn main() {
     // Test array module (auto-imported)
-    let arr = []
+    var arr = []
     arr = array.append(arr, 1)
     print(arr.len())  // 1
     
     // Test string module (auto-imported)
-    let upper = string.upper("hello")
+    var upper = string.upper("hello")
     print(upper)  // HELLO
 }

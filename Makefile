@@ -163,10 +163,23 @@ test-all-tests: wyn
 	done; \
 	echo "Tests: $$passed passed, $$failed failed"
 
-# Run all tests (optimized - compile and run in one step)
+# Run all tests (simple, reliable)
 .PHONY: test
 test: wyn
-	@./$(WYN_BIN) test
+	@echo "Running tests..."
+	@passed=0; failed=0; \
+	for f in tests/*_test.wyn; do \
+		if timeout 5 ./$(WYN_BIN) run $$f >/dev/null 2>&1; then \
+			echo "  ✅ $$f"; \
+			passed=$$((passed + 1)); \
+		else \
+			echo "  ❌ $$f"; \
+			failed=$$((failed + 1)); \
+		fi; \
+	done; \
+	echo ""; \
+	echo "Tests: $$passed passed, $$failed failed"; \
+	test $$failed -eq 0
 
 # Legacy test target (slower, no caching)
 .PHONY: test-legacy

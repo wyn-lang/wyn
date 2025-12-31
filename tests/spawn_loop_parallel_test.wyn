@@ -6,8 +6,8 @@ fn main() {
     print("Testing parallel spawn in loop")
     
     # Test 1: Spawn multiple tasks in a loop
-    let counter: int = 0
-    let i: int = 0
+    var counter: int = 0
+    var i: int = 0
     
     while i < 10 {
         spawn {
@@ -23,8 +23,8 @@ fn main() {
     
     # Test 2: Verify parallel execution with timing
     # If they run in parallel, total time should be ~100ms, not 1000ms
-    let task_count: int = 0
-    let j: int = 0
+    var task_count: int = 0
+    var j: int = 0
     
     while j < 10 {
         spawn {
@@ -52,7 +52,7 @@ fn main() {
     }
     
     # Test 3: For loop with spawns
-    let count: int = 0
+    var count: int = 0
     for k in 0..5 {
         spawn {
             count = count + 1

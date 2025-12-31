@@ -2,7 +2,7 @@
 
 fn async_task(id: int, result_ptr: int) {
     # Simulate async work
-    let i: int = 0
+    var i: int = 0
     while i < 1000 {
         i = i + 1
     }
@@ -15,9 +15,9 @@ fn main() {
     print("Testing async/await-like behavior")
     
     # Spawn async tasks
-    let result1: int = 0
-    let result2: int = 0
-    let result3: int = 0
+    var result1: int = 0
+    var result2: int = 0
+    var result3: int = 0
     
     spawn {
         result1 = 10

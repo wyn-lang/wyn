@@ -2,7 +2,7 @@ fn main() {
     print("=== Loops Edge Cases ===")
     
     // While with break
-    let i = 0
+    var i = 0
     while i < 10 {
         if i == 3 {
             break
@@ -12,7 +12,7 @@ fn main() {
     print(i)
     
     // For with break
-    let sum = 0
+    var sum = 0
     for k in 0..10 {
         if k == 5 {
             break
@@ -22,7 +22,7 @@ fn main() {
     print(sum)
     
     // Nested loops
-    let nested = 0
+    var nested = 0
     for x in 0..3 {
         for y in 0..3 {
             nested = nested + 1

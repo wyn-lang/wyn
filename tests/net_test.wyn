@@ -2,7 +2,7 @@ import net
 
 fn main() {
     // Test HTTP functions (will return empty for now)
-    let response: str = net.http_get("http://example.com")
+    var response: str = net.http_get("http://example.com")
     print("HTTP GET: ")
     if response.len() >= 0 {
         print(1)
@@ -10,7 +10,7 @@ fn main() {
         print(0)
     }
     
-    let post_response: str = net.http_post("http://example.com", "data")
+    var post_response: str = net.http_post("http://example.com", "data")
     print("HTTP POST: ")
     if post_response.len() >= 0 {
         print(1)
@@ -19,7 +19,7 @@ fn main() {
     }
     
     // Test TCP functions (will return defaults for now)
-    let fd: int = net.tcp_connect("localhost", 8080)
+    var fd: int = net.tcp_connect("localhost", 8080)
     print("TCP connect: ")
     if fd >= -1 {
         print(1)
@@ -27,7 +27,7 @@ fn main() {
         print(0)
     }
     
-    let sent: bool = net.tcp_send(fd, "hello")
+    var sent: bool = net.tcp_send(fd, "hello")
     print("TCP send: ")
     if sent == false {
         print(1)  // Expected false for now
@@ -35,7 +35,7 @@ fn main() {
         print(0)
     }
     
-    let received: str = net.tcp_recv(fd, 1024)
+    var received: str = net.tcp_recv(fd, 1024)
     print("TCP recv: ")
     if received.len() >= 0 {
         print(1)

@@ -3,19 +3,19 @@ import hash
 fn main() {
     print("Testing hash module...\n")
     
-    let text: str = "test"
+    var text: str = "test"
     
-    let sha256: str = hash.sha256(text)
+    var sha256: str = hash.sha256(text)
     print("SHA256: ")
     print(sha256)
     print("\n")
     
-    let md5: str = hash.md5(text)
+    var md5: str = hash.md5(text)
     print("MD5: ")
     print(md5)
     print("\n")
     
-    let sha1: str = hash.sha1(text)
+    var sha1: str = hash.sha1(text)
     print("SHA1: ")
     print(sha1)
     print("\n")
