@@ -5538,9 +5538,16 @@ static bool llvm_is_string_expr(LLVMGen* lg, Expr* e) {
         return t && t->kind == TYPE_STR;
     }
     if (e->kind == EXPR_INDEX) {
-        // Check if this is indexing into a string array
-        Type* obj_type = llvm_get_var_type(lg, e->index.object->ident);
-        return obj_type && obj_type->kind == TYPE_ARRAY && obj_type->inner && obj_type->inner->kind == TYPE_STR;
+        // Check if this is indexing into a string (returns single character string)
+        if (e->index.object->kind == EXPR_STRING) return true;
+        if (e->index.object->kind == EXPR_IDENT) {
+            Type* obj_type = llvm_get_var_type(lg, e->index.object->ident);
+            // String indexing returns a string (single character)
+            if (obj_type && obj_type->kind == TYPE_STR) return true;
+            // String array indexing returns a string
+            return obj_type && obj_type->kind == TYPE_ARRAY && obj_type->inner && obj_type->inner->kind == TYPE_STR;
+        }
+        return false;
     }
     if (e->kind == EXPR_BINARY && e->binary.op == TOK_PLUS) {
         return llvm_is_string_expr(lg, e->binary.left) || llvm_is_string_expr(lg, e->binary.right);
@@ -6817,6 +6824,8 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                         obj_type = llvm_get_var_type(lg, e->call.func->field.object->ident);
                     } else if (e->call.func->field.object->kind == EXPR_STRING) {
                         obj_type = new_type(TYPE_STR);
+                    } else if (llvm_is_string_expr(lg, e->call.func->field.object)) {
+                        obj_type = new_type(TYPE_STR);
                     }
                     
                     if (obj_type && obj_type->kind == TYPE_STR) {
@@ -7417,76 +7426,103 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
         }
         
         case EXPR_INDEX: {
-            // arr[idx]
-            int arr_reg, idx_reg;
-            llvm_expr(lg, e->index.object, &arr_reg);
-            llvm_expr(lg, e->index.index, &idx_reg);
+            // Check if we're indexing a string
+            bool is_string_obj = false;
+            if (e->index.object->kind == EXPR_IDENT) {
+                Type* obj_type = llvm_get_var_type(lg, e->index.object->ident);
+                is_string_obj = obj_type && obj_type->kind == TYPE_STR;
+            } else if (e->index.object->kind == EXPR_STRING) {
+                is_string_obj = true;
+            }
             
-            int final_idx;
-            if (idx_reg <= -1000000) {
-                // Constant index
-                long long idx_val = -idx_reg - 1000000;
-                if (idx_val < 0) {
-                    // Negative constant index: convert to positive
-                    // Load array length
+            if (is_string_obj) {
+                // String indexing: str[idx] -> char_at(str, idx)
+                int str_reg, idx_reg;
+                llvm_expr(lg, e->index.object, &str_reg);
+                llvm_expr(lg, e->index.index, &idx_reg);
+                
+                int t = llvm_new_temp(lg);
+                if (idx_reg <= -1000000) {
+                    // Constant index
+                    long long idx_val = -idx_reg - 1000000;
+                    llvm_emit(lg, "  %%%d = call i8* @char_at(i8* %%%d, i64 %lld)", t, str_reg, idx_val);
+                } else {
+                    // Variable index
+                    llvm_emit(lg, "  %%%d = call i8* @char_at(i8* %%%d, i64 %%%d)", t, str_reg, idx_reg);
+                }
+                *result_reg = t;
+            } else {
+                // Array indexing: arr[idx]
+                int arr_reg, idx_reg;
+                llvm_expr(lg, e->index.object, &arr_reg);
+                llvm_expr(lg, e->index.index, &idx_reg);
+                
+                int final_idx;
+                if (idx_reg <= -1000000) {
+                    // Constant index
+                    long long idx_val = -idx_reg - 1000000;
+                    if (idx_val < 0) {
+                        // Negative constant index: convert to positive
+                        // Load array length
+                        int len_ptr = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = getelementptr i64, ptr %%%d, i64 0", len_ptr, arr_reg);
+                        int len_reg = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = load i64, i64* %%%d", len_reg, len_ptr);
+                        
+                        // Calculate positive index: len + idx
+                        final_idx = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = add i64 %%%d, %lld", final_idx, len_reg, idx_val);
+                    } else {
+                        // Positive constant index
+                        final_idx = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = add i64 %lld, 0", final_idx, idx_val);
+                    }
+                } else {
+                    // Variable index - need runtime check for negative
                     int len_ptr = llvm_new_temp(lg);
                     llvm_emit(lg, "  %%%d = getelementptr i64, ptr %%%d, i64 0", len_ptr, arr_reg);
                     int len_reg = llvm_new_temp(lg);
                     llvm_emit(lg, "  %%%d = load i64, i64* %%%d", len_reg, len_ptr);
                     
-                    // Calculate positive index: len + idx
+                    // Check if index is negative
+                    int is_neg = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = icmp slt i64 %%%d, 0", is_neg, idx_reg);
+                    
+                    // Calculate len + idx for negative case
+                    int pos_idx = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = add i64 %%%d, %%%d", pos_idx, len_reg, idx_reg);
+                    
+                    // Select between original index and positive index
                     final_idx = llvm_new_temp(lg);
-                    llvm_emit(lg, "  %%%d = add i64 %%%d, %lld", final_idx, len_reg, idx_val);
-                } else {
-                    // Positive constant index
-                    final_idx = llvm_new_temp(lg);
-                    llvm_emit(lg, "  %%%d = add i64 %lld, 0", final_idx, idx_val);
+                    llvm_emit(lg, "  %%%d = select i1 %%%d, i64 %%%d, i64 %%%d", final_idx, is_neg, pos_idx, idx_reg);
                 }
-            } else {
-                // Variable index - need runtime check for negative
-                int len_ptr = llvm_new_temp(lg);
-                llvm_emit(lg, "  %%%d = getelementptr i64, ptr %%%d, i64 0", len_ptr, arr_reg);
-                int len_reg = llvm_new_temp(lg);
-                llvm_emit(lg, "  %%%d = load i64, i64* %%%d", len_reg, len_ptr);
                 
-                // Check if index is negative
-                int is_neg = llvm_new_temp(lg);
-                llvm_emit(lg, "  %%%d = icmp slt i64 %%%d, 0", is_neg, idx_reg);
+                // Add 2 to skip length and capacity
+                int adj_idx = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = add i64 %%%d, 2", adj_idx, final_idx);
                 
-                // Calculate len + idx for negative case
-                int pos_idx = llvm_new_temp(lg);
-                llvm_emit(lg, "  %%%d = add i64 %%%d, %%%d", pos_idx, len_reg, idx_reg);
+                // Get element pointer
+                int elem_ptr = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = getelementptr i64, ptr %%%d, i64 %%%d", elem_ptr, arr_reg, adj_idx);
                 
-                // Select between original index and positive index
-                final_idx = llvm_new_temp(lg);
-                llvm_emit(lg, "  %%%d = select i1 %%%d, i64 %%%d, i64 %%%d", final_idx, is_neg, pos_idx, idx_reg);
-            }
-            
-            // Add 2 to skip length and capacity
-            int adj_idx = llvm_new_temp(lg);
-            llvm_emit(lg, "  %%%d = add i64 %%%d, 2", adj_idx, final_idx);
-            
-            // Get element pointer
-            int elem_ptr = llvm_new_temp(lg);
-            llvm_emit(lg, "  %%%d = getelementptr i64, ptr %%%d, i64 %%%d", elem_ptr, arr_reg, adj_idx);
-            
-            // Load element
-            int t = llvm_new_temp(lg);
-            llvm_emit(lg, "  %%%d = load i64, i64* %%%d", t, elem_ptr);
-            
-            // Check if this is a string array - need to cast i64 to i8*
-            Type* arr_type = NULL;
-            if (e->index.object->kind == EXPR_IDENT) {
-                arr_type = llvm_get_var_type(lg, e->index.object->ident);
-            }
-            
-            if (arr_type && arr_type->kind == TYPE_ARRAY && arr_type->inner && arr_type->inner->kind == TYPE_STR) {
-                // Cast i64 to i8* for string arrays
-                int str_reg = llvm_new_temp(lg);
-                llvm_emit(lg, "  %%%d = inttoptr i64 %%%d to i8*", str_reg, t);
-                *result_reg = str_reg;
-            } else {
-                *result_reg = t;
+                // Load element
+                int t = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = load i64, i64* %%%d", t, elem_ptr);
+                
+                // Check if this is a string array - need to cast i64 to i8*
+                Type* arr_type = NULL;
+                if (e->index.object->kind == EXPR_IDENT) {
+                    arr_type = llvm_get_var_type(lg, e->index.object->ident);
+                }
+                
+                if (arr_type && arr_type->kind == TYPE_ARRAY && arr_type->inner && arr_type->inner->kind == TYPE_STR) {
+                    // Cast i64 to i8* for string arrays
+                    int str_reg = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = inttoptr i64 %%%d to i8*", str_reg, t);
+                    *result_reg = str_reg;
+                } else {
+                    *result_reg = t;
+                }
             }
             break;
         }
