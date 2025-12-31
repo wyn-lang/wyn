@@ -1,0 +1,13 @@
+// Test: Top-level code execution (no fn main required)
+
+// This file has no fn main() - should work!
+print("Top-level code works!")
+
+let x = 42
+print(x)
+
+let items = []
+items.append(1)
+items.append(2)
+print(items[0])
+print(items[1])

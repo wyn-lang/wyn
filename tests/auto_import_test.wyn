@@ -1,0 +1,12 @@
+// Test: Auto-import core modules (no import statements needed)
+
+fn main() {
+    // Test array module (auto-imported)
+    let arr = []
+    arr = array.append(arr, 1)
+    print(arr.len())  // 1
+    
+    // Test string module (auto-imported)
+    let upper = string.upper("hello")
+    print(upper)  // HELLO
+}

@@ -1,0 +1,35 @@
+// Test: Python-style array operations
+
+fn main() {
+    // Test 1: append() method
+    let items = []
+    items.append("a")
+    items.append("b")
+    items.append("c")
+    print(items.len())  // 3
+    
+    // Test 2: bracket indexing
+    print(items[0])  // a
+    print(items[1])  // b
+    print(items[2])  // c
+    
+    // Test 3: in loop
+    let nums = []
+    for i in 0..5 {
+        nums.append(i)
+    }
+    print(nums.len())  // 5
+    print(nums[0])     // 0
+    print(nums[4])     // 4
+    
+    // Test 4: mixed types
+    let ints = []
+    ints.append(10)
+    ints.append(20)
+    print(ints[0])  // 10
+    
+    let strs = []
+    strs.append("x")
+    strs.append("y")
+    print(strs[0])  // x
+}
