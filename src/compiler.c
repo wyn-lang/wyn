@@ -90,7 +90,7 @@ typedef enum {
     TOK_FN,
     TOK_STRUCT,
     TOK_ENUM,
-    TOK_LET,
+    TOK_VAR,
     TOK_MUT,
     TOK_CONST,
     TOK_PUB,
@@ -201,7 +201,7 @@ struct Lexer {
 };
 
 static const char* keywords[] = {
-    "fn", "struct", "enum", "let", "mut", "const", "pub",
+    "fn", "struct", "enum", "var", "mut", "const", "pub",
     "if", "else", "match", "for", "while", "in",
     "break", "continue", "return", "import", "from", "as",
     "true", "false", "none", "some", "ok", "err", "self", "Self",
@@ -210,7 +210,7 @@ static const char* keywords[] = {
 };
 
 static const TokenKind keyword_tokens[] = {
-    TOK_FN, TOK_STRUCT, TOK_ENUM, TOK_LET, TOK_MUT, TOK_CONST, TOK_PUB,
+    TOK_FN, TOK_STRUCT, TOK_ENUM, TOK_VAR, TOK_MUT, TOK_CONST, TOK_PUB,
     TOK_IF, TOK_ELSE, TOK_MATCH, TOK_FOR, TOK_WHILE, TOK_IN,
     TOK_BREAK, TOK_CONTINUE, TOK_RETURN, TOK_IMPORT, TOK_FROM, TOK_AS,
     TOK_TRUE, TOK_FALSE, TOK_NONE, TOK_SOME, TOK_OK, TOK_ERR, TOK_SELF,
@@ -1288,6 +1288,7 @@ static Type* get_builtin_return_type(const char* builtin_name) {
     }
     
     // String-returning functions
+    if (strcmp(builtin_name, "read_file") == 0) return new_type(TYPE_STR);
     if (strcmp(builtin_name, "format_timestamp") == 0) return new_type(TYPE_STR);
     if (strcmp(builtin_name, "format_iso8601") == 0) return new_type(TYPE_STR);
     if (strcmp(builtin_name, "base64_encode") == 0) return new_type(TYPE_STR);
@@ -2208,14 +2209,14 @@ static Stmt** parse_block(Parser* p, int* count) {
 static Stmt* parse_stmt(Parser* p) {
     int line = p->current.line, col = p->current.column;
     
-    // Variable declaration: let (mutable) or const (immutable)
-    if (parser_check(p, TOK_LET) || parser_check(p, TOK_CONST) ||
-        (parser_check(p, TOK_PUB) && (lexer_peek(p->lexer).kind == TOK_LET || lexer_peek(p->lexer).kind == TOK_CONST))) {
+    // Variable declaration: var (mutable) or const (immutable)
+    if (parser_check(p, TOK_VAR) || parser_check(p, TOK_CONST) ||
+        (parser_check(p, TOK_PUB) && (lexer_peek(p->lexer).kind == TOK_VAR || lexer_peek(p->lexer).kind == TOK_CONST))) {
         Stmt* s = new_stmt(STMT_LET, line, col);
         s->let.is_pub = parser_match(p, TOK_PUB);
         
-        // let = mutable, const = immutable
-        if (parser_match(p, TOK_LET)) {
+        // var = mutable, const = immutable
+        if (parser_match(p, TOK_VAR)) {
             s->let.is_mut = true;
         } else if (parser_match(p, TOK_CONST)) {
             s->let.is_mut = false;
@@ -5592,6 +5593,20 @@ static bool llvm_is_string_expr(LLVMGen* lg, Expr* e) {
             }
         } else if (e->call.func->kind == EXPR_FIELD) {
             const char* func = e->call.func->field.field;
+            
+            // Check if this is a module.function() call that returns a string
+            if (e->call.func->field.object->kind == EXPR_IDENT) {
+                const char* module = e->call.func->field.object->ident;
+                const char* builtin_name = map_module_function(module, func);
+                if (builtin_name) {
+                    // Check if this module function returns a string
+                    Type* ret_type = get_builtin_return_type(builtin_name);
+                    if (ret_type && ret_type->kind == TYPE_STR) {
+                        return true;
+                    }
+                }
+            }
+            
             // Check if this is a string-returning method (regardless of object)
             if (strcmp(func, "upper") == 0 || strcmp(func, "lower") == 0 ||
                 strcmp(func, "trim") == 0 || strcmp(func, "read") == 0 ||
@@ -6187,6 +6202,7 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                           strcmp(function, "upper") == 0 ||
                                           strcmp(function, "lower") == 0 ||
                                           strcmp(function, "trim") == 0 ||
+                                          strcmp(function, "read") == 0 ||
                                           strcmp(function, "getenv") == 0 ||
                                           strcmp(function, "cwd") == 0 ||
                                           strcmp(function, "exec_output") == 0 ||
