@@ -1,7 +1,0 @@
-fn main() {
-    var x: int = 0
-    while x < 100 {
-        print("Large")
-        x = x + 1
-    }
-}

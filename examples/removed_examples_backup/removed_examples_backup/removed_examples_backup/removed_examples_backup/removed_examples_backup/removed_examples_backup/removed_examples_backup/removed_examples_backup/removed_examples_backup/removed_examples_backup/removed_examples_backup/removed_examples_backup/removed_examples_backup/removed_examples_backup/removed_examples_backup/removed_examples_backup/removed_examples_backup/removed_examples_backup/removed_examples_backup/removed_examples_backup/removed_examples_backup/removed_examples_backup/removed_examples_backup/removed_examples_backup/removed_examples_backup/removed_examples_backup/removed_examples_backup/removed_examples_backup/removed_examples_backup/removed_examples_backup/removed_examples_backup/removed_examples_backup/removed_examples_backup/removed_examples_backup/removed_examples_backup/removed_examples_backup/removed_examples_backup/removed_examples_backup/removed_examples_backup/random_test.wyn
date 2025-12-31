@@ -1,9 +1,0 @@
-# Test random() builtin
-
-fn main() {
-    print("Random numbers:")
-    for i in 0..5 {
-        const r: int = random() % 100
-        print(r)
-    }
-}

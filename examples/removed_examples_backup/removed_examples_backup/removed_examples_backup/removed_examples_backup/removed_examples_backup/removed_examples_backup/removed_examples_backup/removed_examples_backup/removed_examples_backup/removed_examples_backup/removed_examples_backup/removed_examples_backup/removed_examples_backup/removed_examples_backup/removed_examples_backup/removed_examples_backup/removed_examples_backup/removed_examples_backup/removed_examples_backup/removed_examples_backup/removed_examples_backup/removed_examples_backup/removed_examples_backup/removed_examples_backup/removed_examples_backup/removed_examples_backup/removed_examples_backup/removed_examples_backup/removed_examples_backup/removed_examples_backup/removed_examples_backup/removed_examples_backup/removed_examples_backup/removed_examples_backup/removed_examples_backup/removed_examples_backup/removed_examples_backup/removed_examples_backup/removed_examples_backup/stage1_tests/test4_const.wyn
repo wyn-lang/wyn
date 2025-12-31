@@ -1,7 +1,0 @@
-fn main() {
-    const x: int = 7
-    while x < 9 {
-        print("Const")
-        x = x + 1
-    }
-}

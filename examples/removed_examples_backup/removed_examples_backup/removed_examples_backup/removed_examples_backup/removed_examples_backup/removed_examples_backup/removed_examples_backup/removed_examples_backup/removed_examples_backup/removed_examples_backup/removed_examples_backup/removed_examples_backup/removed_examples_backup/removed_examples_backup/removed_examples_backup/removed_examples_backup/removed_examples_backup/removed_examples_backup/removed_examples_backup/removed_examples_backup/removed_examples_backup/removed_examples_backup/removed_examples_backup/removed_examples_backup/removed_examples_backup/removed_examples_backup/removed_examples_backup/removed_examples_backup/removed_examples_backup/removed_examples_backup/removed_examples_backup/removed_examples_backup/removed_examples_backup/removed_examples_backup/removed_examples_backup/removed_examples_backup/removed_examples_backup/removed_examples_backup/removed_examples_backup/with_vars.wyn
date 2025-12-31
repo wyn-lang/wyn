@@ -1,4 +1,0 @@
-fn main() {
-    var x: int = 42
-    print("The answer is 42")
-}

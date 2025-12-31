@@ -1,3 +1,0 @@
-fn main() {
-    print("Stage 1 is parsing this!")
-}

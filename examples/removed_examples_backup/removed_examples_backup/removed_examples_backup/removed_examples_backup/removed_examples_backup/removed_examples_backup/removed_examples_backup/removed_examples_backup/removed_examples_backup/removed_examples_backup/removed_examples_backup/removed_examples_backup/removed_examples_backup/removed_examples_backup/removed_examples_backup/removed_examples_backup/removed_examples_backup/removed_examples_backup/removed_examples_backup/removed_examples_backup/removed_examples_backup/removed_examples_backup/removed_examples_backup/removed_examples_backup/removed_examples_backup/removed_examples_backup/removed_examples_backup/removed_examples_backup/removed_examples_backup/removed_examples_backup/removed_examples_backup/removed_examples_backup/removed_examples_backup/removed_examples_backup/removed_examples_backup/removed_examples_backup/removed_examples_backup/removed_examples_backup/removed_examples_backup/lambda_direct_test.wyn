@@ -1,6 +1,0 @@
-fn main() {
-    // Direct lambda calls (inline)
-    print((lambda x, y: x + y)(5, 3))
-    print((lambda x: x * 2)(10))
-    print((lambda: 42)())
-}

@@ -1,7 +1,0 @@
-fn main() {
-    var y: int = 0
-    while y < 5 {
-        print("Loop")
-        y = y + 1
-    }
-}

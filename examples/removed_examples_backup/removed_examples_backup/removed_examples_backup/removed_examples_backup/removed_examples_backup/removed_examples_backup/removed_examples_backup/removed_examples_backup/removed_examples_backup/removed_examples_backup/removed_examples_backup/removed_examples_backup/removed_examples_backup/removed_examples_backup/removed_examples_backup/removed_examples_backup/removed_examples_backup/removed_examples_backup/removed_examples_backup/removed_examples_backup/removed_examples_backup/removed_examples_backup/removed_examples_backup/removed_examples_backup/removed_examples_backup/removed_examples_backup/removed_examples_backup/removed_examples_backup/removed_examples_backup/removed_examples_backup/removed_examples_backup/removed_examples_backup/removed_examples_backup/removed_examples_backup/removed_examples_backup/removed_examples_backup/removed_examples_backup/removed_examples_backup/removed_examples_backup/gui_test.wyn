@@ -1,5 +1,0 @@
-fn main() {
-    print("Testing GUI (non-blocking)...\n")
-    print("✓ GUI test passed (manual verification required)\n")
-}
-

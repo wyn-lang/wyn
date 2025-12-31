@@ -1,7 +1,0 @@
-fn main() {
-    var x: int = 7
-    if x < 5 {
-        print("Small")
-    }
-    print("Done")
-}

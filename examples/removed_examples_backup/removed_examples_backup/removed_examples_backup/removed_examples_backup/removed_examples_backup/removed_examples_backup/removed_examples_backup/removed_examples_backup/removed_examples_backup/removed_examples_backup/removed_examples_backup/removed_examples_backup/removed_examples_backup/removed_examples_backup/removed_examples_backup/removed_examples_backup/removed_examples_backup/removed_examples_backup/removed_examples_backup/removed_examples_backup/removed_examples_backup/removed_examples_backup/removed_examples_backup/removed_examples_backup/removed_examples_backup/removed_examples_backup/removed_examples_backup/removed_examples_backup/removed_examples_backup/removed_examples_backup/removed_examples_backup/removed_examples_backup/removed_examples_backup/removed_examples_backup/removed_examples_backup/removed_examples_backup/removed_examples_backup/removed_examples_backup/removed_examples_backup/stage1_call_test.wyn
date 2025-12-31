@@ -1,8 +1,0 @@
-fn greet() {
-    print("Hello from function")
-}
-
-fn main() {
-    greet()
-    print("Done")
-}

@@ -1,8 +1,0 @@
-fn main() {
-    var x: int = 1
-    var y: int = 2
-    while x < 4 {
-        print("Add")
-        x = x + y
-    }
-}

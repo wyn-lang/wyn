@@ -1,7 +1,0 @@
-fn main() {
-    var x: int = 50
-    while x < 55 {
-        print("Nonzero")
-        x = x + 1
-    }
-}
