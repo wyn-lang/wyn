@@ -8971,7 +8971,7 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "; ModuleID = 'wyn'");
     llvm_emit(&lg, "target triple = \"%s-apple-%s\"", 
              arch == ARCH_ARM64 ? "arm64" : "x86_64",
-             os == OS_MACOS ? "macosx" : "linux-gnu");
+             os == OS_MACOS ? "macosx11.0.0" : "linux-gnu");
     llvm_emit(&lg, "");
     
     // Emit string constants
