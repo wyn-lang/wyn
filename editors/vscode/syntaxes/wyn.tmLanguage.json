@@ -1,0 +1,41 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Wyn",
+  "patterns": [
+    { "include": "#keywords" },
+    { "include": "#strings" },
+    { "include": "#numbers" },
+    { "include": "#comments" },
+    { "include": "#function-calls" }
+  ],
+  "repository": {
+    "keywords": {
+      "patterns": [{
+        "name": "keyword.control.wyn",
+        "match": "\\b(let|var|fn|for|if|match)\\b"
+      }]
+    },
+    "strings": {
+      "name": "string.quoted.double.wyn",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [{
+        "name": "constant.character.escape.wyn",
+        "match": "\\\\."
+      }]
+    },
+    "numbers": {
+      "name": "constant.numeric.wyn",
+      "match": "\\b\\d+(\\.\\d+)?\\b"
+    },
+    "comments": {
+      "name": "comment.line.number-sign.wyn",
+      "match": "#.*$"
+    },
+    "function-calls": {
+      "name": "entity.name.function.wyn",
+      "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*(?=\\s*\\()"
+    }
+  },
+  "scopeName": "source.wyn"
+}

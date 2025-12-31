@@ -1,0 +1,18 @@
+# This is a comment
+let x = 42
+var name = "hello world"
+
+fn add(a, b) {
+    if a > 0 {
+        for i in range(10) {
+            print(i)
+        }
+    }
+    match a {
+        1 => "one"
+        _ => "other"
+    }
+    return a + b
+}
+
+let result = add(5, 3)
