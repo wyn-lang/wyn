@@ -1,9 +1,0 @@
-import os
-
-# Test os.getenv() builtin
-
-fn main() {
-    const home: str = os.getenv("HOME")
-    print("HOME=")
-    print(home)
-}

@@ -1,9 +1,0 @@
-fn main() {
-    let max: int = 5
-    let x: int = 0
-    while x < max {
-        print("x and max")
-        x = x + 1
-        max = max + 1
-    }
-}
