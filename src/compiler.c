@@ -6294,8 +6294,10 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                             int printf_reg = llvm_new_temp(lg);
                             llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* %%%d)", printf_reg, t);
                         } else {
-                            // Array slice - print as array (for now, just print as integer)
-                            llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.int, i32 0, i32 0), i64 %%%d)", t, arg_reg);
+                            // Array slice - print placeholder (proper array printing would need more work)
+                            int str_reg = llvm_new_temp(lg);
+                            llvm_emit(lg, "  %%%d = getelementptr [7 x i8], [7 x i8]* @.str.array_slice, i32 0, i32 0", str_reg);
+                            llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* %%%d)", t, str_reg);
                         }
                     } else if (e->call.args[i]->kind == EXPR_FLOAT) {
                         llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.float, i32 0, i32 0), double %f)", 
