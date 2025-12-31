@@ -9,7 +9,7 @@ fn main() {
     // Create array
     const numbers = [1, 2, 3, 4, 5]
     print("Original:")
-    let i = 0
+    var i = 0
     while i < numbers.len() {
         print(numbers.get(i))
         i = i + 1

@@ -32,8 +32,8 @@ fn str.wrap(self, left: str, right: str) -> str {
 }
 
 fn str.repeat_times(self, times: int) -> str {
-    let result = ""
-    let i = 0
+    var result = ""
+    var i = 0
     while i < times {
         result = result + self
         i = i + 1

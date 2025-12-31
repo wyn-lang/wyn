@@ -20,7 +20,7 @@ fn main() {
     print(count_msg)
     
     // String assignment and mutation
-    let dynamic = "Start"
+    var dynamic = "Start"
     print(dynamic)
     dynamic = dynamic + " -> Middle"
     print(dynamic)
