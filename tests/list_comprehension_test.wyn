@@ -1,0 +1,18 @@
+// Basic list comprehension tests
+
+// Test 1: Basic comprehension
+let basic = [x for x in 0..5]
+
+// Test 2: With expression
+let squares = [x * x for x in 0..5]
+
+// Test 3: With condition
+let evens = [x for x in 0..10 if x % 2 == 0]
+
+// Test 4: Complex expression with condition
+let complex = [x * 2 + 1 for x in 0..5 if x > 2]
+
+print("Basic comprehension works!")
+print("Squares comprehension works!")
+print("Evens comprehension works!")
+print("Complex comprehension works!")

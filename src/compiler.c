@@ -5583,7 +5583,8 @@ static bool llvm_is_string_expr(LLVMGen* lg, Expr* e) {
                 strcmp(func, "parse_method") == 0 || strcmp(func, "parse_path") == 0 ||
                 strcmp(func, "parse_body") == 0 || strcmp(func, "output") == 0 ||
                 strcmp(func, "replace") == 0 || strcmp(func, "to_str") == 0 ||
-                strcmp(func, "join") == 0 || strcmp(func, "get_str") == 0) {
+                strcmp(func, "join") == 0 || strcmp(func, "get_str") == 0 ||
+                strcmp(func, "substring") == 0 || strcmp(func, "char_at") == 0) {
                 return true;
             }
             
@@ -6278,10 +6279,24 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                             llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.int, i32 0, i32 0), i64 %%%d)", t, arg_reg);
                         }
                     } else if (e->call.args[i]->kind == EXPR_SLICE) {
-                        // String slice - convert i64 back to i8* for printing
-                        llvm_emit(lg, "  %%%d = inttoptr i64 %%%d to i8*", t, arg_reg);
-                        int printf_reg = llvm_new_temp(lg);
-                        llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* %%%d)", printf_reg, t);
+                        // Check if this is string or array slicing
+                        bool is_string_slice = false;
+                        if (e->call.args[i]->slice.object->kind == EXPR_STRING) {
+                            is_string_slice = true;
+                        } else if (e->call.args[i]->slice.object->kind == EXPR_IDENT) {
+                            Type* obj_type = llvm_get_var_type(lg, e->call.args[i]->slice.object->ident);
+                            is_string_slice = (obj_type && obj_type->kind == TYPE_STR);
+                        }
+                        
+                        if (is_string_slice) {
+                            // String slice - convert i64 back to i8* for printing
+                            llvm_emit(lg, "  %%%d = inttoptr i64 %%%d to i8*", t, arg_reg);
+                            int printf_reg = llvm_new_temp(lg);
+                            llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* %%%d)", printf_reg, t);
+                        } else {
+                            // Array slice - print as array (for now, just print as integer)
+                            llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.int, i32 0, i32 0), i64 %%%d)", t, arg_reg);
+                        }
                     } else if (e->call.args[i]->kind == EXPR_FLOAT) {
                         llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.float, i32 0, i32 0), double %f)", 
                                  t, e->call.args[i]->float_val);
@@ -6310,17 +6325,23 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     } else if (llvm_is_string_expr(lg, e->call.args[i])) {
                         // String expression (including array indexing)
                         llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* %%%d)", t, arg_reg);
-                    } else if (llvm_is_array_expr(lg, e->call.args[i])) {
-                        // Array expression - print as Array for now
-                        llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([6 x i8], [6 x i8]* @.fmt.array, i32 0, i32 0))", t);
                     } else {
                         char arg_str[64];
                         if (arg_reg <= -1000000) {
                             snprintf(arg_str, 64, "%lld", (long long)(-arg_reg - 1000000));
+                            llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.int, i32 0, i32 0), i64 %s)", t, arg_str);
                         } else {
-                            snprintf(arg_str, 64, "%%%d", arg_reg);
+                            // Check if this might be a pointer that needs casting
+                            if (llvm_is_array_expr(lg, e->call.args[i])) {
+                                // Cast pointer to i64 for printing
+                                int cast_reg = llvm_new_temp(lg);
+                                llvm_emit(lg, "  %%%d = ptrtoint ptr %%%d to i64", cast_reg, arg_reg);
+                                llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.int, i32 0, i32 0), i64 %%%d)", t, cast_reg);
+                            } else {
+                                snprintf(arg_str, 64, "%%%d", arg_reg);
+                                llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.int, i32 0, i32 0), i64 %s)", t, arg_str);
+                            }
                         }
-                        llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.int, i32 0, i32 0), i64 %s)", t, arg_str);
                     }
                 }
                 // Add newline after print
@@ -7557,7 +7578,7 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
             if (e->slice.end) {
                 llvm_expr(lg, e->slice.end, &end_reg);
             } else {
-                end_reg = -1000001;  // -1 constant (means end of string/array)
+                end_reg = -2000000;  // 1000000 constant (large number, will be clamped to string length)
             }
             
             // Determine if this is string or array slicing
@@ -9269,6 +9290,7 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "@.fmt.int = private unnamed_addr constant [3 x i8] c\"%%d\\00\", align 1");
     llvm_emit(&lg, "@.fmt.float = private unnamed_addr constant [3 x i8] c\"%%f\\00\", align 1");
     llvm_emit(&lg, "@.fmt.newline = private unnamed_addr constant [2 x i8] c\"\\0A\\00\", align 1");
+    llvm_emit(&lg, "@.fmt.array = private unnamed_addr constant [6 x i8] c\"Array\\00\", align 1");
     llvm_emit(&lg, "");
     
     // Struct type declarations
