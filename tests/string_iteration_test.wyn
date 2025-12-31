@@ -1,0 +1,35 @@
+// Test string iteration functionality
+
+fn main() {
+    print("Testing string iteration...")
+    
+    // Test basic string iteration
+    let result = ""
+    for c in "abc" {
+        result = result + c
+    }
+    print("Result: " + result)
+    
+    // Test empty string
+    let empty_count = 0
+    for c in "" {
+        empty_count = empty_count + 1
+    }
+    print("Empty string count: " + int_to_str(empty_count))
+    
+    // Test single character
+    let single_result = ""
+    for c in "x" {
+        single_result = single_result + c
+    }
+    print("Single char result: " + single_result)
+    
+    // Test longer string
+    let hello_result = ""
+    for c in "hello" {
+        hello_result = hello_result + c
+    }
+    print("Hello result: " + hello_result)
+    
+    print("String iteration test complete!")
+}

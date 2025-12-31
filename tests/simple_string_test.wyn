@@ -1,0 +1,11 @@
+// Simple string iteration test
+
+fn main() {
+    print("Testing simple string iteration...")
+    
+    for c in "abc" {
+        print(c)
+    }
+    
+    print("Done!")
+}

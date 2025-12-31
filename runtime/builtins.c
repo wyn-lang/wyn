@@ -369,6 +369,13 @@ char* chr(long long code) {
     return result;
 }
 
+char* char_to_string(char c) {
+    char* result = malloc(2);
+    result[0] = c;
+    result[1] = '\0';
+    return result;
+}
+
 long long ord(const char* s) {
     return (long long)(unsigned char)s[0];
 }
@@ -2100,6 +2107,25 @@ char* array_join(int64_t* arr, const char* sep) {
         char num[32];
         snprintf(num, 32, "%lld", (long long)arr[i + 2]);
         strcat(result, num);
+        if (i < len - 1) strcat(result, sep);
+    }
+    return strdup(result);
+}
+
+// Array join for string arrays - convert string array to string with separator
+char* array_join_str(int64_t* arr, const char* sep) {
+    if (!arr) return strdup("");
+    
+    int64_t len = arr[0];
+    if (len == 0) return strdup("");
+    
+    char result[4096] = "";
+    for (int64_t i = 0; i < len; i++) {
+        // Convert i64 back to string pointer
+        char* str = (char*)(intptr_t)arr[i + 2];
+        if (str) {
+            strcat(result, str);
+        }
         if (i < len - 1) strcat(result, sep);
     }
     return strdup(result);

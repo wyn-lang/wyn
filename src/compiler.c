@@ -3548,7 +3548,12 @@ static void tc_check_stmt(TypeChecker* tc, Stmt* s) {
             tc_enter_scope(tc);
             // Infer loop variable type from iterator
             Type* var_type = new_type(TYPE_INT);
-            if (iter && iter->kind == TYPE_ARRAY && iter->inner) var_type = iter->inner;
+            if (iter && iter->kind == TYPE_ARRAY && iter->inner) {
+                var_type = iter->inner;
+            } else if (iter && iter->kind == TYPE_STR) {
+                // String iteration produces single-character strings
+                var_type = new_type(TYPE_STR);
+            }
             tc_define(tc, s->for_stmt.var, var_type, false);
             for (int i = 0; i < s->for_stmt.body_count; i++) tc_check_stmt(tc, s->for_stmt.body[i]);
             tc_exit_scope(tc);
@@ -4302,7 +4307,12 @@ static void tc1_check_stmt(TypeChecker1* tc, Stmt* s) {
             Type* iter = tc1_check_expr(tc, s->for_stmt.iter);
             tc1_enter_scope(tc);
             Type* var_type = new_type(TYPE_INT);
-            if (iter && iter->kind == TYPE_ARRAY && iter->inner) var_type = iter->inner;
+            if (iter && iter->kind == TYPE_ARRAY && iter->inner) {
+                var_type = iter->inner;
+            } else if (iter && iter->kind == TYPE_STR) {
+                // String iteration produces single-character strings
+                var_type = new_type(TYPE_STR);
+            }
             tc1_define(tc, s->for_stmt.var, var_type, false);
             for (int i = 0; i < s->for_stmt.body_count; i++) tc1_check_stmt(tc, s->for_stmt.body[i]);
             tc1_exit_scope(tc);
@@ -7308,8 +7318,25 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                         llvm_expr(lg, e->call.args[0], &sep_reg);
                     }
                     
+                    // Check if this is a string array
+                    bool is_string_array = false;
+                    if (e->call.func->field.object->kind == EXPR_IDENT) {
+                        Type* obj_type = llvm_get_var_type(lg, e->call.func->field.object->ident);
+                        is_string_array = obj_type && obj_type->kind == TYPE_ARRAY && 
+                                         obj_type->inner && obj_type->inner->kind == TYPE_STR;
+                    } else if (e->call.func->field.object->kind == EXPR_ARRAY) {
+                        // Check if array literal contains strings
+                        if (e->call.func->field.object->array.count > 0) {
+                            is_string_array = (e->call.func->field.object->array.elements[0]->kind == EXPR_STRING);
+                        }
+                    }
+                    
                     int t = llvm_new_temp(lg);
-                    llvm_emit(lg, "  %%%d = call i8* @array_join(i64* %%%d, i8* %%%d)", t, obj_reg, sep_reg);
+                    if (is_string_array) {
+                        llvm_emit(lg, "  %%%d = call i8* @array_join_str(i64* %%%d, i8* %%%d)", t, obj_reg, sep_reg);
+                    } else {
+                        llvm_emit(lg, "  %%%d = call i8* @array_join(i64* %%%d, i8* %%%d)", t, obj_reg, sep_reg);
+                    }
                     *result_reg = t;
                 } else {
                     // Check for extension methods
@@ -9468,6 +9495,7 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i64* @array_slice(i64*, i64, i64)");
     llvm_emit(&lg, "declare i64* @array_reverse(i64*)");
     llvm_emit(&lg, "declare i8* @array_join(i64*, i8*)");
+    llvm_emit(&lg, "declare i8* @array_join_str(i64*, i8*)");
     llvm_emit(&lg, "declare i64* @array_append_elem(i64*, i64)");
     llvm_emit(&lg, "declare i64* @array_prepend_elem(i64*, i64)");
     llvm_emit(&lg, "declare i64 @array_contains_elem(i64*, i64)");

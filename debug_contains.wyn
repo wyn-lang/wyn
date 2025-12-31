@@ -1,0 +1,5 @@
+let text = "hello world"
+print("Testing contains...")
+if text.contains("world") {
+    print("found world")
+}
