@@ -8914,97 +8914,168 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
                 lg->loop_start_label = old_start;
                 lg->loop_end_label = old_end;
             } else {
-                // Array iteration: for elem in arr
-                int arr_reg;
-                llvm_expr(lg, s->for_stmt.iter, &arr_reg);
+                // Check if iterating over a string
+                bool is_string = llvm_is_string_expr(lg, s->for_stmt.iter);
                 
-                // Get array type to determine element type
-                Type* arr_type = NULL;
-                if (s->for_stmt.iter->kind == EXPR_IDENT) {
-                    arr_type = llvm_get_var_type(lg, s->for_stmt.iter->ident);
-                }
-                bool is_string_array = arr_type && arr_type->kind == TYPE_ARRAY && 
-                                      arr_type->inner && arr_type->inner->kind == TYPE_STR;
-                
-                // Allocate loop variable and index
-                int var_reg = llvm_new_temp(lg);
-                int idx_reg = llvm_new_temp(lg);
-                
-                if (is_string_array) {
+                if (is_string) {
+                    // String iteration: for c in "abc"
+                    int str_reg;
+                    llvm_expr(lg, s->for_stmt.iter, &str_reg);
+                    
+                    // Allocate loop variable and index
+                    int var_reg = llvm_new_temp(lg);
+                    int idx_reg = llvm_new_temp(lg);
+                    
                     llvm_emit(lg, "  %%%d = alloca i8*", var_reg);
+                    llvm_emit(lg, "  %%%d = alloca i64", idx_reg);
+                    llvm_add_var(lg, s->for_stmt.var, var_reg, new_type(TYPE_STR));
+                    
+                    // Initialize index to 0
+                    llvm_emit(lg, "  store i64 0, i64* %%%d", idx_reg);
+                    
+                    // Get string length using str_len
+                    int len_reg = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = call i64 @str_len(i8* %%%d)", len_reg, str_reg);
+                    
+                    // Create labels
+                    int cond_label = llvm_new_label(lg);
+                    int body_label = llvm_new_label(lg);
+                    int cont_label = llvm_new_label(lg);
+                    int end_label = llvm_new_label(lg);
+                    
+                    int old_start = lg->loop_start_label;
+                    int old_end = lg->loop_end_label;
+                    lg->loop_start_label = cont_label;
+                    lg->loop_end_label = end_label;
+                    
+                    llvm_emit(lg, "  br label %%L%d", cond_label);
+                    
+                    // Condition: idx < len
+                    llvm_emit(lg, "L%d:", cond_label);
+                    int curr_idx = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = load i64, i64* %%%d", curr_idx, idx_reg);
+                    int cmp = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = icmp slt i64 %%%d, %%%d", cmp, curr_idx, len_reg);
+                    llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cmp, body_label, end_label);
+                    
+                    // Body: get character at index
+                    llvm_emit(lg, "L%d:", body_label);
+                    int char_val = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = call i8* @char_at(i8* %%%d, i64 %%%d)", char_val, str_reg, curr_idx);
+                    llvm_emit(lg, "  store i8* %%%d, i8** %%%d", char_val, var_reg);
+                    
+                    for (int i = 0; i < s->for_stmt.body_count; i++) {
+                        llvm_stmt(lg, s->for_stmt.body[i]);
+                    }
+                    llvm_emit(lg, "  br label %%L%d", cont_label);
+                    
+                    // Continue: increment index
+                    llvm_emit(lg, "L%d:", cont_label);
+                    int loaded_idx = llvm_new_temp(lg);
+                    int next_idx = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = load i64, i64* %%%d", loaded_idx, idx_reg);
+                    llvm_emit(lg, "  %%%d = add i64 %%%d, 1", next_idx, loaded_idx);
+                    llvm_emit(lg, "  store i64 %%%d, i64* %%%d", next_idx, idx_reg);
+                    llvm_emit(lg, "  br label %%L%d", cond_label);
+                    
+                    // End
+                    llvm_emit(lg, "L%d:", end_label);
+                    
+                    lg->loop_start_label = old_start;
+                    lg->loop_end_label = old_end;
                 } else {
-                    llvm_emit(lg, "  %%%d = alloca i64", var_reg);
+                    // Array iteration: for elem in arr
+                    int arr_reg;
+                    llvm_expr(lg, s->for_stmt.iter, &arr_reg);
+                    
+                    // Get array type to determine element type
+                    Type* arr_type = NULL;
+                    if (s->for_stmt.iter->kind == EXPR_IDENT) {
+                        arr_type = llvm_get_var_type(lg, s->for_stmt.iter->ident);
+                    }
+                    bool is_string_array = arr_type && arr_type->kind == TYPE_ARRAY && 
+                                          arr_type->inner && arr_type->inner->kind == TYPE_STR;
+                    
+                    // Allocate loop variable and index
+                    int var_reg = llvm_new_temp(lg);
+                    int idx_reg = llvm_new_temp(lg);
+                    
+                    if (is_string_array) {
+                        llvm_emit(lg, "  %%%d = alloca i8*", var_reg);
+                    } else {
+                        llvm_emit(lg, "  %%%d = alloca i64", var_reg);
+                    }
+                    llvm_emit(lg, "  %%%d = alloca i64", idx_reg);
+                    llvm_add_var(lg, s->for_stmt.var, var_reg, arr_type ? arr_type->inner : new_type(TYPE_INT));
+                    
+                    // Initialize index to 0
+                    llvm_emit(lg, "  store i64 0, i64* %%%d", idx_reg);
+                    
+                    // Get array length
+                    int len_ptr = llvm_new_temp(lg);
+                    int len_reg = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = getelementptr i64, ptr %%%d, i64 0", len_ptr, arr_reg);
+                    llvm_emit(lg, "  %%%d = load i64, i64* %%%d", len_reg, len_ptr);
+                    
+                    // Create labels
+                    int cond_label = llvm_new_label(lg);
+                    int body_label = llvm_new_label(lg);
+                    int cont_label = llvm_new_label(lg);
+                    int end_label = llvm_new_label(lg);
+                    
+                    int old_start = lg->loop_start_label;
+                    int old_end = lg->loop_end_label;
+                    lg->loop_start_label = cont_label;
+                    lg->loop_end_label = end_label;
+                    
+                    llvm_emit(lg, "  br label %%L%d", cond_label);
+                    
+                    // Condition: idx < len
+                    llvm_emit(lg, "L%d:", cond_label);
+                    int curr_idx = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = load i64, i64* %%%d", curr_idx, idx_reg);
+                    int cmp = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = icmp slt i64 %%%d, %%%d", cmp, curr_idx, len_reg);
+                    llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cmp, body_label, end_label);
+                    
+                    // Body: load element and execute statements
+                    llvm_emit(lg, "L%d:", body_label);
+                    int adj_idx = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = add i64 %%%d, 2", adj_idx, curr_idx);
+                    int elem_ptr = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = getelementptr i64, ptr %%%d, i64 %%%d", elem_ptr, arr_reg, adj_idx);
+                    int elem_val = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = load i64, i64* %%%d", elem_val, elem_ptr);
+                    
+                    if (is_string_array) {
+                        // Cast i64 to i8* for string elements
+                        int str_val = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = inttoptr i64 %%%d to i8*", str_val, elem_val);
+                        llvm_emit(lg, "  store i8* %%%d, i8** %%%d", str_val, var_reg);
+                    } else {
+                        llvm_emit(lg, "  store i64 %%%d, i64* %%%d", elem_val, var_reg);
+                    }
+                    
+                    for (int i = 0; i < s->for_stmt.body_count; i++) {
+                        llvm_stmt(lg, s->for_stmt.body[i]);
+                    }
+                    llvm_emit(lg, "  br label %%L%d", cont_label);
+                    
+                    // Continue: increment index
+                    llvm_emit(lg, "L%d:", cont_label);
+                    int loaded_idx = llvm_new_temp(lg);
+                    int next_idx = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = load i64, i64* %%%d", loaded_idx, idx_reg);
+                    llvm_emit(lg, "  %%%d = add i64 %%%d, 1", next_idx, loaded_idx);
+                    llvm_emit(lg, "  store i64 %%%d, i64* %%%d", next_idx, idx_reg);
+                    llvm_emit(lg, "  br label %%L%d", cond_label);
+                    
+                    // End
+                    llvm_emit(lg, "L%d:", end_label);
+                    
+                    lg->loop_start_label = old_start;
+                    lg->loop_end_label = old_end;
                 }
-                llvm_emit(lg, "  %%%d = alloca i64", idx_reg);
-                llvm_add_var(lg, s->for_stmt.var, var_reg, arr_type ? arr_type->inner : new_type(TYPE_INT));
-                
-                // Initialize index to 0
-                llvm_emit(lg, "  store i64 0, i64* %%%d", idx_reg);
-                
-                // Get array length
-                int len_ptr = llvm_new_temp(lg);
-                int len_reg = llvm_new_temp(lg);
-                llvm_emit(lg, "  %%%d = getelementptr i64, ptr %%%d, i64 0", len_ptr, arr_reg);
-                llvm_emit(lg, "  %%%d = load i64, i64* %%%d", len_reg, len_ptr);
-                
-                // Create labels
-                int cond_label = llvm_new_label(lg);
-                int body_label = llvm_new_label(lg);
-                int cont_label = llvm_new_label(lg);
-                int end_label = llvm_new_label(lg);
-                
-                int old_start = lg->loop_start_label;
-                int old_end = lg->loop_end_label;
-                lg->loop_start_label = cont_label;
-                lg->loop_end_label = end_label;
-                
-                llvm_emit(lg, "  br label %%L%d", cond_label);
-                
-                // Condition: idx < len
-                llvm_emit(lg, "L%d:", cond_label);
-                int curr_idx = llvm_new_temp(lg);
-                llvm_emit(lg, "  %%%d = load i64, i64* %%%d", curr_idx, idx_reg);
-                int cmp = llvm_new_temp(lg);
-                llvm_emit(lg, "  %%%d = icmp slt i64 %%%d, %%%d", cmp, curr_idx, len_reg);
-                llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cmp, body_label, end_label);
-                
-                // Body: load element and execute statements
-                llvm_emit(lg, "L%d:", body_label);
-                int adj_idx = llvm_new_temp(lg);
-                llvm_emit(lg, "  %%%d = add i64 %%%d, 2", adj_idx, curr_idx);
-                int elem_ptr = llvm_new_temp(lg);
-                llvm_emit(lg, "  %%%d = getelementptr i64, ptr %%%d, i64 %%%d", elem_ptr, arr_reg, adj_idx);
-                int elem_val = llvm_new_temp(lg);
-                llvm_emit(lg, "  %%%d = load i64, i64* %%%d", elem_val, elem_ptr);
-                
-                if (is_string_array) {
-                    // Cast i64 to i8* for string elements
-                    int str_val = llvm_new_temp(lg);
-                    llvm_emit(lg, "  %%%d = inttoptr i64 %%%d to i8*", str_val, elem_val);
-                    llvm_emit(lg, "  store i8* %%%d, i8** %%%d", str_val, var_reg);
-                } else {
-                    llvm_emit(lg, "  store i64 %%%d, i64* %%%d", elem_val, var_reg);
-                }
-                
-                for (int i = 0; i < s->for_stmt.body_count; i++) {
-                    llvm_stmt(lg, s->for_stmt.body[i]);
-                }
-                llvm_emit(lg, "  br label %%L%d", cont_label);
-                
-                // Continue: increment index
-                llvm_emit(lg, "L%d:", cont_label);
-                int loaded_idx = llvm_new_temp(lg);
-                int next_idx = llvm_new_temp(lg);
-                llvm_emit(lg, "  %%%d = load i64, i64* %%%d", loaded_idx, idx_reg);
-                llvm_emit(lg, "  %%%d = add i64 %%%d, 1", next_idx, loaded_idx);
-                llvm_emit(lg, "  store i64 %%%d, i64* %%%d", next_idx, idx_reg);
-                llvm_emit(lg, "  br label %%L%d", cond_label);
-                
-                // End
-                llvm_emit(lg, "L%d:", end_label);
-                
-                lg->loop_start_label = old_start;
-                lg->loop_end_label = old_end;
             }
             break;
         }
