@@ -1,3 +1,0 @@
-let s = "hello"
-let result = s[0:3]
-print(result)
