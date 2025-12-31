@@ -6952,32 +6952,41 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                         is_array = true;
                     }
                     
-                    int t = llvm_new_temp(lg);
                     if (is_array) {
                         // Array contains
                         if (e->call.arg_count > 0) {
                             int item_reg;
                             llvm_expr(lg, e->call.args[0], &item_reg);
                             
+                            int t = llvm_new_temp(lg);
                             if (item_reg <= -1000000) {
                                 long long const_val = -item_reg - 1000000;
                                 llvm_emit(lg, "  %%%d = call i64 @array_contains_elem(i64* %%%d, i64 %lld)", t, obj_reg, const_val);
                             } else {
                                 llvm_emit(lg, "  %%%d = call i64 @array_contains_elem(i64* %%%d, i64 %%%d)", t, obj_reg, item_reg);
                             }
+                            *result_reg = t;
                         } else {
                             // No argument provided, return 0 (false)
+                            int t = llvm_new_temp(lg);
                             llvm_emit(lg, "  %%%d = add i64 0, 0", t);
+                            *result_reg = t;
                         }
                     } else {
                         // String contains
-                        int arg_reg = 0;
                         if (e->call.arg_count > 0) {
+                            int arg_reg;
                             llvm_expr(lg, e->call.args[0], &arg_reg);
+                            int t = llvm_new_temp(lg);
+                            llvm_emit(lg, "  %%%d = call i64 @str_contains(i8* %%%d, i8* %%%d)", t, obj_reg, arg_reg);
+                            *result_reg = t;
+                        } else {
+                            // No argument provided, return 0 (false)
+                            int t = llvm_new_temp(lg);
+                            llvm_emit(lg, "  %%%d = add i64 0, 0", t);
+                            *result_reg = t;
                         }
-                        llvm_emit(lg, "  %%%d = call i64 @str_contains(i8* %%%d, i8* %%%d)", t, obj_reg, arg_reg);
                     }
-                    *result_reg = t;
                 } else if (strcmp(method_name, "starts_with") == 0) {
                     // Handle str.starts_with(prefix)
                     int obj_reg;
@@ -8356,6 +8365,14 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
                     var_type = new_type(TYPE_STR);
                 } else if (is_array_var) {
                     var_type = new_type(TYPE_ARRAY);
+                    // Infer element type from array literal
+                    if (s->let.value->kind == EXPR_ARRAY && s->let.value->array.count > 0) {
+                        if (s->let.value->array.elements[0]->kind == EXPR_STRING) {
+                            var_type->inner = new_type(TYPE_STR);
+                        } else {
+                            var_type->inner = new_type(TYPE_INT);
+                        }
+                    }
                 } else if (is_float_var) {
                     var_type = new_type(TYPE_FLOAT);
                 } else {
@@ -9498,6 +9515,7 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i64 @option_unwrap_simple(i64)");
     llvm_emit(&lg, "declare i8** @args_wyn()");
     llvm_emit(&lg, "declare i8* @cwd_wyn()");
+    llvm_emit(&lg, "declare i8* @char_to_string(i8)");
     llvm_emit(&lg, "declare i64 @chdir_wyn(i8*)");
     
     // Config module functions
