@@ -1,0 +1,31 @@
+print("=== Wyn: Python-Style Arrays (Complete!) ===\n")
+
+// Integer arrays - perfect
+let nums = []
+nums.append(1)
+nums.append(2)
+nums.append(3)
+print("Integer array:")
+for i in 0..nums.len() {
+    print("  " + nums.get(i).to_str())
+}
+
+// String arrays - now perfect too!
+let names = []
+names.append("Alice")
+names.append("Bob")
+names.append("Charlie")
+print("\nString array:")
+for i in 0..names.len() {
+    print("  " + names.get_str(i))
+}
+
+// Mixed operations
+let items = []
+items.append("apple")
+items.append("banana")
+print("\nFirst fruit: " + items.get_str(0))
+print("Total fruits: " + items.len().to_str())
+
+print("\n✅ Both integer and string arrays work perfectly!")
+print("✅ Python-style syntax with compiled performance!")
