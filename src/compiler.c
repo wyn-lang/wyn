@@ -6948,6 +6948,8 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                         }
                     } else if (e->call.func->field.object->kind == EXPR_ARRAY) {
                         is_array = true;
+                    } else if (llvm_is_array_expr(lg, e->call.func->field.object)) {
+                        is_array = true;
                     }
                     
                     int t = llvm_new_temp(lg);
