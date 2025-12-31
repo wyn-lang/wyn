@@ -1,0 +1,43 @@
+print("=== Wyn: Python Syntax + Compiled Speed ===\n")
+
+// No fn main() needed!
+// No imports needed!
+// Just write code!
+
+let x = 42
+let name = "Wyn"
+
+print("Hello from " + name + "!")
+print("The answer is: " + x.to_str())
+
+// Arrays - exactly like Python!
+let nums = []
+nums.append(1)
+nums.append(2)
+nums.append(3)
+
+print("\nInteger array:")
+print("  nums[0] = " + nums[0].to_str())
+print("  nums[1] = " + nums[1].to_str())
+
+// String arrays - exactly like Python!
+let items = []
+items.append("apple")
+items.append("banana")
+items.append("cherry")
+
+print("\nString array:")
+print("  items[0] = " + items[0])
+print("  items[1] = " + items[1])
+
+// Extension methods - unique to Wyn!
+fn int.squared(self) -> int {
+    return self * self
+}
+
+print("\n5 squared = " + 5.squared().to_str())
+
+// Method syntax
+print("Method syntax: " + "hello".upper())
+
+print("\n✅ Wyn = Python simplicity + 20x speed!")
