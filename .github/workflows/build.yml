@@ -22,10 +22,10 @@ jobs:
       - name: Build Compiler
         run: |
           make clean
-          make
+          make rebuild
 
       - name: Run Test Suite
-        run: make test
+        run: ./build/wyn test
 
       - name: Test Examples
         run: |
@@ -47,7 +47,7 @@ jobs:
         run: |
           cat > release-summary.md << 'EOF'
           # Wyn v0.3.0 Build
-          
+
           **Tests:** 54/54 passing (100%)
           **Platform:** macOS ARM64
           **Features:**
@@ -56,7 +56,7 @@ jobs:
           - 19 stdlib modules, 120+ functions
           - Built-in print(), fs module
           - LLVM-powered native compilation
-          
+
           **Note:** Linux builds work but have LLVM IR temp numbering issue
           with some examples. All tests pass. Issue tracked for v0.4.0.
           EOF
