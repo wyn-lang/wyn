@@ -105,7 +105,7 @@ fn int.squared(self) -> int {
 - 🌍 **Cross-Platform** - 5 platforms: macOS, Linux, Windows, ARM64, x86_64
 - 🛡️ **Type Safe** - Explicit types with compile-time checking
 - 📦 **Complete** - 120+ stdlib functions across 19 modules
-- 🚀 **Production Ready** - 90/90 tests passing (100%)
+- 🚀 **Production Ready** - 64/64 tests passing (100%)
 - 💎 **Extensible** - Add custom methods to any type
 - 🔧 **Great Tooling** - VSCode extension with syntax highlighting
 
@@ -155,7 +155,7 @@ Visit [wynlang.com](https://wynlang.com) for complete documentation, examples, a
 
 ```bash
 make          # Build compiler
-make test     # Run tests (90/90 passing)
+make test     # Run tests (64/64 passing)
 make clean    # Clean build
 ```
 

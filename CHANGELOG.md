@@ -23,4 +23,4 @@
 - `.contains()` method reliability
 
 ### Testing
-- 90/90 tests passing (100% test coverage)
+- 64/64 tests passing (100% test coverage)
