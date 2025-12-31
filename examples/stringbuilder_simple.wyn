@@ -4,9 +4,9 @@
 import stringbuilder
 
 fn main() {
-    let sb = stringbuilder.new()
+    var sb = stringbuilder.new()
     sb.append("hello")
     sb.append(" world")
-    let result = sb.to_str()
+    var result = sb.to_str()
     print(result)
 }

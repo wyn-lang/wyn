@@ -42,10 +42,10 @@ fn cleanup_old_backups(backup_dir: str, keep_count: int) {
     print("Cleaning up old backups...")
     
     const files: [str] = io.list_files(backup_dir)
-    let backup_files: [str] = []
+    var backup_files: [str] = []
     
     // Filter backup files
-    let i: int = 0
+    var i: int = 0
     while i < files.len() {
         const file: str = files[i]
         if file.contains("backup_") && file.contains(".tar.gz") {

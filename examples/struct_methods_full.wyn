@@ -20,7 +20,7 @@ struct Point {
 }
 
 fn main() {
-    let p: Point = Point { x: 10, y: 20 }
+    var p: Point = Point { x: 10, y: 20 }
     p.move_right(5)
     p.move_up(3)
     print(p.get_x())

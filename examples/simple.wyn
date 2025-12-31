@@ -8,14 +8,14 @@ fn add(a: int, b: int) -> int {
 fn main() {
     print("Simple Program")
     
-    let x: int = 10
-    let y: int = add(x, 5)
+    var x: int = 10
+    var y: int = add(x, 5)
     
     if y > 12 {
         print("y is large")
     }
     
-    let i: int = 0
+    var i: int = 0
     while i < 3 {
         print("Loop")
         i = i + 1

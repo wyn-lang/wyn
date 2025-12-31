@@ -6,7 +6,7 @@ fn main() {
     
     // String slicing examples
     print("\n--- String Slicing ---")
-    let text = "Hello, World!"
+    var text = "Hello, World!"
     
     print("Original string: " + text)
     print("text[0:5]: " + text[0:5])     // "Hello"
@@ -16,14 +16,14 @@ fn main() {
     
     // Array slicing examples  
     print("\n--- Array Slicing ---")
-    let numbers = [10, 20, 30, 40, 50, 60]
+    var numbers = [10, 20, 30, 40, 50, 60]
     
     print("Original array: [10, 20, 30, 40, 50, 60]")
     
     // Create slices
-    let first_three = numbers[:3]        // [10, 20, 30]
-    let middle = numbers[2:4]            // [30, 40] 
-    let last_two = numbers[4:]           // [50, 60]
+    var first_three = numbers[:3]        // [10, 20, 30]
+    var middle = numbers[2:4]            // [30, 40] 
+    var last_two = numbers[4:]           // [50, 60]
     
     print("numbers[:3] - first three elements")
     print("numbers[2:4] - middle elements") 
@@ -31,14 +31,14 @@ fn main() {
     
     // Practical example: extracting file extension
     print("\n--- Practical Example ---")
-    let filename = "document.pdf"
-    let extension = filename[9:]  // Extract ".pdf"
+    var filename = "document.pdf"
+    var extension = filename[9:]  // Extract ".pdf"
     print("Filename: " + filename)
     print("Extension: " + extension)
     
     // Working with user input
-    let user_input = "  trim me  "
-    let trimmed = user_input[2:8]  // Remove leading/trailing spaces
+    var user_input = "  trim me  "
+    var trimmed = user_input[2:8]  // Remove leading/trailing spaces
     print("Original: '" + user_input + "'")
     print("Trimmed:  '" + trimmed + "'")
     

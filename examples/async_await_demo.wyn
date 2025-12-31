@@ -9,9 +9,9 @@ fn main() {
     
     print("Starting 3 async tasks...")
     
-    let task1_done: int = 0
-    let task2_done: int = 0
-    let task3_done: int = 0
+    var task1_done: int = 0
+    var task2_done: int = 0
+    var task3_done: int = 0
     
     # Spawn async task 1
     spawn {

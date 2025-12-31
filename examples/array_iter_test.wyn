@@ -10,7 +10,7 @@ fn main() {
     }
     
     # Test with computed values
-    let sum: int = 0
+    var sum: int = 0
     for val in arr {
         sum = sum + val
     }

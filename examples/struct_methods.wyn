@@ -11,7 +11,7 @@ struct Counter {
 }
 
 fn main() {
-    let c: Counter = Counter { value: 0 }
+    var c: Counter = Counter { value: 0 }
     c.increment()
     c.increment()
     c.increment()

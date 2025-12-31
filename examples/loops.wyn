@@ -5,7 +5,7 @@ fn main() {
     }
     
     print("While loop:")
-    let j: int = 0
+    var j: int = 0
     while j < 3 {
         print(j)
         j = j + 1

@@ -9,7 +9,7 @@ fn divide(a: int, b: int) -> [int] {
 }
 
 fn find_in_array(arr: [int], target: int) -> [int] {
-    let i = 0
+    var i = 0
     while i < arr.len() {
         if arr[i] == target {
             return result.make_some(i)

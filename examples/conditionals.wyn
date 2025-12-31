@@ -1,5 +1,5 @@
 fn main() {
-    let x: int = 15
+    var x: int = 15
     
     if x > 10 {
         print("x is greater than 10")
@@ -9,7 +9,7 @@ fn main() {
         print("x is less than 20")
     }
     
-    let y: int = 5
+    var y: int = 5
     if y > 10 {
         print("y is large")
     }

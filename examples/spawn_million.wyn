@@ -4,11 +4,11 @@
 fn main() {
     print("=== Spawning 1 million tasks ===")
     
-    let count: int = 0
+    var count: int = 0
     while count < 1000000 {
         spawn {
             # Minimal work per task
-            let x: int = count * 2
+            var x: int = count * 2
         }
         count = count + 1
         

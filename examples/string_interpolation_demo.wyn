@@ -3,18 +3,18 @@
 
 fn main() {
     // Basic interpolation with string variables
-    let name: str = "Alice"
-    let greeting: str = "Hello {name}!"
+    var name: str = "Alice"
+    var greeting: str = "Hello {name}!"
     print(greeting)
     
     // Interpolation with integer variables
-    let age: int = 30
-    let age_msg: str = "Age: {age}"
+    var age: int = 30
+    var age_msg: str = "Age: {age}"
     print(age_msg)
     
     // Multiple interpolations
-    let user: str = "Bob"
-    let score: int = 95
-    let status: str = "User {user} scored {score} points"
+    var user: str = "Bob"
+    var score: int = 95
+    var status: str = "User {user} scored {score} points"
     print(status)
 }

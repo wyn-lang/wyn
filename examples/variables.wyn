@@ -1,7 +1,7 @@
 fn main() {
-    let x: int = 42
-    let y: int = 10
-    let z: int = x
+    var x: int = 42
+    var y: int = 10
+    var z: int = x
     
     print(x)
     print(y)

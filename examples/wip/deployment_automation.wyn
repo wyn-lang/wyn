@@ -54,7 +54,7 @@ fn deploy_application(package_path: str, target_dir: str, version: str) -> bool 
     
     // Extract application (simplified - would use tar extract)
     const app_files: [str] = ["app.py", "config.json", "requirements.txt"]
-    let i: int = 0
+    var i: int = 0
     while i < app_files.len() {
         const file: str = app_files[i]
         const file_content: str = "# " + file + " for version " + version
@@ -75,7 +75,7 @@ fn health_check(target_dir: str) -> bool {
     // Check if required files exist
     const required_files: [str] = ["app.py", "config.json", "VERSION"]
     
-    let i: int = 0
+    var i: int = 0
     while i < required_files.len() {
         const file: str = required_files[i]
         const file_path: str = target_dir + "/" + file
@@ -108,10 +108,10 @@ fn rollback_deployment(target_dir: str) -> bool {
     const backup_pattern: str = target_dir + "_backup_"
     const files: [str] = io.list_files("/tmp")
     
-    let latest_backup: str = ""
-    let latest_timestamp: int = 0
+    var latest_backup: str = ""
+    var latest_timestamp: int = 0
     
-    let i: int = 0
+    var i: int = 0
     while i < files.len() {
         const file: str = files[i]
         if file.contains(backup_pattern) && file.contains(".tar.gz") {

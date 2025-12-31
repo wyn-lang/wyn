@@ -12,7 +12,7 @@ fn validate_config(config_data: str) -> bool {
     // Basic validation - check required fields exist
     const required_fields: [str] = ["app_name", "version", "database", "api_key"]
     
-    let i: int = 0
+    var i: int = 0
     while i < required_fields.len() {
         const field: str = required_fields[i]
         if config_data.contains(field) == false {
@@ -49,7 +49,7 @@ fn deploy_config(config_path: str, environment: str, target_dir: str) {
     }
     
     // Create environment-specific config
-    let env_config: str = config_data
+    var env_config: str = config_data
     if environment == "production" {
         env_config = encrypt_sensitive_data(config_data)
     }
@@ -114,7 +114,7 @@ fn main() {
     // Deploy to different environments
     const environments: [str] = ["development", "staging", "production"]
     
-    let i: int = 0
+    var i: int = 0
     while i < environments.len() {
         const env: str = environments[i]
         deploy_config(source_config, env, deploy_dir)

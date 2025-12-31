@@ -11,7 +11,7 @@ fn main() {
     const wyn_files = io.glob("examples/*.wyn")
     
     print("Found files:")
-    let i = 0
+    var i = 0
     while i < wyn_files.len() {
         print("  " + wyn_files[i])
         i = i + 1

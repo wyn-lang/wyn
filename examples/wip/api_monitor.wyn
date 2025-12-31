@@ -16,7 +16,7 @@ fn check_endpoint(url: str, name: str) -> str {
     const response_time: int = end_time - start_time
     
     // Parse response (simplified - would check actual status)
-    let status: str = "UP"
+    var status: str = "UP"
     if response.len() == 0 {
         status = "DOWN"
     }
@@ -44,7 +44,7 @@ fn main() {
     const services: [str] = ["api", "auth", "database"]
     const endpoints: [str] = ["http://localhost:8080/health", "http://localhost:8081/status", "http://localhost:5432/ping"]
     
-    let i: int = 0
+    var i: int = 0
     while i < services.len() {
         const service: str = services[i]
         const endpoint: str = endpoints[i]

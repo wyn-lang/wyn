@@ -4,7 +4,7 @@ fn main() {
     const start: int = clock()
     
     # Do some work
-    let sum: int = 0
+    var sum: int = 0
     for i in 0..1000 {
         sum = sum + i
     }

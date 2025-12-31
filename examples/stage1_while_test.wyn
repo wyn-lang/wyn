@@ -1,5 +1,5 @@
 fn main() {
-    let x: int = 0
+    var x: int = 0
     while x < 5 {
         print("Loop iteration")
         x = x + 1

@@ -37,7 +37,7 @@ fn transform_record(record: str) -> str {
     const record_hash: str = hash.md5(record)
     
     // Simple transformation - add metadata fields
-    let transformed: str = record
+    var transformed: str = record
     if transformed.contains("}") {
         // Insert before closing brace
         const metadata: str = ",\"processed_at\":" + int_to_str(processing_time) + ",\"record_hash\":\"" + record_hash + "\""
@@ -78,7 +78,7 @@ fn process_batch(input_file: str, output_dir: str) -> str {
     const priority_queue: str = output_dir + "/priority_queue.jsonl"
     const standard_queue: str = output_dir + "/standard_queue.jsonl"
     
-    let i: int = 0
+    var i: int = 0
     while i < lines.len() {
         const line: str = lines[i]
         if line.len() > 0 {

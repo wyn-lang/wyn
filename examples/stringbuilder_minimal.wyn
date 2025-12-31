@@ -4,6 +4,6 @@
 import stringbuilder
 
 fn main() {
-    let sb = stringbuilder.new()
+    var sb = stringbuilder.new()
     print("StringBuilder created")
 }

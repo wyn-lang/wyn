@@ -17,7 +17,7 @@ fn main() {
     
     // Example 3: Grade assignment
     const score = 85
-    let grade = "F"
+    var grade = "F"
     if score >= 90 {
         grade = "A"
     } else if score >= 80 {

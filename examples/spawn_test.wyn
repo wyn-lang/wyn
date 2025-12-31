@@ -5,7 +5,7 @@ fn main() {
     print("=== Spawn Test ===")
     
     # Spawn 10 tasks
-    let i: int = 0
+    var i: int = 0
     while i < 10 {
         spawn {
             print("Task ")

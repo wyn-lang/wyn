@@ -4,7 +4,7 @@
 import stringbuilder
 
 fn main() {
-    let sb = stringbuilder.new()
+    var sb = stringbuilder.new()
     sb.append("hello")
     print("StringBuilder append test")
 }

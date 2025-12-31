@@ -1,7 +1,7 @@
 # Test defer statement
 
 fn test_defer() -> int {
-    let x: int = 0
+    var x: int = 0
     defer print(1)
     defer print(2)
     x = 42

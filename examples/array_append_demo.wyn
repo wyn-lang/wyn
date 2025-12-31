@@ -3,7 +3,7 @@ fn main() {
     
     # Create empty array
     print("Creating empty array...")
-    let numbers: [int] = []
+    var numbers: [int] = []
     
     # Append some numbers
     print("Appending numbers 1-10...")
@@ -23,7 +23,7 @@ fn main() {
     print(numbers[9])
     
     # Compute sum
-    let sum: int = 0
+    var sum: int = 0
     for i in 0..numbers.len() {
         sum = sum + numbers[i]
     }

@@ -1,5 +1,5 @@
 fn main() {
-    let x: int = 5
+    var x: int = 5
     if x > 0 {
         print("Positive")
     }

@@ -91,7 +91,7 @@ fn configure_system() {
 
 # Example 5: Error recovery patterns
 fn retry_operation(max_attempts: int) -> [int] {
-    let attempts = 0
+    var attempts = 0
     
     while attempts < max_attempts {
         attempts = attempts + 1

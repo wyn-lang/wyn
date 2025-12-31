@@ -24,21 +24,21 @@ fn main() {
     print("Complete Program")
     
     # 1. Variables
-    let x: int = 5
-    let name: str = "Wyn"
+    var x: int = 5
+    var name: str = "Wyn"
     
     # 2. Expressions + 5. Functions
-    let y: int = add(x, 3)
+    var y: int = add(x, 3)
     
     # 6. Arrays
-    let numbers: [int] = [10, 20, 30]
-    let first: int = numbers[0]
+    var numbers: [int] = [10, 20, 30]
+    var first: int = numbers[0]
     
     # 7. Structs
-    let p: Point = Point{x: 100, y: 200}
+    var p: Point = Point{x: 100, y: 200}
     
     # 3. If + 11. Else-if
-    let result: int = check(y)
+    var result: int = check(y)
     if result == 0 {
         print("Small")
     } else if result == 1 {
@@ -48,7 +48,7 @@ fn main() {
     }
     
     # 4. While + 10. Break
-    let i: int = 0
+    var i: int = 0
     while i < 10 {
         if i == 3 {
             break

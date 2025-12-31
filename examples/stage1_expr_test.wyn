@@ -1,6 +1,6 @@
 fn main() {
-    let x: int = 5
-    let y: int = 3
-    let z: int = x + y
+    var x: int = 5
+    var y: int = 3
+    var z: int = x + y
     print("Result")
 }

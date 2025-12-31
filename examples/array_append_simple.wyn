@@ -2,7 +2,7 @@
 fn main() {
     print("Creating empty array...")
     
-    let arr: [int] = []
+    var arr: [int] = []
     
     print("Array created, length: ")
     print(arr.len())

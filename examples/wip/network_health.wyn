@@ -31,7 +31,7 @@ fn check_port(hostname: str, port: int) -> bool {
     // Simulate port check (in real implementation, would use TCP connect)
     const common_ports: [int] = [22, 80, 443, 3306, 5432, 6379, 8080]
     
-    let i: int = 0
+    var i: int = 0
     while i < common_ports.len() {
         if common_ports[i] == port {
             log.info("Port " + int_to_str(port) + " on " + hostname + " is open")
@@ -67,7 +67,7 @@ fn generate_report(results: str) {
     const report_file: str = "/tmp/network_health_report.txt"
     const timestamp: str = int_to_str(time.now())
     
-    let report_content: str = "Network Health Report - " + timestamp + "\n"
+    var report_content: str = "Network Health Report - " + timestamp + "\n"
     report_content = report_content + "=====================================\n"
     
     // Add ping results
@@ -93,9 +93,9 @@ fn main() {
     
     // Test connectivity to key hosts
     const hosts: [str] = ["localhost", "google.com", "github.com"]
-    let ping_results: str = ""
+    var ping_results: str = ""
     
-    let i: int = 0
+    var i: int = 0
     while i < hosts.len() {
         const host: str = hosts[i]
         const ping_result: str = ping_host(host)
@@ -107,7 +107,7 @@ fn main() {
     
     // Check critical ports
     const ports: [int] = [22, 80, 443, 8080]
-    let port_results: str = ""
+    var port_results: str = ""
     
     i = 0
     while i < ports.len() {
@@ -122,7 +122,7 @@ fn main() {
     
     // Test HTTP endpoints
     const endpoints: [str] = ["http://localhost:8080/health", "https://httpbin.org/status/200"]
-    let http_results: str = ""
+    var http_results: str = ""
     
     i = 0
     while i < endpoints.len() {

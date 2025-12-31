@@ -1,6 +1,6 @@
 fn main() {
     const max: int = 5
-    let x: int = 0
+    var x: int = 0
     while x < max {
         print("Counting to max")
         x = x + 1

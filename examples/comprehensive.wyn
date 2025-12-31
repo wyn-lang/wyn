@@ -27,7 +27,7 @@ fn main() {
     // Variables
     print("Variables:")
     const x: int = 10
-    let y: int = 20
+    var y: int = 20
     y = y + 5
     print(x + y)
     
