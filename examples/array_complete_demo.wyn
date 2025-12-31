@@ -1,7 +1,7 @@
 print("=== Wyn: Python-Style Arrays (Complete!) ===\n")
 
 // Integer arrays - perfect
-let nums = []
+var nums = []
 nums.append(1)
 nums.append(2)
 nums.append(3)
@@ -11,7 +11,7 @@ for i in 0..nums.len() {
 }
 
 // String arrays - now perfect too!
-let names = []
+var names = []
 names.append("Alice")
 names.append("Bob")
 names.append("Charlie")
@@ -21,7 +21,7 @@ for i in 0..names.len() {
 }
 
 // Mixed operations
-let items = []
+var items = []
 items.append("apple")
 items.append("banana")
 print("\nFirst fruit: " + items.get_str(0))

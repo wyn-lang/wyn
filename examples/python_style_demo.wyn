@@ -3,7 +3,7 @@ print("=== Wyn: Python Simplicity + Compiled Speed ===\n")
 // No fn main() needed!
 // No imports needed!
 
-let nums = []
+var nums = []
 nums.append(1)
 nums.append(2)
 nums.append(3)

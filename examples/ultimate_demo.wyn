@@ -4,14 +4,14 @@ print("=== Wyn: Python Syntax + Compiled Speed ===\n")
 // No imports needed!
 // Just write code!
 
-let x = 42
-let name = "Wyn"
+var x = 42
+var name = "Wyn"
 
 print("Hello from " + name + "!")
 print("The answer is: " + x.to_str())
 
 // Arrays - exactly like Python!
-let nums = []
+var nums = []
 nums.append(1)
 nums.append(2)
 nums.append(3)
@@ -21,7 +21,7 @@ print("  nums[0] = " + nums[0].to_str())
 print("  nums[1] = " + nums[1].to_str())
 
 // String arrays - exactly like Python!
-let items = []
+var items = []
 items.append("apple")
 items.append("banana")
 items.append("cherry")

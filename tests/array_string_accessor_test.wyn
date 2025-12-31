@@ -1,4 +1,4 @@
-let items = []
+var items = []
 items.append("hello")
 items.append("world")
 print(items.get_str(0))  // Should print: hello

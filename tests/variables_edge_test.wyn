@@ -6,7 +6,7 @@ fn main() {
     print(x)
     
     // Mutation
-    let y = 5
+    var y = 5
     y = 10
     y = y + 5
     print(y)
@@ -19,7 +19,7 @@ fn main() {
     }
     
     // Scope in while
-    let i = 0
+    var i = 0
     while i < 1 {
         const c = 3
         print(c)
@@ -33,13 +33,13 @@ fn main() {
     }
     
     // Multiple assignments
-    let z = 1
+    var z = 1
     z = 2
     z = 3
     print(z)
     
     // Assignment with operations
-    let w = 10
+    var w = 10
     w = w * 2
     w = w + 5
     print(w)
@@ -49,7 +49,7 @@ fn main() {
     print(upper)
     
     // Let with method calls
-    let text = "hello"
+    var text = "hello"
     text = text.upper()
     print(text)
     

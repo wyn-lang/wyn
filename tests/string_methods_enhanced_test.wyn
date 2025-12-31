@@ -1,4 +1,4 @@
-let s = "hello world"
+var s = "hello world"
 
 // Test find method
 print(s.find("world").to_str())      // Should print 6

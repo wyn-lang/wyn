@@ -1,14 +1,14 @@
 // Simple String Methods Demo
-let text = "hello world"
+var text = "hello world"
 
 // Test find
-let pos = text.find("world")
+var pos = text.find("world")
 print("Position: " + pos.to_str())
 
 // Test substring
-let part = text.substring(0, 5)
+var part = text.substring(0, 5)
 print("Substring: " + part)
 
 // Test char_at
-let ch = text.char_at(0)
+var ch = text.char_at(0)
 print("First char: " + ch)
