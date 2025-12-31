@@ -1,6 +1,6 @@
 # Wyn Programming Language v0.5.0
 
-[![CI](https://github.com/wyn-lang/wyn/actions/workflows/ci.yml/badge.svg)](https://github.com/wyn-lang/wyn/actions/workflows/ci.yml)
+[![Build and Test](https://github.com/wyn-lang/wyn/actions/workflows/build.yml/badge.svg)](https://github.com/wyn-lang/wyn/actions/workflows/build.yml)
 [![Release](https://github.com/wyn-lang/wyn/actions/workflows/release.yml/badge.svg)](https://github.com/wyn-lang/wyn/actions/workflows/release.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Platform](https://img.shields.io/badge/platform-5%20platforms-blue)](https://github.com/wyn-lang/wyn)
