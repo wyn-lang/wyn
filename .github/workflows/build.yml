@@ -20,13 +20,12 @@ jobs:
           echo "/opt/homebrew/opt/llvm/bin" >> $GITHUB_PATH
 
       - name: Build Compiler
-        run: make
+        run: |
+          make clean
+          make
 
       - name: Run Test Suite
-        run: |
-          echo "Running test suite..."
-          make test || echo "Some tests failed"
-        continue-on-error: true
+        run: make test
 
       - name: Test Examples
         run: |
