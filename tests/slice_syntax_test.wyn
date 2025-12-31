@@ -1,0 +1,30 @@
+// Test slice syntax for strings and arrays
+
+// String slicing tests
+let s = "hello world"
+
+// Test s[0:5] - should print "hello"
+print(s[0:5])
+
+// Test s[6:] - should print "world"  
+print(s[6:])
+
+// Test s[:5] - should print "hello"
+print(s[:5])
+
+// Array slicing tests
+let arr = [1,2,3,4,5]
+
+// Test arr[1:3] - should return [2,3]
+let slice1 = arr[1:3]
+print("Array slice 1:3 created")
+
+// Test arr[2:] - should return [3,4,5]
+let slice2 = arr[2:]
+print("Array slice 2: created")
+
+// Test arr[:3] - should return [1,2,3]
+let slice3 = arr[:3]
+print("Array slice :3 created")
+
+print("All tests completed")

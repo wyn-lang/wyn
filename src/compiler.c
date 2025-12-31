@@ -5613,6 +5613,15 @@ static bool llvm_is_array_expr(LLVMGen* lg, Expr* e) {
         Type* t = llvm_get_var_type(lg, e->ident);
         return t && t->kind == TYPE_ARRAY;
     }
+    if (e->kind == EXPR_SLICE) {
+        // Array slicing returns an array
+        if (e->slice.object->kind == EXPR_ARRAY) return true;
+        if (e->slice.object->kind == EXPR_IDENT) {
+            Type* t = llvm_get_var_type(lg, e->slice.object->ident);
+            return t && t->kind == TYPE_ARRAY;
+        }
+        return false;
+    }
     if (e->kind == EXPR_CALL) {
         if (e->call.func->kind == EXPR_IDENT) {
             const char* func = e->call.func->ident;
@@ -6294,10 +6303,10 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                             int printf_reg = llvm_new_temp(lg);
                             llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* %%%d)", printf_reg, t);
                         } else {
-                            // Array slice - print placeholder (proper array printing would need more work)
-                            int str_reg = llvm_new_temp(lg);
-                            llvm_emit(lg, "  %%%d = getelementptr [7 x i8], [7 x i8]* @.str.array_slice, i32 0, i32 0", str_reg);
-                            llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* %%%d)", t, str_reg);
+                            // Array slice - convert pointer to integer and print
+                            llvm_emit(lg, "  %%%d = ptrtoint i64* %%%d to i64", t, arg_reg);
+                            int printf_reg = llvm_new_temp(lg);
+                            llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.int, i32 0, i32 0), i64 %%%d)", printf_reg, t);
                         }
                     } else if (e->call.args[i]->kind == EXPR_FLOAT) {
                         llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.float, i32 0, i32 0), double %f)", 
@@ -8353,8 +8362,13 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
                     } else if (is_array_var) {
                         llvm_emit(lg, "  store i64* %%%d, i64** %%%d", val_reg, alloca_reg);
                     } else if (is_string_var) {
-                        // Check if value is from array indexing or slicing (i64 that needs cast to i8*)
-                        if (s->let.value->kind == EXPR_INDEX || s->let.value->kind == EXPR_SLICE) {
+                        // Check if value is from array indexing or string slicing (i64 that needs cast to i8*)
+                        if (s->let.value->kind == EXPR_INDEX || 
+                            (s->let.value->kind == EXPR_SLICE && 
+                             ((s->let.value->slice.object->kind == EXPR_STRING) ||
+                              (s->let.value->slice.object->kind == EXPR_IDENT && 
+                               llvm_get_var_type(lg, s->let.value->slice.object->ident) &&
+                               llvm_get_var_type(lg, s->let.value->slice.object->ident)->kind == TYPE_STR)))) {
                             // Cast i64 to i8* for string array elements and sliced strings
                             int cast_reg = llvm_new_temp(lg);
                             llvm_emit(lg, "  %%%d = inttoptr i64 %%%d to i8*", cast_reg, val_reg);

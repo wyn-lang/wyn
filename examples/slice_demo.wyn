@@ -1,0 +1,48 @@
+// Wyn Language - Slice Syntax Demo
+// Demonstrates string and array slicing capabilities
+
+fn main() {
+    print("=== Wyn Slice Syntax Demo ===")
+    
+    // String slicing examples
+    print("\n--- String Slicing ---")
+    let text = "Hello, World!"
+    
+    print("Original string: " + text)
+    print("text[0:5]: " + text[0:5])     // "Hello"
+    print("text[7:]:  " + text[7:])      // "World!"
+    print("text[:5]:  " + text[:5])      // "Hello"
+    print("text[7:12]: " + text[7:12])   // "World"
+    
+    // Array slicing examples  
+    print("\n--- Array Slicing ---")
+    let numbers = [10, 20, 30, 40, 50, 60]
+    
+    print("Original array: [10, 20, 30, 40, 50, 60]")
+    
+    // Create slices
+    let first_three = numbers[:3]        // [10, 20, 30]
+    let middle = numbers[2:4]            // [30, 40] 
+    let last_two = numbers[4:]           // [50, 60]
+    
+    print("numbers[:3] - first three elements")
+    print("numbers[2:4] - middle elements") 
+    print("numbers[4:] - last two elements")
+    
+    // Practical example: extracting file extension
+    print("\n--- Practical Example ---")
+    let filename = "document.pdf"
+    let extension = filename[9:]  // Extract ".pdf"
+    print("Filename: " + filename)
+    print("Extension: " + extension)
+    
+    // Working with user input
+    let user_input = "  trim me  "
+    let trimmed = user_input[2:8]  // Remove leading/trailing spaces
+    print("Original: '" + user_input + "'")
+    print("Trimmed:  '" + trimmed + "'")
+    
+    print("\n=== Demo Complete ===")
+}
+
+main()
