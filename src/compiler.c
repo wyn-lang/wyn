@@ -6968,14 +6968,24 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                             int item_reg;
                             llvm_expr(lg, e->call.args[0], &item_reg);
                             
-                            int t = llvm_new_temp(lg);
-                            if (item_reg <= -1000000) {
+                            // Check if item is a string (needs ptrtoint)
+                            bool is_string_item = llvm_is_string_expr(lg, e->call.args[0]);
+                            if (is_string_item) {
+                                int ptr_to_int = llvm_new_temp(lg);
+                                llvm_emit(lg, "  %%%d = ptrtoint i8* %%%d to i64", ptr_to_int, item_reg);
+                                int t = llvm_new_temp(lg);
+                                llvm_emit(lg, "  %%%d = call i64 @array_contains_elem(i64* %%%d, i64 %%%d)", t, obj_reg, ptr_to_int);
+                                *result_reg = t;
+                            } else if (item_reg <= -1000000) {
                                 long long const_val = -item_reg - 1000000;
+                                int t = llvm_new_temp(lg);
                                 llvm_emit(lg, "  %%%d = call i64 @array_contains_elem(i64* %%%d, i64 %lld)", t, obj_reg, const_val);
+                                *result_reg = t;
                             } else {
+                                int t = llvm_new_temp(lg);
                                 llvm_emit(lg, "  %%%d = call i64 @array_contains_elem(i64* %%%d, i64 %%%d)", t, obj_reg, item_reg);
+                                *result_reg = t;
                             }
-                            *result_reg = t;
                         } else {
                             // No argument provided, return 0 (false)
                             int t = llvm_new_temp(lg);
