@@ -354,24 +354,25 @@ fn lex_next(source: str, pos: int, len: int) -> Token {
 }
 
 fn keyword_from_str(s: str) -> int {
-    if str_eq(s, "fn") { return 20 }
-    if str_eq(s, "struct") { return 21 }
-    if str_eq(s, "enum") { return 22 }
-    if str_eq(s, "let") { return 25 }
-    if str_eq(s, "mut") { return 26 }
-    if str_eq(s, "if") { return 29 }
-    if str_eq(s, "else") { return 30 }
-    if str_eq(s, "for") { return 32 }
-    if str_eq(s, "while") { return 33 }
-    if str_eq(s, "return") { return 37 }
-    if str_eq(s, "import") { return 41 }
-    if str_eq(s, "true") { return 44 }
-    if str_eq(s, "false") { return 45 }
-    if str_eq(s, "and") { return 58 }
-    if str_eq(s, "or") { return 59 }
-    if str_eq(s, "not") { return 82 }
+    if str_eq(s, "fn") { return 8 }
+    if str_eq(s, "struct") { return 9 }
+    if str_eq(s, "enum") { return 10 }
+    if str_eq(s, "var") { return 11 }
+    if str_eq(s, "mut") { return 12 }
+    if str_eq(s, "const") { return 13 }
+    if str_eq(s, "if") { return 15 }
+    if str_eq(s, "else") { return 16 }
+    if str_eq(s, "for") { return 18 }
+    if str_eq(s, "while") { return 19 }
+    if str_eq(s, "in") { return 20 }
+    if str_eq(s, "return") { return 23 }
+    if str_eq(s, "import") { return 24 }
+    if str_eq(s, "true") { return 27 }
+    if str_eq(s, "false") { return 28 }
+    if str_eq(s, "and") { return 35 }
+    if str_eq(s, "or") { return 36 }
+    if str_eq(s, "not") { return 37 }
     if str_eq(s, "then") { return 150 }
-    if str_eq(s, "in") { return 57 }
     return -1
 }
 

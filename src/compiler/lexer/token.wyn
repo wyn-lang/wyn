@@ -51,127 +51,58 @@ fn token_is_keyword(t: Token) -> bool {
 // Keyword lookup - returns -1 if not a keyword
 fn keyword_from_str(s: str) -> int {
     if s == "fn" {
-        return 20
+        return 8
     }
     if s == "struct" {
-        return 21
+        return 9
     }
     if s == "enum" {
-        return 22
+        return 10
     }
-    if s == "trait" {
-        return 23
-    }
-    if s == "impl" {
-        return 24
-    }
-    if s == "let" {
-        return 25
+    if s == "var" {
+        return 11
     }
     if s == "mut" {
-        return 26
+        return 12
     }
     if s == "const" {
-        return 27
-    }
-    if s == "type" {
-        return 28
+        return 13
     }
     if s == "if" {
-        return 29
+        return 15
     }
     if s == "else" {
-        return 30
-    }
-    if s == "match" {
-        return 31
+        return 16
     }
     if s == "for" {
-        return 32
+        return 18
     }
     if s == "while" {
-        return 33
-    }
-    if s == "loop" {
-        return 34
-    }
-    if s == "break" {
-        return 35
-    }
-    if s == "continue" {
-        return 36
-    }
-    if s == "return" {
-        return 37
-    }
-    if s == "spawn" {
-        return 38
-    }
-    if s == "select" {
-        return 39
-    }
-    if s == "chan" {
-        return 40
-    }
-    if s == "import" {
-        return 41
-    }
-    if s == "export" {
-        return 42
-    }
-    if s == "pub" {
-        return 43
-    }
-    if s == "true" {
-        return 44
-    }
-    if s == "false" {
-        return 45
-    }
-    if s == "nil" {
-        return 46
-    }
-    if s == "none" {
-        return 47
-    }
-    if s == "some" {
-        return 48
-    }
-    if s == "self" {
-        return 49
-    }
-    if s == "Self" {
-        return 50
-    }
-    if s == "try" {
-        return 51
-    }
-    if s == "catch" {
-        return 52
-    }
-    if s == "defer" {
-        return 53
-    }
-    if s == "when" {
-        return 54
-    }
-    if s == "is" {
-        return 55
-    }
-    if s == "as" {
-        return 56
+        return 19
     }
     if s == "in" {
-        return 57
+        return 20
+    }
+    if s == "return" {
+        return 23
+    }
+    if s == "import" {
+        return 24
+    }
+    if s == "true" {
+        return 27
+    }
+    if s == "false" {
+        return 28
     }
     if s == "and" {
-        return 58
+        return 35
     }
     if s == "or" {
-        return 59
+        return 36
     }
     if s == "not" {
-        return 82
+        return 37
     }
     if s == "then" {
         return 150

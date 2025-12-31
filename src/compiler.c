@@ -204,9 +204,10 @@ static const char* keywords[] = {
     "fn", "struct", "enum", "var", "mut", "const", "pub",
     "if", "else", "match", "for", "while", "in",
     "break", "continue", "return", "import", "from", "as",
-    "true", "false", "none", "some", "ok", "err", "self", "Self",
-    "try", "catch", "spawn", "yield",
-    "and", "or", "not", "test", "assert"
+    "true", "false", "none", "some", "ok", "err", "self",
+    "spawn",
+    "and", "or", "not",
+    "test", "assert"
 };
 
 static const TokenKind keyword_tokens[] = {
@@ -215,7 +216,8 @@ static const TokenKind keyword_tokens[] = {
     TOK_BREAK, TOK_CONTINUE, TOK_RETURN, TOK_IMPORT, TOK_FROM, TOK_AS,
     TOK_TRUE, TOK_FALSE, TOK_NONE, TOK_SOME, TOK_OK, TOK_ERR, TOK_SELF,
     TOK_SPAWN,
-    TOK_AND, TOK_OR, TOK_NOT, TOK_TEST, TOK_ASSERT
+    TOK_AND, TOK_OR, TOK_NOT,
+    TOK_TEST, TOK_ASSERT
 };
 
 #define NUM_KEYWORDS (sizeof(keywords) / sizeof(keywords[0]))
