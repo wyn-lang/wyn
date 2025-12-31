@@ -1,0 +1,16 @@
+let s = "hello world"
+
+// Test find method
+print(s.find("world").to_str())      // Should print 6
+print(s.find("hello").to_str())      // Should print 0
+print(s.find("xyz").to_str())        // Should print -1
+
+// Test substring method
+print(s.substring(0, 5))    // Should print "hello"
+print(s.substring(6, 5))    // Should print "world"
+print(s.substring(0, 11))   // Should print "hello world"
+
+// Test char_at method
+print(s.char_at(0))         // Should print "h"
+print(s.char_at(6))         // Should print "w"
+print(s.char_at(10))        // Should print "d"

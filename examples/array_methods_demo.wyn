@@ -1,0 +1,45 @@
+// Array Methods Demo - Enhanced functionality
+
+print("=== Array Methods Demo ===")
+
+// Create initial array
+let numbers = [1, 2, 3, 4, 5]
+print("Original array: [1, 2, 3, 4, 5]")
+
+// Test .contains method
+print("\n--- Testing .contains ---")
+print("Contains 3:", numbers.contains(3))  // 1 (true)
+print("Contains 7:", numbers.contains(7))  // 0 (false)
+print("Contains 1:", numbers.contains(1))  // 1 (true)
+
+// Test .prepend method
+print("\n--- Testing .prepend ---")
+let arr = [10, 20]
+print("Original: [10, 20]")
+arr = arr.prepend(5)
+print("After prepend(5): [5, 10, 20]")
+print("First element:", arr[0])   // 5
+print("Second element:", arr[1])  // 10
+print("Third element:", arr[2])   // 20
+
+// Multiple prepends
+let chain = [100]
+chain = chain.prepend(50)
+chain = chain.prepend(25)
+print("Multiple prepends result:")
+print("Element 0:", chain[0])  // 25
+print("Element 1:", chain[1])  // 50
+print("Element 2:", chain[2])  // 100
+
+// Practical example: building arrays dynamically
+print("\n--- Practical Example ---")
+let result = []
+result = result.append(1)
+result = result.prepend(0)
+result = result.append(2)
+print("Built array step by step:")
+print("Element 0:", result[0])  // 0
+print("Element 1:", result[1])  // 1
+print("Element 2:", result[2])  // 2
+
+print("\n=== Demo Complete ===")

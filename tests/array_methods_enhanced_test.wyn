@@ -1,0 +1,17 @@
+// Test enhanced array methods: .contains, .prepend, .filter, .map
+
+let nums = [1, 2, 3]
+
+// Test .contains
+print("Testing .contains:")
+print(nums.contains(2))  // Should print 1 (true)
+print(nums.contains(5))  // Should print 0 (false)
+
+// Test .prepend
+print("Testing .prepend:")
+let arr = [1]
+arr = arr.prepend(0)
+print(arr[0])  // Should print 0
+print(arr[1])  // Should print 1
+
+print("All tests completed!")

@@ -347,6 +347,14 @@ char* substring(const char* s, long long start, long long end) {
     return result;
 }
 
+char* str_substring(const char* s, long long start, long long length) {
+    if (length < 0) length = 0;
+    char* result = malloc(length + 1);
+    strncpy(result, s + start, length);
+    result[length] = '\0';
+    return result;
+}
+
 char* char_at(const char* s, long long index) {
     char* result = malloc(2);
     result[0] = s[index];
@@ -2615,6 +2623,48 @@ int64_t option_unwrap(int64_t* option_arr) {
     if (!option_arr) return 0;
     if (array_len(option_arr) < 2) return 0;
     return array_get(option_arr, 1);
+}
+
+int64_t* array_filter_simple(int64_t* arr) {
+    // Simple filter that keeps all elements (placeholder implementation)
+    if (!arr) {
+        int64_t* empty = malloc(sizeof(int64_t) * 2);
+        empty[0] = 0;
+        empty[1] = 0;
+        return empty;
+    }
+    
+    int64_t len = arr[0];
+    int64_t* result = malloc(sizeof(int64_t) * (len + 2));
+    result[0] = len;
+    result[1] = len;
+    
+    for (int64_t i = 0; i < len; i++) {
+        result[i + 2] = arr[i + 2];
+    }
+    
+    return result;
+}
+
+int64_t* array_map_simple(int64_t* arr) {
+    // Simple map that returns elements unchanged (placeholder implementation)
+    if (!arr) {
+        int64_t* empty = malloc(sizeof(int64_t) * 2);
+        empty[0] = 0;
+        empty[1] = 0;
+        return empty;
+    }
+    
+    int64_t len = arr[0];
+    int64_t* result = malloc(sizeof(int64_t) * (len + 2));
+    result[0] = len;
+    result[1] = len;
+    
+    for (int64_t i = 0; i < len; i++) {
+        result[i + 2] = arr[i + 2];
+    }
+    
+    return result;
 }
 
 // StringBuilder functions

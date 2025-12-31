@@ -1,0 +1,50 @@
+// String Methods Demo
+// Demonstrates the new string methods: find, substring, and char_at
+
+let text = "The quick brown fox jumps over the lazy dog"
+print("Original text: " + text)
+print("")
+
+// Using find method to locate substrings
+print("=== Find Method ===")
+let fox_pos = text.find("fox")
+print("Position of 'fox': " + fox_pos.to_str())
+
+let dog_pos = text.find("dog")
+print("Position of 'dog': " + dog_pos.to_str())
+
+let missing = text.find("cat")
+print("Position of 'cat': " + missing.to_str() + " (not found)")
+print("")
+
+// Using substring method to extract parts
+print("=== Substring Method ===")
+let first_word = text.substring(0, 3)
+print("First 3 characters: '" + first_word + "'")
+
+let fox_word = text.substring(fox_pos, 3)
+print("Word at fox position: '" + fox_word + "'")
+
+let last_word = text.substring(dog_pos, 3)
+print("Last word: '" + last_word + "'")
+print("")
+
+// Using char_at method to get individual characters
+print("=== Char At Method ===")
+print("First character: '" + text.char_at(0) + "'")
+print("Character at position 10: '" + text.char_at(10) + "'")
+print("Last character: '" + text.char_at(42) + "'")
+print("")
+
+// Combining methods for practical use
+print("=== Combining Methods ===")
+let search_word = "brown"
+let pos = text.find(search_word)
+if pos != -1 {
+    let extracted = text.substring(pos, search_word.len())
+    print("Found '" + search_word + "' at position " + pos.to_str())
+    print("Extracted: '" + extracted + "'")
+    print("First letter: '" + extracted.char_at(0) + "'")
+} else {
+    print("Word not found")
+}

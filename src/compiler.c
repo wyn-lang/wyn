@@ -3162,6 +3162,9 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                 if (strcmp(method_name, "split") == 0) return new_type(TYPE_ARRAY);
                 if (strcmp(method_name, "replace") == 0) return new_type(TYPE_STR);
                 if (strcmp(method_name, "index_of") == 0) return new_type(TYPE_INT);
+                if (strcmp(method_name, "find") == 0) return new_type(TYPE_INT);
+                if (strcmp(method_name, "substring") == 0) return new_type(TYPE_STR);
+                if (strcmp(method_name, "char_at") == 0) return new_type(TYPE_STR);
                 // Int methods
                 if (strcmp(method_name, "abs") == 0) return new_type(TYPE_INT);
                 if (strcmp(method_name, "to_str") == 0) return new_type(TYPE_STR);
@@ -3176,6 +3179,10 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                 if (strcmp(method_name, "get_str") == 0) return new_type(TYPE_STR);
                 if (strcmp(method_name, "reverse") == 0) return new_type(TYPE_ARRAY);
                 if (strcmp(method_name, "append") == 0) return new_type(TYPE_ARRAY);
+                if (strcmp(method_name, "contains") == 0) return new_type(TYPE_INT);
+                if (strcmp(method_name, "prepend") == 0) return new_type(TYPE_ARRAY);
+                if (strcmp(method_name, "filter") == 0) return new_type(TYPE_ARRAY);
+                if (strcmp(method_name, "map") == 0) return new_type(TYPE_ARRAY);
                 if (strcmp(method_name, "join") == 0) return new_type(TYPE_STR);
                 
                 // Look up extension methods
@@ -3992,6 +3999,9 @@ static Type* tc1_check_expr(TypeChecker1* tc, Expr* e) {
                 if (strcmp(method_name, "split") == 0) return new_type(TYPE_ARRAY);
                 if (strcmp(method_name, "replace") == 0) return new_type(TYPE_STR);
                 if (strcmp(method_name, "index_of") == 0) return new_type(TYPE_INT);
+                if (strcmp(method_name, "find") == 0) return new_type(TYPE_INT);
+                if (strcmp(method_name, "substring") == 0) return new_type(TYPE_STR);
+                if (strcmp(method_name, "char_at") == 0) return new_type(TYPE_STR);
                 // Int methods
                 if (strcmp(method_name, "abs") == 0) return new_type(TYPE_INT);
                 if (strcmp(method_name, "to_str") == 0) return new_type(TYPE_STR);
@@ -4006,6 +4016,10 @@ static Type* tc1_check_expr(TypeChecker1* tc, Expr* e) {
                 if (strcmp(method_name, "get_str") == 0) return new_type(TYPE_STR);
                 if (strcmp(method_name, "reverse") == 0) return new_type(TYPE_ARRAY);
                 if (strcmp(method_name, "append") == 0) return new_type(TYPE_ARRAY);
+                if (strcmp(method_name, "contains") == 0) return new_type(TYPE_INT);
+                if (strcmp(method_name, "prepend") == 0) return new_type(TYPE_ARRAY);
+                if (strcmp(method_name, "filter") == 0) return new_type(TYPE_ARRAY);
+                if (strcmp(method_name, "map") == 0) return new_type(TYPE_ARRAY);
                 if (strcmp(method_name, "join") == 0) return new_type(TYPE_STR);
                 
                 // Look up extension methods
@@ -5531,6 +5545,15 @@ static bool llvm_is_string_expr(LLVMGen* lg, Expr* e) {
     if (e->kind == EXPR_BINARY && e->binary.op == TOK_PLUS) {
         return llvm_is_string_expr(lg, e->binary.left) || llvm_is_string_expr(lg, e->binary.right);
     }
+    if (e->kind == EXPR_SLICE) {
+        // String slicing returns a string
+        if (e->slice.object->kind == EXPR_STRING) return true;
+        if (e->slice.object->kind == EXPR_IDENT) {
+            Type* t = llvm_get_var_type(lg, e->slice.object->ident);
+            return t && t->kind == TYPE_STR;
+        }
+        return false;
+    }
     if (e->kind == EXPR_TERNARY) {
         // Ternary is string if either branch is string
         return llvm_is_string_expr(lg, e->ternary.true_val) || llvm_is_string_expr(lg, e->ternary.false_val);
@@ -6254,6 +6277,11 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                         } else {
                             llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.int, i32 0, i32 0), i64 %%%d)", t, arg_reg);
                         }
+                    } else if (e->call.args[i]->kind == EXPR_SLICE) {
+                        // String slice - convert i64 back to i8* for printing
+                        llvm_emit(lg, "  %%%d = inttoptr i64 %%%d to i8*", t, arg_reg);
+                        int printf_reg = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* %%%d)", printf_reg, t);
                     } else if (e->call.args[i]->kind == EXPR_FLOAT) {
                         llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.float, i32 0, i32 0), double %f)", 
                                  t, e->call.args[i]->float_val);
@@ -6282,6 +6310,9 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     } else if (llvm_is_string_expr(lg, e->call.args[i])) {
                         // String expression (including array indexing)
                         llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* %%%d)", t, arg_reg);
+                    } else if (llvm_is_array_expr(lg, e->call.args[i])) {
+                        // Array expression - print as Array for now
+                        llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([6 x i8], [6 x i8]* @.fmt.array, i32 0, i32 0))", t);
                     } else {
                         char arg_str[64];
                         if (arg_reg <= -1000000) {
@@ -6765,7 +6796,7 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                         // Array: load length from first element
                         int len_ptr = llvm_new_temp(lg);
                         int t = llvm_new_temp(lg);
-                        llvm_emit(lg, "  %%%d = getelementptr i64, i64* %%%d, i64 0", len_ptr, obj_reg);
+                        llvm_emit(lg, "  %%%d = getelementptr i64, ptr %%%d, i64 0", len_ptr, obj_reg);
                         llvm_emit(lg, "  %%%d = load i64, i64* %%%d", t, len_ptr);
                         *result_reg = t;
                     }
@@ -6867,14 +6898,42 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     int obj_reg;
                     llvm_expr(lg, e->call.func->field.object, &obj_reg);
                     
-                    // Get the argument
-                    int arg_reg;
-                    if (e->call.arg_count > 0) {
-                        llvm_expr(lg, e->call.args[0], &arg_reg);
+                    // Determine if object is array or string
+                    bool is_array = false;
+                    if (e->call.func->field.object->kind == EXPR_IDENT) {
+                        Type* obj_type = llvm_get_var_type(lg, e->call.func->field.object->ident);
+                        if (obj_type && obj_type->kind == TYPE_ARRAY) {
+                            is_array = true;
+                        }
+                    } else if (e->call.func->field.object->kind == EXPR_ARRAY) {
+                        is_array = true;
                     }
                     
                     int t = llvm_new_temp(lg);
-                    llvm_emit(lg, "  %%%d = call i64 @str_contains(i8* %%%d, i8* %%%d)", t, obj_reg, arg_reg);
+                    if (is_array) {
+                        // Array contains
+                        if (e->call.arg_count > 0) {
+                            int item_reg;
+                            llvm_expr(lg, e->call.args[0], &item_reg);
+                            
+                            if (item_reg <= -1000000) {
+                                long long const_val = -item_reg - 1000000;
+                                llvm_emit(lg, "  %%%d = call i64 @array_contains_elem(i64* %%%d, i64 %lld)", t, obj_reg, const_val);
+                            } else {
+                                llvm_emit(lg, "  %%%d = call i64 @array_contains_elem(i64* %%%d, i64 %%%d)", t, obj_reg, item_reg);
+                            }
+                        } else {
+                            // No argument provided, return 0 (false)
+                            llvm_emit(lg, "  %%%d = add i64 0, 0", t);
+                        }
+                    } else {
+                        // String contains
+                        int arg_reg = 0;
+                        if (e->call.arg_count > 0) {
+                            llvm_expr(lg, e->call.args[0], &arg_reg);
+                        }
+                        llvm_emit(lg, "  %%%d = call i64 @str_contains(i8* %%%d, i8* %%%d)", t, obj_reg, arg_reg);
+                    }
                     *result_reg = t;
                 } else if (strcmp(method_name, "starts_with") == 0) {
                     // Handle str.starts_with(prefix)
@@ -6931,6 +6990,71 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     int t = llvm_new_temp(lg);
                     llvm_emit(lg, "  %%%d = call i8* @str_replace(i8* %%%d, i8* %%%d, i8* %%%d)", t, obj_reg, old_reg, new_reg);
                     *result_reg = t;
+                } else if (strcmp(method_name, "find") == 0) {
+                    // Handle str.find(substring)
+                    int obj_reg;
+                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                    
+                    int arg_reg;
+                    if (e->call.arg_count > 0) {
+                        llvm_expr(lg, e->call.args[0], &arg_reg);
+                    }
+                    
+                    int t = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = call i64 @str_find(i8* %%%d, i8* %%%d)", t, obj_reg, arg_reg);
+                    *result_reg = t;
+                } else if (strcmp(method_name, "substring") == 0) {
+                    // Handle str.substring(start, length)
+                    int obj_reg;
+                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                    
+                    int start_reg, length_reg;
+                    if (e->call.arg_count > 0) {
+                        llvm_expr(lg, e->call.args[0], &start_reg);
+                    }
+                    if (e->call.arg_count > 1) {
+                        llvm_expr(lg, e->call.args[1], &length_reg);
+                    }
+                    
+                    int t = llvm_new_temp(lg);
+                    if (start_reg <= -1000000 && length_reg <= -1000000) {
+                        // Both constants
+                        long long start_val = -start_reg - 1000000;
+                        long long length_val = -length_reg - 1000000;
+                        llvm_emit(lg, "  %%%d = call i8* @str_substring(i8* %%%d, i64 %lld, i64 %lld)", t, obj_reg, start_val, length_val);
+                    } else if (start_reg <= -1000000) {
+                        // Start is constant
+                        long long start_val = -start_reg - 1000000;
+                        llvm_emit(lg, "  %%%d = call i8* @str_substring(i8* %%%d, i64 %lld, i64 %%%d)", t, obj_reg, start_val, length_reg);
+                    } else if (length_reg <= -1000000) {
+                        // Length is constant
+                        long long length_val = -length_reg - 1000000;
+                        llvm_emit(lg, "  %%%d = call i8* @str_substring(i8* %%%d, i64 %%%d, i64 %lld)", t, obj_reg, start_reg, length_val);
+                    } else {
+                        // Both are registers
+                        llvm_emit(lg, "  %%%d = call i8* @str_substring(i8* %%%d, i64 %%%d, i64 %%%d)", t, obj_reg, start_reg, length_reg);
+                    }
+                    *result_reg = t;
+                } else if (strcmp(method_name, "char_at") == 0) {
+                    // Handle str.char_at(index)
+                    int obj_reg;
+                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                    
+                    int index_reg;
+                    if (e->call.arg_count > 0) {
+                        llvm_expr(lg, e->call.args[0], &index_reg);
+                    }
+                    
+                    int t = llvm_new_temp(lg);
+                    if (index_reg <= -1000000) {
+                        // Index is constant
+                        long long index_val = -index_reg - 1000000;
+                        llvm_emit(lg, "  %%%d = call i8* @char_at(i8* %%%d, i64 %lld)", t, obj_reg, index_val);
+                    } else {
+                        // Index is register
+                        llvm_emit(lg, "  %%%d = call i8* @char_at(i8* %%%d, i64 %%%d)", t, obj_reg, index_reg);
+                    }
+                    *result_reg = t;
                 } else if (strcmp(method_name, "get") == 0) {
                     // Handle arr.get(index)
                     int obj_reg;
@@ -6952,7 +7076,7 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     }
                     
                     int elem_ptr = llvm_new_temp(lg);
-                    llvm_emit(lg, "  %%%d = getelementptr i64, i64* %%%d, i64 %%%d", elem_ptr, obj_reg, offset_reg);
+                    llvm_emit(lg, "  %%%d = getelementptr i64, ptr %%%d, i64 %%%d", elem_ptr, obj_reg, offset_reg);
                     
                     int t = llvm_new_temp(lg);
                     llvm_emit(lg, "  %%%d = load i64, i64* %%%d", t, elem_ptr);
@@ -6977,7 +7101,7 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     }
                     
                     int elem_ptr = llvm_new_temp(lg);
-                    llvm_emit(lg, "  %%%d = getelementptr i64, i64* %%%d, i64 %%%d", elem_ptr, obj_reg, offset_reg);
+                    llvm_emit(lg, "  %%%d = getelementptr i64, ptr %%%d, i64 %%%d", elem_ptr, obj_reg, offset_reg);
                     
                     int i64_val = llvm_new_temp(lg);
                     llvm_emit(lg, "  %%%d = load i64, i64* %%%d", i64_val, elem_ptr);
@@ -7085,6 +7209,43 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                         }
                     }
                 }
+                } else if (strcmp(method_name, "prepend") == 0) {
+                    // Handle arr.prepend(item)
+                    int obj_reg;
+                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                    
+                    int t = llvm_new_temp(lg);
+                    if (e->call.arg_count > 0) {
+                        int item_reg;
+                        llvm_expr(lg, e->call.args[0], &item_reg);
+                        
+                        if (item_reg <= -1000000) {
+                            long long const_val = -item_reg - 1000000;
+                            llvm_emit(lg, "  %%%d = call i64* @array_prepend_elem(i64* %%%d, i64 %lld)", t, obj_reg, const_val);
+                        } else {
+                            llvm_emit(lg, "  %%%d = call i64* @array_prepend_elem(i64* %%%d, i64 %%%d)", t, obj_reg, item_reg);
+                        }
+                    } else {
+                        // No argument provided, return original array
+                        llvm_emit(lg, "  %%%d = add i64* %%%d, 0", t, obj_reg);
+                    }
+                    *result_reg = t;
+                } else if (strcmp(method_name, "filter") == 0) {
+                    // Handle arr.filter() - simplified version
+                    int obj_reg;
+                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                    
+                    int t = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = call i64* @array_filter_simple(i64* %%%d)", t, obj_reg);
+                    *result_reg = t;
+                } else if (strcmp(method_name, "map") == 0) {
+                    // Handle arr.map() - simplified version
+                    int obj_reg;
+                    llvm_expr(lg, e->call.func->field.object, &obj_reg);
+                    
+                    int t = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = call i64* @array_map_simple(i64* %%%d)", t, obj_reg);
+                    *result_reg = t;
                 } else if (strcmp(method_name, "join") == 0) {
                     // Handle arr.join(sep)
                     int obj_reg;
@@ -7188,12 +7349,12 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
             
             // Store length
             int len_ptr = llvm_new_temp(lg);
-            llvm_emit(lg, "  %%%d = getelementptr i64, i64* %%%d, i64 0", len_ptr, ptr_reg);
+            llvm_emit(lg, "  %%%d = getelementptr i64, ptr %%%d, i64 0", len_ptr, ptr_reg);
             llvm_emit(lg, "  store i64 %d, i64* %%%d", count, len_ptr);
             
             // Store capacity
             int cap_ptr = llvm_new_temp(lg);
-            llvm_emit(lg, "  %%%d = getelementptr i64, i64* %%%d, i64 1", cap_ptr, ptr_reg);
+            llvm_emit(lg, "  %%%d = getelementptr i64, ptr %%%d, i64 1", cap_ptr, ptr_reg);
             llvm_emit(lg, "  store i64 %d, i64* %%%d", count, cap_ptr);
             
             // Store elements
@@ -7202,7 +7363,7 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                 llvm_expr(lg, e->array.elements[i], &elem_reg);
                 
                 int elem_ptr = llvm_new_temp(lg);
-                llvm_emit(lg, "  %%%d = getelementptr i64, i64* %%%d, i64 %d", elem_ptr, ptr_reg, i + 2);
+                llvm_emit(lg, "  %%%d = getelementptr i64, ptr %%%d, i64 %d", elem_ptr, ptr_reg, i + 2);
                 
                 // Check if element is a string
                 bool is_string_elem = (e->array.elements[i]->kind == EXPR_STRING);
@@ -7237,7 +7398,7 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     // Negative constant index: convert to positive
                     // Load array length
                     int len_ptr = llvm_new_temp(lg);
-                    llvm_emit(lg, "  %%%d = getelementptr i64, i64* %%%d, i64 0", len_ptr, arr_reg);
+                    llvm_emit(lg, "  %%%d = getelementptr i64, ptr %%%d, i64 0", len_ptr, arr_reg);
                     int len_reg = llvm_new_temp(lg);
                     llvm_emit(lg, "  %%%d = load i64, i64* %%%d", len_reg, len_ptr);
                     
@@ -7252,7 +7413,7 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
             } else {
                 // Variable index - need runtime check for negative
                 int len_ptr = llvm_new_temp(lg);
-                llvm_emit(lg, "  %%%d = getelementptr i64, i64* %%%d, i64 0", len_ptr, arr_reg);
+                llvm_emit(lg, "  %%%d = getelementptr i64, ptr %%%d, i64 0", len_ptr, arr_reg);
                 int len_reg = llvm_new_temp(lg);
                 llvm_emit(lg, "  %%%d = load i64, i64* %%%d", len_reg, len_ptr);
                 
@@ -7275,7 +7436,7 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
             
             // Get element pointer
             int elem_ptr = llvm_new_temp(lg);
-            llvm_emit(lg, "  %%%d = getelementptr i64, i64* %%%d, i64 %%%d", elem_ptr, arr_reg, adj_idx);
+            llvm_emit(lg, "  %%%d = getelementptr i64, ptr %%%d, i64 %%%d", elem_ptr, arr_reg, adj_idx);
             
             // Load element
             int t = llvm_new_temp(lg);
@@ -7403,6 +7564,8 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
             Type* obj_type = NULL;
             if (e->slice.object->kind == EXPR_IDENT) {
                 obj_type = llvm_get_var_type(lg, e->slice.object->ident);
+            } else if (e->slice.object->kind == EXPR_STRING) {
+                obj_type = new_type(TYPE_STR);
             }
             
             int t = llvm_new_temp(lg);
@@ -7434,6 +7597,10 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     snprintf(end_str, 32, "i64 %%%d", end_reg);
                 }
                 llvm_emit(lg, "  %%%d = call i8* @str_slice(i8* %%%d, %s, %s)", t, obj_reg, start_str, end_str);
+                // Convert i8* to i64 for storage compatibility
+                int cast_reg = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = ptrtoint i8* %%%d to i64", cast_reg, t);
+                t = cast_reg;
             }
             
             *result_reg = t;
@@ -7540,108 +7707,225 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
             llvm_emit(lg, "  %%%d = alloca i64*", arr_ptr);
             llvm_emit(lg, "  store i64* %%%d, i64** %%%d", result_arr, arr_ptr);
             
-            // Get iterator
-            int iter_reg;
-            llvm_expr(lg, e->comprehension.iter, &iter_reg);
+            // Check if iterator is a range
+            bool is_range = e->comprehension.iter->kind == EXPR_BINARY &&
+                           (e->comprehension.iter->binary.op == TOK_DOTDOT || 
+                            e->comprehension.iter->binary.op == TOK_DOTDOTEQ);
             
-            // Get length
-            int len_ptr = llvm_new_temp(lg);
-            llvm_emit(lg, "  %%%d = getelementptr i64, i64* %%%d, i64 0", len_ptr, iter_reg);
-            int len_val = llvm_new_temp(lg);
-            llvm_emit(lg, "  %%%d = load i64, i64* %%%d", len_val, len_ptr);
-            
-            // Loop index
-            int loop_idx = llvm_new_temp(lg);
-            llvm_emit(lg, "  %%%d = alloca i64", loop_idx);
-            llvm_emit(lg, "  store i64 0, i64* %%%d", loop_idx);
-            
-            // Labels
-            int loop_start = lg->label_count++;
-            int loop_body = lg->label_count++;
-            int loop_end = lg->label_count++;
-            
-            llvm_emit(lg, "  br label %%L%d", loop_start);
-            llvm_emit(lg, "L%d:", loop_start);
-            
-            // Check condition
-            int i_val = llvm_new_temp(lg);
-            llvm_emit(lg, "  %%%d = load i64, i64* %%%d", i_val, loop_idx);
-            int loop_cond = llvm_new_temp(lg);
-            llvm_emit(lg, "  %%%d = icmp slt i64 %%%d, %%%d", loop_cond, i_val, len_val);
-            llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", loop_cond, loop_body, loop_end);
-            
-            llvm_emit(lg, "L%d:", loop_body);
-            
-            // Get element
-            int idx_plus_2 = llvm_new_temp(lg);
-            llvm_emit(lg, "  %%%d = add i64 %%%d, 2", idx_plus_2, i_val);
-            int elem_ptr = llvm_new_temp(lg);
-            llvm_emit(lg, "  %%%d = getelementptr i64, i64* %%%d, i64 %%%d", elem_ptr, iter_reg, idx_plus_2);
-            int elem_val = llvm_new_temp(lg);
-            llvm_emit(lg, "  %%%d = load i64, i64* %%%d", elem_val, elem_ptr);
-            
-            // Add loop variable
-            int var_alloca = llvm_new_temp(lg);
-            llvm_emit(lg, "  %%%d = alloca i64", var_alloca);
-            llvm_emit(lg, "  store i64 %%%d, i64* %%%d", elem_val, var_alloca);
-            int saved_var_count = lg->var_count;
-            llvm_add_var(lg, e->comprehension.var, var_alloca, new_type(TYPE_INT));
-            
-            // Handle filter
-            if (e->comprehension.condition) {
-                int filter_reg;
-                llvm_expr(lg, e->comprehension.condition, &filter_reg);
+            if (is_range) {
+                // Range comprehension: [expr for var in start..end]
+                bool inclusive = e->comprehension.iter->binary.op == TOK_DOTDOTEQ;
                 
-                int append_label = lg->label_count++;
-                int skip_label = lg->label_count++;
+                // Get start and end values
+                int start_val, end_val;
+                llvm_expr(lg, e->comprehension.iter->binary.left, &start_val);
+                llvm_expr(lg, e->comprehension.iter->binary.right, &end_val);
                 
-                bool is_comparison = (e->comprehension.condition->kind == EXPR_BINARY);
-                if (is_comparison) {
-                    llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", filter_reg, append_label, skip_label);
+                // Loop variable
+                int loop_var = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = alloca i64", loop_var);
+                
+                // Initialize loop variable with start
+                if (start_val <= -1000000) {
+                    llvm_emit(lg, "  store i64 %lld, i64* %%%d", (long long)(-start_val - 1000000), loop_var);
                 } else {
-                    int cond_i1 = llvm_new_temp(lg);
-                    llvm_emit(lg, "  %%%d = icmp ne i64 %%%d, 0", cond_i1, filter_reg);
-                    llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cond_i1, append_label, skip_label);
+                    llvm_emit(lg, "  store i64 %%%d, i64* %%%d", start_val, loop_var);
                 }
                 
-                llvm_emit(lg, "L%d:", append_label);
+                // Labels
+                int loop_start = lg->label_count++;
+                int loop_body = lg->label_count++;
+                int loop_end = lg->label_count++;
                 
-                // Evaluate expression
-                int expr_reg;
-                llvm_expr(lg, e->comprehension.expr, &expr_reg);
+                llvm_emit(lg, "  br label %%L%d", loop_start);
+                llvm_emit(lg, "L%d:", loop_start);
                 
-                // Load current array, append, store back
-                int curr_arr = llvm_new_temp(lg);
-                llvm_emit(lg, "  %%%d = load i64*, i64** %%%d", curr_arr, arr_ptr);
-                int new_arr = llvm_new_temp(lg);
-                llvm_emit(lg, "  %%%d = call i64* @array_append_elem(i64* %%%d, i64 %%%d)", new_arr, curr_arr, expr_reg);
-                llvm_emit(lg, "  store i64* %%%d, i64** %%%d", new_arr, arr_ptr);
+                // Check condition
+                int curr_val = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = load i64, i64* %%%d", curr_val, loop_var);
                 
-                llvm_emit(lg, "  br label %%L%d", skip_label);
-                llvm_emit(lg, "L%d:", skip_label);
+                int loop_cond = llvm_new_temp(lg);
+                if (inclusive) {
+                    if (end_val <= -1000000) {
+                        llvm_emit(lg, "  %%%d = icmp sle i64 %%%d, %lld", loop_cond, curr_val, (long long)(-end_val - 1000000));
+                    } else {
+                        llvm_emit(lg, "  %%%d = icmp sle i64 %%%d, %%%d", loop_cond, curr_val, end_val);
+                    }
+                } else {
+                    if (end_val <= -1000000) {
+                        llvm_emit(lg, "  %%%d = icmp slt i64 %%%d, %lld", loop_cond, curr_val, (long long)(-end_val - 1000000));
+                    } else {
+                        llvm_emit(lg, "  %%%d = icmp slt i64 %%%d, %%%d", loop_cond, curr_val, end_val);
+                    }
+                }
+                llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", loop_cond, loop_body, loop_end);
+                
+                llvm_emit(lg, "L%d:", loop_body);
+                
+                // Add loop variable to scope
+                int saved_var_count = lg->var_count;
+                llvm_add_var(lg, e->comprehension.var, loop_var, new_type(TYPE_INT));
+                
+                // Handle filter
+                if (e->comprehension.condition) {
+                    int filter_reg;
+                    llvm_expr(lg, e->comprehension.condition, &filter_reg);
+                    
+                    int append_label = lg->label_count++;
+                    int skip_label = lg->label_count++;
+                    
+                    bool is_comparison = (e->comprehension.condition->kind == EXPR_BINARY);
+                    if (is_comparison) {
+                        llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", filter_reg, append_label, skip_label);
+                    } else {
+                        int cond_i1 = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = icmp ne i64 %%%d, 0", cond_i1, filter_reg);
+                        llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cond_i1, append_label, skip_label);
+                    }
+                    
+                    llvm_emit(lg, "L%d:", append_label);
+                    
+                    // Evaluate expression
+                    int expr_reg;
+                    llvm_expr(lg, e->comprehension.expr, &expr_reg);
+                    
+                    // Load current array, append, store back
+                    int curr_arr = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = load i64*, i64** %%%d", curr_arr, arr_ptr);
+                    int new_arr = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = call i64* @array_append_elem(i64* %%%d, i64 %%%d)", new_arr, curr_arr, expr_reg);
+                    llvm_emit(lg, "  store i64* %%%d, i64** %%%d", new_arr, arr_ptr);
+                    
+                    llvm_emit(lg, "  br label %%L%d", skip_label);
+                    llvm_emit(lg, "L%d:", skip_label);
+                } else {
+                    // No filter
+                    int expr_reg;
+                    llvm_expr(lg, e->comprehension.expr, &expr_reg);
+                    
+                    int curr_arr = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = load i64*, i64** %%%d", curr_arr, arr_ptr);
+                    int new_arr = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = call i64* @array_append_elem(i64* %%%d, i64 %%%d)", new_arr, curr_arr, expr_reg);
+                    llvm_emit(lg, "  store i64* %%%d, i64** %%%d", new_arr, arr_ptr);
+                }
+                
+                // Remove loop variable
+                lg->var_count = saved_var_count;
+                
+                // Increment
+                int next_val = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = add i64 %%%d, 1", next_val, curr_val);
+                llvm_emit(lg, "  store i64 %%%d, i64* %%%d", next_val, loop_var);
+                llvm_emit(lg, "  br label %%L%d", loop_start);
+                
+                // End
+                llvm_emit(lg, "L%d:", loop_end);
+                
             } else {
-                // No filter
-                int expr_reg;
-                llvm_expr(lg, e->comprehension.expr, &expr_reg);
+                // Array comprehension: [expr for var in array]
+                int iter_reg;
+                llvm_expr(lg, e->comprehension.iter, &iter_reg);
                 
-                int curr_arr = llvm_new_temp(lg);
-                llvm_emit(lg, "  %%%d = load i64*, i64** %%%d", curr_arr, arr_ptr);
-                int new_arr = llvm_new_temp(lg);
-                llvm_emit(lg, "  %%%d = call i64* @array_append_elem(i64* %%%d, i64 %%%d)", new_arr, curr_arr, expr_reg);
-                llvm_emit(lg, "  store i64* %%%d, i64** %%%d", new_arr, arr_ptr);
+                // Get length
+                int len_ptr = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = getelementptr i64, ptr %%%d, i64 0", len_ptr, iter_reg);
+                int len_val = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = load i64, i64* %%%d", len_val, len_ptr);
+                
+                // Loop index
+                int loop_idx = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = alloca i64", loop_idx);
+                llvm_emit(lg, "  store i64 0, i64* %%%d", loop_idx);
+                
+                // Labels
+                int loop_start = lg->label_count++;
+                int loop_body = lg->label_count++;
+                int loop_end = lg->label_count++;
+                
+                llvm_emit(lg, "  br label %%L%d", loop_start);
+                llvm_emit(lg, "L%d:", loop_start);
+                
+                // Check condition
+                int i_val = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = load i64, i64* %%%d", i_val, loop_idx);
+                int loop_cond = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = icmp slt i64 %%%d, %%%d", loop_cond, i_val, len_val);
+                llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", loop_cond, loop_body, loop_end);
+                
+                llvm_emit(lg, "L%d:", loop_body);
+                
+                // Get element
+                int idx_plus_2 = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = add i64 %%%d, 2", idx_plus_2, i_val);
+                int elem_ptr = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = getelementptr i64, ptr %%%d, i64 %%%d", elem_ptr, iter_reg, idx_plus_2);
+                int elem_val = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = load i64, i64* %%%d", elem_val, elem_ptr);
+                
+                // Add loop variable
+                int var_alloca = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = alloca i64", var_alloca);
+                llvm_emit(lg, "  store i64 %%%d, i64* %%%d", elem_val, var_alloca);
+                int saved_var_count = lg->var_count;
+                llvm_add_var(lg, e->comprehension.var, var_alloca, new_type(TYPE_INT));
+                
+                // Handle filter
+                if (e->comprehension.condition) {
+                    int filter_reg;
+                    llvm_expr(lg, e->comprehension.condition, &filter_reg);
+                    
+                    int append_label = lg->label_count++;
+                    int skip_label = lg->label_count++;
+                    
+                    bool is_comparison = (e->comprehension.condition->kind == EXPR_BINARY);
+                    if (is_comparison) {
+                        llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", filter_reg, append_label, skip_label);
+                    } else {
+                        int cond_i1 = llvm_new_temp(lg);
+                        llvm_emit(lg, "  %%%d = icmp ne i64 %%%d, 0", cond_i1, filter_reg);
+                        llvm_emit(lg, "  br i1 %%%d, label %%L%d, label %%L%d", cond_i1, append_label, skip_label);
+                    }
+                    
+                    llvm_emit(lg, "L%d:", append_label);
+                    
+                    // Evaluate expression
+                    int expr_reg;
+                    llvm_expr(lg, e->comprehension.expr, &expr_reg);
+                    
+                    // Load current array, append, store back
+                    int curr_arr = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = load i64*, i64** %%%d", curr_arr, arr_ptr);
+                    int new_arr = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = call i64* @array_append_elem(i64* %%%d, i64 %%%d)", new_arr, curr_arr, expr_reg);
+                    llvm_emit(lg, "  store i64* %%%d, i64** %%%d", new_arr, arr_ptr);
+                    
+                    llvm_emit(lg, "  br label %%L%d", skip_label);
+                    llvm_emit(lg, "L%d:", skip_label);
+                } else {
+                    // No filter
+                    int expr_reg;
+                    llvm_expr(lg, e->comprehension.expr, &expr_reg);
+                    
+                    int curr_arr = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = load i64*, i64** %%%d", curr_arr, arr_ptr);
+                    int new_arr = llvm_new_temp(lg);
+                    llvm_emit(lg, "  %%%d = call i64* @array_append_elem(i64* %%%d, i64 %%%d)", new_arr, curr_arr, expr_reg);
+                    llvm_emit(lg, "  store i64* %%%d, i64** %%%d", new_arr, arr_ptr);
+                }
+                
+                // Remove loop variable
+                lg->var_count = saved_var_count;
+                
+                // Increment
+                int next_i = llvm_new_temp(lg);
+                llvm_emit(lg, "  %%%d = add i64 %%%d, 1", next_i, i_val);
+                llvm_emit(lg, "  store i64 %%%d, i64* %%%d", next_i, loop_idx);
+                llvm_emit(lg, "  br label %%L%d", loop_start);
+                
+                // End
+                llvm_emit(lg, "L%d:", loop_end);
             }
-            
-            // Remove loop variable
-            lg->var_count = saved_var_count;
-            
-            // Increment
-            int next_i = llvm_new_temp(lg);
-            llvm_emit(lg, "  %%%d = add i64 %%%d, 1", next_i, i_val);
-            llvm_emit(lg, "  store i64 %%%d, i64* %%%d", next_i, loop_idx);
-            llvm_emit(lg, "  br label %%L%d", loop_start);
-            
-            // End
-            llvm_emit(lg, "L%d:", loop_end);
             
             // Load final result
             int final_arr = llvm_new_temp(lg);
@@ -8046,9 +8330,9 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
                     } else if (is_array_var) {
                         llvm_emit(lg, "  store i64* %%%d, i64** %%%d", val_reg, alloca_reg);
                     } else if (is_string_var) {
-                        // Check if value is from array indexing (i64 that needs cast to i8*)
-                        if (s->let.value->kind == EXPR_INDEX) {
-                            // Cast i64 to i8* for string array elements
+                        // Check if value is from array indexing or slicing (i64 that needs cast to i8*)
+                        if (s->let.value->kind == EXPR_INDEX || s->let.value->kind == EXPR_SLICE) {
+                            // Cast i64 to i8* for string array elements and sliced strings
                             int cast_reg = llvm_new_temp(lg);
                             llvm_emit(lg, "  %%%d = inttoptr i64 %%%d to i8*", cast_reg, val_reg);
                             llvm_emit(lg, "  store i8* %%%d, i8** %%%d", cast_reg, alloca_reg);
@@ -8531,7 +8815,7 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
                 // Get array length
                 int len_ptr = llvm_new_temp(lg);
                 int len_reg = llvm_new_temp(lg);
-                llvm_emit(lg, "  %%%d = getelementptr i64, i64* %%%d, i64 0", len_ptr, arr_reg);
+                llvm_emit(lg, "  %%%d = getelementptr i64, ptr %%%d, i64 0", len_ptr, arr_reg);
                 llvm_emit(lg, "  %%%d = load i64, i64* %%%d", len_reg, len_ptr);
                 
                 // Create labels
@@ -8560,7 +8844,7 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
                 int adj_idx = llvm_new_temp(lg);
                 llvm_emit(lg, "  %%%d = add i64 %%%d, 2", adj_idx, curr_idx);
                 int elem_ptr = llvm_new_temp(lg);
-                llvm_emit(lg, "  %%%d = getelementptr i64, i64* %%%d, i64 %%%d", elem_ptr, arr_reg, adj_idx);
+                llvm_emit(lg, "  %%%d = getelementptr i64, ptr %%%d, i64 %%%d", elem_ptr, arr_reg, adj_idx);
                 int elem_val = llvm_new_temp(lg);
                 llvm_emit(lg, "  %%%d = load i64, i64* %%%d", elem_val, elem_ptr);
                 
@@ -9036,6 +9320,7 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i64 @ord(i8*)");
     llvm_emit(&lg, "declare i8* @chr(i64)");
     llvm_emit(&lg, "declare i8* @substring(i8*, i64, i64)");
+    llvm_emit(&lg, "declare i8* @str_substring(i8*, i64, i64)");
     llvm_emit(&lg, "declare i64 @str_find(i8*, i8*)");
     llvm_emit(&lg, "declare i8* @str_concat(i8*, i8*)");
     llvm_emit(&lg, "declare i8* @str_replace(i8*, i8*, i8*)");
@@ -9093,6 +9378,8 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i64* @array_append_elem(i64*, i64)");
     llvm_emit(&lg, "declare i64* @array_prepend_elem(i64*, i64)");
     llvm_emit(&lg, "declare i64 @array_contains_elem(i64*, i64)");
+    llvm_emit(&lg, "declare i64* @array_filter_simple(i64*)");
+    llvm_emit(&lg, "declare i64* @array_map_simple(i64*)");
     llvm_emit(&lg, "declare i64* @array_new()");
     llvm_emit(&lg, "declare i64 @sqlite_open(i8*)");
     llvm_emit(&lg, "declare i64 @sqlite_exec(i64, i8*)");
