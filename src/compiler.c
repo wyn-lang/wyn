@@ -6279,6 +6279,9 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                             snprintf(arg_str, 64, "%%%d", arg_reg);
                         }
                         llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* getelementptr ([3 x i8], [3 x i8]* @.fmt.float, i32 0, i32 0), double %s)", t, arg_str);
+                    } else if (llvm_is_string_expr(lg, e->call.args[i])) {
+                        // String expression (including array indexing)
+                        llvm_emit(lg, "  %%%d = call i32 (i8*, ...) @printf(i8* %%%d)", t, arg_reg);
                     } else {
                         char arg_str[64];
                         if (arg_reg <= -1000000) {
@@ -8263,6 +8266,26 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
                                          (long long)(-result_reg - 1000000), lg->var_regs[i]);
                             } else {
                                 llvm_emit(lg, "  store i64* %%%d, i64** %%%d", result_reg, lg->var_regs[i]);
+                            }
+                            
+                            // Update variable type if appending to array
+                            if (strcmp(method_name, "append") == 0 && s->expr.expr->call.arg_count > 0) {
+                                Type* var_type = lg->var_types[i];
+                                if (var_type && var_type->kind == TYPE_ARRAY && (!var_type->inner || var_type->inner->kind == TYPE_ANY)) {
+                                    // Check if appending a string
+                                    if (llvm_is_string_expr(lg, s->expr.expr->call.args[0])) {
+                                        if (!var_type->inner) {
+                                            var_type->inner = malloc(sizeof(Type));
+                                        }
+                                        var_type->inner->kind = TYPE_STR;
+                                    } else {
+                                        // Appending an integer
+                                        if (!var_type->inner) {
+                                            var_type->inner = malloc(sizeof(Type));
+                                        }
+                                        var_type->inner->kind = TYPE_INT;
+                                    }
+                                }
                             }
                             break;
                         }
