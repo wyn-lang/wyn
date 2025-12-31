@@ -1,0 +1,10 @@
+import os
+
+fn main() {
+  var dirs = ["internal-docs", "site", "wyn"]
+  for dir in dirs {
+    os.exec("cd " + dir)
+    os.exec("git push origin main")
+    os.exec("cd ..")
+  }
+}
