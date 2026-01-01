@@ -57,15 +57,4 @@ fn main() {
     print("test".wrap("[", "]"))    // "[test]"
     print("ha".repeat_times(3))     // "hahaha"
     
-    // Method chaining
-    print((-10).abs().squared())    // 100
-    
-    // Variables
-    const num = 7
-    print(num.squared())            // 49
-    
-    const text = "wyn"
-    print(text.shout())             // "WYN!!!"
-    
-    print("Extension methods are incredibly powerful!")
 }
