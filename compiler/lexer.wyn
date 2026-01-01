@@ -1,3 +1,5 @@
-fn tokenize(source: int) -> int {
-    return 123
+fn tokenize(input: str) -> str {
+    print("tokenize called with: ")
+    print(input)
+    return "tokenized: " + input
 }

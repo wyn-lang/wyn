@@ -2777,7 +2777,7 @@ static Import* parse_import(Parser* p) {
                 strcat(imp->path, "/");
                 parser_advance(p);
             } else if (parser_check(p, TOK_DOT)) {
-                strcat(imp->path, "/");  // Convert dot to slash for file path
+                strcat(imp->path, ".");  // Keep dot notation for module paths
                 parser_advance(p);
             }
             if (parser_check(p, TOK_IDENT)) {
@@ -3034,6 +3034,23 @@ static bool tc_is_module_imported(TypeChecker* tc, const char* module_name) {
     return false;
 }
 
+// Helper function to build full module path from field expression
+static bool build_module_path(Expr* e, char* path) {
+    if (!e) return false;
+    
+    if (e->kind == EXPR_IDENT) {
+        strcpy(path, e->ident);
+        return true;
+    } else if (e->kind == EXPR_FIELD) {
+        char parent_path[MAX_IDENT_LEN];
+        if (build_module_path(e->field.object, parent_path)) {
+            snprintf(path, MAX_IDENT_LEN, "%s.%s", parent_path, e->field.field);
+            return true;
+        }
+    }
+    return false;
+}
+
 static FnDef* tc_lookup_fn(TypeChecker* tc, const char* name) {
     for (int i = 0; i < tc->module->function_count; i++) {
         if (strcmp(tc->module->functions[i].name, name) == 0) return &tc->module->functions[i];
@@ -3173,6 +3190,17 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     strcmp(e->ident, "task_await") == 0 || strcmp(e->ident, "task_join_all") == 0 ||
                     strcmp(e->ident, "gpu_device_count") == 0) {
                     return new_type(TYPE_FUNCTION);
+                }
+                
+                // Check if this identifier might be part of a module path
+                // Look for any imported modules that start with this identifier
+                for (int i = 0; i < tc->module->import_count; i++) {
+                    const char* import_path = tc->module->imports[i].path;
+                    if (strncmp(import_path, e->ident, strlen(e->ident)) == 0 &&
+                        (import_path[strlen(e->ident)] == '.' || import_path[strlen(e->ident)] == '\0')) {
+                        // This might be part of a module path, return a special type
+                        return new_type(TYPE_ANY);
+                    }
                 }
                 
                 // Enhanced error with suggestion
@@ -3421,6 +3449,7 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
         
         case EXPR_FIELD: {
             // Check if this is a module.function reference
+            // First try the simple case
             if (e->field.object->kind == EXPR_IDENT) {
                 const char* potential_module = e->field.object->ident;
                 if (tc_is_module_imported(tc, potential_module)) {
@@ -3428,8 +3457,46 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     return new_type(TYPE_FUNCTION);
                 }
             }
-            Type* obj = tc_check_expr(tc, e->field.object);
-            if (obj->kind == TYPE_NAMED) {
+            
+            // Try building full module path for nested cases like compiler.lexer
+            char full_path[MAX_IDENT_LEN];
+            if (build_module_path(e->field.object, full_path)) {
+                if (tc_is_module_imported(tc, full_path)) {
+                    // This is a nested module namespace, return function type
+                    return new_type(TYPE_FUNCTION);
+                }
+            }
+            
+            // Try to type check the object, but don't fail if it's part of a module path
+            Type* obj = NULL;
+            if (e->field.object->kind == EXPR_IDENT) {
+                // For identifiers, check if they might be part of a module path
+                // by building the full path and checking if any imported module starts with it
+                char test_path[MAX_IDENT_LEN];
+                snprintf(test_path, MAX_IDENT_LEN, "%s.%s", e->field.object->ident, e->field.field);
+                
+                // Check if this path or any extension of it is an imported module
+                bool might_be_module = false;
+                for (int i = 0; i < tc->module->import_count; i++) {
+                    const char* import_path = tc->module->imports[i].path;
+                    if (strncmp(import_path, test_path, strlen(test_path)) == 0) {
+                        might_be_module = true;
+                        break;
+                    }
+                }
+                
+                if (might_be_module) {
+                    // This might be part of a module path, return function type
+                    return new_type(TYPE_FUNCTION);
+                } else {
+                    // Normal identifier, type check it
+                    obj = tc_check_expr(tc, e->field.object);
+                }
+            } else {
+                obj = tc_check_expr(tc, e->field.object);
+            }
+            
+            if (obj && obj->kind == TYPE_NAMED) {
                 StructDef* s = tc_lookup_struct(tc, obj->name);
                 if (s) {
                     for (int i = 0; i < s->field_count; i++) {
@@ -4068,6 +4135,18 @@ static Type* tc1_check_expr(TypeChecker1* tc, Expr* e) {
                 if (tc_is_enum_variant((TypeChecker*)tc, e->ident)) return new_type(TYPE_INT);
                 if (tc_lookup_fn((TypeChecker*)tc, e->ident)) return new_type(TYPE_FUNCTION);
                 if (tc1_is_builtin(e->ident)) return new_type(TYPE_FUNCTION);
+                
+                // Check if this identifier might be part of a module path
+                // Look for any imported modules that start with this identifier
+                for (int i = 0; i < ((TypeChecker*)tc)->module->import_count; i++) {
+                    const char* import_path = ((TypeChecker*)tc)->module->imports[i].path;
+                    if (strncmp(import_path, e->ident, strlen(e->ident)) == 0 &&
+                        (import_path[strlen(e->ident)] == '.' || import_path[strlen(e->ident)] == '\0')) {
+                        // This might be part of a module path, return a special type
+                        return new_type(TYPE_ANY);
+                    }
+                }
+                
                 tc1_error(tc, e->line, e->column, "undefined variable '%s'", e->ident);
                 tc1_suggest(tc, "check spelling or declare the variable");
                 return new_type(TYPE_ANY);
@@ -5335,6 +5414,13 @@ static void resolve_imports(Module* m, const char* base_path) {
         Import* imp = &m->imports[i];
         FILE* f = NULL;
         
+        // Convert dots to slashes for file path
+        char file_path[MAX_STRING_LEN];
+        strcpy(file_path, imp->path);
+        for (int k = 0; file_path[k]; k++) {
+            if (file_path[k] == '.') file_path[k] = '/';
+        }
+        
         // Try relative path first
         if (imp->path[0] == '.' && imp->path[1] == '/') {
             snprintf(full_path, 512, "%s%s.wyn", dir, imp->path + 2);
@@ -5343,7 +5429,7 @@ static void resolve_imports(Module* m, const char* base_path) {
         
         // Try std/ directory for stdlib modules
         if (!f) {
-            snprintf(full_path, 512, "std/%s.wyn", imp->path);
+            snprintf(full_path, 512, "std/%s.wyn", file_path);
             f = fopen(full_path, "rb");
         }
         
@@ -5351,12 +5437,12 @@ static void resolve_imports(Module* m, const char* base_path) {
         if (!f) {
             const char* home = getenv("HOME");
             if (home) {
-                snprintf(full_path, 512, "%s/.wyn/packages/%s/src/%s.wyn", home, imp->path, imp->path);
+                snprintf(full_path, 512, "%s/.wyn/packages/%s/src/%s.wyn", home, file_path, file_path);
                 f = fopen(full_path, "rb");
                 
                 // Also try without /src/
                 if (!f) {
-                    snprintf(full_path, 512, "%s/.wyn/packages/%s/%s.wyn", home, imp->path, imp->path);
+                    snprintf(full_path, 512, "%s/.wyn/packages/%s/%s.wyn", home, file_path, file_path);
                     f = fopen(full_path, "rb");
                 }
             }
@@ -5367,10 +5453,10 @@ static void resolve_imports(Module* m, const char* base_path) {
             char try_path[512];
             strcpy(try_path, dir);
             for (int depth = 0; depth < 5 && !f; depth++) {
-                snprintf(full_path, 512, "%s%s.wyn", try_path, imp->path);
+                snprintf(full_path, 512, "%s%s.wyn", try_path, file_path);
                 f = fopen(full_path, "rb");
                 if (!f) {
-                    snprintf(full_path, 512, "%sstd/%s.wyn", try_path, imp->path);
+                    snprintf(full_path, 512, "%sstd/%s.wyn", try_path, file_path);
                     f = fopen(full_path, "rb");
                 }
                 if (!f) strcat(try_path, "../");
@@ -5379,19 +5465,19 @@ static void resolve_imports(Module* m, const char* base_path) {
         
         // Try current directory if no dir specified
         if (!f && !dir[0]) {
-            snprintf(full_path, 512, "%s.wyn", imp->path);
+            snprintf(full_path, 512, "%s.wyn", file_path);
             f = fopen(full_path, "rb");
         }
         
         // Try std/ in current dir (legacy)
         if (!f) {
-            snprintf(full_path, 512, "%sstd/%s.wyn", dir, imp->path);
+            snprintf(full_path, 512, "%sstd/%s.wyn", dir, file_path);
             f = fopen(full_path, "rb");
         }
         
         // Try std/ in parent dir (legacy)
         if (!f) {
-            snprintf(full_path, 512, "%s../std/%s.wyn", dir, imp->path);
+            snprintf(full_path, 512, "%s../std/%s.wyn", dir, file_path);
             f = fopen(full_path, "rb");
         }
         
@@ -5400,7 +5486,7 @@ static void resolve_imports(Module* m, const char* base_path) {
             char try_path[512];
             strcpy(try_path, dir);
             for (int depth = 0; depth < 5 && !f; depth++) {
-                snprintf(full_path, 512, "%sstd/%s.wyn", try_path, imp->path);
+                snprintf(full_path, 512, "%sstd/%s.wyn", try_path, file_path);
                 f = fopen(full_path, "rb");
                 if (!f) strcat(try_path, "../");
             }
