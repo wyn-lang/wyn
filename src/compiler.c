@@ -4423,10 +4423,16 @@ static Type* tc1_check_expr(TypeChecker1* tc, Expr* e) {
         }
         
         case EXPR_FIELD: {
-            // Check if this is a module.function reference
+            // FIXED: Check if object is a VARIABLE first (method call)
             if (e->field.object->kind == EXPR_IDENT) {
-                const char* potential_module = e->field.object->ident;
-                if (tc_is_module_imported((TypeChecker*)tc, potential_module)) {
+                Symbol* sym = tc_lookup((TypeChecker*)tc, e->field.object->ident);
+                if (sym) {
+                    // It's a variable - this is a method call
+                    return new_type(TYPE_FUNCTION);
+                }
+                
+                // Not a variable - check for module
+                if (tc_is_module_imported((TypeChecker*)tc, e->field.object->ident)) {
                     // This is a module namespace, return function type
                     return new_type(TYPE_FUNCTION);
                 }
