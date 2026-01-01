@@ -8457,8 +8457,8 @@ static void llvm_stmt(LLVMGen* lg, Stmt* s) {
                             }
                         }
                     }
-                } else if (!is_struct_var) {
-                    // Regular variable assignment (only for non-struct variables)
+                } else {
+                    // Regular variable assignment (for both struct and non-struct variables)
                     int val_reg;
                     llvm_expr(lg, s->let.value, &val_reg);
                     if (is_float_var) {
