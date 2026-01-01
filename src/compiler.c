@@ -2965,6 +2965,7 @@ typedef struct TypeChecker {
     int symbol_count;
     int scope_depth;
     Type* current_return_type;
+    FnDef* current_function;
     bool had_error;
 } TypeChecker;
 
@@ -3290,6 +3291,57 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                 e->call.func->field.object->kind == EXPR_IDENT) {
                 const char* module = e->call.func->field.object->ident;
                 const char* function = e->call.func->field.field;
+                
+                // Check if this is 'self' in an extension method
+                if (strcmp(module, "self") == 0 &&
+                    tc->current_function && tc->current_function->is_extension) {
+                    // This is a method call on 'self' in an extension method
+                    // Handle it as a normal method call, not a module call
+                    Type* func_type = tc_check_expr(tc, e->call.func);
+                    (void)func_type;
+                    for (int i = 0; i < e->call.arg_count; i++) {
+                        tc_check_expr(tc, e->call.args[i]);
+                    }
+                    // Handle method calls (obj.method())
+                    if (e->call.func->kind == EXPR_FIELD) {
+                        const char* method_name = e->call.func->field.field;
+                        // String methods
+                        if (strcmp(method_name, "len") == 0) return new_type(TYPE_INT);
+                        if (strcmp(method_name, "upper") == 0) return new_type(TYPE_STR);
+                        if (strcmp(method_name, "lower") == 0) return new_type(TYPE_STR);
+                        if (strcmp(method_name, "trim") == 0) return new_type(TYPE_STR);
+                        if (strcmp(method_name, "contains") == 0) return new_type(TYPE_BOOL);
+                        if (strcmp(method_name, "starts_with") == 0) return new_type(TYPE_BOOL);
+                        if (strcmp(method_name, "ends_with") == 0) return new_type(TYPE_BOOL);
+                        if (strcmp(method_name, "split") == 0) return new_type(TYPE_ARRAY);
+                        if (strcmp(method_name, "replace") == 0) return new_type(TYPE_STR);
+                        if (strcmp(method_name, "index_of") == 0) return new_type(TYPE_INT);
+                        if (strcmp(method_name, "find") == 0) return new_type(TYPE_INT);
+                        if (strcmp(method_name, "substring") == 0) return new_type(TYPE_STR);
+                        if (strcmp(method_name, "char_at") == 0) return new_type(TYPE_STR);
+                        // Int methods
+                        if (strcmp(method_name, "abs") == 0) return new_type(TYPE_INT);
+                        if (strcmp(method_name, "to_str") == 0) return new_type(TYPE_STR);
+                        if (strcmp(method_name, "to_int") == 0) return new_type(TYPE_INT);
+                        if (strcmp(method_name, "to_float") == 0) return new_type(TYPE_FLOAT);
+                        // Float methods
+                        if (strcmp(method_name, "floor") == 0) return new_type(TYPE_INT);
+                        if (strcmp(method_name, "ceil") == 0) return new_type(TYPE_INT);
+                        if (strcmp(method_name, "round") == 0) return new_type(TYPE_INT);
+                        // Array methods
+                        if (strcmp(method_name, "get") == 0) return new_type(TYPE_INT);
+                        if (strcmp(method_name, "get_str") == 0) return new_type(TYPE_STR);
+                        if (strcmp(method_name, "reverse") == 0) return new_type(TYPE_ARRAY);
+                        if (strcmp(method_name, "append") == 0) return new_type(TYPE_ARRAY);
+                        if (strcmp(method_name, "contains") == 0) return new_type(TYPE_INT);
+                        if (strcmp(method_name, "prepend") == 0) return new_type(TYPE_ARRAY);
+                        if (strcmp(method_name, "filter") == 0) return new_type(TYPE_ARRAY);
+                        if (strcmp(method_name, "map") == 0) return new_type(TYPE_ARRAY);
+                        if (strcmp(method_name, "join") == 0) return new_type(TYPE_STR);
+                    }
+                    return new_type(TYPE_ANY);
+                }
+                
                 const char* builtin_name = map_module_function(module, function);
                 if (builtin_name) {
                     // Check if module was imported (required for new import system)
@@ -3448,6 +3500,26 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
         }
         
         case EXPR_FIELD: {
+            // Check if this is 'self' in an extension method
+            if (e->field.object->kind == EXPR_IDENT && 
+                strcmp(e->field.object->ident, "self") == 0 &&
+                tc->current_function && tc->current_function->is_extension) {
+                // This is a method call on 'self' in an extension method
+                // Type check 'self' normally and return the field access
+                Type* obj = tc_check_expr(tc, e->field.object);
+                if (obj && obj->kind == TYPE_NAMED) {
+                    StructDef* s = tc_lookup_struct(tc, obj->name);
+                    if (s) {
+                        for (int i = 0; i < s->field_count; i++) {
+                            if (strcmp(s->fields[i].name, e->field.field) == 0) {
+                                return s->fields[i].type;
+                            }
+                        }
+                    }
+                }
+                return new_type(TYPE_ANY);
+            }
+            
             // Check if this is a module.function reference
             // First try the simple case
             if (e->field.object->kind == EXPR_IDENT) {
@@ -3876,6 +3948,9 @@ static void tc_check_function(TypeChecker* tc, FnDef* fn) {
 static void tc_check_function_with_self(TypeChecker* tc, FnDef* fn, Type* self_type) {
     tc_enter_scope(tc);
     
+    // Set current function for extension method detection
+    tc->current_function = fn;
+    
     // Add parameters to scope
     for (int i = 0; i < fn->param_count; i++) {
         Type* param_type = fn->params[i].type;
@@ -3894,6 +3969,7 @@ static void tc_check_function_with_self(TypeChecker* tc, FnDef* fn, Type* self_t
     }
     
     tc->current_return_type = NULL;
+    tc->current_function = NULL;
     tc_exit_scope(tc);
 }
 
