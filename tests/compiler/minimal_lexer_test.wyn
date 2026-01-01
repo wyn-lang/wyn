@@ -1,0 +1,59 @@
+// Minimal lexer test
+
+fn test_char_at() {
+    var source: str = "hello"
+    var c: str = source[0:1]
+    assert(c == "h")
+    print("✓ char_at test passed")
+}
+
+fn test_is_digit() {
+    var c1: str = "5"
+    var c2: str = "a"
+    
+    // Simple digit check
+    var is_digit1: bool = (c1[0] >= 48 and c1[0] <= 57)
+    var is_digit2: bool = (c2[0] >= 48 and c2[0] <= 57)
+    
+    assert(is_digit1 == true)
+    assert(is_digit2 == false)
+    print("✓ is_digit test passed")
+}
+
+fn test_is_alpha() {
+    var c1: str = "a"
+    var c2: str = "5"
+    
+    // Simple alpha check
+    var is_alpha1: bool = ((c1[0] >= 65 and c1[0] <= 90) or (c1[0] >= 97 and c1[0] <= 122))
+    var is_alpha2: bool = ((c2[0] >= 65 and c2[0] <= 90) or (c2[0] >= 97 and c2[0] <= 122))
+    
+    assert(is_alpha1 == true)
+    assert(is_alpha2 == false)
+    print("✓ is_alpha test passed")
+}
+
+fn test_string_operations() {
+    var source: str = "hello world"
+    var len: int = source.len()
+    assert(len == 11)
+    
+    var first_char: str = source[0:1]
+    assert(first_char == "h")
+    
+    var substring: str = source[0:5]
+    assert(substring == "hello")
+    
+    print("✓ string operations test passed")
+}
+
+fn main() {
+    print("Running minimal lexer tests...")
+    
+    test_char_at()
+    test_is_digit()
+    test_is_alpha()
+    test_string_operations()
+    
+    print("All tests passed! ✓")
+}

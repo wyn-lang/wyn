@@ -1,0 +1,114 @@
+// Minimal AST nodes for expression parsing
+
+import compiler.lexer.token.{Token}
+
+// Expression base
+pub enum Expr {
+    Binary(BinaryExpr)
+    Unary(UnaryExpr)
+    Call(CallExpr)
+    Literal(LiteralExpr)
+    Array(ArrayExpr)
+    Index(IndexExpr)
+    Ident(IdentExpr)
+    Field(FieldExpr)
+}
+
+// Binary expression: left op right
+pub struct BinaryExpr {
+    left: Box[Expr]
+    op: BinOp
+    right: Box[Expr]
+    line: int
+    column: int
+}
+
+// Unary expression: op expr
+pub struct UnaryExpr {
+    op: UnaryOp
+    expr: Box[Expr]
+    line: int
+    column: int
+}
+
+// Function call: func(args...)
+pub struct CallExpr {
+    func: Box[Expr]
+    args: array[Expr]
+    line: int
+    column: int
+}
+
+// Literal values
+pub struct LiteralExpr {
+    value: LiteralValue
+    line: int
+    column: int
+}
+
+pub enum LiteralValue {
+    Int(int)
+    Str(str)
+    Bool(bool)
+}
+
+// Array literal: [expr, expr, ...]
+pub struct ArrayExpr {
+    elements: array[Expr]
+    line: int
+    column: int
+}
+
+// Array/map indexing: expr[index]
+pub struct IndexExpr {
+    object: Box[Expr]
+    index: Box[Expr]
+    line: int
+    column: int
+}
+
+// Identifier: name
+pub struct IdentExpr {
+    name: str
+    line: int
+    column: int
+}
+
+// Field access: expr.field
+pub struct FieldExpr {
+    object: Box[Expr]
+    field: str
+    line: int
+    column: int
+}
+
+// Binary operators
+pub enum BinOp {
+    Add     // +
+    Sub     // -
+    Mul     // *
+    Div     // /
+    Eq      // ==
+    NotEq   // !=
+    Lt      // <
+    Gt      // >
+    LtEq    // <=
+    GtEq    // >=
+}
+
+// Unary operators
+pub enum UnaryOp {
+    Neg     // -
+    Not     // !
+}
+
+// Box type for recursive structures
+pub struct Box<T> {
+    value: T
+}
+
+impl<T> Box<T> {
+    pub fn new(value: T) -> Box[T] {
+        Box{value}
+    }
+}

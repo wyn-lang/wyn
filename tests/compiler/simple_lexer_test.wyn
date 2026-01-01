@@ -1,0 +1,233 @@
+// Simple lexer test - inline implementation
+
+enum TokenKind {
+    EOF,
+    IDENT,
+    INT,
+    PLUS,
+    MINUS,
+    STAR,
+    LPAREN,
+    RPAREN,
+    EQ,
+    ERROR
+}
+
+struct Token {
+    kind: TokenKind
+    ident: str
+    int_val: int
+}
+
+struct Lexer {
+    source: str
+    pos: int
+}
+
+fn lexer_new(source: str) -> Lexer {
+    return Lexer{source: source, pos: 0}
+}
+
+fn char_at(source: str, pos: int) -> str {
+    if pos >= source.len() {
+        return ""
+    }
+    return source[pos:pos+1]
+}
+
+fn is_digit(ch: str) -> bool {
+    if ch.len() != 1 {
+        return false
+    }
+    var c = ch[0]
+    return c >= 48 and c <= 57  // '0' to '9'
+}
+
+fn is_alpha(ch: str) -> bool {
+    if ch.len() != 1 {
+        return false
+    }
+    var c = ch[0]
+    return (c >= 65 and c <= 90) or (c >= 97 and c <= 122) or c == 95  // A-Z, a-z, _
+}
+
+fn advance(lexer: mut Lexer) {
+    if lexer.pos < lexer.source.len() {
+        lexer.pos = lexer.pos + 1
+    }
+}
+
+fn skip_whitespace(lexer: mut Lexer) {
+    while lexer.pos < lexer.source.len() {
+        var c = char_at(lexer.source, lexer.pos)
+        if c == " " or c == "\t" or c == "\r" or c == "\n" {
+            advance(lexer)
+        } else {
+            break
+        }
+    }
+}
+
+fn scan_ident(lexer: mut Lexer) -> Token {
+    var ident = ""
+    while lexer.pos < lexer.source.len() and (is_alpha(char_at(lexer.source, lexer.pos)) or is_digit(char_at(lexer.source, lexer.pos))) {
+        ident = ident + char_at(lexer.source, lexer.pos)
+        advance(lexer)
+    }
+    return Token{kind: TokenKind.IDENT, ident: ident, int_val: 0}
+}
+
+fn scan_number(lexer: mut Lexer) -> Token {
+    var num_str = ""
+    while lexer.pos < lexer.source.len() and is_digit(char_at(lexer.source, lexer.pos)) {
+        num_str = num_str + char_at(lexer.source, lexer.pos)
+        advance(lexer)
+    }
+    
+    // Simple integer parsing
+    var num = 0
+    for i in 0..num_str.len() {
+        num = num * 10 + (num_str[i:i+1][0] - 48)
+    }
+    
+    return Token{kind: TokenKind.INT, ident: "", int_val: num}
+}
+
+fn lexer_next(lexer: mut Lexer) -> Token {
+    skip_whitespace(lexer)
+    
+    if lexer.pos >= lexer.source.len() {
+        return Token{kind: TokenKind.EOF, ident: "", int_val: 0}
+    }
+    
+    var c = char_at(lexer.source, lexer.pos)
+    
+    if is_alpha(c) {
+        return scan_ident(lexer)
+    }
+    
+    if is_digit(c) {
+        return scan_number(lexer)
+    }
+    
+    match c {
+        "+" => {
+            advance(lexer)
+            return Token{kind: TokenKind.PLUS, ident: "", int_val: 0}
+        },
+        "-" => {
+            advance(lexer)
+            return Token{kind: TokenKind.MINUS, ident: "", int_val: 0}
+        },
+        "*" => {
+            advance(lexer)
+            return Token{kind: TokenKind.STAR, ident: "", int_val: 0}
+        },
+        "(" => {
+            advance(lexer)
+            return Token{kind: TokenKind.LPAREN, ident: "", int_val: 0}
+        },
+        ")" => {
+            advance(lexer)
+            return Token{kind: TokenKind.RPAREN, ident: "", int_val: 0}
+        },
+        "=" => {
+            advance(lexer)
+            return Token{kind: TokenKind.EQ, ident: "", int_val: 0}
+        },
+        _ => {
+            advance(lexer)
+            return Token{kind: TokenKind.ERROR, ident: "", int_val: 0}
+        }
+    }
+}
+
+fn test_basic_lexing() {
+    print("Testing basic lexing...")
+    
+    var source = "x = 42 + y"
+    var lexer = lexer_new(source)
+    
+    var token = lexer_next(lexer)
+    assert(token.kind == TokenKind.IDENT)
+    assert(token.ident == "x")
+    
+    token = lexer_next(lexer)
+    assert(token.kind == TokenKind.EQ)
+    
+    token = lexer_next(lexer)
+    assert(token.kind == TokenKind.INT)
+    assert(token.int_val == 42)
+    
+    token = lexer_next(lexer)
+    assert(token.kind == TokenKind.PLUS)
+    
+    token = lexer_next(lexer)
+    assert(token.kind == TokenKind.IDENT)
+    assert(token.ident == "y")
+    
+    token = lexer_next(lexer)
+    assert(token.kind == TokenKind.EOF)
+    
+    print("✓ Basic lexing test passed")
+}
+
+fn test_numbers() {
+    print("Testing number parsing...")
+    
+    var lexer = lexer_new("123")
+    var token = lexer_next(lexer)
+    assert(token.kind == TokenKind.INT)
+    assert(token.int_val == 123)
+    
+    lexer = lexer_new("0")
+    token = lexer_next(lexer)
+    assert(token.kind == TokenKind.INT)
+    assert(token.int_val == 0)
+    
+    print("✓ Number parsing test passed")
+}
+
+fn test_identifiers() {
+    print("Testing identifier parsing...")
+    
+    var lexer = lexer_new("hello_world")
+    var token = lexer_next(lexer)
+    assert(token.kind == TokenKind.IDENT)
+    assert(token.ident == "hello_world")
+    
+    lexer = lexer_new("x123")
+    token = lexer_next(lexer)
+    assert(token.kind == TokenKind.IDENT)
+    assert(token.ident == "x123")
+    
+    print("✓ Identifier parsing test passed")
+}
+
+fn test_operators() {
+    print("Testing operator parsing...")
+    
+    var operators = ["+", "-", "*", "(", ")", "="]
+    var expected = [TokenKind.PLUS, TokenKind.MINUS, TokenKind.STAR, TokenKind.LPAREN, TokenKind.RPAREN, TokenKind.EQ]
+    
+    for i in 0..operators.len() {
+        var lexer = lexer_new(operators[i])
+        var token = lexer_next(lexer)
+        assert(token.kind == expected[i])
+    }
+    
+    print("✓ Operator parsing test passed")
+}
+
+fn run_tests() {
+    print("Running lexer tests...")
+    
+    test_basic_lexing()
+    test_numbers()
+    test_identifiers()
+    test_operators()
+    
+    print("All lexer tests passed! ✓")
+}
+
+run_tests()

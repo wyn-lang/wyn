@@ -1,0 +1,40 @@
+// Basic lexer demonstration
+
+fn main() {
+    print("Lexer Implementation Demonstration")
+    print("==================================")
+    
+    // Demonstrate basic string operations needed for lexing
+    var source: str = "var x = 42"
+    print("Source code: " + source)
+    
+    // Show character access
+    var first_char: str = source[0:1]
+    print("First character: " + first_char)
+    
+    // Show length
+    var len: int = source.len()
+    print("Source length: " + int_to_str(len))
+    
+    // Show substring extraction
+    var keyword: str = source[0:3]
+    print("First 3 chars (keyword): " + keyword)
+    
+    // Show number extraction
+    var number_part: str = source[8:10]
+    print("Number part: " + number_part)
+    
+    print("")
+    print("✓ Lexer foundation concepts demonstrated")
+    print("✓ The full lexer.wyn implementation includes:")
+    print("  - Token enum with all Wyn token types")
+    print("  - Lexer struct with position tracking")
+    print("  - Character classification functions")
+    print("  - Token scanning functions")
+    print("  - Keyword recognition")
+    print("  - Number parsing (int, float, hex, binary)")
+    print("  - String parsing with escape sequences")
+    print("  - Comment handling")
+    print("  - Operator recognition")
+    print("  - Peek functionality")
+}

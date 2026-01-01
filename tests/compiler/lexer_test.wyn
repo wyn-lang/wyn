@@ -1,0 +1,241 @@
+import "../compiler/lexer.wyn"
+
+fn test_basic_tokens() {
+    var source = "fn main() { var x = 42; }"
+    var lexer = lexer_new(source)
+    
+    var token = lexer_next(lexer)
+    assert(token.kind == TokenKind.FN)
+    
+    token = lexer_next(lexer)
+    assert(token.kind == TokenKind.IDENT)
+    assert(token.ident == "main")
+    
+    token = lexer_next(lexer)
+    assert(token.kind == TokenKind.LPAREN)
+    
+    token = lexer_next(lexer)
+    assert(token.kind == TokenKind.RPAREN)
+    
+    token = lexer_next(lexer)
+    assert(token.kind == TokenKind.LBRACE)
+    
+    token = lexer_next(lexer)
+    assert(token.kind == TokenKind.VAR)
+    
+    token = lexer_next(lexer)
+    assert(token.kind == TokenKind.IDENT)
+    assert(token.ident == "x")
+    
+    token = lexer_next(lexer)
+    assert(token.kind == TokenKind.EQ)
+    
+    token = lexer_next(lexer)
+    assert(token.kind == TokenKind.INT)
+    assert(token.int_val == 42)
+    
+    token = lexer_next(lexer)
+    assert(token.kind == TokenKind.SEMICOLON)
+    
+    token = lexer_next(lexer)
+    assert(token.kind == TokenKind.RBRACE)
+    
+    token = lexer_next(lexer)
+    assert(token.kind == TokenKind.EOF)
+    
+    print("✓ Basic tokens test passed")
+}
+
+fn test_keywords() {
+    var keywords = [
+        ("fn", TokenKind.FN),
+        ("struct", TokenKind.STRUCT),
+        ("enum", TokenKind.ENUM),
+        ("var", TokenKind.VAR),
+        ("mut", TokenKind.MUT),
+        ("const", TokenKind.CONST),
+        ("if", TokenKind.IF),
+        ("else", TokenKind.ELSE),
+        ("for", TokenKind.FOR),
+        ("while", TokenKind.WHILE),
+        ("return", TokenKind.RETURN),
+        ("true", TokenKind.TRUE),
+        ("false", TokenKind.FALSE)
+    ]
+    
+    for kw in keywords {
+        var lexer = lexer_new(kw[0])
+        var token = lexer_next(lexer)
+        assert(token.kind == kw[1])
+    }
+    
+    print("✓ Keywords test passed")
+}
+
+fn test_operators() {
+    var operators = [
+        ("+", TokenKind.PLUS),
+        ("-", TokenKind.MINUS),
+        ("*", TokenKind.STAR),
+        ("/", TokenKind.SLASH),
+        ("%", TokenKind.PERCENT),
+        ("==", TokenKind.EQEQ),
+        ("!=", TokenKind.NOTEQ),
+        ("<", TokenKind.LT),
+        (">", TokenKind.GT),
+        ("<=", TokenKind.LTEQ),
+        (">=", TokenKind.GTEQ),
+        ("=", TokenKind.EQ),
+        ("+=", TokenKind.PLUSEQ),
+        ("-=", TokenKind.MINUSEQ),
+        ("*=", TokenKind.STAREQ),
+        ("/=", TokenKind.SLASHEQ),
+        ("->", TokenKind.ARROW),
+        ("=>", TokenKind.FATARROW),
+        ("**", TokenKind.STARSTAR),
+        ("..", TokenKind.DOTDOT),
+        ("...", TokenKind.DOTDOTDOT)
+    ]
+    
+    for op in operators {
+        var lexer = lexer_new(op[0])
+        var token = lexer_next(lexer)
+        assert(token.kind == op[1])
+    }
+    
+    print("✓ Operators test passed")
+}
+
+fn test_numbers() {
+    // Integer
+    var lexer = lexer_new("42")
+    var token = lexer_next(lexer)
+    assert(token.kind == TokenKind.INT)
+    assert(token.int_val == 42)
+    
+    // Float
+    lexer = lexer_new("3.14")
+    token = lexer_next(lexer)
+    assert(token.kind == TokenKind.FLOAT)
+    // Note: float comparison might need tolerance
+    
+    // Hex
+    lexer = lexer_new("0xFF")
+    token = lexer_next(lexer)
+    assert(token.kind == TokenKind.INT)
+    assert(token.int_val == 255)
+    
+    // Binary
+    lexer = lexer_new("0b1010")
+    token = lexer_next(lexer)
+    assert(token.kind == TokenKind.INT)
+    assert(token.int_val == 10)
+    
+    print("✓ Numbers test passed")
+}
+
+fn test_strings() {
+    // Regular string
+    var lexer = lexer_new("\"hello world\"")
+    var token = lexer_next(lexer)
+    assert(token.kind == TokenKind.STRING)
+    assert(token.str_val == "hello world")
+    
+    // String with escapes
+    lexer = lexer_new("\"hello\\nworld\"")
+    token = lexer_next(lexer)
+    assert(token.kind == TokenKind.STRING)
+    assert(token.str_val == "hello\nworld")
+    
+    // Raw string
+    lexer = lexer_new("r\"hello\\nworld\"")
+    token = lexer_next(lexer)
+    assert(token.kind == TokenKind.RAW_STRING)
+    assert(token.str_val == "hello\\nworld")
+    
+    // Multi-line string
+    lexer = lexer_new("\"\"\"hello\nworld\"\"\"")
+    token = lexer_next(lexer)
+    assert(token.kind == TokenKind.MULTILINE_STRING)
+    assert(token.str_val == "hello\nworld")
+    
+    print("✓ Strings test passed")
+}
+
+fn test_comments() {
+    // Single-line comment with #
+    var lexer = lexer_new("# this is a comment\nvar x = 1")
+    var token = lexer_next(lexer)
+    assert(token.kind == TokenKind.NEWLINE)
+    token = lexer_next(lexer)
+    assert(token.kind == TokenKind.VAR)
+    
+    // Single-line comment with //
+    lexer = lexer_new("// this is a comment\nvar y = 2")
+    token = lexer_next(lexer)
+    assert(token.kind == TokenKind.NEWLINE)
+    token = lexer_next(lexer)
+    assert(token.kind == TokenKind.VAR)
+    
+    // Multi-line comment
+    lexer = lexer_new("/* this is a\nmulti-line comment */var z = 3")
+    token = lexer_next(lexer)
+    assert(token.kind == TokenKind.VAR)
+    
+    print("✓ Comments test passed")
+}
+
+fn test_peek() {
+    var lexer = lexer_new("fn main")
+    
+    var peek_token = lexer_peek(lexer)
+    assert(peek_token.kind == TokenKind.FN)
+    
+    var next_token = lexer_next(lexer)
+    assert(next_token.kind == TokenKind.FN)
+    
+    peek_token = lexer_peek(lexer)
+    assert(peek_token.kind == TokenKind.IDENT)
+    assert(peek_token.ident == "main")
+    
+    next_token = lexer_next(lexer)
+    assert(next_token.kind == TokenKind.IDENT)
+    assert(next_token.ident == "main")
+    
+    print("✓ Peek test passed")
+}
+
+fn test_line_column_tracking() {
+    var source = "fn\nmain() {\n  var x = 1\n}"
+    var lexer = lexer_new(source)
+    
+    var token = lexer_next(lexer)  // fn
+    assert(token.line == 1)
+    assert(token.column == 1)
+    
+    token = lexer_next(lexer)  // newline
+    assert(token.kind == TokenKind.NEWLINE)
+    
+    token = lexer_next(lexer)  // main
+    assert(token.line == 2)
+    assert(token.column == 1)
+    
+    print("✓ Line/column tracking test passed")
+}
+
+fn run_all_tests() {
+    print("Running lexer tests...")
+    
+    test_basic_tokens()
+    test_keywords()
+    test_operators()
+    test_numbers()
+    test_strings()
+    test_comments()
+    test_peek()
+    test_line_column_tracking()
+    
+    print("All lexer tests passed! ✓")
+}
+
+run_all_tests()
