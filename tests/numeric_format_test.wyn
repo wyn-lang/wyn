@@ -1,9 +1,0 @@
-// Test with numeric variable
-
-fn main() {
-    print("Testing numeric interpolation...")
-    var age = 42
-    var msg = "Age is {age}"
-    print(msg)
-    print("Done")
-}
