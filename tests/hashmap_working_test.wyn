@@ -1,0 +1,55 @@
+import hashmap
+
+fn main() {
+    print("HashMap Implementation Test\n")
+    print("==========================\n")
+    
+    # Test 1: Create HashMap
+    var symbols = hashmap.new()
+    print("✓ Created HashMap\n")
+    
+    # Test 2: Set values
+    hashmap.set(symbols, "x", "int")
+    hashmap.set(symbols, "y", "str")
+    hashmap.set(symbols, "z", "bool")
+    print("✓ Set key-value pairs\n")
+    
+    # Test 3: Check existence
+    var has_x = hashmap.has(symbols, "x")
+    print("Has 'x': ")
+    print(has_x)
+    print("\n")
+    
+    var has_w = hashmap.has(symbols, "w")
+    print("Has 'w': ")
+    print(has_w)
+    print("\n")
+    
+    # Test 4: Get size
+    var size = hashmap.size(symbols)
+    print("Size: ")
+    print(size)
+    print("\n")
+    
+    # Test 5: Remove key
+    hashmap.delete(symbols, "y")
+    var has_y_after = hashmap.has(symbols, "y")
+    print("Has 'y' after delete: ")
+    print(has_y_after)
+    print("\n")
+    
+    var size_after = hashmap.size(symbols)
+    print("Size after delete: ")
+    print(size_after)
+    print("\n")
+    
+    # Test 6: Clear HashMap
+    hashmap.clear(symbols)
+    var size_final = hashmap.size(symbols)
+    print("Size after clear: ")
+    print(size_final)
+    print("\n")
+    
+    print("✅ HashMap tests completed!\n")
+    print("Note: hashmap.get() requires type system fixes\n")
+}
