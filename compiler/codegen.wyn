@@ -1,0 +1,434 @@
+// LLVM IR code generation for Wyn
+
+import compiler.ast.{Expr, BinaryExpr, UnaryExpr, CallExpr, LiteralExpr, LiteralValue, IdentExpr, BinOp, UnaryOp}
+
+// Additional AST nodes for codegen
+pub struct Module {
+    functions: array[FnDef]
+}
+
+pub struct FnDef {
+    name: str
+    params: array[str]
+    body: array[Stmt]
+    ret_type: str
+}
+
+pub enum Stmt {
+    VarDecl(VarDeclStmt)
+    Assign(AssignStmt)
+    Return(ReturnStmt)
+    Expr(ExprStmt)
+    If(IfStmt)
+    For(ForStmt)
+    While(WhileStmt)
+}
+
+pub struct VarDeclStmt {
+    name: str
+    init: Expr
+}
+
+pub struct AssignStmt {
+    name: str
+    value: Expr
+}
+
+pub struct ReturnStmt {
+    value: Expr
+}
+
+pub struct ExprStmt {
+    expr: Expr
+}
+
+pub struct IfStmt {
+    cond: Expr
+    then_body: array[Stmt]
+    else_body: array[Stmt]
+}
+
+pub struct ForStmt {
+    init: Stmt
+    cond: Expr
+    update: Stmt
+    body: array[Stmt]
+}
+
+pub struct WhileStmt {
+    cond: Expr
+    body: array[Stmt]
+}
+
+// HashMap for symbol table
+pub struct HashMap {
+    keys: array[str]
+    values: array[str]
+}
+
+impl HashMap {
+    pub fn new() -> HashMap {
+        HashMap{keys: [], values: []}
+    }
+    
+    pub fn get(self, key: str) -> str {
+        let mut i = 0
+        while i < self.keys.len() {
+            if self.keys[i] == key {
+                return self.values[i]
+            }
+            i = i + 1
+        }
+        return ""
+    }
+    
+    pub fn set(self, key: str, value: str) {
+        let mut i = 0
+        while i < self.keys.len() {
+            if self.keys[i] == key {
+                self.values[i] = value
+                return
+            }
+            i = i + 1
+        }
+        self.keys = self.keys + [key]
+        self.values = self.values + [value]
+    }
+}
+
+// StringBuilder for efficient string building
+pub struct StringBuilder {
+    parts: array[str]
+}
+
+impl StringBuilder {
+    pub fn new() -> StringBuilder {
+        StringBuilder{parts: []}
+    }
+    
+    pub fn append(self, s: str) {
+        self.parts = self.parts + [s]
+    }
+    
+    pub fn to_string(self) -> str {
+        let mut result = ""
+        let mut i = 0
+        while i < self.parts.len() {
+            result = result + self.parts[i]
+            i = i + 1
+        }
+        return result
+    }
+}
+
+// Main CodeGen struct
+pub struct CodeGen {
+    output: StringBuilder
+    temp_count: int
+    label_count: int
+    symbols: HashMap
+}
+
+impl CodeGen {
+    pub fn new() -> CodeGen {
+        CodeGen{
+            output: StringBuilder::new(),
+            temp_count: 0,
+            label_count: 0,
+            symbols: HashMap::new()
+        }
+    }
+    
+    // Generate next temporary variable
+    fn next_temp(self) -> str {
+        let temp = "%t" + int_to_str(self.temp_count)
+        self.temp_count = self.temp_count + 1
+        return temp
+    }
+    
+    // Generate next label
+    fn next_label(self) -> str {
+        let label = "L" + int_to_str(self.label_count)
+        self.label_count = self.label_count + 1
+        return label
+    }
+    
+    // Generate module
+    pub fn gen_module(self, module: Module) -> str {
+        self.output.append("target triple = \"x86_64-unknown-linux-gnu\"\n\n")
+        
+        let mut i = 0
+        while i < module.functions.len() {
+            self.gen_function(module.functions[i])
+            i = i + 1
+        }
+        
+        return self.output.to_string()
+    }
+    
+    // Generate function
+    pub fn gen_function(self, fn_def: FnDef) -> str {
+        let ret_type = if fn_def.ret_type == "int" then "i64" else "void"
+        
+        self.output.append("define " + ret_type + " @" + fn_def.name + "(")
+        
+        // Parameters
+        let mut i = 0
+        while i < fn_def.params.len() {
+            if i > 0 {
+                self.output.append(", ")
+            }
+            self.output.append("i64 %" + fn_def.params[i])
+            self.symbols.set(fn_def.params[i], "%" + fn_def.params[i])
+            i = i + 1
+        }
+        
+        self.output.append(") {\n")
+        self.output.append("entry:\n")
+        
+        // Allocate local variables
+        i = 0
+        while i < fn_def.params.len() {
+            let alloca = "  %" + fn_def.params[i] + ".addr = alloca i64\n"
+            let store = "  store i64 %" + fn_def.params[i] + ", i64* %" + fn_def.params[i] + ".addr\n"
+            self.output.append(alloca)
+            self.output.append(store)
+            self.symbols.set(fn_def.params[i], "%" + fn_def.params[i] + ".addr")
+            i = i + 1
+        }
+        
+        // Generate body
+        i = 0
+        while i < fn_def.body.len() {
+            self.gen_stmt(fn_def.body[i])
+            i = i + 1
+        }
+        
+        // Default return if none provided
+        if ret_type == "void" {
+            self.output.append("  ret void\n")
+        } else {
+            self.output.append("  ret i64 0\n")
+        }
+        
+        self.output.append("}\n\n")
+        return self.output.to_string()
+    }
+    
+    // Generate statement
+    pub fn gen_stmt(self, stmt: Stmt) {
+        match stmt {
+            VarDecl(var_decl) => {
+                let alloca = "  %" + var_decl.name + " = alloca i64\n"
+                self.output.append(alloca)
+                
+                let value_reg = self.gen_expr(var_decl.init)
+                let store = "  store i64 " + value_reg + ", i64* %" + var_decl.name + "\n"
+                self.output.append(store)
+                self.symbols.set(var_decl.name, "%" + var_decl.name)
+            }
+            Assign(assign) => {
+                let value_reg = self.gen_expr(assign.value)
+                let addr = self.symbols.get(assign.name)
+                let store = "  store i64 " + value_reg + ", i64* " + addr + "\n"
+                self.output.append(store)
+            }
+            Return(ret_stmt) => {
+                let value_reg = self.gen_expr(ret_stmt.value)
+                let ret = "  ret i64 " + value_reg + "\n"
+                self.output.append(ret)
+            }
+            Expr(expr_stmt) => {
+                self.gen_expr(expr_stmt.expr)
+            }
+            If(if_stmt) => {
+                let cond_reg = self.gen_expr(if_stmt.cond)
+                let then_label = self.next_label()
+                let else_label = self.next_label()
+                let end_label = self.next_label()
+                
+                let br = "  br i1 " + cond_reg + ", label %" + then_label + ", label %" + else_label + "\n"
+                self.output.append(br)
+                
+                self.output.append(then_label + ":\n")
+                let mut i = 0
+                while i < if_stmt.then_body.len() {
+                    self.gen_stmt(if_stmt.then_body[i])
+                    i = i + 1
+                }
+                self.output.append("  br label %" + end_label + "\n")
+                
+                self.output.append(else_label + ":\n")
+                i = 0
+                while i < if_stmt.else_body.len() {
+                    self.gen_stmt(if_stmt.else_body[i])
+                    i = i + 1
+                }
+                self.output.append("  br label %" + end_label + "\n")
+                
+                self.output.append(end_label + ":\n")
+            }
+            While(while_stmt) => {
+                let loop_label = self.next_label()
+                let body_label = self.next_label()
+                let end_label = self.next_label()
+                
+                self.output.append("  br label %" + loop_label + "\n")
+                self.output.append(loop_label + ":\n")
+                
+                let cond_reg = self.gen_expr(while_stmt.cond)
+                let br = "  br i1 " + cond_reg + ", label %" + body_label + ", label %" + end_label + "\n"
+                self.output.append(br)
+                
+                self.output.append(body_label + ":\n")
+                let mut i = 0
+                while i < while_stmt.body.len() {
+                    self.gen_stmt(while_stmt.body[i])
+                    i = i + 1
+                }
+                self.output.append("  br label %" + loop_label + "\n")
+                
+                self.output.append(end_label + ":\n")
+            }
+            For(for_stmt) => {
+                self.gen_stmt(for_stmt.init)
+                
+                let loop_label = self.next_label()
+                let body_label = self.next_label()
+                let update_label = self.next_label()
+                let end_label = self.next_label()
+                
+                self.output.append("  br label %" + loop_label + "\n")
+                self.output.append(loop_label + ":\n")
+                
+                let cond_reg = self.gen_expr(for_stmt.cond)
+                let br = "  br i1 " + cond_reg + ", label %" + body_label + ", label %" + end_label + "\n"
+                self.output.append(br)
+                
+                self.output.append(body_label + ":\n")
+                let mut i = 0
+                while i < for_stmt.body.len() {
+                    self.gen_stmt(for_stmt.body[i])
+                    i = i + 1
+                }
+                self.output.append("  br label %" + update_label + "\n")
+                
+                self.output.append(update_label + ":\n")
+                self.gen_stmt(for_stmt.update)
+                self.output.append("  br label %" + loop_label + "\n")
+                
+                self.output.append(end_label + ":\n")
+            }
+        }
+    }
+    
+    // Generate expression
+    pub fn gen_expr(self, expr: Expr) -> str {
+        match expr {
+            Binary(bin_expr) => {
+                let left_reg = self.gen_expr(*bin_expr.left)
+                let right_reg = self.gen_expr(*bin_expr.right)
+                let result_reg = self.next_temp()
+                
+                let op_str = match bin_expr.op {
+                    Add => "add"
+                    Sub => "sub"
+                    Mul => "mul"
+                    Div => "sdiv"
+                    Eq => "icmp eq"
+                    NotEq => "icmp ne"
+                    Lt => "icmp slt"
+                    Gt => "icmp sgt"
+                    LtEq => "icmp sle"
+                    GtEq => "icmp sge"
+                }
+                
+                let result_type = match bin_expr.op {
+                    Add | Sub | Mul | Div => "i64"
+                    _ => "i1"
+                }
+                
+                let instr = "  " + result_reg + " = " + op_str + " " + result_type + " " + left_reg + ", " + right_reg + "\n"
+                self.output.append(instr)
+                return result_reg
+            }
+            Unary(unary_expr) => {
+                let operand_reg = self.gen_expr(*unary_expr.expr)
+                let result_reg = self.next_temp()
+                
+                match unary_expr.op {
+                    Neg => {
+                        let instr = "  " + result_reg + " = sub i64 0, " + operand_reg + "\n"
+                        self.output.append(instr)
+                    }
+                    Not => {
+                        let instr = "  " + result_reg + " = xor i1 " + operand_reg + ", true\n"
+                        self.output.append(instr)
+                    }
+                }
+                return result_reg
+            }
+            Call(call_expr) => {
+                let func_name = match *call_expr.func {
+                    Ident(ident) => ident.name
+                    _ => "unknown"
+                }
+                
+                let result_reg = self.next_temp()
+                let mut args_str = ""
+                let mut i = 0
+                while i < call_expr.args.len() {
+                    if i > 0 {
+                        args_str = args_str + ", "
+                    }
+                    let arg_reg = self.gen_expr(call_expr.args[i])
+                    args_str = args_str + "i64 " + arg_reg
+                    i = i + 1
+                }
+                
+                let instr = "  " + result_reg + " = call i64 @" + func_name + "(" + args_str + ")\n"
+                self.output.append(instr)
+                return result_reg
+            }
+            Literal(lit_expr) => {
+                match lit_expr.value {
+                    Int(n) => return int_to_str(n)
+                    Bool(b) => return if b then "true" else "false"
+                    Str(s) => {
+                        // For simplicity, treat strings as i64 0
+                        return "0"
+                    }
+                }
+            }
+            Ident(ident_expr) => {
+                let addr = self.symbols.get(ident_expr.name)
+                let result_reg = self.next_temp()
+                let load = "  " + result_reg + " = load i64, i64* " + addr + "\n"
+                self.output.append(load)
+                return result_reg
+            }
+            _ => return "0"  // fallback
+        }
+    }
+}
+
+// Helper function to convert int to string
+fn int_to_str(n: int) -> str {
+    if n == 0 { return "0" }
+    if n == 1 { return "1" }
+    if n == 2 { return "2" }
+    if n == 3 { return "3" }
+    if n == 4 { return "4" }
+    if n == 5 { return "5" }
+    if n == 6 { return "6" }
+    if n == 7 { return "7" }
+    if n == 8 { return "8" }
+    if n == 9 { return "9" }
+    if n == 10 { return "10" }
+    return "0"  // fallback for other numbers
+}
+
+// Public API functions
+pub fn codegen_new() -> CodeGen {
+    return CodeGen::new()
+}

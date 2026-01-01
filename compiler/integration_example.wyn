@@ -1,0 +1,76 @@
+// Integration example: Using Wyn LLVM codegen
+
+import compiler.codegen.{codegen_new, CodeGen, Module, FnDef, Stmt, ReturnStmt, Return}
+import compiler.ast.{Expr, LiteralExpr, LiteralValue, Literal}
+
+// Example usage of the codegen
+fn compile_to_llvm() {
+    // Create codegen instance
+    let codegen = codegen_new()
+    
+    // Create a simple function that returns 42
+    let return_expr = Literal(LiteralExpr{
+        value: Int(42),
+        line: 1,
+        column: 1
+    })
+    
+    let return_stmt = Return(ReturnStmt{value: return_expr})
+    
+    let main_fn = FnDef{
+        name: "main",
+        params: [],
+        body: [return_stmt],
+        ret_type: "int"
+    }
+    
+    let module = Module{functions: [main_fn]}
+    
+    // Generate LLVM IR
+    let llvm_ir = codegen.gen_module(module)
+    
+    print("Generated LLVM IR:")
+    print(llvm_ir)
+    
+    // In a real compiler, you would:
+    // 1. Write IR to a .ll file
+    // 2. Use llc to compile to assembly: llc -filetype=obj output.ll
+    // 3. Link with system libraries: clang output.o -o executable
+}
+
+// Pipeline integration example
+fn compiler_pipeline(source_code: str) -> str {
+    // 1. Lexical analysis
+    // let tokens = lexer.tokenize(source_code)
+    
+    // 2. Parsing
+    // let ast = parser.parse(tokens)
+    
+    // 3. Semantic analysis (type checking, etc.)
+    // let checked_ast = analyzer.check(ast)
+    
+    // 4. Code generation
+    let codegen = codegen_new()
+    // let llvm_ir = codegen.gen_module(checked_ast)
+    
+    // For now, return placeholder
+    return "target triple = \"x86_64-unknown-linux-gnu\"\n\ndefine i64 @main() {\nentry:\n  ret i64 42\n}\n"
+}
+
+fn main() {
+    print("Wyn LLVM Codegen Integration Example")
+    print("====================================")
+    
+    compile_to_llvm()
+    
+    print("\nCompiler pipeline integration:")
+    let ir = compiler_pipeline("fn main() { return 42 }")
+    print(ir)
+    
+    print("\nNext steps:")
+    print("1. Integrate with parser AST")
+    print("2. Add semantic analysis")
+    print("3. Generate .ll files")
+    print("4. Compile with llc")
+    print("5. Link executables")
+}

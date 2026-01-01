@@ -1,0 +1,53 @@
+import os
+import fs
+
+fn compile(source_file: str) -> bool {
+    // 1. Read source
+    var source = fs.read(source_file)
+    
+    // 2. Lex
+    var lexer = lexer_new(source)
+    var tokens = lexer_tokenize()
+    
+    // 3. Parse
+    var parser = parser_new(tokens)
+    var module = parser.parse_module()
+    
+    // 4. Type check
+    var checker = typechecker_new()
+    if !checker.check_module(module) {
+        return false
+    }
+    
+    // 5. Generate LLVM IR
+    var codegen = codegen_new()
+    var ir = codegen.gen_module(module)
+    
+    // 6. Write IR
+    var ir_file = source_file + ".ll"
+    fs.write(ir_file, ir)
+    
+    // 7. Compile with llc
+    var obj_file = source_file + ".o"
+    os.exec("llc -filetype=obj {ir_file} -o {obj_file}")
+    
+    // 8. Link
+    var exe_file = source_file.replace(".wyn", "")
+    os.exec("clang {obj_file} -o {exe_file}")
+    
+    return true
+}
+
+fn main() {
+    var args = os.args()
+    if args.len() < 2 {
+        print("Usage: wyn_compiler <file.wyn>")
+        return
+    }
+    
+    if compile(args[1]) {
+        print("Compiled successfully!")
+    } else {
+        print("Compilation failed")
+    }
+}
