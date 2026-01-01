@@ -2771,10 +2771,15 @@ static Import* parse_import(Parser* p) {
     if (parser_check(p, TOK_IDENT)) {
         strcpy(imp->path, p->current.ident);
         parser_advance(p);
-        // Handle std/module or module/submodule syntax
-        while (parser_check(p, TOK_SLASH)) {
-            strcat(imp->path, "/");
-            parser_advance(p);
+        // Handle std/module, module/submodule, or module.submodule syntax
+        while (parser_check(p, TOK_SLASH) || parser_check(p, TOK_DOT)) {
+            if (parser_check(p, TOK_SLASH)) {
+                strcat(imp->path, "/");
+                parser_advance(p);
+            } else if (parser_check(p, TOK_DOT)) {
+                strcat(imp->path, "/");  // Convert dot to slash for file path
+                parser_advance(p);
+            }
             if (parser_check(p, TOK_IDENT)) {
                 strcat(imp->path, p->current.ident);
                 parser_advance(p);
@@ -3016,6 +3021,15 @@ static bool tc_is_module_imported(TypeChecker* tc, const char* module_name) {
         // Check if import path matches module name exactly
         // We want "import io" not "import std/io"
         if (strcmp(path, module_name) == 0) return true;
+        
+        // Also check with dot/slash conversion
+        char converted_module[MAX_IDENT_LEN];
+        strcpy(converted_module, module_name);
+        // Convert dots to slashes
+        for (int k = 0; converted_module[k]; k++) {
+            if (converted_module[k] == '.') converted_module[k] = '/';
+        }
+        if (strcmp(path, converted_module) == 0) return true;
     }
     return false;
 }
@@ -3261,6 +3275,33 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     }
                     // Return appropriate type based on function
                     return get_builtin_return_type(builtin_name);
+                } else {
+                    // Check for user-defined module.function
+                    if (tc_is_module_imported(tc, module)) {
+                        char prefixed_name[MAX_IDENT_LEN];
+                        // Convert module.function to module/function.function for lookup
+                        char module_path[MAX_IDENT_LEN];
+                        strcpy(module_path, module);
+                        // Convert dots to slashes in module path
+                        for (int k = 0; module_path[k]; k++) {
+                            if (module_path[k] == '.') module_path[k] = '/';
+                        }
+                        snprintf(prefixed_name, MAX_IDENT_LEN, "%s.%s", module_path, function);
+                        FnDef* fn = tc_lookup_fn(tc, prefixed_name);
+                        if (fn) {
+                            // Check args
+                            for (int i = 0; i < e->call.arg_count; i++) {
+                                tc_check_expr(tc, e->call.args[i]);
+                            }
+                            return fn->return_type ? fn->return_type : new_type(TYPE_ANY);
+                        } else {
+                            tc_error(tc, e->line, e->column, "function '%s' not found in module '%s'", function, module);
+                            return new_type(TYPE_ANY);
+                        }
+                    } else {
+                        tc_error(tc, e->line, e->column, "module '%s' not imported (add 'import %s')", module, module);
+                        return new_type(TYPE_ANY);
+                    }
                 }
             }
             
@@ -5336,6 +5377,12 @@ static void resolve_imports(Module* m, const char* base_path) {
             }
         }
         
+        // Try current directory if no dir specified
+        if (!f && !dir[0]) {
+            snprintf(full_path, 512, "%s.wyn", imp->path);
+            f = fopen(full_path, "rb");
+        }
+        
         // Try std/ in current dir (legacy)
         if (!f) {
             snprintf(full_path, 512, "%sstd/%s.wyn", dir, imp->path);
@@ -5374,9 +5421,14 @@ static void resolve_imports(Module* m, const char* base_path) {
         Module* imported = parse_module(p);
         
         if (!p->had_error) {
-            // Merge functions
+            // Merge functions with module prefix
             for (int j = 0; j < imported->function_count; j++) {
-                m->functions[m->function_count++] = imported->functions[j];
+                FnDef prefixed_fn = imported->functions[j];
+                // Create module.function name
+                char prefixed_name[MAX_IDENT_LEN];
+                snprintf(prefixed_name, MAX_IDENT_LEN, "%s.%s", imp->path, imported->functions[j].name);
+                strcpy(prefixed_fn.name, prefixed_name);
+                m->functions[m->function_count++] = prefixed_fn;
             }
             // Merge structs
             for (int j = 0; j < imported->struct_count; j++) {
@@ -6235,6 +6287,74 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                 if (e->call.func->field.object->kind == EXPR_IDENT) {
                     const char* module = e->call.func->field.object->ident;
                     builtin_name = map_module_function(module, function);
+                    
+                    // If not builtin, check for user-defined module.function
+                    if (!builtin_name) {
+                        char prefixed_name[MAX_IDENT_LEN];
+                        // Convert module.function to module/function.function for lookup
+                        char module_path[MAX_IDENT_LEN];
+                        strcpy(module_path, module);
+                        // Convert dots to slashes in module path
+                        for (int k = 0; module_path[k]; k++) {
+                            if (module_path[k] == '.') module_path[k] = '/';
+                        }
+                        snprintf(prefixed_name, MAX_IDENT_LEN, "%s.%s", module_path, function);
+                        
+                        // Check if this function exists in our module
+                        bool found_user_fn = false;
+                        for (int i = 0; i < lg->module->function_count; i++) {
+                            if (strcmp(lg->module->functions[i].name, prefixed_name) == 0) {
+                                found_user_fn = true;
+                                break;
+                            }
+                        }
+                        
+                        if (found_user_fn) {
+                            // Handle user-defined function call
+                            char args[1024] = "";
+                            for (int i = 0; i < e->call.arg_count; i++) {
+                                int arg_reg;
+                                llvm_expr(lg, e->call.args[i], &arg_reg);
+                                
+                                char arg_str[128];
+                                // Check if argument is a string
+                                bool is_string_arg = (e->call.args[i]->kind == EXPR_STRING ||
+                                                     (e->call.args[i]->kind == EXPR_IDENT &&
+                                                      llvm_get_var_type(lg, e->call.args[i]->ident) &&
+                                                      llvm_get_var_type(lg, e->call.args[i]->ident)->kind == TYPE_STR));
+                                
+                                if (arg_reg <= -1000000) {
+                                    snprintf(arg_str, 128, "%si64 %lld", (i > 0 ? ", " : ""), (long long)(-arg_reg - 1000000));
+                                } else if (is_string_arg) {
+                                    snprintf(arg_str, 128, "%si8* %%%d", (i > 0 ? ", " : ""), arg_reg);
+                                } else {
+                                    snprintf(arg_str, 128, "%si64 %%%d", (i > 0 ? ", " : ""), arg_reg);
+                                }
+                                strcat(args, arg_str);
+                            }
+                            
+                            int t = llvm_new_temp(lg);
+                            // Find the function to check return type
+                            FnDef* user_fn = NULL;
+                            for (int j = 0; j < lg->module->function_count; j++) {
+                                if (strcmp(lg->module->functions[j].name, prefixed_name) == 0) {
+                                    user_fn = &lg->module->functions[j];
+                                    break;
+                                }
+                            }
+                            
+                            // Check if function returns string
+                            bool returns_string = (user_fn && user_fn->return_type && user_fn->return_type->kind == TYPE_STR);
+                            
+                            if (returns_string) {
+                                llvm_emit(lg, "  %%%d = call i8* @\"%s\"(%s)", t, prefixed_name, args);
+                            } else {
+                                llvm_emit(lg, "  %%%d = call i64 @\"%s\"(%s)", t, prefixed_name, args);
+                            }
+                            *result_reg = t;
+                            break;
+                        }
+                    }
                 }
                 
                 // If not a module function, check if it's a method on a call result (chaining)
@@ -9522,7 +9642,7 @@ static void llvm_function(LLVMGen* lg, FnDef* f) {
             }
         }
         
-        llvm_emit(lg, "define %s @%s(%s) {", ret_type, f->name, params);
+        llvm_emit(lg, "define %s @\"%s\"(%s) {", ret_type, f->name, params);
         llvm_emit(lg, "entry:");
     }
     
