@@ -7018,13 +7018,21 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                     if (strcmp(actual_func_name, "abs") == 0) runtime_name = "abs_int";
                     if (strcmp(actual_func_name, "to_string") == 0) runtime_name = "int_to_str";
                     
+                    // Quote function name if it contains dots
+                    char quoted_runtime_name[MAX_IDENT_LEN + 2];
+                    if (strchr(runtime_name, '.')) {
+                        snprintf(quoted_runtime_name, sizeof(quoted_runtime_name), "\"%s\"", runtime_name);
+                    } else {
+                        strcpy(quoted_runtime_name, runtime_name);
+                    }
+                    
                     if (is_string_builtin) {
                         int t = llvm_new_temp(lg);
-                        llvm_emit(lg, "  %%%d = call i8* @%s(%s)", t, runtime_name, args);
+                        llvm_emit(lg, "  %%%d = call i8* @%s(%s)", t, quoted_runtime_name, args);
                         *result_reg = t;
                     } else if (is_array_builtin) {
                         int t = llvm_new_temp(lg);
-                        llvm_emit(lg, "  %%%d = call i64* @%s(%s)", t, runtime_name, args);
+                        llvm_emit(lg, "  %%%d = call i64* @%s(%s)", t, quoted_runtime_name, args);
                         *result_reg = t;
                     } else {
                         // Check if this is a declared function or a variable (function pointer)
@@ -7082,7 +7090,7 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                                 }
                             }
                             
-                            llvm_emit(lg, "  %%%d = call %s @%s(%s)", t, ret_type, runtime_name, args);
+                            llvm_emit(lg, "  %%%d = call %s @%s(%s)", t, ret_type, quoted_runtime_name, args);
                             *result_reg = t;
                         }
                     }
@@ -7177,7 +7185,15 @@ static void llvm_expr(LLVMGen* lg, Expr* e, int* result_reg) {
                             }
                         }
                         
-                        llvm_emit(lg, "  %%%d = call %s @%s(%s)", t, ret_type, func_name, converted_args);
+                        // Quote function name if it contains dots
+                        char quoted_func_name[MAX_IDENT_LEN + 2];
+                        if (strchr(func_name, '.')) {
+                            snprintf(quoted_func_name, sizeof(quoted_func_name), "\"%s\"", func_name);
+                        } else {
+                            strcpy(quoted_func_name, func_name);
+                        }
+                        
+                        llvm_emit(lg, "  %%%d = call %s @%s(%s)", t, ret_type, quoted_func_name, converted_args);
                     }
                     *result_reg = t;
                 }
