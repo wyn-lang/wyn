@@ -1,5 +1,0 @@
-fn main() {
-    const x = 42
-    const y = x + 8
-    print("Hello from Wyn! Result: " + y.to_str())
-}

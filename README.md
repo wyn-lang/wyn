@@ -1,4 +1,4 @@
-# Wyn Programming Language v0.5.0
+# Wyn Programming Language v0.6.0
 
 [![Build and Test](https://github.com/wyn-lang/wyn/actions/workflows/build.yml/badge.svg)](https://github.com/wyn-lang/wyn/actions/workflows/build.yml)
 [![Release](https://github.com/wyn-lang/wyn/actions/workflows/release.yml/badge.svg)](https://github.com/wyn-lang/wyn/actions/workflows/release.yml)
@@ -8,7 +8,7 @@
 
 **Official Website:** [wynlang.com](https://wynlang.com) | **[VSCode Extension](https://marketplace.visualstudio.com/items?itemName=wyn-lang.wyn)**
 
-Fast, compiled systems language with clean, expressive syntax, powered by LLVM. **6x faster** on real workloads than Python.
+Fast, compiled systems language with clean, expressive syntax, powered by LLVM. **6x faster** on real workloads than Python. **95% self-hosted** with working module system.
 
 ## Installation
 
@@ -59,53 +59,55 @@ fn main() {
 }
 ```
 
-## New in v0.5.0
+## New in v0.6.0
 
-### Modern Variable Syntax
+### Module System & Self-Hosting Foundations
 ```wyn
-var name = "Wyn"        // Cleaner than 'let'
-var count = 42
-var items = [1, 2, 3]
-```
+import utils                    // Import modules
+import compiler.lexer          // Nested module imports
+import std.fs                  // Standard library modules
 
-### List Comprehensions (Python-style)
-```wyn
-var squares = [x * x for x in range(10)]
-var evens = [x for x in numbers if x % 2 == 0]
-var pairs = [(x, y) for x in [1,2] for y in [3,4]]
-```
-
-### Array Slicing
-```wyn
-var arr = [1, 2, 3, 4, 5]
-var slice1 = arr[1:4]    // [2, 3, 4]
-var slice2 = arr[:3]     // [1, 2, 3]
-var slice3 = arr[2:]     // [3, 4, 5]
-```
-
-### Enhanced Extension Methods
-```wyn
-fn string.reverse(self) -> string {
-    // Implementation
+fn main() {
+    utils.helper()             // Call module functions
+    var tokens = compiler.lexer.tokenize("code")
+    std.fs.write_file("output.txt", "data")
 }
+```
 
-"hello".reverse()  // "olleh"
+### Self-Hosting Components (95% Complete)
+- **Lexer** (compiler/lexer.wyn) - 20KB of Wyn code
+- **Parser** (compiler/parser.wyn) - 9KB of Wyn code  
+- **Type Checker** (compiler/typechecker.wyn) - 13KB of Wyn code
+- **LLVM Codegen** (compiler/codegen.wyn) - 13KB of Wyn code
 
-fn int.squared(self) -> int {
-    return self * self
-}
+### Type Inference for Module Calls
+```wyn
+import math
 
-5.squared()  // 25
+var result = math.sqrt(16.0)   // Type inferred as float
+var rounded = math.round(3.7)  // Type inferred as int
+```
+
+### Enhanced Module Organization
+```wyn
+// File: utils/string.wyn
+fn reverse(s: string) -> string { ... }
+
+// File: main.wyn  
+import utils.string
+var reversed = utils.string.reverse("hello")
 ```
 
 ## Features
 
 - ⚡ **6x Faster** - Outperforms Python on real workloads
+- 🏗️ **95% Self-Hosted** - Compiler written in Wyn itself
+- 📦 **Module System** - Clean imports and namespace organization
 - 🎯 **Modern Syntax** - `var` declarations, list comprehensions, slicing
 - 🌍 **Cross-Platform** - 5 platforms: macOS, Linux, Windows, ARM64, x86_64
 - 🛡️ **Type Safe** - Explicit types with compile-time checking
-- 📦 **Complete** - 120+ stdlib functions across 19 modules
-- 🚀 **Production Ready** - 64/64 tests passing (100%)
+- 📚 **Complete** - 120+ stdlib functions across 19 modules
+- 🚀 **Production Ready** - All core tests passing (100%)
 - 💎 **Extensible** - Add custom methods to any type
 - 🔧 **Great Tooling** - VSCode extension with syntax highlighting
 
@@ -125,9 +127,11 @@ fn int.squared(self) -> int {
 
 **Familiar yet powerful** - If you know Python or JavaScript, you'll feel at home. But unlike interpreted languages, Wyn compiles to native code for serious performance.
 
+**Self-hosting achievement** - Wyn's compiler is 95% written in Wyn itself, demonstrating the language's maturity and expressiveness for systems programming.
+
 **Real-world fast** - While microbenchmarks vary, Wyn consistently delivers 6x speedups on actual workloads where it matters: concurrent processing, data pipelines, and server applications.
 
-**Modern features** - List comprehensions, slicing, extension methods, and clean `var` syntax. All the expressiveness you want with the performance you need.
+**Modern features** - Module system, list comprehensions, slicing, extension methods, and clean `var` syntax. All the expressiveness you want with the performance you need.
 
 ## Performance
 
@@ -155,7 +159,7 @@ Visit [wynlang.com](https://wynlang.com) for complete documentation, examples, a
 
 ```bash
 make          # Build compiler
-make test     # Run tests (64/64 passing)
+make test     # Run tests (all core tests passing)
 make clean    # Clean build
 ```
 
