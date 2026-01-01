@@ -1,42 +1,23 @@
-// Array operations demonstration
-// Shows array utilities and transformations with method syntax
+// Array Operations Demo
 
-import array
+print("=== Array Operations ===")
 
-fn main() {
-    print("=== Array Operations Demo ===")
-    
-    // Create array
-    const numbers = [1, 2, 3, 4, 5]
-    print("Original:")
-    var i = 0
-    while i < numbers.len() {
-        print(numbers.get(i))
-        i = i + 1
-    }
-    
-    // Reverse
-    const reversed = array.reverse(numbers)
-    print("Reversed:")
-    i = 0
-    while i < reversed.len() {
-        print(reversed.get(i))
-        i = i + 1
-    }
-    
-    // Append
-    const with_six = array.append(numbers, 6)
-    print("With 6 appended: " + with_six.len().to_str() + " elements")
-    
-    // Prepend
-    const with_zero = array.prepend(numbers, 0)
-    print("With 0 prepended: " + with_zero.len().to_str() + " elements")
-    
-    // Contains
-    const has_three = array.contains(numbers, 3)
-    const has_ten = array.contains(numbers, 10)
-    print("Contains 3: " + has_three.to_str())
-    print("Contains 10: " + has_ten.to_str())
-    
-    print("Array operations complete!")
+// Array literals
+var numbers = [1, 2, 3, 4, 5]
+print(numbers[0])
+print(numbers.len())
+
+// Array methods
+numbers.append(6)
+print(numbers.len())
+
+// Slicing
+var slice = numbers[1:3]
+print(slice.len())
+
+// Iteration
+for n in numbers {
+    print(n)
 }
+
+print("Array operations complete!")
