@@ -1,0 +1,16 @@
+import hashmap
+
+fn main() {
+    print("Simple HashMap test\n")
+    
+    var map = hashmap.new()
+    print("Created HashMap\n")
+    
+    hashmap.set(map, "test", "value")
+    print("Set key-value pair\n")
+    
+    var result = hashmap.get(map, "test")
+    print("Got value: ")
+    print(result)
+    print("\n")
+}

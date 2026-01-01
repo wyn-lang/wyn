@@ -1,0 +1,14 @@
+// Test direct string concatenation to verify the approach
+
+fn main() {
+    print("Testing direct concatenation...")
+    var name = "Alice"
+    var greeting = "Hello " + name + "!"
+    print(greeting)
+    
+    var age = 42
+    var age_str = int_to_str(age)
+    var msg = "Age is " + age_str
+    print(msg)
+    print("Done")
+}

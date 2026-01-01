@@ -1,0 +1,61 @@
+import fs
+import os
+
+fn main() {
+    print("=== File Operations Demo ===")
+    
+    // Create a directory
+    print("Creating directory...")
+    const mkdir_ok = fs.mkdir("demo_dir")
+    if mkdir_ok == 1 {
+        print("Directory created successfully")
+    } else {
+        print("Failed to create directory")
+    }
+    
+    // Write to a file
+    print("\nWriting to file...")
+    const write_ok = fs.write("demo_dir/demo.txt", "Initial content\n")
+    if write_ok == 1 {
+        print("File written successfully")
+    }
+    
+    // Append to the file
+    print("Appending to file...")
+    const append_ok = fs.append("demo_dir/demo.txt", "Appended content\n")
+    if append_ok == 1 {
+        print("Content appended successfully")
+    }
+    
+    // Read and display file content
+    print("\nFile content:")
+    const content = fs.read("demo_dir/demo.txt")
+    print(content)
+    
+    // Execute a command to list directory
+    print("Directory listing:")
+    const ls_exit = os.exec("ls -la demo_dir")
+    if ls_exit == 0 {
+        print("Directory listed successfully")
+    } else {
+        print("Failed to list directory")
+    }
+    
+    // Basic path operations (manual implementation for demo)
+    print("\n=== Path Operations Demo ===")
+    const demo_path = "demo_dir/subdir/file.txt"
+    print("Demo path: " + demo_path)
+    print("(Path operations will be implemented in future version)")
+    
+    // Clean up
+    print("\nCleaning up...")
+    fs.delete("demo_dir/demo.txt")
+    const rmdir_ok = os.exec("rmdir demo_dir")
+    if rmdir_ok == 0 {
+        print("Cleanup completed")
+    } else {
+        print("Cleanup failed")
+    }
+    
+    print("\nDemo completed!")
+}

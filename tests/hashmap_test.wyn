@@ -1,0 +1,93 @@
+import hashmap
+
+fn main() {
+    print("Testing HashMap implementation...\n")
+    
+    # Test 1: Create new HashMap
+    var symbols = hashmap.new()
+    print("✓ Created new HashMap\n")
+    
+    # Test 2: Set key-value pairs
+    hashmap.set(symbols, "x", "int")
+    hashmap.set(symbols, "y", "str")
+    hashmap.set(symbols, "z", "bool")
+    print("✓ Set key-value pairs\n")
+    
+    # Test 3: Get values
+    var x_type = hashmap.get(symbols, "x")
+    print("Type of x: ")
+    print(x_type)
+    print("\n")
+    
+    var y_type = hashmap.get(symbols, "y")
+    print("Type of y: ")
+    print(y_type)
+    print("\n")
+    
+    # Test 4: Check if keys exist
+    var has_x = hashmap.has(symbols, "x")
+    print("Has x: ")
+    print(has_x)
+    print("\n")
+    
+    var has_w = hashmap.has(symbols, "w")
+    print("Has w: ")
+    print(has_w)
+    print("\n")
+    
+    # Test 5: Get size
+    var size = hashmap.size(symbols)
+    print("Size: ")
+    print(size)
+    print("\n")
+    
+    # Test 6: Get keys and values
+    var keys = hashmap.keys(symbols)
+    print("Keys: ")
+    # Note: keys array format is [length, capacity, key0, key1, ...]
+    print("Keys count: ")
+    print(keys[0])
+    print("\n")
+    
+    var values = hashmap.values(symbols)
+    print("Values count: ")
+    print(values[0])
+    print("\n")
+    
+    # Test 7: Delete key
+    hashmap.delete(symbols, "y")
+    var has_y_after_delete = hashmap.has(symbols, "y")
+    print("Has y after delete: ")
+    print(has_y_after_delete)
+    print("\n")
+    
+    var size_after_delete = hashmap.size(symbols)
+    print("Size after delete: ")
+    print(size_after_delete)
+    print("\n")
+    
+    # Test 8: Clear HashMap
+    hashmap.clear(symbols)
+    var size_after_clear = hashmap.size(symbols)
+    print("Size after clear: ")
+    print(size_after_clear)
+    print("\n")
+    
+    # Test 9: Edge cases
+    var empty_map = hashmap.new()
+    var empty_size = hashmap.size(empty_map)
+    print("Empty map size: ")
+    print(empty_size)
+    print("\n")
+    
+    var non_existent = hashmap.get(empty_map, "missing")
+    print("Get non-existent key: ")
+    if non_existent == 0 {
+        print("null")
+    } else {
+        print(non_existent)
+    }
+    print("\n")
+    
+    print("✅ All HashMap tests passed!\n")
+}

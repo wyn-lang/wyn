@@ -1,0 +1,22 @@
+# std/hashmap.wyn
+# HashMap data structure implementation
+# All functions are mapped to runtime implementations via compiler
+
+# HashMap API:
+#   hashmap.new() -> HashMap                    # Create new HashMap
+#   hashmap.set(map, key: str, value: any)     # Set key-value pair
+#   hashmap.get(map, key: str) -> any          # Get value by key
+#   hashmap.has(map, key: str) -> bool         # Check if key exists
+#   hashmap.delete(map, key: str)              # Remove key-value pair
+#   hashmap.keys(map) -> array<str>            # Get all keys as array
+#   hashmap.values(map) -> array               # Get all values as array
+#   hashmap.size(map) -> int                   # Get number of entries
+#   hashmap.clear(map)                         # Remove all entries
+
+# Example usage:
+#   var symbols = hashmap.new()
+#   hashmap.set(symbols, "x", "int")
+#   var type = hashmap.get(symbols, "x")       # Returns "int"
+#   var exists = hashmap.has(symbols, "y")     # Returns 0 (false)
+#   hashmap.delete(symbols, "x")
+#   var count = hashmap.size(symbols)          # Returns 0

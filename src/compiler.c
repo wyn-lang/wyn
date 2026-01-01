@@ -880,6 +880,8 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "exec") == 0) return "exec_wyn";
         if (strcmp(function, "exec_output") == 0) return "exec_output_wyn";
         if (strcmp(function, "exec_args") == 0) return "exec_args_wyn";
+        if (strcmp(function, "exec_capture") == 0) return "os_exec_capture";
+        if (strcmp(function, "exec_check") == 0) return "os_exec_check";
         if (strcmp(function, "exit") == 0) return "exit_wyn";
         if (strcmp(function, "args") == 0) return "args_wyn";
         if (strcmp(function, "cwd") == 0) return "cwd_wyn";
@@ -949,9 +951,9 @@ static const char* map_module_function(const char* module, const char* function)
     } else if (strcmp(module, "fs") == 0) {
         // File operations
         if (strcmp(function, "read") == 0) return "read_file";
-        if (strcmp(function, "write") == 0) return "write_file";
-        if (strcmp(function, "append") == 0) return "append_file";
-        if (strcmp(function, "delete") == 0) return "delete_file";
+        if (strcmp(function, "write") == 0) return "fs_write";
+        if (strcmp(function, "append") == 0) return "fs_append";
+        if (strcmp(function, "delete") == 0) return "fs_delete";
         if (strcmp(function, "exists") == 0) return "file_exists";
         if (strcmp(function, "size") == 0) return "file_size";
         if (strcmp(function, "copy") == 0) return "file_copy";
@@ -959,16 +961,16 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "chmod") == 0) return "file_chmod";
         if (strcmp(function, "glob") == 0) return "file_glob";
         // Directory operations
-        if (strcmp(function, "mkdir") == 0) return "mkdir_wyn";
+        if (strcmp(function, "mkdir") == 0) return "fs_mkdir";
         if (strcmp(function, "rmdir") == 0) return "rmdir_wyn";
         if (strcmp(function, "list_dir") == 0) return "list_dir";
         if (strcmp(function, "is_dir") == 0) return "is_dir_wyn";
         if (strcmp(function, "is_file") == 0) return "is_file_wyn";
         // Legacy names for compatibility
         if (strcmp(function, "read_file") == 0) return "read_file";
-        if (strcmp(function, "write_file") == 0) return "write_file";
-        if (strcmp(function, "append_file") == 0) return "append_file";
-        if (strcmp(function, "delete_file") == 0) return "delete_file";
+        if (strcmp(function, "write_file") == 0) return "fs_write";
+        if (strcmp(function, "append_file") == 0) return "fs_append";
+        if (strcmp(function, "delete_file") == 0) return "fs_delete";
         if (strcmp(function, "file_exists") == 0) return "file_exists";
         if (strcmp(function, "file_size") == 0) return "file_size";
     } else if (strcmp(module, "fs_old") == 0) {
@@ -1058,6 +1060,11 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "chdir") == 0) return "chdir_wyn";
         if (strcmp(function, "hostname") == 0) return "hostname_wyn";
         if (strcmp(function, "getpid") == 0) return "getpid_wyn";
+    } else if (strcmp(module, "path") == 0) {
+        if (strcmp(function, "join") == 0) return "path_join";
+        if (strcmp(function, "dirname") == 0) return "path_dirname";
+        if (strcmp(function, "basename") == 0) return "path_basename";
+        if (strcmp(function, "ext") == 0) return "path_ext";
     } else if (strcmp(module, "json") == 0) {
         if (strcmp(function, "parse") == 0) return "parse_json";
         if (strcmp(function, "stringify") == 0) return "stringify_json";
@@ -1109,6 +1116,16 @@ static const char* map_module_function(const char* module, const char* function)
         if (strcmp(function, "sha256") == 0) return "sha256_hash";
         if (strcmp(function, "md5") == 0) return "md5_hash";
         if (strcmp(function, "sha1") == 0) return "sha1_hash";
+    } else if (strcmp(module, "hashmap") == 0) {
+        if (strcmp(function, "new") == 0) return "hashmap_new";
+        if (strcmp(function, "set") == 0) return "hashmap_put";
+        if (strcmp(function, "get") == 0) return "hashmap_get";
+        if (strcmp(function, "has") == 0) return "hashmap_contains";
+        if (strcmp(function, "delete") == 0) return "hashmap_remove";
+        if (strcmp(function, "keys") == 0) return "hashmap_keys";
+        if (strcmp(function, "values") == 0) return "hashmap_values";
+        if (strcmp(function, "size") == 0) return "hashmap_size";
+        if (strcmp(function, "clear") == 0) return "hashmap_clear";
     } else if (strcmp(module, "collections") == 0) {
         if (strcmp(function, "hashmap_new") == 0) return "hashmap_new";
         if (strcmp(function, "hashmap_put") == 0) return "hashmap_put";
@@ -1291,6 +1308,13 @@ static Type* get_builtin_return_type(const char* builtin_name) {
     
     // String-returning functions
     if (strcmp(builtin_name, "read_file") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "os_exec_capture") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "path_join") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "path_dirname") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "path_basename") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "path_ext") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "format") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "str_format") == 0) return new_type(TYPE_STR);
     if (strcmp(builtin_name, "format_timestamp") == 0) return new_type(TYPE_STR);
     if (strcmp(builtin_name, "format_iso8601") == 0) return new_type(TYPE_STR);
     if (strcmp(builtin_name, "base64_encode") == 0) return new_type(TYPE_STR);
@@ -1302,8 +1326,10 @@ static Type* get_builtin_return_type(const char* builtin_name) {
     if (strcmp(builtin_name, "sha256_hash") == 0) return new_type(TYPE_STR);
     if (strcmp(builtin_name, "md5_hash") == 0) return new_type(TYPE_STR);
     if (strcmp(builtin_name, "sha1_hash") == 0) return new_type(TYPE_STR);
-    if (strcmp(builtin_name, "hashmap_new") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "hashmap_new") == 0) return new_type(TYPE_ANY);
     if (strcmp(builtin_name, "hashmap_get") == 0) return new_type(TYPE_STR);
+    if (strcmp(builtin_name, "hashmap_keys") == 0) return new_type(TYPE_ANY);
+    if (strcmp(builtin_name, "hashmap_values") == 0) return new_type(TYPE_ANY);
     if (strcmp(builtin_name, "set_new") == 0) return new_type(TYPE_STR);
     if (strcmp(builtin_name, "encrypt_aes256") == 0) return new_type(TYPE_STR);
     if (strcmp(builtin_name, "decrypt_aes256") == 0) return new_type(TYPE_STR);
@@ -1322,6 +1348,8 @@ static Type* get_builtin_return_type(const char* builtin_name) {
     if (strcmp(builtin_name, "now_millis") == 0) return new_type(TYPE_INT);
     if (strcmp(builtin_name, "now_micros") == 0) return new_type(TYPE_INT);
     if (strcmp(builtin_name, "parse_timestamp") == 0) return new_type(TYPE_INT);
+    if (strcmp(builtin_name, "hashmap_contains") == 0) return new_type(TYPE_INT);
+    if (strcmp(builtin_name, "hashmap_size") == 0) return new_type(TYPE_INT);
     
     // Void-returning functions
     if (strcmp(builtin_name, "log_info") == 0) return new_type(TYPE_VOID);
@@ -1331,6 +1359,9 @@ static Type* get_builtin_return_type(const char* builtin_name) {
     if (strcmp(builtin_name, "log_with_level") == 0) return new_type(TYPE_VOID);
     if (strcmp(builtin_name, "sleep_seconds") == 0) return new_type(TYPE_VOID);
     if (strcmp(builtin_name, "sb_append_wyn") == 0) return new_type(TYPE_VOID);
+    if (strcmp(builtin_name, "hashmap_put") == 0) return new_type(TYPE_VOID);
+    if (strcmp(builtin_name, "hashmap_remove") == 0) return new_type(TYPE_VOID);
+    if (strcmp(builtin_name, "hashmap_clear") == 0) return new_type(TYPE_VOID);
     
     // StringBuilder new returns opaque pointer (ANY type)
     if (strcmp(builtin_name, "sb_new_wyn") == 0) return new_type(TYPE_ANY);
@@ -1450,10 +1481,16 @@ static Type* parse_type(Parser* p) {
     return new_type(TYPE_ANY);
 }
 
-// Helper to check if string has interpolation ${expr}
+// Helper to check if string has interpolation ${expr} or {} placeholders
 static bool has_interpolation(const char* s) {
     for (int i = 0; s[i]; i++) {
         if (s[i] == '$' && s[i+1] == '{') return true;
+        if (s[i] == '{') {
+            // Look for closing brace
+            for (int j = i + 1; s[j]; j++) {
+                if (s[j] == '}') return true;
+            }
+        }
     }
     return false;
 }
@@ -1533,6 +1570,94 @@ static Expr* parse_interpolated_string(Parser* p, const char* str, int line, int
     return result ? result : new_expr(EXPR_STRING, line, col);
 }
 
+// Parse template string with {var} placeholders into format call
+static Expr* parse_template_string(Parser* p, const char* str, int line, int col) {
+    // Check if this has named placeholders like {name}
+    bool has_named_placeholders = false;
+    for (int i = 0; str[i]; i++) {
+        if (str[i] == '{' && str[i+1] != '}') {
+            // Look for closing brace
+            for (int j = i + 1; str[j]; j++) {
+                if (str[j] == '}') {
+                    has_named_placeholders = true;
+                    break;
+                }
+            }
+        }
+    }
+    
+    if (has_named_placeholders) {
+        // Parse as interpolated string with {} instead of ${}
+        Expr* result = NULL;
+        char buf[MAX_STRING_LEN];
+        int bi = 0;
+        
+        for (int i = 0; str[i]; i++) {
+            if (str[i] == '{' && str[i+1] != '}') {
+                // Flush literal part
+                if (bi > 0) {
+                    buf[bi] = '\0';
+                    Expr* lit = new_expr(EXPR_STRING, line, col);
+                    strcpy(lit->str_val, buf);
+                    if (!result) result = lit;
+                    else {
+                        Expr* cat = new_expr(EXPR_BINARY, line, col);
+                        cat->binary.op = TOK_PLUS;
+                        cat->binary.left = result;
+                        cat->binary.right = lit;
+                        result = cat;
+                    }
+                    bi = 0;
+                }
+                // Skip {
+                i++;
+                // Extract variable name
+                char var[256];
+                int vi = 0;
+                while (str[i] && str[i] != '}') {
+                    var[vi++] = str[i++];
+                }
+                var[vi] = '\0';
+                
+                // Create variable reference directly (simplified approach)
+                Expr* varexpr = new_expr(EXPR_IDENT, line, col);
+                strcpy(varexpr->ident, var);
+                
+                if (!result) result = varexpr;
+                else {
+                    Expr* cat = new_expr(EXPR_BINARY, line, col);
+                    cat->binary.op = TOK_PLUS;
+                    cat->binary.left = result;
+                    cat->binary.right = varexpr;
+                    result = cat;
+                }
+            } else {
+                buf[bi++] = str[i];
+            }
+        }
+        // Flush remaining literal
+        if (bi > 0) {
+            buf[bi] = '\0';
+            Expr* lit = new_expr(EXPR_STRING, line, col);
+            strcpy(lit->str_val, buf);
+            if (!result) result = lit;
+            else {
+                Expr* cat = new_expr(EXPR_BINARY, line, col);
+                cat->binary.op = TOK_PLUS;
+                cat->binary.left = result;
+                cat->binary.right = lit;
+                result = cat;
+            }
+        }
+        return result ? result : new_expr(EXPR_STRING, line, col);
+    } else {
+        // Regular string with no placeholders
+        Expr* e = new_expr(EXPR_STRING, line, col);
+        strcpy(e->str_val, str);
+        return e;
+    }
+}
+
 // Expression parsing - precedence climbing
 static Expr* parse_primary(Parser* p) {
     int line = p->current.line, col = p->current.column;
@@ -1556,7 +1681,19 @@ static Expr* parse_primary(Parser* p) {
         TokenKind str_kind = p->current.kind;
         parser_advance(p);
         if (str_kind == TOK_STRING && has_interpolation(str)) {
-            return parse_interpolated_string(p, str, line, col);
+            // Check if it's ${} interpolation or {} template
+            bool has_dollar_interpolation = false;
+            for (int i = 0; str[i]; i++) {
+                if (str[i] == '$' && str[i+1] == '{') {
+                    has_dollar_interpolation = true;
+                    break;
+                }
+            }
+            if (has_dollar_interpolation) {
+                return parse_interpolated_string(p, str, line, col);
+            } else {
+                return parse_template_string(p, str, line, col);
+            }
         }
         Expr* e = new_expr(EXPR_STRING, line, col);
         strcpy(e->str_val, str);
@@ -3010,6 +3147,7 @@ static Type* tc_check_expr(TypeChecker* tc, Expr* e) {
                     strcmp(e->ident, "str_to_int") == 0 || strcmp(e->ident, "abs") == 0 ||
                     strcmp(e->ident, "sqrtf") == 0 || strcmp(e->ident, "int_to_float") == 0 ||
                     strcmp(e->ident, "float_to_int") == 0 || strcmp(e->ident, "to_string") == 0 ||
+                    strcmp(e->ident, "format") == 0 || strcmp(e->ident, "str_format") == 0 ||
                     strcmp(e->ident, "read_file") == 0 || strcmp(e->ident, "write_file") == 0 ||
                     strcmp(e->ident, "append_file") == 0 || strcmp(e->ident, "file_exists") == 0 ||
                     strcmp(e->ident, "file_size") == 0 || strcmp(e->ident, "read_stdin_line") == 0 ||
@@ -3772,6 +3910,7 @@ static bool tc1_is_builtin(const char* name) {
     if (strcmp(name, "char_at") == 0 || strcmp(name, "int_to_str") == 0) return true;
     if (strcmp(name, "str_substr") == 0 || strcmp(name, "str_to_int") == 0) return true;
     if (strcmp(name, "to_string") == 0) return true;
+    if (strcmp(name, "format") == 0 || strcmp(name, "str_format") == 0) return true;
     
     // Math builtins
     if (strcmp(name, "abs") == 0 || strcmp(name, "sqrtf") == 0) return true;
@@ -3830,6 +3969,7 @@ static bool tc1_is_builtin(const char* name) {
     if (strcmp(name, "hashmap_new") == 0 || strcmp(name, "hashmap_put") == 0) return true;
     if (strcmp(name, "hashmap_get") == 0 || strcmp(name, "hashmap_contains") == 0) return true;
     if (strcmp(name, "hashmap_remove") == 0 || strcmp(name, "hashmap_size") == 0 || strcmp(name, "hashmap_clear") == 0) return true;
+    if (strcmp(name, "hashmap_keys") == 0 || strcmp(name, "hashmap_values") == 0) return true;
     if (strcmp(name, "set_new") == 0 || strcmp(name, "set_add") == 0) return true;
     if (strcmp(name, "set_contains") == 0 || strcmp(name, "set_remove") == 0) return true;
     if (strcmp(name, "set_size") == 0 || strcmp(name, "set_clear") == 0) return true;
@@ -3991,6 +4131,9 @@ static Type* tc1_check_expr(TypeChecker1* tc, Expr* e) {
                         }
                         return fn->return_type;
                     }
+                } else if (tc1_is_builtin(e->call.func->ident)) {
+                    // Handle builtin functions
+                    return get_builtin_return_type(e->call.func->ident);
                 }
             }
             
@@ -5243,8 +5386,8 @@ static void resolve_imports(Module* m, const char* base_path) {
     }
     
     // Auto-import core modules if not already imported
-    const char* core_modules[] = {"array", "fs", "os", "string"};
-    int core_count = 4;
+    const char* core_modules[] = {"array", "fs", "os", "string", "path"};
+    int core_count = 5;
     
     for (int c = 0; c < core_count; c++) {
         const char* core_module = core_modules[c];
@@ -9530,6 +9673,16 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i64 @append_file_builtin(i8*, i8*)");
     llvm_emit(&lg, "declare i8* @read_file(i8*)");
     llvm_emit(&lg, "declare i64 @write_file(i8*, i8*)");
+    llvm_emit(&lg, "declare i64 @fs_write(i8*, i8*)");
+    llvm_emit(&lg, "declare i64 @fs_append(i8*, i8*)");
+    llvm_emit(&lg, "declare i64 @fs_delete(i8*)");
+    llvm_emit(&lg, "declare i64 @fs_mkdir(i8*)");
+    llvm_emit(&lg, "declare i8* @os_exec_capture(i8*)");
+    llvm_emit(&lg, "declare i64 @os_exec_check(i8*)");
+    llvm_emit(&lg, "declare i8* @path_join(i64*)");
+    llvm_emit(&lg, "declare i8* @path_dirname(i8*)");
+    llvm_emit(&lg, "declare i8* @path_basename(i8*)");
+    llvm_emit(&lg, "declare i8* @path_ext(i8*)");
     llvm_emit(&lg, "declare i64 @file_exists(i8*)");
     llvm_emit(&lg, "declare i64 @append_file(i8*, i8*)");
     llvm_emit(&lg, "declare i64 @file_copy(i8*, i8*)");
@@ -9545,6 +9698,8 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare i8* @str_replace(i8*, i8*, i8*)");
     llvm_emit(&lg, "declare i64 @str_cmp(i8*, i8*)");
     llvm_emit(&lg, "declare i64* @str_split(i8*, i8*)");
+    llvm_emit(&lg, "declare i8* @format(i8*, i64*)");
+    llvm_emit(&lg, "declare i8* @str_format(i8*, i64*)");
     llvm_emit(&lg, "declare i8* @char_at(i8*, i64)");
     llvm_emit(&lg, "declare i8* @int_to_str(i64)");
     llvm_emit(&lg, "declare i64 @str_to_int(i8*)");
@@ -9734,6 +9889,8 @@ static void llvm_generate(FILE* out, Module* m, Arch arch, TargetOS os) {
     llvm_emit(&lg, "declare void @hashmap_remove(i8*, i8*)");
     llvm_emit(&lg, "declare i64 @hashmap_size(i8*)");
     llvm_emit(&lg, "declare void @hashmap_clear(i8*)");
+    llvm_emit(&lg, "declare i8* @hashmap_keys(i8*)");
+    llvm_emit(&lg, "declare i8* @hashmap_values(i8*)");
     llvm_emit(&lg, "declare i8* @set_new()");
     llvm_emit(&lg, "declare void @set_add(i8*, i8*)");
     llvm_emit(&lg, "declare i64 @set_contains(i8*, i8*)");

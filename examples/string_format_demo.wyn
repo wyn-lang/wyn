@@ -1,0 +1,28 @@
+// String Formatting Demo
+// Demonstrates template strings with {} placeholders
+
+fn main() {
+    print("=== Wyn String Formatting Demo ===")
+    
+    // Template strings with {} placeholders for strings
+    var name = "Alice"
+    var city = "New York"
+    
+    var greeting = "Hello {name}, welcome to {city}!"
+    print(greeting)
+    
+    // For numeric values, we need explicit conversion for now
+    var age = 42
+    var score = 95
+    var age_str = int_to_str(age)
+    var score_str = int_to_str(score)
+    
+    var stats = "Age: {age_str}, Score: {score_str}"
+    print(stats)
+    
+    // Direct string concatenation also works
+    var message = "User " + name + " is " + age_str + " years old"
+    print(message)
+    
+    print("=== Demo Complete ===")
+}

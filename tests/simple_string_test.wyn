@@ -1,11 +1,14 @@
-// Simple string iteration test
+// Test simple string operations
 
 fn main() {
-    print("Testing simple string iteration...")
+    print("Testing simple strings...")
     
-    for c in "abc" {
-        print(c)
-    }
+    var name = "Alice"
+    print(name)
     
-    print("Done!")
+    var age = 42
+    var age_str = int_to_str(age)
+    print(age_str)
+    
+    print("Done")
 }

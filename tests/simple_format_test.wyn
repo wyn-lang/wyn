@@ -1,0 +1,9 @@
+// Simple format test
+
+fn main() {
+    print("Testing simple template string...")
+    var name = "Alice"
+    var msg = "Hello {name}!"
+    print(msg)
+    print("Done")
+}

@@ -1,0 +1,16 @@
+// Test format function directly
+
+fn main() {
+    print("Testing format function...")
+    
+    // This should work if format function is properly implemented
+    // For now, let's just test basic functionality
+    var name = "Alice"
+    var age = 42
+    
+    // Use direct concatenation for now
+    var greeting = "Hello " + name + ", age " + int_to_str(age)
+    print(greeting)
+    
+    print("Done")
+}

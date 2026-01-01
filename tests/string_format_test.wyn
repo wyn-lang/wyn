@@ -1,0 +1,35 @@
+// String formatting tests
+
+fn test_template_strings() {
+    print("Testing template strings...")
+    
+    // String interpolation
+    var name = "Alice"
+    var city = "Boston"
+    var msg = "Hello {name} from {city}!"
+    print(msg)
+    
+    // Numeric values need explicit conversion
+    var age = 42
+    var age_str = int_to_str(age)
+    var age_msg = "Age: {age_str}"
+    print(age_msg)
+}
+
+fn test_direct_concatenation() {
+    print("Testing direct concatenation...")
+    
+    var x = 10
+    var y = 20
+    var x_str = int_to_str(x)
+    var y_str = int_to_str(y)
+    var result = "x=" + x_str + ", y=" + y_str
+    print(result)
+}
+
+fn main() {
+    print("Testing string formatting...")
+    test_template_strings()
+    test_direct_concatenation()
+    print("String formatting tests completed")
+}

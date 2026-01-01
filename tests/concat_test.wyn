@@ -1,0 +1,9 @@
+// Test string concatenation
+
+fn main() {
+    print("Testing string concatenation...")
+    var name = "Alice"
+    var greeting = "Hello " + name + "!"
+    print(greeting)
+    print("Done")
+}

@@ -1,0 +1,38 @@
+import fs
+import os
+
+fn main() {
+    print("=== Enhanced File I/O Tests ===")
+    
+    // Test fs.write
+    const write_success = fs.write("test_write.txt", "Hello World")
+    assert(write_success)
+    print("fs.write: PASS")
+    
+    // Test fs.append
+    const append_success = fs.append("test_write.txt", "\nAppended line")
+    assert(append_success)
+    print("fs.append: PASS")
+    
+    // Verify content exists
+    const content = fs.read("test_write.txt")
+    assert(content.len() > 0)
+    print("Content verification: PASS")
+    
+    // Test fs.mkdir
+    const mkdir_success = fs.mkdir("test_dir")
+    assert(mkdir_success)
+    assert(fs.is_dir("test_dir"))
+    print("fs.mkdir: PASS")
+    
+    // Test fs.delete
+    const delete_success = fs.delete("test_write.txt")
+    assert(delete_success)
+    assert(!fs.exists("test_write.txt"))
+    print("fs.delete: PASS")
+    
+    // Clean up
+    os.exec("rmdir test_dir")
+    
+    print("Enhanced file I/O tests passed!")
+}

@@ -16,6 +16,7 @@
 #include <stdint.h>
 #include <sys/time.h>
 #include <math.h>
+#include <sys/wait.h>
 
 // Platform-specific includes
 #ifdef _WIN32
@@ -384,6 +385,54 @@ char* int_to_str(long long n) {
     char* result = malloc(32);
     snprintf(result, 32, "%lld", n);
     return result;
+}
+
+// String formatting function - handles {} and %{} placeholders
+char* str_format(const char* template, int64_t* args) {
+    if (!template || !args) return strdup("");
+    
+    int64_t arg_count = args[0];
+    char* result = malloc(4096);
+    int ri = 0;
+    int arg_index = 0;
+    
+    for (int i = 0; template[i] && ri < 4095; i++) {
+        if (template[i] == '{' && template[i+1] == '}') {
+            // Handle {} placeholder
+            if (arg_index < arg_count) {
+                char* arg_str = (char*)args[arg_index + 2];
+                int len = strlen(arg_str);
+                if (ri + len < 4095) {
+                    strcpy(result + ri, arg_str);
+                    ri += len;
+                }
+                arg_index++;
+            }
+            i++; // skip }
+        } else if (template[i] == '%' && template[i+1] == '{' && template[i+2] == '}') {
+            // Handle %{} placeholder
+            if (arg_index < arg_count) {
+                char* arg_str = (char*)args[arg_index + 2];
+                int len = strlen(arg_str);
+                if (ri + len < 4095) {
+                    strcpy(result + ri, arg_str);
+                    ri += len;
+                }
+                arg_index++;
+            }
+            i += 2; // skip {}
+        } else {
+            result[ri++] = template[i];
+        }
+    }
+    
+    result[ri] = '\0';
+    return result;
+}
+
+// Format function - wrapper for str_format
+char* format(const char* template, int64_t* args) {
+    return str_format(template, args);
 }
 
 long long str_to_int(const char* s) {
@@ -2690,6 +2739,133 @@ int64_t* array_map_simple(int64_t* arr) {
         result[i + 2] = arr[i + 2];
     }
     
+    return result;
+}
+
+// Enhanced File I/O functions
+int64_t fs_write(const char* path, const char* content) {
+    return write_file(path, content);
+}
+
+int64_t fs_append(const char* path, const char* content) {
+    return append_file(path, content);
+}
+
+int64_t fs_delete(const char* path) {
+    return delete_file(path);
+}
+
+int64_t fs_mkdir(const char* path) {
+    return mkdir_wyn(path);
+}
+
+// Process execution functions
+char* os_exec_capture(const char* cmd) {
+    // Create temporary file for stdout
+    char stdout_file[] = "/tmp/wyn_stdout_XXXXXX";
+    
+    int stdout_fd = mkstemp(stdout_file);
+    
+    if (stdout_fd == -1) {
+        return strdup("");
+    }
+    
+    close(stdout_fd);
+    
+    // Execute command with redirected output
+    char full_cmd[4096];
+    snprintf(full_cmd, sizeof(full_cmd), "%s > %s 2>/dev/null", cmd, stdout_file);
+    
+    system(full_cmd);
+    
+    // Read stdout
+    char* stdout_str = read_file(stdout_file);
+    if (!stdout_str) stdout_str = strdup("");
+    
+    // Clean up temp file
+    unlink(stdout_file);
+    
+    return stdout_str;
+}
+
+int64_t os_exec_check(const char* cmd) {
+    int exit_code = system(cmd);
+    return WEXITSTATUS(exit_code) == 0 ? 1 : 0;
+}
+
+// Path operations
+char* path_join(int64_t* parts_arr) {
+    if (!parts_arr || parts_arr[0] == 0) return strdup("");
+    
+    int64_t len = parts_arr[0];
+    size_t total_len = 0;
+    
+    // Calculate total length needed
+    for (int64_t i = 0; i < len; i++) {
+        char* part = (char*)parts_arr[i + 2];
+        if (part) total_len += strlen(part) + 1; // +1 for separator
+    }
+    
+    char* result = malloc(total_len + 1);
+    result[0] = '\0';
+    
+    for (int64_t i = 0; i < len; i++) {
+        char* part = (char*)parts_arr[i + 2];
+        if (part && strlen(part) > 0) {
+            if (strlen(result) > 0) {
+                strcat(result, PATH_SEP_STR);
+            }
+            strcat(result, part);
+        }
+    }
+    
+    return result;
+}
+
+char* path_dirname(const char* path) {
+    if (!path || strlen(path) == 0) return strdup(".");
+    
+    char* path_copy = strdup(path);
+    char* last_sep = strrchr(path_copy, PATH_SEP);
+    
+    if (!last_sep) {
+        free(path_copy);
+        return strdup(".");
+    }
+    
+    if (last_sep == path_copy) {
+        free(path_copy);
+        return strdup(PATH_SEP_STR);
+    }
+    
+    *last_sep = '\0';
+    char* result = strdup(path_copy);
+    free(path_copy);
+    return result;
+}
+
+char* path_basename(const char* path) {
+    if (!path || strlen(path) == 0) return strdup("");
+    
+    char* last_sep = strrchr(path, PATH_SEP);
+    if (!last_sep) return strdup(path);
+    
+    return strdup(last_sep + 1);
+}
+
+char* path_ext(const char* path) {
+    if (!path || strlen(path) == 0) return strdup("");
+    
+    char* basename = path_basename(path);
+    char* last_dot = strrchr(basename, '.');
+    
+    if (!last_dot || last_dot == basename) {
+        free(basename);
+        return strdup("");
+    }
+    
+    char* result = strdup(last_dot);
+    free(basename);
     return result;
 }
 
