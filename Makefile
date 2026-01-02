@@ -48,6 +48,7 @@ endif
 SRC_DIR = src
 BUILD_DIR = build
 RUNTIME_DIR = runtime
+UTILS_DIR = src/utils
 TESTS_DIR = tests
 EXAMPLES_DIR = examples
 PREFIX ?= /usr/local
@@ -66,6 +67,8 @@ else
 endif
 
 # Runtime libraries
+ARENA_SRC = $(UTILS_DIR)/arena.c
+ARENA_OBJ = $(BUILD_DIR)/arena.o
 SPAWN_RUNTIME_SRC = $(RUNTIME_DIR)/spawn.c
 SPAWN_RUNTIME_OBJ = $(BUILD_DIR)/spawn_runtime.o
 ARRAY_RUNTIME_SRC = $(RUNTIME_DIR)/array.c
@@ -91,10 +94,14 @@ $(BUILD_DIR):
 .PHONY: wyn
 wyn: $(BUILD_DIR) $(WYN_BIN)
 
-$(WYN_BIN): $(WYN_CLI_SRC) $(WYN_COMPILER_SRC)
+$(WYN_BIN): $(WYN_CLI_SRC) $(WYN_COMPILER_SRC) $(ARENA_OBJ)
 	@echo "Building unified wyn binary..."
-	$(CC) $(CFLAGS) -DCOMPILER_MAIN -o $@ $(WYN_CLI_SRC) $(WYN_COMPILER_SRC)
+	$(CC) $(CFLAGS) -DCOMPILER_MAIN -o $@ $(WYN_CLI_SRC) $(WYN_COMPILER_SRC) $(ARENA_OBJ)
 	@echo "✓ Built: $(WYN_BIN)"
+
+# Build arena allocator
+$(ARENA_OBJ): $(ARENA_SRC)
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 # Legacy targets (for compatibility during transition)
 .PHONY: wync repl

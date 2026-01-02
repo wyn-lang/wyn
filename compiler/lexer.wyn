@@ -1,5 +1,0 @@
-fn tokenize(input: str) -> str {
-    print("tokenize called with: ")
-    print(input)
-    return "tokenized: " + input
-}

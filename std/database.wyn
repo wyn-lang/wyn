@@ -1,9 +1,0 @@
-# std/database.wyn
-# Database operations (SQLite)
-# All functions are mapped to runtime implementations via compiler
-
-# SQLite:
-#   database.sqlite_open(path: str) -> int
-#   database.sqlite_exec(db: int, sql: str) -> int
-#   database.sqlite_query(db: int, sql: str) -> str
-#   database.sqlite_close(db: int) -> int

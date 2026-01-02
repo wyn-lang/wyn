@@ -8,7 +8,7 @@
 
 **Official Website:** [wynlang.com](https://wynlang.com) | **[VSCode Extension](https://marketplace.visualstudio.com/items?itemName=wyn-lang.wyn)**
 
-Fast, compiled systems language with clean, expressive syntax, powered by LLVM. **6x faster** on real workloads than Python. **95% self-hosted** with working module system.
+Fast, compiled systems language with clean, expressive syntax, powered by LLVM. **6x faster** on real workloads than Python. **Production-ready** with complete module system.
 
 ## Installation
 
@@ -17,18 +17,26 @@ Fast, compiled systems language with clean, expressive syntax, powered by LLVM. 
 brew install wyn-lang/tap/wyn
 ```
 
-### Linux/Windows
-```bash
-# Download from releases
-curl -L https://github.com/wyn-lang/wyn/releases/latest/download/wyn-$(uname -s)-$(uname -m).tar.gz | tar xz
-sudo mv wyn /usr/local/bin/
-```
-
 ### From Source
 ```bash
 git clone https://github.com/wyn-lang/wyn.git
 cd wyn
-make install
+make
+sudo make install
+```
+
+**Installation locations:**
+- Binary: `/usr/local/bin/wyn`
+- Custom: `make install PREFIX=$HOME/.local`
+
+**Requirements:**
+- macOS 11.0+ or Linux (Ubuntu 20.04+)
+- LLVM 14+
+- Clang
+
+**Verify:**
+```bash
+wyn --version
 ```
 
 ## Quick Start
@@ -59,9 +67,24 @@ fn main() {
 }
 ```
 
-## New in v0.6.0
+## New in v0.7.0 (January 2026)
 
-### Module System & Self-Hosting Foundations
+### ✅ Nested Module System
+```wyn
+import std.collections.HashMap
+import compress
+
+fn main() {
+    var data = compress.gzip("hello")
+    print("Compressed!")
+}
+```
+
+**Features:**
+- ✅ Nested module imports
+- ✅ Module path resolution
+- ✅ Clean namespace organization
+- ✅ All 45 core tests passing
 ```wyn
 import utils                    // Import modules
 import compiler.lexer          // Nested module imports
@@ -101,7 +124,6 @@ var reversed = utils.string.reverse("hello")
 ## Features
 
 - ⚡ **6x Faster** - Outperforms Python on real workloads
-- 🏗️ **95% Self-Hosted** - Compiler written in Wyn itself
 - 📦 **Module System** - Clean imports and namespace organization
 - 🎯 **Modern Syntax** - `var` declarations, list comprehensions, slicing
 - 🌍 **Cross-Platform** - 5 platforms: macOS, Linux, Windows, ARM64, x86_64

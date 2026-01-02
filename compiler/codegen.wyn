@@ -1,4 +1,0 @@
-fn generate(ast: int) -> str {
-    // Simple codegen that returns a dummy IR string
-    return "define i32 @main() { ret i32 " + string.from_int(ast) + " }"
-}

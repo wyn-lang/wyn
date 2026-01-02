@@ -1,4 +1,0 @@
-fn parse(tokens: int) -> int {
-    // Simple parser that returns a dummy AST
-    return tokens + 100
-}

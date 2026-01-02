@@ -1,8 +1,0 @@
-# std/hash.wyn
-# Cryptographic hash functions
-# All functions are mapped to runtime implementations via compiler
-
-# Hash Functions:
-#   hash.sha256(data: str) -> str
-#   hash.md5(data: str) -> str
-#   hash.sha1(data: str) -> str

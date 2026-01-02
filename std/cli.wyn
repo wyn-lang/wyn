@@ -1,9 +1,0 @@
-# std/cli.wyn
-# CLI argument parsing
-# All functions are mapped to runtime implementations via compiler
-
-# Argument Parsing:
-#   cli.has_flag(flag: str) -> int
-#   cli.get_arg(name: str) -> str
-#   cli.get_positional(index: int) -> str
-#   cli.arg_count() -> int
