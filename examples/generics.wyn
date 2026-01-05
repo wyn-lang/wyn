@@ -1,0 +1,9 @@
+fn identity[T](x: T) -> T {
+    return x
+}
+
+fn main() -> int {
+    var a = identity(42)
+    print(a)
+    return 0
+}

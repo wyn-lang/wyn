@@ -1,0 +1,15 @@
+fn pascal(n: int) -> int {
+    for var i = 0; i < n; i += 1 {
+        var val = 1
+        for var j = 0; j <= i; j += 1 {
+            print(val)
+            val = val * (i - j) / (j + 1)
+        }
+    }
+    return 0
+}
+
+fn main() -> int {
+    pascal(5)
+    return 0
+}

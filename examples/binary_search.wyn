@@ -1,0 +1,24 @@
+fn binary_search(arr: int, target: int, left: int, right: int) -> int {
+    if left > right {
+        return -1
+    }
+    
+    var mid = left + (right - left) / 2
+    var mid_val = mid
+    
+    if mid_val == target {
+        return mid
+    }
+    
+    if mid_val > target {
+        return binary_search(arr, target, left, mid - 1)
+    }
+    
+    return binary_search(arr, target, mid + 1, right)
+}
+
+fn main() -> int {
+    var result = binary_search(0, 30, 0, 10)
+    print(result)
+    return 0
+}

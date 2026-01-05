@@ -1,0 +1,20 @@
+type UserId = int
+type Distance = int
+
+fn get_user() -> UserId {
+    return 42
+}
+
+fn calculate_distance() -> Distance {
+    return 100
+}
+
+fn main() -> int {
+    var user = get_user()
+    var dist = calculate_distance()
+    
+    print(user)
+    print(dist)
+    
+    return 0
+}

@@ -1,0 +1,19 @@
+[package]
+name = "std"
+version = "1.0.0"
+description = "Wyn standard library (built-in)"
+
+[info]
+# Standard library is currently built into the compiler
+# All functions are automatically available in every Wyn program
+# No separate module files needed for v1.0
+
+[functions]
+io = ["print", "print_str", "print_bool", "input"]
+string = ["str_len", "str_eq", "str_concat", "str_upper", "str_lower"]
+math = ["abs_val", "min", "max", "pow_int", "clamp", "sign", "gcd", "lcm", "is_even", "is_odd"]
+array = ["arr_sum", "arr_max", "arr_min", "arr_contains", "arr_find", "arr_reverse"]
+file = ["file_read", "file_write", "file_exists"]
+random = ["random_int", "seed_random"]
+time = ["time_now"]
+testing = ["assert_eq"]

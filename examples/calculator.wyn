@@ -1,0 +1,23 @@
+enum Operation {
+    ADD,
+    SUB,
+    MUL,
+    DIV
+}
+
+fn calculate(a: int, b: int, op: Operation) -> int {
+    return match op {
+        ADD => a + b,
+        SUB => a - b,
+        MUL => a * b,
+        DIV => a / b
+    }
+}
+
+fn main() -> int {
+    print(calculate(10, 5, ADD))
+    print(calculate(10, 5, SUB))
+    print(calculate(10, 5, MUL))
+    print(calculate(10, 5, DIV))
+    return 0
+}

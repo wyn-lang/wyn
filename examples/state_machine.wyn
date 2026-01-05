@@ -1,0 +1,31 @@
+enum State {
+    IDLE,
+    LOADING,
+    READY,
+    ERROR
+}
+
+fn transition(current: State, event: int) -> State {
+    return match current {
+        IDLE => LOADING,
+        LOADING => READY,
+        READY => IDLE,
+        ERROR => IDLE
+    }
+}
+
+fn main() -> int {
+    var state = IDLE
+    print(state)
+    
+    state = transition(state, 0)
+    print(state)
+    
+    state = transition(state, 0)
+    print(state)
+    
+    state = transition(state, 0)
+    print(state)
+    
+    return 0
+}

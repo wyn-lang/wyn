@@ -1,0 +1,7 @@
+// This is a comment
+fn main() -> int {
+    // Another comment
+    var x = 10 // inline comment
+    print(x)
+    return 0
+}

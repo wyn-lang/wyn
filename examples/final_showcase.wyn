@@ -1,0 +1,97 @@
+// Wyn Language - Complete Feature Showcase
+// Demonstrates all implemented features
+
+type UserId = int
+type Score = int
+
+enum GameState {
+    MENU,
+    PLAYING,
+    PAUSED,
+    GAMEOVER
+}
+
+fn fibonacci(n: int) -> int {
+    if n <= 1 {
+        return n
+    }
+    return fibonacci(n - 1) + fibonacci(n - 2)
+}
+
+fn factorial(n: int) -> int {
+    var result = 1
+    for var i = 1; i <= n; i = i + 1 {
+        result = result * i
+    }
+    return result
+}
+
+fn main() -> int {
+    // Constants and variables
+    const MAX_SCORE = 1000
+    var score = 0
+    
+    // Boolean logic
+    var is_active = true
+    var is_paused = false
+    
+    if is_active and not is_paused {
+        print(1)
+    }
+    
+    // Enums and pattern matching
+    var state = PLAYING
+    var status_code = match state {
+        MENU => 0,
+        PLAYING => 1,
+        PAUSED => 2,
+        GAMEOVER => 3
+    }
+    print(status_code)
+    
+    // Arrays
+    var scores = [100, 200, 300, 400, 500]
+    print(scores[0])
+    print(scores[4])
+    
+    // For loops with break
+    for var i = 0; i < 10; i = i + 1 {
+        if i == 5 {
+            break
+        }
+        score = score + 10
+    }
+    print(score)
+    
+    // While loops with continue
+    var count = 0
+    while count < 5 {
+        count = count + 1
+        if count == 3 {
+            continue
+        }
+        print(count + 100)
+    }
+    
+    // Recursive functions
+    var fib = fibonacci(10)
+    print(fib)
+    
+    var fact = factorial(5)
+    print(fact)
+    
+    // Type aliases
+    var user = 42
+    print(user)
+    
+    // Unary operators
+    var negative = -50
+    print(negative)
+    
+    // Logical operators
+    if score > 0 or state == MENU {
+        print(999)
+    }
+    
+    return 0
+}

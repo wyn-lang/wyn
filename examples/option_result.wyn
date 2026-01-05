@@ -1,0 +1,29 @@
+fn divide(a: int, b: int) -> int {
+    if b == 0 {
+        return err(0)
+    }
+    return ok(a / b)
+}
+
+fn find(arr: int, target: int) -> int {
+    if target == 42 {
+        return some(target)
+    }
+    return none()
+}
+
+fn main() -> int {
+    var result = divide(10, 2)
+    print(result)
+    
+    var error = divide(10, 0)
+    print(error)
+    
+    var found = find(0, 42)
+    print(found)
+    
+    var not_found = find(0, 99)
+    print(not_found)
+    
+    return 0
+}

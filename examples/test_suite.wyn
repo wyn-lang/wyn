@@ -1,0 +1,46 @@
+fn test_arithmetic() -> int {
+    assert_eq(2 + 3, 5)
+    assert_eq(10 - 4, 6)
+    assert_eq(3 * 4, 12)
+    assert_eq(20 / 4, 5)
+    assert_eq(17 % 5, 2)
+    return 0
+}
+
+fn test_comparison() -> int {
+    assert_eq(5 > 3, 1)
+    assert_eq(3 < 5, 1)
+    assert_eq(5 == 5, 1)
+    assert_eq(5 != 3, 1)
+    return 0
+}
+
+fn test_logical() -> int {
+    assert_eq(true and true, 1)
+    assert_eq(true or false, 1)
+    assert_eq(not false, 1)
+    return 0
+}
+
+fn test_arrays() -> int {
+    var arr = [1, 2, 3, 4, 5]
+    assert_eq(arr[0], 1)
+    assert_eq(arr[4], 5)
+    return 0
+}
+
+fn test_enums() -> int {
+    var c = 1
+    assert_eq(c, 1)
+    return 0
+}
+
+fn main() -> int {
+    test_arithmetic()
+    test_comparison()
+    test_logical()
+    test_arrays()
+    test_enums()
+    print(999)
+    return 0
+}

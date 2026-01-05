@@ -1,0 +1,21 @@
+fn main() -> int {
+    // Math functions
+    assert_eq(abs_val(-10), 10)
+    assert_eq(min(5, 10), 5)
+    assert_eq(max(5, 10), 10)
+    assert_eq(pow_int(2, 3), 8)
+    assert_eq(clamp(15, 0, 10), 10)
+    assert_eq(clamp(5, 0, 10), 5)
+    assert_eq(sign(-5), -1)
+    assert_eq(sign(5), 1)
+    assert_eq(sign(0), 0)
+    
+    // Array functions
+    var arr = [1, 2, 3, 4, 5]
+    assert_eq(arr_sum(arr, 5), 15)
+    assert_eq(arr_max(arr, 5), 5)
+    assert_eq(arr_min(arr, 5), 1)
+    
+    print(999)
+    return 0
+}

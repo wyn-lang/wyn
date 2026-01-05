@@ -1,0 +1,23 @@
+fn sum_range(start: int, end: int) -> int {
+    var total = 0
+    for var i = start; i <= end; i += 1 {
+        total += i
+    }
+    return total
+}
+
+fn product_range(start: int, end: int) -> int {
+    var total = 1
+    for var i = start; i <= end; i += 1 {
+        total *= i
+    }
+    return total
+}
+
+fn main() -> int {
+    print(sum_range(1, 10))
+    print(sum_range(1, 100))
+    print(product_range(1, 5))
+    print(product_range(1, 10))
+    return 0
+}

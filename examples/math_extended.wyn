@@ -1,0 +1,9 @@
+fn main() -> int {
+    print(gcd(48, 18))
+    print(lcm(12, 18))
+    print(is_even(10))
+    print(is_odd(10))
+    print(is_even(11))
+    print(is_odd(11))
+    return 0
+}

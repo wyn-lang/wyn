@@ -1,0 +1,18 @@
+enum Status {
+    PENDING,
+    RUNNING,
+    COMPLETE
+}
+
+fn main() -> int {
+    var status = PENDING
+    print(status)
+    
+    status = RUNNING
+    print(status)
+    
+    status = COMPLETE
+    print(status)
+    
+    return 0
+}

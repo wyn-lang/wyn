@@ -1,0 +1,21 @@
+fn main() -> int {
+    // Test break
+    for var i = 0; i < 10; i = i + 1 {
+        if i == 5 {
+            break
+        }
+        print(i)
+    }
+    
+    print(999)
+    
+    // Test continue
+    for var j = 0; j < 5; j = j + 1 {
+        if j == 2 {
+            continue
+        }
+        print(j + 100)
+    }
+    
+    return 0
+}

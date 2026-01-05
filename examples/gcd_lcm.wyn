@@ -1,0 +1,20 @@
+fn gcd(a: int, b: int) -> int {
+    while b != 0 {
+        var temp = b
+        b = a % b
+        a = temp
+    }
+    return a
+}
+
+fn lcm(a: int, b: int) -> int {
+    return a * b / gcd(a, b)
+}
+
+fn main() -> int {
+    print(gcd(48, 18))
+    print(gcd(100, 50))
+    print(lcm(12, 18))
+    print(lcm(4, 6))
+    return 0
+}

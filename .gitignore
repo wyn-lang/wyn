@@ -1,0 +1,20 @@
+# Build artifacts
+wyn
+*.out
+*.o
+.wyn.c
+*.dSYM/
+
+# Test artifacts
+tests/test_*
+!tests/*.c
+!tests/*.sh
+
+# Temp files
+temp/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

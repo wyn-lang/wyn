@@ -1,0 +1,14 @@
+struct Point {
+    x: int
+    y: int
+}
+
+impl Point {
+    fn distance(self: Point) -> int {
+        return self.x + self.y
+    }
+}
+
+fn main() -> int {
+    return 42
+}
