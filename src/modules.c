@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+#define _DEFAULT_SOURCE
 #include "modules.h"
 #include <string.h>
 #include <stdio.h>

@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+#define _DEFAULT_SOURCE
 #include "error.h"
 #include "common.h"
 #include <stdio.h>

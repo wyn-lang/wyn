@@ -19,6 +19,7 @@ typedef enum {
     WYN_SYS_PROCESS_ERROR,
     WYN_SYS_MEMORY_ERROR,
     WYN_SYS_IO_ERROR,
+    WYN_SYS_NOT_SUPPORTED,
     WYN_SYS_UNKNOWN_ERROR
 } WynSystemError;
 

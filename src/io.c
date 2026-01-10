@@ -1,12 +1,35 @@
+#define _GNU_SOURCE
+#define _DEFAULT_SOURCE
 #include "io.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <dirent.h>
-#include <libgen.h>
+#include <stdint.h>
+
+#ifdef _WIN32
+    #include <windows.h>
+    #include <direct.h>
+    #include <io.h>
+    #include <sys/stat.h>
+    #include "windows_compat.h"
+    #define access _access
+    #define F_OK 0
+    #define mkdir(path, mode) _mkdir(path)
+    #define rmdir _rmdir
+    #define getcwd _getcwd
+    #define chdir _chdir
+    #define stat _stat
+    #define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
+    #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
+    #define dirname _dirname
+    #define basename _basename
+#else
+    #include <sys/stat.h>
+    #include <unistd.h>
+    #include <dirent.h>
+    #include <libgen.h>
+#endif
 
 // Convert system errno to WynIoError
 static WynIoError errno_to_wyn_error(int err) {
@@ -187,7 +210,12 @@ long wyn_file_tell(WynFile* file) {
 // File system operations
 bool wyn_file_exists(const char* path) {
     if (!path) return false;
+#ifdef _WIN32
+    DWORD attrs = GetFileAttributesA(path);
+    return (attrs != INVALID_FILE_ATTRIBUTES);
+#else
     return access(path, F_OK) == 0;
+#endif
 }
 
 bool wyn_is_directory(const char* path) {
@@ -338,6 +366,22 @@ void wyn_dir_free(WynDir* dir) {
 WynIoError wyn_dir_read(WynDir* dir, WynDirEntry* entry) {
     if (!dir || !dir->is_open || !entry) return WYN_IO_ERROR_INVALID_PATH;
     
+#ifdef _WIN32
+    WIN32_FIND_DATA* find_data = (WIN32_FIND_DATA*)dir->handle;
+    if (!FindNextFile((HANDLE)dir->handle, find_data)) {
+        return WYN_IO_ERROR_NOT_FOUND;  // End of directory
+    }
+    
+    entry->name = strdup(find_data->cFileName);
+    entry->is_directory = (find_data->dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+    
+    // Get file size if it's a regular file
+    if (!entry->is_directory) {
+        entry->size = ((uint64_t)find_data->nFileSizeHigh << 32) | find_data->nFileSizeLow;
+    } else {
+        entry->size = 0;
+    }
+#else
     struct dirent* ent = readdir((DIR*)dir->handle);
     if (!ent) {
         return WYN_IO_ERROR_NOT_FOUND;  // End of directory
@@ -354,6 +398,7 @@ WynIoError wyn_dir_read(WynDir* dir, WynDirEntry* entry) {
     } else {
         entry->size = 0;
     }
+#endif
     
     return WYN_IO_SUCCESS;
 }
@@ -467,12 +512,21 @@ char* wyn_path_extension(const char* path) {
 char* wyn_path_absolute(const char* path) {
     if (!path) return NULL;
     
+#ifdef _WIN32
+    char* abs_path = _fullpath(NULL, path, 0);
+    return abs_path;  // _fullpath allocates memory
+#else
     char* abs_path = realpath(path, NULL);
     return abs_path;  // realpath allocates memory
+#endif
 }
 
 bool wyn_path_is_absolute(const char* path) {
+#ifdef _WIN32
+    return path && (path[0] == '\\' || (path[1] == ':' && path[2] == '\\'));
+#else
     return path && path[0] == '/';
+#endif
 }
 
 // Utility functions
