@@ -9,6 +9,20 @@
     #include <windows.h>
     #include <process.h>
     #include <direct.h>
+    #include <sys/stat.h>
+    #include "windows_compat.h"
+    #define setenv(name, value, overwrite) _putenv_s(name, value)
+    #define unsetenv(name) _putenv_s(name, "")
+    #define access _access
+    #define F_OK 0
+    #define stat _stat
+    #define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
+    #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
+    #define mkdir(path, mode) _mkdir(path)
+    #define getpagesize() 4096
+    #define realpath(path, resolved) _fullpath(resolved, path, _MAX_PATH)
+    #define basename(path) _basename(path)
+    #define dirname(path) _dirname(path)
 #else
     #include <unistd.h>
     #include <sys/wait.h>
@@ -41,14 +55,22 @@ char* wyn_sys_get_env(const char* name) {
 WynSystemError wyn_sys_set_env(const char* name, const char* value) {
     if (!name || !value) return WYN_SYS_INVALID_ARGUMENT;
     
+#ifdef _WIN32
+    int result = _putenv_s(name, value);
+#else
     int result = setenv(name, value, 1);
+#endif
     return result == 0 ? WYN_SYS_OK : WYN_SYS_UNKNOWN_ERROR;
 }
 
 WynSystemError wyn_sys_unset_env(const char* name) {
     if (!name) return WYN_SYS_INVALID_ARGUMENT;
     
+#ifdef _WIN32
+    int result = _putenv_s(name, "");
+#else
     int result = unsetenv(name);
+#endif
     return result == 0 ? WYN_SYS_OK : WYN_SYS_UNKNOWN_ERROR;
 }
 
@@ -118,12 +140,17 @@ WynSystemError wyn_sys_set_current_dir(const char* path) {
 }
 
 char* wyn_sys_home_dir(void) {
+#ifdef _WIN32
+    char* home = getenv("USERPROFILE");
+    return home ? strdup(home) : NULL;
+#else
     char* home = getenv("HOME");
     if (home) return strdup(home);
     
     // Fallback to passwd entry
     struct passwd* pw = getpwuid(getuid());
     return pw ? strdup(pw->pw_dir) : NULL;
+#endif
 }
 
 char* wyn_sys_temp_dir(void) {
@@ -142,6 +169,12 @@ WynProcess* wyn_sys_spawn_process(const char* command, char* const* args, WynSys
         if (error) *error = WYN_SYS_INVALID_ARGUMENT;
         return NULL;
     }
+
+#ifdef _WIN32
+    // Windows stub - not implemented
+    if (error) *error = WYN_SYS_NOT_SUPPORTED;
+    return NULL;
+#else
     
     int stdin_pipe[2], stdout_pipe[2], stderr_pipe[2];
     
@@ -205,11 +238,16 @@ WynProcess* wyn_sys_spawn_process(const char* command, char* const* args, WynSys
     
     if (error) *error = WYN_SYS_OK;
     return process;
+#endif
 }
 
 WynSystemError wyn_sys_wait_process(WynProcess* process, WynExitStatus* status) {
     if (!process) return WYN_SYS_INVALID_ARGUMENT;
     
+#ifdef _WIN32
+    // Windows stub - not implemented
+    return WYN_SYS_NOT_SUPPORTED;
+#else
     int wait_status;
     pid_t result = waitpid(process->pid, &wait_status, 0);
     
