@@ -4,15 +4,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
-#include <sys/wait.h>
-#include <sys/stat.h>
-#include <signal.h>
+
+#ifdef _WIN32
+    #include <windows.h>
+    #include <process.h>
+    #include <direct.h>
+#else
+    #include <unistd.h>
+    #include <sys/wait.h>
+    #include <sys/stat.h>
+    #include <signal.h>
+    #include <fcntl.h>
+    #include <libgen.h>
+    #include <pwd.h>
+    #include <sys/utsname.h>
+#endif
+
 #include <errno.h>
-#include <fcntl.h>
-#include <libgen.h>
-#include <pwd.h>
-#include <sys/utsname.h>
 
 #ifdef __APPLE__
 #include <sys/sysctl.h>

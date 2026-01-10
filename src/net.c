@@ -5,14 +5,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <unistd.h>
-#include <fcntl.h>
 
 #ifdef _WIN32
-#include <winsock2.h>
-#include <ws2tcpip.h>
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
+    #define close closesocket
 #else
-#include <sys/socket.h>
+    #include <unistd.h>
+    #include <fcntl.h>
+    #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <netinet/in.h>
@@ -312,6 +313,12 @@ void wyn_socket_free(WynSocket* socket) {
 WynNetError wyn_socket_set_blocking(WynSocket* socket, bool blocking) {
     if (!socket) return WYN_NET_ERROR_INVALID_ADDR;
     
+#ifdef _WIN32
+    u_long mode = blocking ? 0 : 1;
+    if (ioctlsocket(socket->fd, FIONBIO, &mode) != 0) {
+        return WYN_NET_ERROR_SOCKET_CONFIG;
+    }
+#else
     int flags = fcntl(socket->fd, F_GETFL, 0);
     if (flags < 0) return errno_to_net_error(errno);
     
@@ -324,6 +331,7 @@ WynNetError wyn_socket_set_blocking(WynSocket* socket, bool blocking) {
     if (fcntl(socket->fd, F_SETFL, flags) < 0) {
         return errno_to_net_error(errno);
     }
+#endif
     
     socket->is_blocking = blocking;
     return WYN_NET_SUCCESS;
@@ -332,8 +340,13 @@ WynNetError wyn_socket_set_blocking(WynSocket* socket, bool blocking) {
 WynNetError wyn_socket_set_reuse_addr(WynSocket* socket, bool reuse) {
     if (!socket) return WYN_NET_ERROR_INVALID_ADDR;
     
+#ifdef _WIN32
+    char opt = reuse ? 1 : 0;
+    if (setsockopt(socket->fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+#else
     int opt = reuse ? 1 : 0;
     if (setsockopt(socket->fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+#endif
         return errno_to_net_error(errno);
     }
     
@@ -343,6 +356,15 @@ WynNetError wyn_socket_set_reuse_addr(WynSocket* socket, bool reuse) {
 WynNetError wyn_socket_set_timeout(WynSocket* socket, int timeout_ms) {
     if (!socket) return WYN_NET_ERROR_INVALID_ADDR;
     
+#ifdef _WIN32
+    DWORD timeout = timeout_ms;
+    if (setsockopt(socket->fd, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout)) < 0) {
+        return errno_to_net_error(errno);
+    }
+    if (setsockopt(socket->fd, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof(timeout)) < 0) {
+        return errno_to_net_error(errno);
+    }
+#else
     struct timeval timeout;
     timeout.tv_sec = timeout_ms / 1000;
     timeout.tv_usec = (timeout_ms % 1000) * 1000;
@@ -354,6 +376,7 @@ WynNetError wyn_socket_set_timeout(WynSocket* socket, int timeout_ms) {
     if (setsockopt(socket->fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout)) < 0) {
         return errno_to_net_error(errno);
     }
+#endif
     
     return WYN_NET_SUCCESS;
 }
