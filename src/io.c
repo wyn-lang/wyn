@@ -386,7 +386,6 @@ WynIoError wyn_dir_read(WynDir* dir, WynDirEntry* entry) {
         entry->size = 0;
     }
 #endif
-    }
     
     return WYN_IO_SUCCESS;
 }
