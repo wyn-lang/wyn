@@ -11,7 +11,14 @@
 #include <libgen.h>
 #include <pwd.h>
 #include <sys/utsname.h>
+
+#ifdef __APPLE__
 #include <sys/sysctl.h>
+#endif
+
+#ifdef __linux__
+#include <sys/sysinfo.h>
+#endif
 
 // Environment variable operations
 char* wyn_sys_get_env(const char* name) {
