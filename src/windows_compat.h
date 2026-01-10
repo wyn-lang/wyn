@@ -23,9 +23,6 @@ static inline char* _dirname(const char* path) {
 #define fork() (-1)
 #define pipe(fds) (-1)
 #define dup2(oldfd, newfd) (-1)
-#define close(fd) _close(fd)
-#define read(fd, buf, count) _read(fd, buf, count)
-#define write(fd, buf, count) _write(fd, buf, count)
 #define waitpid(pid, status, options) (-1)
 #define kill(pid, sig) (-1)
 #define WIFEXITED(status) (0)
@@ -52,6 +49,7 @@ struct utsname { char sysname[65]; char nodename[65]; char release[65]; char ver
 #define _SC_NPROCESSORS_ONLN 84
 
 // Directory reading stubs for missing dirent functionality
+typedef struct { int dummy; } DIR;
 #define opendir(path) NULL
 #define closedir(dir) (-1)
 #define readdir(dir) NULL

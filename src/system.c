@@ -10,6 +10,7 @@
     #include <process.h>
     #include <direct.h>
     #include <sys/stat.h>
+    #include <io.h>
     #include "windows_compat.h"
     #define setenv(name, value, overwrite) _putenv_s(name, value)
     #define unsetenv(name) _putenv_s(name, "")
@@ -23,6 +24,9 @@
     #define realpath(path, resolved) _fullpath(resolved, path, _MAX_PATH)
     #define basename(path) _basename(path)
     #define dirname(path) _dirname(path)
+    #define close _close
+    #define read _read
+    #define write _write
 #else
     #include <unistd.h>
     #include <sys/wait.h>
