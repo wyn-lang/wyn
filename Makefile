@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -Wextra -std=c11 -g -fsanitize=address
+CFLAGS=-Wall -Wextra -std=c11 -g
 OPTFLAGS=-O2
 
 # LLVM Integration for Phase 2 (optional)
