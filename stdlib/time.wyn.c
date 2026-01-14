@@ -865,11 +865,11 @@ int days_in_month(int month) {
 }
 
 int is_leap_year(int year) {
-    const int div4 = (year % 4);
+    int div4 = (year % 4);
     ;
-    const int div100 = (year % 100);
+    int div100 = (year % 100);
     ;
-    const int div400 = (year % 400);
+    int div400 = (year % 400);
     ;
     if ((div400 == 0)) {
     return 1;
@@ -884,7 +884,7 @@ int is_leap_year(int year) {
 }
 
 int days_in_year(int year) {
-    const int leap = is_leap_year(year);
+    __auto_type leap = is_leap_year(year);
     ;
     if ((leap == 1)) {
     return 366;
@@ -918,7 +918,7 @@ int day_of_year(int month, int day, int year) {
     m = (m + 1);
     }
     total = (total + day);
-    const int leap = is_leap_year(year);
+    __auto_type leap = is_leap_year(year);
     ;
     if ((leap == 1)) {
     if ((month > 2)) {
@@ -929,25 +929,25 @@ int day_of_year(int month, int day, int year) {
 }
 
 int wyn_main() {
-    const int jan_days = days_in_month(1);
+    __auto_type jan_days = days_in_month(1);
     ;
-    const int feb_days = days_in_month(2);
+    __auto_type feb_days = days_in_month(2);
     ;
-    const int leap_2024 = is_leap_year(2024);
+    __auto_type leap_2024 = is_leap_year(2024);
     ;
-    const int leap_2023 = is_leap_year(2023);
+    __auto_type leap_2023 = is_leap_year(2023);
     ;
-    const int year_days = days_in_year(2024);
+    __auto_type year_days = days_in_year(2024);
     ;
-    const int h_to_s = hours_to_seconds(2);
+    __auto_type h_to_s = hours_to_seconds(2);
     ;
-    const int m_to_s = minutes_to_seconds(5);
+    __auto_type m_to_s = minutes_to_seconds(5);
     ;
-    const int d_to_h = days_to_hours(3);
+    __auto_type d_to_h = days_to_hours(3);
     ;
-    const int w_to_d = weeks_to_days(2);
+    __auto_type w_to_d = weeks_to_days(2);
     ;
-    const int doy = day_of_year(3, 15, 2024);
+    __auto_type doy = day_of_year(3, 15, 2024);
     ;
     return (((jan_days + feb_days) + leap_2024) + year_days);
 }

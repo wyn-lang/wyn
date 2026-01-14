@@ -1,0 +1,32 @@
+// Wyn Standard Library - JSON Module
+// Basic JSON operations (placeholder)
+
+// Note: These are placeholder functions that demonstrate the API
+// Real implementation would require parsing support
+
+fn wyn_json_parse_int(json: string) -> int {
+    // Parses JSON string to int
+    // Placeholder: returns 0
+    return 0;
+}
+
+fn wyn_json_is_valid(json: string) -> int {
+    // Returns 1 if valid JSON, 0 otherwise
+    // Placeholder: basic check for braces
+    return 1;
+}
+
+fn wyn_json_get_type(json: string) -> int {
+    // Returns JSON type: 0=null, 1=bool, 2=number, 3=string, 4=array, 5=object
+    // Placeholder: returns 0
+    return 0;
+}
+
+fn main() -> int {
+    // Example usage (placeholders)
+    let valid = wyn_json_is_valid("{}");
+    let type_id = wyn_json_get_type("42");
+    let value = wyn_json_parse_int("42");
+    
+    return valid + type_id + value;
+}

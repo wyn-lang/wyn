@@ -814,122 +814,31 @@ int bit_count(int x) { int c = 0; while(x) { c += x & 1; x >>= 1; } return c; }
 
 // ARC functions are provided by arc_runtime.c
 
-int wyn_abs(int x);
-int wyn_max(int a, int b);
-int wyn_min(int a, int b);
-int wyn_pow(int x, int n);
-int wyn_sqrt(int x);
-int wyn_factorial(int n);
-int wyn_is_even(int n);
-int wyn_is_odd(int n);
-int wyn_clamp(int val, int min_val, int max_val);
-int wyn_sign(int x);
-int wyn_main();
+int abs(int n);
+int max(int a, int b);
+int min(int a, int b);
 
-int wyn_abs(int x) {
-    if ((x < 0)) {
-    return (0 - x);
+int abs(int n) {
+    if ((n < 0)) {
+    return (0 - n);
     }
-    return x;
+    return n;
 }
 
-int wyn_max(int a, int b) {
+int max(int a, int b) {
     if ((a > b)) {
     return a;
     }
     return b;
 }
 
-int wyn_min(int a, int b) {
+int min(int a, int b) {
     if ((a < b)) {
     return a;
     }
     return b;
 }
 
-int wyn_pow(int x, int n) {
-    int result = 1;
-    ;
-    int i = 0;
-    ;
-    while ((i < n)) {
-    result = (result * x);
-    i = (i + 1);
-    }
-    return result;
-}
-
-int wyn_sqrt(int x) {
-    if ((x < 2)) {
-    return x;
-    }
-    int guess = (x / 2);
-    ;
-    int i = 0;
-    ;
-    while ((i < 10)) {
-    guess = ((guess + (x / guess)) / 2);
-    i = (i + 1);
-    }
-    return guess;
-}
-
-int wyn_factorial(int n) {
-    if ((n <= 1)) {
-    return 1;
-    }
-    return (n * wyn_factorial((n - 1)));
-}
-
-int wyn_is_even(int n) {
-    const int rem = (n % 2);
-    ;
-    if ((rem == 0)) {
-    return 1;
-    }
+int main() {
     return 0;
 }
-
-int wyn_is_odd(int n) {
-    const int rem = (n % 2);
-    ;
-    if ((rem != 0)) {
-    return 1;
-    }
-    return 0;
-}
-
-int wyn_clamp(int val, int min_val, int max_val) {
-    if ((val < min_val)) {
-    return min_val;
-    }
-    if ((val > max_val)) {
-    return max_val;
-    }
-    return val;
-}
-
-int wyn_sign(int x) {
-    if ((x < 0)) {
-    return (0 - 1);
-    }
-    if ((x > 0)) {
-    return 1;
-    }
-    return 0;
-}
-
-int wyn_main() {
-    const int a = wyn_abs((0 - 10));
-    ;
-    const int m = wyn_max(5, 15);
-    ;
-    const int p = wyn_pow(2, 3);
-    ;
-    const int s = wyn_sqrt(16);
-    ;
-    const int f = wyn_factorial(5);
-    ;
-    return ((((a + m) + p) + s) + f);
-}
-
