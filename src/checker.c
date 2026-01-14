@@ -27,28 +27,35 @@ static Type* current_function_return_type = NULL;
 
 static void print_type_name(Type* type) {
     if (!type) {
-        printf("unknown");
+        fprintf(stderr, "unknown");
         return;
     }
     switch (type->kind) {
-        case TYPE_INT: printf("int"); break;
-        case TYPE_FLOAT: printf("float"); break;
-        case TYPE_STRING: printf("string"); break;
-        case TYPE_BOOL: printf("bool"); break;
-        case TYPE_VOID: printf("void"); break;
-        case TYPE_ARRAY: printf("array"); break;
+        case TYPE_INT: fprintf(stderr, "int"); break;
+        case TYPE_FLOAT: fprintf(stderr, "float"); break;
+        case TYPE_STRING: fprintf(stderr, "string"); break;
+        case TYPE_BOOL: fprintf(stderr, "bool"); break;
+        case TYPE_VOID: fprintf(stderr, "void"); break;
+        case TYPE_ARRAY: fprintf(stderr, "array"); break;
+        case TYPE_STRUCT:
+            if (type->struct_type.name.length > 0) {
+                fprintf(stderr, "%.*s", type->struct_type.name.length, type->struct_type.name.start);
+            } else {
+                fprintf(stderr, "struct");
+            }
+            break;
         case TYPE_OPTIONAL: // T2.5.1: Optional Type Implementation
             print_type_name(type->optional_type.inner_type);
-            printf("?");
+            fprintf(stderr, "?");
             break;
         case TYPE_RESULT: // TASK-026: Result Type Implementation
-            printf("Result<");
+            fprintf(stderr, "Result<");
             print_type_name(type->result_type.ok_type);
-            printf(", ");
+            fprintf(stderr, ", ");
             print_type_name(type->result_type.err_type);
-            printf(">");
+            fprintf(stderr, ">");
             break;
-        default: printf("unknown"); break;
+        default: fprintf(stderr, "unknown"); break;
     }
 }
 
@@ -1161,11 +1168,11 @@ void check_stmt(Stmt* stmt, SymbolTable* scope) {
                 // Validate return type matches function return type
                 if (current_function_return_type && return_expr_type) {
                     if (current_function_return_type->kind != return_expr_type->kind) {
-                        printf("Error: Return type mismatch. Expected ");
+                        fprintf(stderr, "Error: Return type mismatch. Expected ");
                         print_type_name(current_function_return_type);
-                        printf(", got ");
+                        fprintf(stderr, ", got ");
                         print_type_name(return_expr_type);
-                        printf("\n");
+                        fprintf(stderr, "\n");
                         had_error = true;
                     }
                 }
@@ -1256,7 +1263,7 @@ void check_stmt(Stmt* stmt, SymbolTable* scope) {
             }
             
             // T2.5.3: Enhanced struct type checking with ARC integration
-            add_symbol(global_scope, stmt->struct_decl.name, builtin_int, false); // Simplified: use int as placeholder
+            // Struct type already registered in Pass 0
             break;
         case STMT_IMPL:
             // T2.5.3: Method definitions on structs
@@ -1361,6 +1368,17 @@ void check_stmt(Stmt* stmt, SymbolTable* scope) {
 }
 
 void check_program(Program* prog) {
+    // Pass 0: Register all struct types first (so functions can reference them)
+    for (int i = 0; i < prog->count; i++) {
+        if (prog->stmts[i]->type == STMT_STRUCT) {
+            StructStmt* struct_decl = &prog->stmts[i]->struct_decl;
+            Type* struct_type = make_type(TYPE_STRUCT);
+            struct_type->struct_type.name = struct_decl->name;
+            struct_type->struct_type.field_count = struct_decl->field_count;
+            add_symbol(global_scope, struct_decl->name, struct_type, false);
+        }
+    }
+    
     // First pass: process imports and register functions with their signatures
     for (int i = 0; i < prog->count; i++) {
         if (prog->stmts[i]->type == STMT_IMPORT) {
@@ -1433,6 +1451,12 @@ void check_program(Program* prog) {
                             param_type = builtin_bool;
                         } else if (type_name.length == 5 && memcmp(type_name.start, "array", 5) == 0) {
                             param_type = builtin_array;
+                        } else {
+                            // Check if it's a struct type
+                            Symbol* type_symbol = find_symbol(global_scope, type_name);
+                            if (type_symbol && type_symbol->type && type_symbol->type->kind == TYPE_STRUCT) {
+                                param_type = type_symbol->type;
+                            }
                         }
                     } else if (fn->param_types[j]->type == EXPR_ARRAY) {
                         // Handle array types [type]
@@ -1456,6 +1480,12 @@ void check_program(Program* prog) {
                     fn_type->fn_type.return_type = builtin_bool;
                 } else if (type_name.length == 5 && memcmp(type_name.start, "array", 5) == 0) {
                     fn_type->fn_type.return_type = builtin_array;
+                } else {
+                    // Check if it's a struct type
+                    Symbol* type_symbol = find_symbol(global_scope, type_name);
+                    if (type_symbol && type_symbol->type && type_symbol->type->kind == TYPE_STRUCT) {
+                        fn_type->fn_type.return_type = type_symbol->type;
+                    }
                 }
             }
             
@@ -1485,7 +1515,28 @@ void check_program(Program* prog) {
                 fn_type->fn_type.param_count = fn->param_count;
                 fn_type->fn_type.param_types = malloc(sizeof(Type*) * fn->param_count);
                 for (int j = 0; j < fn->param_count; j++) {
-                    fn_type->fn_type.param_types[j] = builtin_int;
+                    Type* param_type = builtin_int; // default
+                    if (fn->param_types[j] && fn->param_types[j]->type == EXPR_IDENT) {
+                        Token type_name = fn->param_types[j]->token;
+                        if (type_name.length == 3 && memcmp(type_name.start, "int", 3) == 0) {
+                            param_type = builtin_int;
+                        } else if (type_name.length == 6 && memcmp(type_name.start, "string", 6) == 0) {
+                            param_type = builtin_string;
+                        } else if (type_name.length == 5 && memcmp(type_name.start, "float", 5) == 0) {
+                            param_type = builtin_float;
+                        } else if (type_name.length == 4 && memcmp(type_name.start, "bool", 4) == 0) {
+                            param_type = builtin_bool;
+                        } else if (type_name.length == 5 && memcmp(type_name.start, "array", 5) == 0) {
+                            param_type = builtin_array;
+                        } else {
+                            // Check if it's a struct type
+                            Symbol* type_symbol = find_symbol(global_scope, type_name);
+                            if (type_symbol && type_symbol->type && type_symbol->type->kind == TYPE_STRUCT) {
+                                param_type = type_symbol->type;
+                            }
+                        }
+                    }
+                    fn_type->fn_type.param_types[j] = param_type;
                 }
                 
                 // Determine return type from function signature
@@ -1502,6 +1553,12 @@ void check_program(Program* prog) {
                         fn_type->fn_type.return_type = builtin_bool;
                     } else if (type_name.length == 5 && memcmp(type_name.start, "array", 5) == 0) {
                         fn_type->fn_type.return_type = builtin_array;
+                    } else {
+                        // Check if it's a struct type
+                        Symbol* type_symbol = find_symbol(global_scope, type_name);
+                        if (type_symbol && type_symbol->type && type_symbol->type->kind == TYPE_STRUCT) {
+                            fn_type->fn_type.return_type = type_symbol->type;
+                        }
                     }
                 }
                 

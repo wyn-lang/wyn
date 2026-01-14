@@ -3588,6 +3588,9 @@ void codegen_program(Program* prog) {
                 
                 // Determine parameter type
                 const char* param_type = "int"; // default
+                char struct_type_name[256] = {0};
+                bool is_struct_type = false;
+                
                 if (fn->param_types[j]) {
                     if (fn->param_types[j]->type == EXPR_IDENT) {
                         Token type_name = fn->param_types[j]->token;
@@ -3603,6 +3606,12 @@ void codegen_program(Program* prog) {
                             param_type = "bool";
                         } else if (type_name.length == 5 && memcmp(type_name.start, "array", 5) == 0) {
                             param_type = "WynArray";
+                        } else {
+                            // Assume it's a struct type
+                            snprintf(struct_type_name, sizeof(struct_type_name), "%.*s", 
+                                    type_name.length, type_name.start);
+                            param_type = struct_type_name;
+                            is_struct_type = true;
                         }
                     } else if (fn->param_types[j]->type == EXPR_ARRAY) {
                         // Handle array types [type] - pass as WynArray
