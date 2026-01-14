@@ -836,7 +836,7 @@ int wyn_main() {
     ;
     WynOptional* x = ({ some_int(42); /* ARC retain for x */ });
     ;
-    int p = process_int(5);
+    __auto_type p = process_int(5);
     ;
     int result = ({ int _match_result_0; switch (d.value) {
         case 15: _match_result_0 = array_get_int(arr, 1); break;

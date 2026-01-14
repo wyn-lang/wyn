@@ -837,11 +837,11 @@ typedef struct {
 void Vec3_cleanup(Vec3* obj) {
 }
 
-int add_vec2(int a, int b);
+Vec2 add_vec2(Vec2 a, Vec2 b);
 int process_array(WynArray arr);
 int wyn_main();
 
-int add_vec2(int a, int b) {
+Vec2 add_vec2(Vec2 a, Vec2 b) {
     return (Vec2){.x = (a.x + b.x), .y = (a.y + b.y)};
 }
 
@@ -850,20 +850,20 @@ int process_array(WynArray arr) {
 }
 
 int wyn_main() {
-    const Vec2 v1 = (Vec2){.x = 10, .y = 20};
+    Vec2 v1 = (Vec2){.x = 10, .y = 20};
     ;
-    const Vec2 v2 = (Vec2){.x = 5, .y = 15};
+    Vec2 v2 = (Vec2){.x = 5, .y = 15};
     ;
-    const int v3 = add_vec2(v1, v2);
+    __auto_type v3 = add_vec2(v1, v2);
     ;
-    const WynArray arr = ({ WynArray __arr_0 = array_new(); array_push_int(&__arr_0, v3.x); array_push_int(&__arr_0, v3.y); array_push_int(&__arr_0, 100); __arr_0; });
+    WynArray arr = ({ WynArray __arr_0 = array_new(); array_push_int(&__arr_0, v3.x); array_push_int(&__arr_0, v3.y); array_push_int(&__arr_0, 100); __arr_0; });
     ;
-    const int result = ({ int _match_result_0; switch (v3.x) {
+    int result = ({ int _match_result_0; switch (v3.x) {
         case 15: _match_result_0 = array_get_int(arr, 2); break;
         default: _match_result_0 = 0; break;
     } _match_result_0; });
     ;
-    const int mag = magnitude_int(v3);
+    __auto_type mag = magnitude_Vec2(v3);
     ;
     switch (result) {
         case 100: return 50;

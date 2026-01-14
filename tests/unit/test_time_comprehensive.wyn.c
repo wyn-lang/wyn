@@ -888,25 +888,25 @@ int minutes_to_seconds(int minutes) {
 }
 
 int wyn_main() {
-    int jan = days_in_month(1);
+    __auto_type jan = days_in_month(1);
     ;
-    int feb = days_in_month(2);
+    __auto_type feb = days_in_month(2);
     ;
-    int apr = days_in_month(4);
+    __auto_type apr = days_in_month(4);
     ;
-    int dec = days_in_month(12);
+    __auto_type dec = days_in_month(12);
     ;
-    int leap_2024 = is_leap_year(2024);
+    __auto_type leap_2024 = is_leap_year(2024);
     ;
-    int leap_2000 = is_leap_year(2000);
+    __auto_type leap_2000 = is_leap_year(2000);
     ;
-    int leap_1900 = is_leap_year(1900);
+    __auto_type leap_1900 = is_leap_year(1900);
     ;
-    int leap_2023 = is_leap_year(2023);
+    __auto_type leap_2023 = is_leap_year(2023);
     ;
-    int h2s = hours_to_seconds(1);
+    __auto_type h2s = hours_to_seconds(1);
     ;
-    int m2s = minutes_to_seconds(1);
+    __auto_type m2s = minutes_to_seconds(1);
     ;
     return (((((((jan + feb) + apr) + dec) + leap_2024) + leap_2000) + leap_1900) + leap_2023);
 }

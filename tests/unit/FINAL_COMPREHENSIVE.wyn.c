@@ -863,7 +863,7 @@ int wyn_main() {
     ;
     int id = 123;
     ;
-    int val = identity_int(42);
+    __auto_type val = identity_int(42);
     ;
     if ((val == 42)) {
     int temp = 1;

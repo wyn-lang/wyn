@@ -838,7 +838,7 @@ int get_area(int w, int h) {
 int wyn_main() {
     Config config = (Config){.width = 10, .height = 20};
     ;
-    int area = get_area(config.width, config.height);
+    __auto_type area = get_area(config.width, config.height);
     ;
     WynArray values = ({ WynArray __arr_0 = array_new(); array_push_int(&__arr_0, 100); array_push_int(&__arr_0, 200); array_push_int(&__arr_0, area); __arr_0; });
     ;
@@ -849,7 +849,7 @@ int wyn_main() {
         default: _match_result_0 = 2; break;
     } _match_result_0; });
     ;
-    int final_value = calculate_int(result);
+    __auto_type final_value = calculate_int(result);
     ;
     switch (final_value) {
         case 2: return 42;

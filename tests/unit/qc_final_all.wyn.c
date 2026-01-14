@@ -836,11 +836,11 @@ int add(int a, int b) {
 }
 
 int wyn_main() {
-    int sum = add(10, 5);
+    __auto_type sum = add(10, 5);
     ;
     Point p = (Point){.x = 3, .y = 4};
     ;
-    int val = identity_int(42);
+    __auto_type val = identity_int(42);
     ;
     WynArray arr = ({ WynArray __arr_0 = array_new(); array_push_int(&__arr_0, 10); array_push_int(&__arr_0, 20); array_push_int(&__arr_0, 30); __arr_0; });
     ;

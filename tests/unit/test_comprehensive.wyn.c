@@ -826,7 +826,7 @@ int wyn_main();
 int add(int a, int b);
 
 int wyn_main() {
-    int x = add(10, 20);
+    __auto_type x = add(10, 20);
     ;
     Point p = (Point){.x = 5, .y = 10};
     ;

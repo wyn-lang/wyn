@@ -893,15 +893,15 @@ int wyn_main() {
     ;
     int time_test = (wyn_year() - 2000);
     ;
-    int os_test = wyn_cpu_count();
+    __auto_type os_test = wyn_cpu_count();
     ;
-    int json_test = json_parse_int(0);
+    __auto_type json_test = json_parse_int(0);
     ;
-    int crypto_test = crypto_checksum(255);
+    __auto_type crypto_test = crypto_checksum(255);
     ;
     int http_test = (http_status_ok() / 100);
     ;
-    int db_test = db_count_results(10);
+    __auto_type db_test = db_count_results(10);
     ;
     return 88;
 }

@@ -2818,6 +2818,9 @@ void codegen_stmt(Stmt* stmt) {
                 } else if (stmt->var.init->type == EXPR_TUPLE) {
                     // Tuple type - use __auto_type (GCC/Clang extension)
                     c_type = "__auto_type";
+                } else if (stmt->var.init->type == EXPR_CALL) {
+                    // Function call - use __auto_type to infer return type
+                    c_type = "__auto_type";
                 } else if (stmt->var.init->type == EXPR_BINARY && 
                           stmt->var.init->binary.op.type == TOKEN_PLUS) {
                     // String concatenation result - check if any operand is a string
@@ -2902,6 +2905,8 @@ void codegen_stmt(Stmt* stmt) {
         case STMT_FN: {
             // Determine return type
             const char* return_type = "int"; // default
+            char return_type_buf[256] = {0};  // Buffer for custom return types
+            
             if (stmt->fn.return_type) {
                 if (stmt->fn.return_type->type == EXPR_IDENT) {
                     Token type_name = stmt->fn.return_type->token;
@@ -2915,6 +2920,11 @@ void codegen_stmt(Stmt* stmt) {
                         return_type = "bool";
                     } else if (type_name.length == 5 && memcmp(type_name.start, "array", 5) == 0) {
                         return_type = "WynArray";
+                    } else {
+                        // Assume it's a custom struct type
+                        snprintf(return_type_buf, sizeof(return_type_buf), "%.*s", 
+                               type_name.length, type_name.start);
+                        return_type = return_type_buf;
                     }
                 } else if (stmt->fn.return_type->type == EXPR_OPTIONAL_TYPE) {
                     // T2.5.1: Handle optional return types - use WynOptional* for proper optional handling
@@ -3553,6 +3563,8 @@ void codegen_program(Program* prog) {
             
             // Determine return type
             const char* return_type = "int"; // default
+            char return_type_buf[256] = {0};  // Buffer for custom return types
+            
             if (fn->return_type) {
                 if (fn->return_type->type == EXPR_IDENT) {
                     Token type_name = fn->return_type->token;
@@ -3566,6 +3578,11 @@ void codegen_program(Program* prog) {
                         return_type = "bool";
                     } else if (type_name.length == 5 && memcmp(type_name.start, "array", 5) == 0) {
                         return_type = "WynArray";
+                    } else {
+                        // Assume it's a custom struct type
+                        snprintf(return_type_buf, sizeof(return_type_buf), "%.*s", 
+                               type_name.length, type_name.start);
+                        return_type = return_type_buf;
                     }
                 } else if (fn->return_type->type == EXPR_OPTIONAL_TYPE) {
                     // T2.5.1: Handle optional return types - use WynOptional* for proper optional handling

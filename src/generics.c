@@ -559,11 +559,11 @@ void wyn_generate_monomorphic_name(Token base_name, Type** type_args, int type_a
                     break;
                 case TYPE_STRUCT:
                     // For struct types, use the struct name if available
-                    if (type_args[i]->name.length > 0) {
+                    if (type_args[i]->struct_type.name.length > 0) {
                         size_t remaining = buffer_size - strlen(buffer) - 1;
-                        size_t copy_len = (size_t)type_args[i]->name.length < remaining ? 
-                                          (size_t)type_args[i]->name.length : remaining;
-                        strncat(buffer, type_args[i]->name.start, copy_len);
+                        size_t copy_len = (size_t)type_args[i]->struct_type.name.length < remaining ? 
+                                          (size_t)type_args[i]->struct_type.name.length : remaining;
+                        strncat(buffer, type_args[i]->struct_type.name.start, copy_len);
                     } else {
                         strncat(buffer, "struct", buffer_size - strlen(buffer) - 1);
                     }
@@ -614,6 +614,8 @@ void wyn_emit_monomorphic_function_declaration(void* original_fn_ptr, Type** typ
     
     // Determine return type based on type arguments
     const char* return_type = "int"; // Default
+    char return_type_buf[256] = {0};
+    
     if (type_arg_count > 0 && type_args[0]) {
         switch (type_args[0]->kind) {
             case TYPE_INT:
@@ -627,6 +629,12 @@ void wyn_emit_monomorphic_function_declaration(void* original_fn_ptr, Type** typ
                 break;
             case TYPE_BOOL:
                 return_type = "bool";
+                break;
+            case TYPE_STRUCT:
+                snprintf(return_type_buf, sizeof(return_type_buf), "%.*s",
+                        type_args[0]->struct_type.name.length,
+                        type_args[0]->struct_type.name.start);
+                return_type = return_type_buf;
                 break;
             default:
                 return_type = "int";
@@ -643,6 +651,8 @@ void wyn_emit_monomorphic_function_declaration(void* original_fn_ptr, Type** typ
         
         // Use type argument for parameter type
         const char* param_type = "int"; // Default
+        char param_type_buf[256] = {0};
+        
         if (i < type_arg_count && type_args[i]) {
             switch (type_args[i]->kind) {
                 case TYPE_INT:
@@ -656,6 +666,12 @@ void wyn_emit_monomorphic_function_declaration(void* original_fn_ptr, Type** typ
                     break;
                 case TYPE_BOOL:
                     param_type = "bool";
+                    break;
+                case TYPE_STRUCT:
+                    snprintf(param_type_buf, sizeof(param_type_buf), "%.*s",
+                            type_args[i]->struct_type.name.length,
+                            type_args[i]->struct_type.name.start);
+                    param_type = param_type_buf;
                     break;
                 default:
                     param_type = "int";
@@ -683,6 +699,8 @@ void wyn_emit_monomorphic_function_definition(void* original_fn_ptr, Type** type
     
     // Determine return type based on type arguments
     const char* return_type = "int"; // Default
+    char return_type_buf[256] = {0};
+    
     if (type_arg_count > 0 && type_args[0]) {
         switch (type_args[0]->kind) {
             case TYPE_INT:
@@ -696,6 +714,12 @@ void wyn_emit_monomorphic_function_definition(void* original_fn_ptr, Type** type
                 break;
             case TYPE_BOOL:
                 return_type = "bool";
+                break;
+            case TYPE_STRUCT:
+                snprintf(return_type_buf, sizeof(return_type_buf), "%.*s",
+                        type_args[0]->struct_type.name.length,
+                        type_args[0]->struct_type.name.start);
+                return_type = return_type_buf;
                 break;
             default:
                 return_type = "int";
@@ -714,6 +738,8 @@ void wyn_emit_monomorphic_function_definition(void* original_fn_ptr, Type** type
         
         // Use type argument for parameter type
         const char* param_type = "int"; // Default
+        char param_type_buf[256] = {0};
+        
         if (i < type_arg_count && type_args[i]) {
             switch (type_args[i]->kind) {
                 case TYPE_INT:
@@ -727,6 +753,12 @@ void wyn_emit_monomorphic_function_definition(void* original_fn_ptr, Type** type
                     break;
                 case TYPE_BOOL:
                     param_type = "bool";
+                    break;
+                case TYPE_STRUCT:
+                    snprintf(param_type_buf, sizeof(param_type_buf), "%.*s",
+                            type_args[i]->struct_type.name.length,
+                            type_args[i]->struct_type.name.start);
+                    param_type = param_type_buf;
                     break;
                 default:
                     param_type = "int";

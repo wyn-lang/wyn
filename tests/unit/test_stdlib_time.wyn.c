@@ -827,9 +827,9 @@ int year() {
 }
 
 int wyn_main() {
-    int timestamp = now();
+    __auto_type timestamp = now();
     ;
-    int y = year();
+    __auto_type y = year();
     ;
     return (y - 2000);
 }

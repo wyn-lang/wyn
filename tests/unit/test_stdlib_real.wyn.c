@@ -859,15 +859,15 @@ int wyn_array_sum(WynArray arr, int len) {
 }
 
 int wyn_main() {
-    int a = wyn_abs((0 - 5));
+    __auto_type a = wyn_abs((0 - 5));
     ;
-    int m = wyn_max(10, 20);
+    __auto_type m = wyn_max(10, 20);
     ;
-    int p = wyn_pow(2, 3);
+    __auto_type p = wyn_pow(2, 3);
     ;
     WynArray arr = ({ WynArray __arr_0 = array_new(); array_push_int(&__arr_0, 1); array_push_int(&__arr_0, 2); array_push_int(&__arr_0, 3); array_push_int(&__arr_0, 4); array_push_int(&__arr_0, 5); __arr_0; });
     ;
-    int s = wyn_array_sum(arr, 5);
+    __auto_type s = wyn_array_sum(arr, 5);
     ;
     return (((a + m) + p) + s);
 }

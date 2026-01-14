@@ -867,7 +867,7 @@ int wyn_main() {
     int y = 20;
     ;
     y = 30;
-    int sum = add(10, 20);
+    __auto_type sum = add(10, 20);
     ;
     Point p = (Point){.x = 3, .y = 4};
     ;
@@ -900,9 +900,9 @@ int wyn_main() {
     }
     int id = 123;
     ;
-    int gen = identity_int(42);
+    __auto_type gen = identity_int(42);
     ;
-    int ext = Point_sum(3, 4);
+    __auto_type ext = Point_sum(3, 4);
     ;
     worker();
     return matched;

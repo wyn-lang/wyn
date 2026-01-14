@@ -846,9 +846,9 @@ int checksum(int data) {
 }
 
 int wyn_main() {
-    int h = hash(12345);
+    __auto_type h = hash(12345);
     ;
-    int c = checksum(1000);
+    __auto_type c = checksum(1000);
     ;
     return c;
 }

@@ -887,15 +887,15 @@ int days_in_month(int month) {
 int wyn_main() {
     WynArray hours = ({ WynArray __arr_0 = array_new(); array_push_int(&__arr_0, 8); array_push_int(&__arr_0, 6); array_push_int(&__arr_0, 9); array_push_int(&__arr_0, 7); array_push_int(&__arr_0, 8); __arr_0; });
     ;
-    int total_hours = wyn_array_sum(hours, 5);
+    __auto_type total_hours = wyn_array_sum(hours, 5);
     ;
-    int max_hours = wyn_array_max(hours, 5);
+    __auto_type max_hours = wyn_array_max(hours, 5);
     ;
-    int diff = wyn_abs((max_hours - 8));
+    __auto_type diff = wyn_abs((max_hours - 8));
     ;
-    int days = days_in_month(1);
+    __auto_type days = days_in_month(1);
     ;
-    int leap = is_leap_year(2024);
+    __auto_type leap = is_leap_year(2024);
     ;
     return ((((total_hours + max_hours) + diff) + days) + leap);
 }

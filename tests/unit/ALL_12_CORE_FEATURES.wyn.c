@@ -860,7 +860,7 @@ int wyn_main() {
     int y = 20;
     ;
     y = 30;
-    int sum = add(10, 20);
+    __auto_type sum = add(10, 20);
     ;
     Point p = (Point){.x = 3, .y = 4};
     ;
@@ -891,9 +891,9 @@ int wyn_main() {
     }
     int id = 123;
     ;
-    int val = identity_int(42);
+    __auto_type val = identity_int(42);
     ;
-    int ext_result = Point_distance(3, 4);
+    __auto_type ext_result = Point_distance(3, 4);
     ;
     return result;
     if(success) free(success);

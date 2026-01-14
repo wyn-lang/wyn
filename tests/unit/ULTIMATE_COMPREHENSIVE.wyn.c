@@ -865,7 +865,7 @@ int wyn_main() {
     ;
     int score = 456;
     ;
-    int val = identity_int(42);
+    __auto_type val = identity_int(42);
     ;
     if ((val == 42)) {
     int temp = 1;

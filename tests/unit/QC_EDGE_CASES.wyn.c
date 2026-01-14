@@ -851,9 +851,9 @@ int wyn_main() {
     ;
     Point p = (Point){.x = 1, .y = 2};
     ;
-    int z = nested_call();
+    __auto_type z = nested_call();
     ;
-    int i = generic_chain_int(5);
+    __auto_type i = generic_chain_int(5);
     ;
     WynArray arr = ({ WynArray __arr_0 = array_new(); array_push_int(&__arr_0, 1); __arr_0; });
     ;

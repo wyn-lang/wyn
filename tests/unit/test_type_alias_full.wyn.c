@@ -814,10 +814,10 @@ int bit_count(int x) { int c = 0; while(x) { c += x & 1; x >>= 1; } return c; }
 
 // ARC functions are provided by arc_runtime.c
 
-int get_user_id();
+UserId get_user_id();
 int wyn_main();
 
-int get_user_id() {
+UserId get_user_id() {
     return 123;
 }
 

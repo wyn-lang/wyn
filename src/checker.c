@@ -968,7 +968,7 @@ Type* check_expr(Expr* expr, SymbolTable* scope) {
                 
                 // Create struct type
                 Type* struct_type = make_type(TYPE_STRUCT);
-                struct_type->name = struct_name;
+                struct_type->struct_type.name = struct_name;  // Set name in struct_type union
                 expr->expr_type = struct_type;
                 
                 free(type_args);
@@ -980,7 +980,7 @@ Type* check_expr(Expr* expr, SymbolTable* scope) {
                 }
                 // Create struct type with name
                 Type* struct_type = make_type(TYPE_STRUCT);
-                struct_type->name = struct_name;
+                struct_type->struct_type.name = struct_name;  // Set name in struct_type union
                 expr->expr_type = struct_type;
                 return struct_type;
             }
@@ -1612,6 +1612,12 @@ void check_program(Program* prog) {
                     current_function_return_type = builtin_bool;
                 } else if (type_name.length == 5 && memcmp(type_name.start, "array", 5) == 0) {
                     current_function_return_type = builtin_array;
+                } else {
+                    // Check if it's a struct type
+                    Symbol* type_symbol = find_symbol(global_scope, type_name);
+                    if (type_symbol && type_symbol->type && type_symbol->type->kind == TYPE_STRUCT) {
+                        current_function_return_type = type_symbol->type;
+                    }
                 }
             }
             

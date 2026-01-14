@@ -825,7 +825,7 @@ int divide(int a, int b) {
 }
 
 int wyn_main() {
-    int result = divide(10, 2);
+    __auto_type result = divide(10, 2);
     ;
     return result;
 }

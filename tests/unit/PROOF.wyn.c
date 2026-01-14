@@ -832,7 +832,7 @@ int add(int a, int b) {
 int wyn_main() {
     Point p = (Point){.x = 5, .y = 10};
     ;
-    int sum = add(p.x, p.y);
+    __auto_type sum = add(p.x, p.y);
     ;
     WynArray arr = ({ WynArray __arr_0 = array_new(); array_push_int(&__arr_0, 100); array_push_int(&__arr_0, 200); array_push_int(&__arr_0, 300); __arr_0; });
     ;

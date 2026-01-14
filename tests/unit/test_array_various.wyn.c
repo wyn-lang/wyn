@@ -850,15 +850,15 @@ int wyn_array_max(WynArray arr, int len) {
 int wyn_main() {
     WynArray arr1 = ({ WynArray __arr_0 = array_new(); array_push_int(&__arr_0, 10); array_push_int(&__arr_0, 20); array_push_int(&__arr_0, 30); __arr_0; });
     ;
-    int s1 = wyn_array_sum(arr1, 3);
+    __auto_type s1 = wyn_array_sum(arr1, 3);
     ;
-    int m1 = wyn_array_max(arr1, 3);
+    __auto_type m1 = wyn_array_max(arr1, 3);
     ;
     WynArray arr2 = ({ WynArray __arr_1 = array_new(); array_push_int(&__arr_1, 5); array_push_int(&__arr_1, 15); array_push_int(&__arr_1, 25); array_push_int(&__arr_1, 35); __arr_1; });
     ;
-    int s2 = wyn_array_sum(arr2, 4);
+    __auto_type s2 = wyn_array_sum(arr2, 4);
     ;
-    int m2 = wyn_array_max(arr2, 4);
+    __auto_type m2 = wyn_array_max(arr2, 4);
     ;
     return (((s1 + m1) + s2) + m2);
 }

@@ -846,17 +846,17 @@ int wyn_pow(int x, int n) {
 }
 
 int wyn_main() {
-    int a1 = wyn_abs((0 - 15));
+    __auto_type a1 = wyn_abs((0 - 15));
     ;
-    int a2 = wyn_abs(20);
+    __auto_type a2 = wyn_abs(20);
     ;
-    int m1 = wyn_max(100, 50);
+    __auto_type m1 = wyn_max(100, 50);
     ;
-    int m2 = wyn_max(3, 7);
+    __auto_type m2 = wyn_max(3, 7);
     ;
-    int p1 = wyn_pow(3, 2);
+    __auto_type p1 = wyn_pow(3, 2);
     ;
-    int p2 = wyn_pow(2, 4);
+    __auto_type p2 = wyn_pow(2, 4);
     ;
     return (((((a1 + a2) + m1) + m2) + p1) + p2);
 }

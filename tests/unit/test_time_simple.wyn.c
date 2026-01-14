@@ -827,13 +827,13 @@ int is_leap_year(int year) {
 }
 
 int wyn_main() {
-    int a = is_leap_year(2024);
+    __auto_type a = is_leap_year(2024);
     ;
-    int b = is_leap_year(2020);
+    __auto_type b = is_leap_year(2020);
     ;
-    int c = is_leap_year(2023);
+    __auto_type c = is_leap_year(2023);
     ;
-    int d = is_leap_year(2021);
+    __auto_type d = is_leap_year(2021);
     ;
     return (((a + b) + c) + d);
 }

@@ -835,9 +835,9 @@ int Point_multiply(Point x, int y) {
 }
 
 int wyn_main() {
-    int result1 = Point_sum(10, 20);
+    __auto_type result1 = Point_sum(10, 20);
     ;
-    int result2 = Point_multiply(3, 4);
+    __auto_type result2 = Point_multiply(3, 4);
     ;
     return (result1 + result2);
 }

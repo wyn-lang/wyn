@@ -854,13 +854,13 @@ int wyn_pow(int x, int n) {
 }
 
 int wyn_main() {
-    int a = wyn_abs((0 - 10));
+    __auto_type a = wyn_abs((0 - 10));
     ;
-    int m = wyn_max(5, 15);
+    __auto_type m = wyn_max(5, 15);
     ;
-    int n = wyn_min(20, 10);
+    __auto_type n = wyn_min(20, 10);
     ;
-    int p = wyn_pow(2, 4);
+    __auto_type p = wyn_pow(2, 4);
     ;
     return (((a + m) + n) + p);
 }
