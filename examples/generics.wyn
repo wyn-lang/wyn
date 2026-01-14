@@ -1,9 +1,19 @@
-fn identity[T](x: T) -> T {
-    return x
+// Generics Example - Demonstrates generic functions
+
+fn identity<T>(x: T) -> T {
+    return x;
+}
+
+fn max<T>(a: T, b: T) -> T {
+    if a > b {
+        return a;
+    }
+    return b;
 }
 
 fn main() -> int {
-    var a = identity(42)
-    print(a)
-    return 0
+    let x = identity(42);
+    let y = max(10, 20);
+    let z = max(5, 3);
+    return x + y + z;
 }

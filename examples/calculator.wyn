@@ -1,23 +1,26 @@
+// Calculator Example - Demonstrates Wyn language features
+// Shows: functions, pattern matching, enums, control flow
+
 enum Operation {
     ADD,
-    SUB,
-    MUL,
-    DIV
+    SUBTRACT,
+    MULTIPLY,
+    DIVIDE
 }
 
-fn calculate(a: int, b: int, op: Operation) -> int {
+fn calculate(op: Operation, a: int, b: int) -> int {
     return match op {
         ADD => a + b,
-        SUB => a - b,
-        MUL => a * b,
-        DIV => a / b
-    }
+        SUBTRACT => a - b,
+        MULTIPLY => a * b,
+        DIVIDE => a / b
+    };
 }
 
 fn main() -> int {
-    print(calculate(10, 5, ADD))
-    print(calculate(10, 5, SUB))
-    print(calculate(10, 5, MUL))
-    print(calculate(10, 5, DIV))
-    return 0
+    let result1 = calculate(Operation::ADD, 10, 5);
+    let result2 = calculate(Operation::MULTIPLY, 3, 7);
+    let result3 = calculate(Operation::DIVIDE, 20, 4);
+    
+    return result1 + result2 + result3;
 }
