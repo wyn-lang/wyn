@@ -1,6 +1,8 @@
 # Wyn Language Examples
 
-This directory contains example programs demonstrating various features of the Wyn programming language.
+This directory contains **9 verified working examples** demonstrating various features of the Wyn programming language.
+
+**Note:** 113 older/experimental examples have been moved to `archive/` directory.
 
 ## Running Examples
 
