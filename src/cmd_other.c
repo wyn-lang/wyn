@@ -15,29 +15,49 @@ int cmd_fmt(const char* file, int argc, char** argv) {
         return 1;
     }
     
-    // Check if file exists
     FILE* f = fopen(file, "r");
     if (!f) {
         fprintf(stderr, "Error: Cannot open file %s\n", file);
         return 1;
     }
     
-    // Read file
-    fseek(f, 0, SEEK_END);
-    long size = ftell(f);
-    fseek(f, 0, SEEK_SET);
-    
-    char* content = malloc(size + 1);
-    fread(content, 1, size, f);
-    content[size] = 0;
-    fclose(f);
-    
-    // For now, just validate it compiles
     printf("Formatting %s...\n", file);
-    printf("✅ File is valid Wyn code\n");
-    printf("Note: Pretty-printing not yet implemented\n");
     
-    free(content);
+    char line[1024];
+    int indent = 0;
+    
+    while (fgets(line, sizeof(line), f)) {
+        // Trim trailing whitespace
+        int len = strlen(line);
+        while (len > 0 && (line[len-1] == ' ' || line[len-1] == '\t' || line[len-1] == '\n')) {
+            line[--len] = 0;
+        }
+        
+        // Skip empty lines
+        if (len == 0) {
+            printf("\n");
+            continue;
+        }
+        
+        // Adjust indent for closing braces
+        if (line[0] == '}') {
+            indent--;
+        }
+        
+        // Print with proper indentation
+        for (int i = 0; i < indent; i++) {
+            printf("    ");
+        }
+        printf("%s\n", line);
+        
+        // Adjust indent for opening braces
+        if (strchr(line, '{')) {
+            indent++;
+        }
+    }
+    
+    fclose(f);
+    printf("\n✅ Formatted successfully\n");
     return 0;
 }
 

@@ -321,36 +321,12 @@ int main(int argc, char** argv) {
     }
     
     if (strcmp(command, "fmt") == 0) {
+        extern int cmd_fmt(const char* file, int argc, char** argv);
         if (argc < 3) {
-            printf("Wyn Code Formatter\n");
-            printf("Usage: wyn fmt <file.wyn>\n");
-            printf("\nRunning formatter demo:\n");
-            char demo_cmd[256];
-            snprintf(demo_cmd, 256, "./tools/formatter.wyn.out 2>/dev/null || (./wyn tools/formatter.wyn > /dev/null 2>&1 && ./tools/formatter.wyn.out)");
-            system(demo_cmd);
-            return 0;
-        }
-        
-        char* filename = argv[2];
-        printf("Formatting %s...\n", filename);
-        
-        // First validate the file
-        char validate_cmd[512];
-        snprintf(validate_cmd, 512, "./wyn %s > /dev/null 2>&1", filename);
-        if (system(validate_cmd) != 0) {
-            printf("❌ %s has syntax errors - cannot format\n", filename);
+            fprintf(stderr, "Usage: wyn fmt <file.wyn>\n");
             return 1;
         }
-        
-        // Show formatting demo for now
-        printf("✅ %s is valid Wyn code\n", filename);
-        printf("\nFormatting rules that would be applied:\n");
-        printf("- 4-space indentation\n");
-        printf("- Spaces around operators (=, +, -, *, /)\n");
-        printf("- Spaces around braces\n");
-        printf("- Consistent function signatures\n");
-        printf("\nNote: Full file formatting will be implemented in future versions.\n");
-        return 0;
+        return cmd_fmt(argv[2], argc, argv);
     }
     
     if (strcmp(command, "repl") == 0) {
