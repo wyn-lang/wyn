@@ -176,9 +176,26 @@ void codegen_expr(Expr* expr) {
         case EXPR_CHAR:
             emit("'%.*s'", expr->token.length - 2, expr->token.start + 1);
             break;
-        case EXPR_IDENT:
-            emit("%.*s", expr->token.length, expr->token.start);
+        case EXPR_IDENT: {
+            // Convert :: to _ for C compatibility (e.g., Status::DONE -> Status_DONE)
+            char* ident = malloc(expr->token.length + 1);
+            memcpy(ident, expr->token.start, expr->token.length);
+            ident[expr->token.length] = '\0';
+            
+            // Replace :: with _
+            for (int i = 0; i < expr->token.length - 1; i++) {
+                if (ident[i] == ':' && ident[i+1] == ':') {
+                    ident[i] = '_';
+                    // Shift rest of string left by 1
+                    memmove(ident + i + 1, ident + i + 2, expr->token.length - i - 1);
+                    ident[expr->token.length - 1] = '\0';
+                }
+            }
+            
+            emit("%s", ident);
+            free(ident);
             break;
+        }
         case EXPR_BOOL:
             emit("%.*s", expr->token.length, expr->token.start);
             break;

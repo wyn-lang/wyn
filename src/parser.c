@@ -229,6 +229,31 @@ static Expr* primary() {
             return expr;
         }
         
+        // Check for qualified name: EnumName::Variant
+        if (match(TOKEN_COLONCOLON)) {
+            expect(TOKEN_IDENT, "Expected identifier after '::'");
+            Token variant = parser.previous;
+            
+            // Create a qualified identifier by combining them
+            char* qualified = malloc(name.length + 2 + variant.length + 1);
+            memcpy(qualified, name.start, name.length);
+            qualified[name.length] = ':';
+            qualified[name.length + 1] = ':';
+            memcpy(qualified + name.length + 2, variant.start, variant.length);
+            qualified[name.length + 2 + variant.length] = '\0';
+            
+            Token qualified_token;
+            qualified_token.type = TOKEN_IDENT;
+            qualified_token.start = qualified;
+            qualified_token.length = name.length + 2 + variant.length;
+            qualified_token.line = name.line;
+            
+            Expr* expr = alloc_expr();
+            expr->type = EXPR_IDENT;
+            expr->token = qualified_token;
+            return expr;
+        }
+        
         // Regular identifier
         Expr* expr = alloc_expr();
         expr->type = EXPR_IDENT;

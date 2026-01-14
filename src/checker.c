@@ -1376,14 +1376,32 @@ void check_stmt(Stmt* stmt, SymbolTable* scope) {
                 // Register unqualified variant (e.g., DONE)
                 add_symbol(global_scope, stmt->enum_decl.variants[i], builtin_int, false);
                 
-                // Also register qualified variant (e.g., Status.DONE)
-                char qualified_member[128];
-                snprintf(qualified_member, 128, "%.*s.%.*s",
+                // Register qualified variant with . (e.g., Status.DONE)
+                char qualified_member_dot[128];
+                snprintf(qualified_member_dot, 128, "%.*s.%.*s",
                         stmt->enum_decl.name.length, stmt->enum_decl.name.start,
                         stmt->enum_decl.variants[i].length, stmt->enum_decl.variants[i].start);
                 
-                Token qualified_token = {TOKEN_IDENT, strdup(qualified_member), (int)strlen(qualified_member), 0};
-                add_symbol(global_scope, qualified_token, builtin_int, false);
+                Token qualified_token_dot = {TOKEN_IDENT, strdup(qualified_member_dot), (int)strlen(qualified_member_dot), 0};
+                add_symbol(global_scope, qualified_token_dot, builtin_int, false);
+                
+                // Register qualified variant with :: (e.g., Status::DONE) - maps to Status_DONE in C
+                char qualified_member_colon[128];
+                snprintf(qualified_member_colon, 128, "%.*s::%.*s",
+                        stmt->enum_decl.name.length, stmt->enum_decl.name.start,
+                        stmt->enum_decl.variants[i].length, stmt->enum_decl.variants[i].start);
+                
+                Token qualified_token_colon = {TOKEN_IDENT, strdup(qualified_member_colon), (int)strlen(qualified_member_colon), 0};
+                add_symbol(global_scope, qualified_token_colon, builtin_int, false);
+                
+                // Also register with _ for C compatibility (e.g., Status_DONE)
+                char qualified_member_underscore[128];
+                snprintf(qualified_member_underscore, 128, "%.*s_%.*s",
+                        stmt->enum_decl.name.length, stmt->enum_decl.name.start,
+                        stmt->enum_decl.variants[i].length, stmt->enum_decl.variants[i].start);
+                
+                Token qualified_token_underscore = {TOKEN_IDENT, strdup(qualified_member_underscore), (int)strlen(qualified_member_underscore), 0};
+                add_symbol(global_scope, qualified_token_underscore, builtin_int, false);
             }
             break;
         case STMT_TYPE_ALIAS:

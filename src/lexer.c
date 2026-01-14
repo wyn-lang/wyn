@@ -257,7 +257,9 @@ Token next_token() {
             }
             return make_token(TOKEN_DOT);
         case ';': return make_token(TOKEN_SEMI);
-        case ':': return make_token(TOKEN_COLON);
+        case ':':
+            if (match(':')) return make_token(TOKEN_COLONCOLON);
+            return make_token(TOKEN_COLON);
         case '+': 
             if (match('+')) return make_token(TOKEN_PLUSPLUS);
             if (match('=')) return make_token(TOKEN_PLUSEQ);
