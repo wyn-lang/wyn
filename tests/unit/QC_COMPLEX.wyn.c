@@ -814,12 +814,6 @@ int bit_count(int x) { int c = 0; while(x) { c += x & 1; x >>= 1; } return c; }
 
 // ARC functions are provided by arc_runtime.c
 
-int magnitude_int(int v);
-// Monomorphic instance of magnitude
-int magnitude_int(int v) {
-    return 1;
-}
-
 typedef struct {
     int x;
     int y;
@@ -835,6 +829,12 @@ typedef struct {
 } Vec3;
 
 void Vec3_cleanup(Vec3* obj) {
+}
+
+int magnitude_Vec2(Vec2 v);
+// Monomorphic instance of magnitude
+int magnitude_Vec2(Vec2 v) {
+    return 1;
 }
 
 Vec2 add_vec2(Vec2 a, Vec2 b);

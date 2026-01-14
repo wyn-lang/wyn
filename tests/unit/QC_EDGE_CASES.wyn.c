@@ -814,12 +814,6 @@ int bit_count(int x) { int c = 0; while(x) { c += x & 1; x >>= 1; } return c; }
 
 // ARC functions are provided by arc_runtime.c
 
-int generic_chain_int(int x);
-// Monomorphic instance of generic_chain
-int generic_chain_int(int x) {
-    return x;
-}
-
 typedef struct {
     int x;
     int y;
@@ -832,6 +826,12 @@ typedef struct {
 } Empty;
 
 void Empty_cleanup(Empty* obj) {
+}
+
+int generic_chain_int(int x);
+// Monomorphic instance of generic_chain
+int generic_chain_int(int x) {
+    return x;
 }
 
 int zero();

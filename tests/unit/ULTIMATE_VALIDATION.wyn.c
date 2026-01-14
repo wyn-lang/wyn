@@ -814,17 +814,17 @@ int bit_count(int x) { int c = 0; while(x) { c += x & 1; x >>= 1; } return c; }
 
 // ARC functions are provided by arc_runtime.c
 
-int process_int(int x);
-// Monomorphic instance of process
-int process_int(int x) {
-    return x;
-}
-
 typedef struct {
     int value;
 } Data;
 
 void Data_cleanup(Data* obj) {
+}
+
+int process_int(int x);
+// Monomorphic instance of process
+int process_int(int x) {
+    return x;
 }
 
 int wyn_main();

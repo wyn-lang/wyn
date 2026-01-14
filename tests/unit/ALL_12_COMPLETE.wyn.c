@@ -814,12 +814,6 @@ int bit_count(int x) { int c = 0; while(x) { c += x & 1; x >>= 1; } return c; }
 
 // ARC functions are provided by arc_runtime.c
 
-int identity_int(int val);
-// Monomorphic instance of identity
-int identity_int(int val) {
-    return val;
-}
-
 typedef struct {
     int x;
     int y;
@@ -842,6 +836,12 @@ const char* Status_toString(Status val) {
         case DONE: return "DONE";
     }
     return "Unknown";
+}
+
+int identity_int(int val);
+// Monomorphic instance of identity
+int identity_int(int val) {
+    return val;
 }
 
 int add(int a, int b);

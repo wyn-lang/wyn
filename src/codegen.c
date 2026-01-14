@@ -3494,9 +3494,8 @@ void codegen_program(Program* prog) {
         emit("double PI = 3.14159;\n\n");
     }
     
-    // Generate monomorphic instances of generic functions
+    // Collect generic instantiations (but don't generate yet)
     wyn_collect_generic_instantiations_from_program(prog);
-    wyn_generate_monomorphic_instances_for_codegen(prog);
     
     for (int i = 0; i < prog->count; i++) {
         if (prog->stmts[i]->type == STMT_FN) {
@@ -3520,6 +3519,9 @@ void codegen_program(Program* prog) {
             codegen_stmt(prog->stmts[i]);
         }
     }
+    
+    // Generate monomorphic instances of generic functions (after structs are defined)
+    wyn_generate_monomorphic_instances_for_codegen(prog);
     
     // Generate impl blocks (extension methods)
     for (int i = 0; i < prog->count; i++) {

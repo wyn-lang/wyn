@@ -612,33 +612,20 @@ void wyn_emit_monomorphic_function_declaration(void* original_fn_ptr, Type** typ
         return;
     }
     
-    // Determine return type based on type arguments
+    // Determine return type from original function's return type annotation
     const char* return_type = "int"; // Default
     char return_type_buf[256] = {0};
     
-    if (type_arg_count > 0 && type_args[0]) {
-        switch (type_args[0]->kind) {
-            case TYPE_INT:
-                return_type = "int";
-                break;
-            case TYPE_FLOAT:
-                return_type = "double";
-                break;
-            case TYPE_STRING:
-                return_type = "char*";
-                break;
-            case TYPE_BOOL:
-                return_type = "bool";
-                break;
-            case TYPE_STRUCT:
-                snprintf(return_type_buf, sizeof(return_type_buf), "%.*s",
-                        type_args[0]->struct_type.name.length,
-                        type_args[0]->struct_type.name.start);
-                return_type = return_type_buf;
-                break;
-            default:
-                return_type = "int";
-                break;
+    if (original_fn->return_type && original_fn->return_type->type == EXPR_IDENT) {
+        Token type_name = original_fn->return_type->token;
+        if (type_name.length == 3 && memcmp(type_name.start, "int", 3) == 0) {
+            return_type = "int";
+        } else if (type_name.length == 6 && memcmp(type_name.start, "string", 6) == 0) {
+            return_type = "char*";
+        } else if (type_name.length == 5 && memcmp(type_name.start, "float", 5) == 0) {
+            return_type = "double";
+        } else if (type_name.length == 4 && memcmp(type_name.start, "bool", 4) == 0) {
+            return_type = "bool";
         }
     }
     
@@ -697,33 +684,20 @@ void wyn_emit_monomorphic_function_definition(void* original_fn_ptr, Type** type
         return;
     }
     
-    // Determine return type based on type arguments
+    // Determine return type from original function's return type annotation
     const char* return_type = "int"; // Default
     char return_type_buf[256] = {0};
     
-    if (type_arg_count > 0 && type_args[0]) {
-        switch (type_args[0]->kind) {
-            case TYPE_INT:
-                return_type = "int";
-                break;
-            case TYPE_FLOAT:
-                return_type = "double";
-                break;
-            case TYPE_STRING:
-                return_type = "char*";
-                break;
-            case TYPE_BOOL:
-                return_type = "bool";
-                break;
-            case TYPE_STRUCT:
-                snprintf(return_type_buf, sizeof(return_type_buf), "%.*s",
-                        type_args[0]->struct_type.name.length,
-                        type_args[0]->struct_type.name.start);
-                return_type = return_type_buf;
-                break;
-            default:
-                return_type = "int";
-                break;
+    if (original_fn->return_type && original_fn->return_type->type == EXPR_IDENT) {
+        Token type_name = original_fn->return_type->token;
+        if (type_name.length == 3 && memcmp(type_name.start, "int", 3) == 0) {
+            return_type = "int";
+        } else if (type_name.length == 6 && memcmp(type_name.start, "string", 6) == 0) {
+            return_type = "char*";
+        } else if (type_name.length == 5 && memcmp(type_name.start, "float", 5) == 0) {
+            return_type = "double";
+        } else if (type_name.length == 4 && memcmp(type_name.start, "bool", 4) == 0) {
+            return_type = "bool";
         }
     }
     
@@ -901,23 +875,28 @@ void wyn_collect_generic_instantiations_from_expr(void* expr_ptr) {
                     // Collect argument types for generic instantiation
                     Type** arg_types = malloc(sizeof(Type*) * expr->call.arg_count);
                     for (int i = 0; i < expr->call.arg_count; i++) {
-                        // Infer type from expression
-                        switch (expr->call.args[i]->type) {
-                            case EXPR_INT:
-                                arg_types[i] = make_type(TYPE_INT);
-                                break;
-                            case EXPR_FLOAT:
-                                arg_types[i] = make_type(TYPE_FLOAT);
-                                break;
-                            case EXPR_STRING:
-                                arg_types[i] = make_type(TYPE_STRING);
-                                break;
-                            case EXPR_BOOL:
-                                arg_types[i] = make_type(TYPE_BOOL);
-                                break;
-                            default:
-                                arg_types[i] = make_type(TYPE_INT);
-                                break;
+                        // Use expr_type if available (set by checker), otherwise infer from expression
+                        if (expr->call.args[i]->expr_type) {
+                            arg_types[i] = expr->call.args[i]->expr_type;
+                        } else {
+                            // Fallback: infer type from expression
+                            switch (expr->call.args[i]->type) {
+                                case EXPR_INT:
+                                    arg_types[i] = make_type(TYPE_INT);
+                                    break;
+                                case EXPR_FLOAT:
+                                    arg_types[i] = make_type(TYPE_FLOAT);
+                                    break;
+                                case EXPR_STRING:
+                                    arg_types[i] = make_type(TYPE_STRING);
+                                    break;
+                                case EXPR_BOOL:
+                                    arg_types[i] = make_type(TYPE_BOOL);
+                                    break;
+                                default:
+                                    arg_types[i] = make_type(TYPE_INT);
+                                    break;
+                            }
                         }
                     }
                     

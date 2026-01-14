@@ -832,6 +832,6 @@ int Point_distance(Point self) {
 int wyn_main() {
     Point p = (Point){.x = 3, .y = 4};
     ;
-    return Point_distance(p);
+    return _distance(p);
 }
 

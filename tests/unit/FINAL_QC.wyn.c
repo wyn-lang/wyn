@@ -814,18 +814,18 @@ int bit_count(int x) { int c = 0; while(x) { c += x & 1; x >>= 1; } return c; }
 
 // ARC functions are provided by arc_runtime.c
 
-int identity_int(int x);
-// Monomorphic instance of identity
-int identity_int(int x) {
-    return x;
-}
-
 typedef struct {
     int x;
     int y;
 } Point;
 
 void Point_cleanup(Point* obj) {
+}
+
+int identity_int(int x);
+// Monomorphic instance of identity
+int identity_int(int x) {
+    return x;
 }
 
 int add(int a, int b);

@@ -814,18 +814,18 @@ int bit_count(int x) { int c = 0; while(x) { c += x & 1; x >>= 1; } return c; }
 
 // ARC functions are provided by arc_runtime.c
 
-int calculate_int(int value);
-// Monomorphic instance of calculate
-int calculate_int(int value) {
-    return value;
-}
-
 typedef struct {
     int width;
     int height;
 } Config;
 
 void Config_cleanup(Config* obj) {
+}
+
+int calculate_int(int value);
+// Monomorphic instance of calculate
+int calculate_int(int value) {
+    return value;
 }
 
 int get_area(int w, int h);
