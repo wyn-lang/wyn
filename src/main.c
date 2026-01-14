@@ -348,6 +348,20 @@ int main(int argc, char** argv) {
         return cmd_pkg(argc, argv);
     }
     
+    if (strcmp(command, "debug") == 0) {
+        extern int cmd_debug(const char* program, int argc, char** argv);
+        if (argc < 3) {
+            fprintf(stderr, "Usage: wyn debug <program>\n");
+            return 1;
+        }
+        return cmd_debug(argv[2], argc, argv);
+    }
+    
+    if (strcmp(command, "lsp") == 0) {
+        extern int cmd_lsp(int argc, char** argv);
+        return cmd_lsp(argc, argv);
+    }
+    
     if (strcmp(command, "llvm") == 0) {
 #ifdef WITH_LLVM
         if (argc < 3) {
