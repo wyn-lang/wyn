@@ -65,11 +65,66 @@ fn wyn_array_reverse(arr: [int], len: int) -> int {
     return 0;
 }
 
+fn wyn_array_find(arr: [int], len: int, val: int) -> int {
+    let mut i = 0;
+    while i < len {
+        if arr[i] == val {
+            return i;
+        }
+        i = i + 1;
+    }
+    return -1;
+}
+
+fn wyn_array_count(arr: [int], len: int, val: int) -> int {
+    let mut count = 0;
+    let mut i = 0;
+    while i < len {
+        if arr[i] == val {
+            count = count + 1;
+        }
+        i = i + 1;
+    }
+    return count;
+}
+
+fn wyn_array_any(arr: [int], len: int, val: int) -> int {
+    return wyn_array_contains(arr, len, val);
+}
+
+fn wyn_array_all_equal(arr: [int], len: int, val: int) -> int {
+    let mut i = 0;
+    while i < len {
+        if arr[i] != val {
+            return 0;
+        }
+        i = i + 1;
+    }
+    return 1;
+}
+
+fn wyn_array_first(arr: [int], len: int) -> int {
+    if len == 0 {
+        return 0;
+    }
+    return arr[0];
+}
+
+fn wyn_array_last(arr: [int], len: int) -> int {
+    if len == 0 {
+        return 0;
+    }
+    return arr[len - 1];
+}
+
 fn main() -> int {
     let arr = [5, 2, 8, 1, 9];
     let s = wyn_array_sum(arr, 5);
     let min_val = wyn_array_min(arr, 5);
     let max_val = wyn_array_max(arr, 5);
     let has_8 = wyn_array_contains(arr, 5, 8);
-    return s + min_val + max_val + has_8;
+    let idx = wyn_array_find(arr, 5, 8);
+    let first = wyn_array_first(arr, 5);
+    let last = wyn_array_last(arr, 5);
+    return s + min_val + max_val + has_8 + idx + first + last;
 }
