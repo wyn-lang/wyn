@@ -3,8 +3,8 @@
 **A world-class memory-safe systems programming language**
 
 [![Status](https://img.shields.io/badge/Status-FUNCTIONAL%20COMPILER-brightgreen)](https://github.com/wyn-lang/wyn)
-[![Completion](https://img.shields.io/badge/Completion-93%25%20COMPLETE-brightgreen)](https://github.com/wyn-lang/wyn)
-[![Tests](https://img.shields.io/badge/Tests-125/126%20passing%20(99%25)-brightgreen)](https://github.com/wyn-lang/wyn)
+[![Completion](https://img.shields.io/badge/Completion-94%25%20COMPLETE-brightgreen)](https://github.com/wyn-lang/wyn)
+[![Tests](https://img.shields.io/badge/Tests-126/130%20passing%20(96%25)-brightgreen)](https://github.com/wyn-lang/wyn)
 [![Self-Hosting](https://img.shields.io/badge/Self--Hosting-❌%20NOT%20ACHIEVED-red)](https://github.com/wyn-lang/wyn)
 
 ## 🚧 Current Development Status
