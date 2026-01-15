@@ -19,6 +19,7 @@ static Parser parser;
 
 Expr* expression();
 static Expr* assignment();
+static Expr* call();  // Forward declaration for await
 Stmt* statement();
 static Stmt* parse_test_statement(); // T1.6.2: Testing Framework Agent addition
 static Stmt* parse_while_statement(); // T1.4.1: Control Flow Agent addition
@@ -77,7 +78,7 @@ static Expr* primary() {
     if (match(TOKEN_AWAIT)) {
         Expr* expr = alloc_expr();
         expr->type = EXPR_AWAIT;
-        expr->await.expr = primary();
+        expr->await.expr = call();  // Parse full call expression, not just primary
         return expr;
     }
     
@@ -461,13 +462,64 @@ static Expr* primary() {
             do {
                 expect(TOKEN_IDENT, "Expected parameter name");
                 lambda_expr->lambda.params[lambda_expr->lambda.param_count++] = parser.previous;
+                
+                // Skip optional type annotation
+                if (match(TOKEN_COLON)) {
+                    // Skip type without using parse_type (which would consume | for union types)
+                    // Just skip the type identifier
+                    if (check(TOKEN_IDENT)) {
+                        advance(); // Skip type name like 'int', 'string', etc.
+                        // Skip generic parameters if present
+                        if (match(TOKEN_LT)) {
+                            int depth = 1;
+                            while (depth > 0 && !check(TOKEN_EOF)) {
+                                if (match(TOKEN_LT)) depth++;
+                                else if (match(TOKEN_GT)) depth--;
+                                else advance();
+                            }
+                        }
+                    }
+                }
             } while (match(TOKEN_COMMA));
         }
         
         expect(TOKEN_PIPE, "Expected '|' after lambda parameters");
         
-        // Parse body expression
-        lambda_expr->lambda.body = expression();
+        // Skip optional return type annotation
+        if (match(TOKEN_ARROW)) {
+            // Skip return type without using parse_type
+            if (check(TOKEN_IDENT)) {
+                advance();
+                if (match(TOKEN_LT)) {
+                    int depth = 1;
+                    while (depth > 0 && !check(TOKEN_EOF)) {
+                        if (match(TOKEN_LT)) depth++;
+                        else if (match(TOKEN_GT)) depth--;
+                        else advance();
+                    }
+                }
+            }
+        }
+        
+        // Parse body - can be expression or block
+        if (check(TOKEN_LBRACE)) {
+            // Block body: { return expr; }
+            // Skip the opening brace
+            advance();
+            
+            // Skip to return statement
+            if (match(TOKEN_RETURN)) {
+                lambda_expr->lambda.body = expression();
+                expect(TOKEN_SEMI, "Expected ';' after return expression");
+            } else {
+                // No return, just parse expression
+                lambda_expr->lambda.body = expression();
+            }
+            
+            expect(TOKEN_RBRACE, "Expected '}' after lambda block body");
+        } else {
+            lambda_expr->lambda.body = expression();
+        }
         
         // Initialize capture fields (will be filled by capture analysis)
         lambda_expr->lambda.captured_vars = NULL;
