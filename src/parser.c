@@ -74,6 +74,13 @@ static Stmt* alloc_stmt() {
 }
 
 static Expr* primary() {
+    if (match(TOKEN_AWAIT)) {
+        Expr* expr = alloc_expr();
+        expr->type = EXPR_AWAIT;
+        expr->await.expr = primary();
+        return expr;
+    }
+    
     if (match(TOKEN_NOT) || match(TOKEN_MINUS) || match(TOKEN_BANG) || match(TOKEN_TILDE)) {
         Token op = parser.previous;
         Expr* operand = primary();
@@ -1297,11 +1304,13 @@ Stmt* statement() {
 }
 
 Stmt* function() {
+    bool is_async = match(TOKEN_ASYNC);
     bool is_public = match(TOKEN_PUB);
     expect(TOKEN_FN, "Expected 'fn'");
     Stmt* stmt = alloc_stmt();
     stmt->type = STMT_FN;
     stmt->fn.is_public = is_public;
+    stmt->fn.is_async = is_async;
     stmt->fn.name = parser.current;
     expect(TOKEN_IDENT, "Expected function name");
     
@@ -1876,7 +1885,7 @@ Program* parse_program() {
             continue;
         }
         
-        if (check(TOKEN_FN) || check(TOKEN_PUB)) {
+        if (check(TOKEN_FN) || check(TOKEN_PUB) || check(TOKEN_ASYNC)) {
             prog->stmts[prog->count++] = function();
         } else if (check(TOKEN_EXTERN)) {
             prog->stmts[prog->count++] = extern_decl();

@@ -24,6 +24,7 @@ typedef enum {
     EXPR_FIELD_ACCESS,
     EXPR_BOOL,
     EXPR_UNARY,
+    EXPR_AWAIT,
     EXPR_MATCH,
     EXPR_TERNARY,
     EXPR_SOME,
@@ -114,6 +115,10 @@ typedef struct {
     Token op;
     Expr* operand;
 } UnaryExpr;
+
+typedef struct {
+    Expr* expr;
+} AwaitExpr;
 
 // T3.3.1: Pattern structures for destructuring
 typedef struct Pattern Pattern;
@@ -286,6 +291,7 @@ struct Expr {
         StructInitExpr struct_init;
         FieldAccessExpr field_access;
         UnaryExpr unary;
+        AwaitExpr await;
         MatchExpr match;
         OptionExpr option;
         TernaryExpr ternary;
@@ -370,6 +376,7 @@ typedef struct {
     Expr* return_type;
     Stmt* body;
     bool is_public;
+    bool is_async;
     Token receiver_type;      // For extension methods: fn Type.method()
     bool is_extension;        // True if this is an extension method
 } FnStmt;

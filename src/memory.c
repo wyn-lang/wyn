@@ -38,6 +38,9 @@ void free_expr(Expr* expr) {
         case EXPR_UNARY:
             free_expr(expr->unary.operand);
             break;
+        case EXPR_AWAIT:
+            free_expr(expr->await.expr);
+            break;
         case EXPR_MATCH:
             free_match_expr(&expr->match);
             break;

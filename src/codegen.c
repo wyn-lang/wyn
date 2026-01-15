@@ -207,6 +207,11 @@ void codegen_expr(Expr* expr) {
             }
             codegen_expr(expr->unary.operand);
             break;
+        case EXPR_AWAIT:
+            // Minimal async: just evaluate the expression
+            emit("/* await */ ");
+            codegen_expr(expr->await.expr);
+            break;
         case EXPR_BINARY:
             // Special handling for string concatenation with + operator
             if (expr->binary.op.type == TOKEN_PLUS) {
