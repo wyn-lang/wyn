@@ -17,8 +17,10 @@
 #include "wyn_interface.h"
 #include "io.h"
 #include "arc_runtime.h"
+#include "concurrency.h"
 #include "optional.h"
 #include "result.h"
+#include "async_runtime.h"
 
 int wyn_get_argc(void);
 const char* wyn_get_argv(int index);
@@ -821,6 +823,7 @@ typedef struct {
 void Data_cleanup(Data* obj) {
 }
 
+// Lambda functions (defined before use)
 int process_int(int x);
 // Monomorphic instance of process
 int process_int(int x) {
@@ -830,11 +833,11 @@ int process_int(int x) {
 int wyn_main();
 
 int wyn_main() {
-    Data d = (Data){.value = 15};
+    Data d = *(Data*)wyn_arc_new(sizeof(Data), &(Data){.value = 15})->data;
     ;
     WynArray arr = ({ WynArray __arr_0 = array_new(); array_push_int(&__arr_0, 10); array_push_int(&__arr_0, 20); array_push_int(&__arr_0, 30); __arr_0; });
     ;
-    WynOptional* x = ({ some_int(42); /* ARC retain for x */ });
+    WynOptional* x = ({ some_int(42) /* ARC retain for x */ });
     ;
     int result = ({ int _match_result_0; switch (d.value) {
         case 15: _match_result_0 = array_get_int(arr, 1); break;

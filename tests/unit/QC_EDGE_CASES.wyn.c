@@ -17,8 +17,10 @@
 #include "wyn_interface.h"
 #include "io.h"
 #include "arc_runtime.h"
+#include "concurrency.h"
 #include "optional.h"
 #include "result.h"
+#include "async_runtime.h"
 
 int wyn_get_argc(void);
 const char* wyn_get_argv(int index);
@@ -828,6 +830,7 @@ typedef struct {
 void Empty_cleanup(Empty* obj) {
 }
 
+// Lambda functions (defined before use)
 int generic_chain_int(int x);
 // Monomorphic instance of generic_chain
 int generic_chain_int(int x) {
@@ -847,9 +850,9 @@ int nested_call() {
 }
 
 int wyn_main() {
-    Empty e = (Empty){};
+    Empty e = *(Empty*)wyn_arc_new(sizeof(Empty), &(Empty){})->data;
     ;
-    Point p = (Point){.x = 1, .y = 2};
+    Point p = *(Point*)wyn_arc_new(sizeof(Point), &(Point){.x = 1, .y = 2})->data;
     ;
     __auto_type z = nested_call();
     ;

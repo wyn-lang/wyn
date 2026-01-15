@@ -17,8 +17,10 @@
 #include "wyn_interface.h"
 #include "io.h"
 #include "arc_runtime.h"
+#include "concurrency.h"
 #include "optional.h"
 #include "result.h"
+#include "async_runtime.h"
 
 int wyn_get_argc(void);
 const char* wyn_get_argv(int index);
@@ -831,6 +833,7 @@ typedef struct {
 void Vec3_cleanup(Vec3* obj) {
 }
 
+// Lambda functions (defined before use)
 int magnitude_Vec2(Vec2 v);
 // Monomorphic instance of magnitude
 int magnitude_Vec2(Vec2 v) {
@@ -842,7 +845,7 @@ int process_array(WynArray arr);
 int wyn_main();
 
 Vec2 add_vec2(Vec2 a, Vec2 b) {
-    return (Vec2){.x = (a.x + b.x), .y = (a.y + b.y)};
+    return *(Vec2*)wyn_arc_new(sizeof(Vec2), &(Vec2){.x = (a.x + b.x), .y = (a.y + b.y)})->data;
 }
 
 int process_array(WynArray arr) {
@@ -850,9 +853,9 @@ int process_array(WynArray arr) {
 }
 
 int wyn_main() {
-    Vec2 v1 = (Vec2){.x = 10, .y = 20};
+    Vec2 v1 = *(Vec2*)wyn_arc_new(sizeof(Vec2), &(Vec2){.x = 10, .y = 20})->data;
     ;
-    Vec2 v2 = (Vec2){.x = 5, .y = 15};
+    Vec2 v2 = *(Vec2*)wyn_arc_new(sizeof(Vec2), &(Vec2){.x = 5, .y = 15})->data;
     ;
     __auto_type v3 = add_vec2(v1, v2);
     ;

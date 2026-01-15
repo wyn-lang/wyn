@@ -17,8 +17,10 @@
 #include "wyn_interface.h"
 #include "io.h"
 #include "arc_runtime.h"
+#include "concurrency.h"
 #include "optional.h"
 #include "result.h"
+#include "async_runtime.h"
 
 int wyn_get_argc(void);
 const char* wyn_get_argv(int index);
@@ -841,6 +843,7 @@ const char* Status_toString(Status val) {
     return "Unknown";
 }
 
+// Lambda functions (defined before use)
 int identity_int(int val);
 // Monomorphic instance of identity
 int identity_int(int val) {
@@ -855,7 +858,7 @@ int wyn_main() {
     int y = 20;
     ;
     y = 30;
-    Point p = (Point){.x = 5, .y = 10};
+    Point p = *(Point*)wyn_arc_new(sizeof(Point), &(Point){.x = 5, .y = 10})->data;
     ;
     WynArray arr = ({ WynArray __arr_0 = array_new(); array_push_int(&__arr_0, 1); array_push_int(&__arr_0, 2); array_push_int(&__arr_0, 3); __arr_0; });
     ;
@@ -903,13 +906,13 @@ int wyn_main() {
         default: final_val = 0;
  break;
     }
-    WynResult* success = ({ 42; /* ARC retain for success */ });
+    WynResult* success = ({ 42 /* ARC retain for success */ });
     ;
-    WynResult* failure = ({ 1; /* ARC retain for failure */ });
+    WynResult* failure = ({ 1 /* ARC retain for failure */ });
     ;
-    WynOptional* maybe = ({ some_int(42); /* ARC retain for maybe */ });
+    WynOptional* maybe = ({ some_int(42) /* ARC retain for maybe */ });
     ;
-    WynOptional* nothing = ({ wyn_none(); /* ARC retain for nothing */ });
+    WynOptional* nothing = ({ wyn_none() /* ARC retain for nothing */ });
     ;
     const char* msg = "hello";
     ;

@@ -17,8 +17,10 @@
 #include "wyn_interface.h"
 #include "io.h"
 #include "arc_runtime.h"
+#include "concurrency.h"
 #include "optional.h"
 #include "result.h"
+#include "async_runtime.h"
 
 int wyn_get_argc(void);
 const char* wyn_get_argv(int index);
@@ -822,6 +824,7 @@ typedef struct {
 void Config_cleanup(Config* obj) {
 }
 
+// Lambda functions (defined before use)
 int calculate_int(int value);
 // Monomorphic instance of calculate
 int calculate_int(int value) {
@@ -836,7 +839,7 @@ int get_area(int w, int h) {
 }
 
 int wyn_main() {
-    Config config = (Config){.width = 10, .height = 20};
+    Config config = *(Config*)wyn_arc_new(sizeof(Config), &(Config){.width = 10, .height = 20})->data;
     ;
     __auto_type area = get_area(config.width, config.height);
     ;

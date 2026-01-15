@@ -17,8 +17,10 @@
 #include "wyn_interface.h"
 #include "io.h"
 #include "arc_runtime.h"
+#include "concurrency.h"
 #include "optional.h"
 #include "result.h"
+#include "async_runtime.h"
 
 int wyn_get_argc(void);
 const char* wyn_get_argv(int index);
@@ -822,13 +824,14 @@ typedef struct {
 void Point_cleanup(Point* obj) {
 }
 
+// Lambda functions (defined before use)
 int wyn_main();
 int add(int a, int b);
 
 int wyn_main() {
     __auto_type x = add(10, 20);
     ;
-    Point p = (Point){.x = 5, .y = 10};
+    Point p = *(Point*)wyn_arc_new(sizeof(Point), &(Point){.x = 5, .y = 10})->data;
     ;
     WynArray arr = ({ WynArray __arr_0 = array_new(); array_push_int(&__arr_0, 1); array_push_int(&__arr_0, 2); array_push_int(&__arr_0, 3); __arr_0; });
     ;

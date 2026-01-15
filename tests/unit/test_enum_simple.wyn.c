@@ -17,8 +17,10 @@
 #include "wyn_interface.h"
 #include "io.h"
 #include "arc_runtime.h"
+#include "concurrency.h"
 #include "optional.h"
 #include "result.h"
+#include "async_runtime.h"
 
 int wyn_get_argc(void);
 const char* wyn_get_argv(int index);
@@ -833,6 +835,7 @@ const char* Status_toString(Status val) {
     return "Unknown";
 }
 
+// Lambda functions (defined before use)
 int wyn_main();
 
 int wyn_main() {

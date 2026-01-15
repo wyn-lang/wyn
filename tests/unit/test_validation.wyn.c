@@ -17,8 +17,10 @@
 #include "wyn_interface.h"
 #include "io.h"
 #include "arc_runtime.h"
+#include "concurrency.h"
 #include "optional.h"
 #include "result.h"
+#include "async_runtime.h"
 
 int wyn_get_argc(void);
 const char* wyn_get_argv(int index);
@@ -822,6 +824,7 @@ typedef struct {
 void Point_cleanup(Point* obj) {
 }
 
+// Lambda functions (defined before use)
 int identity_int(int x);
 // Monomorphic instance of identity
 int identity_int(int x) {
@@ -838,7 +841,7 @@ int add(int a, int b) {
 int wyn_main() {
     __auto_type sum = add(10, 5);
     ;
-    Point p = (Point){.x = 3, .y = 4};
+    Point p = *(Point*)wyn_arc_new(sizeof(Point), &(Point){.x = 3, .y = 4})->data;
     ;
     __auto_type val = identity_int(42);
     ;

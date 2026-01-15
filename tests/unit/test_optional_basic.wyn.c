@@ -17,8 +17,10 @@
 #include "wyn_interface.h"
 #include "io.h"
 #include "arc_runtime.h"
+#include "concurrency.h"
 #include "optional.h"
 #include "result.h"
+#include "async_runtime.h"
 
 int wyn_get_argc(void);
 const char* wyn_get_argv(int index);
@@ -814,18 +816,19 @@ int bit_count(int x) { int c = 0; while(x) { c += x & 1; x >>= 1; } return c; }
 
 // ARC functions are provided by arc_runtime.c
 
+// Lambda functions (defined before use)
 int get_value();
 int wyn_main();
 
 int get_value() {
-    WynOptional* x = ({ some_int(42); /* ARC retain for x */ });
+    WynOptional* x = ({ some_int(42) /* ARC retain for x */ });
     ;
     return 0;
     if(x) free(x);
 }
 
 int wyn_main() {
-    WynOptional* y = ({ wyn_none(); /* ARC retain for y */ });
+    WynOptional* y = ({ wyn_none() /* ARC retain for y */ });
     ;
     return get_value();
     if(y) free(y);

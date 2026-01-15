@@ -17,8 +17,10 @@
 #include "wyn_interface.h"
 #include "io.h"
 #include "arc_runtime.h"
+#include "concurrency.h"
 #include "optional.h"
 #include "result.h"
+#include "async_runtime.h"
 
 int wyn_get_argc(void);
 const char* wyn_get_argv(int index);
@@ -838,6 +840,7 @@ const char* Status_toString(Status val) {
     return "Unknown";
 }
 
+// Lambda functions (defined before use)
 int identity_int(int val);
 // Monomorphic instance of identity
 int identity_int(int val) {
@@ -848,6 +851,12 @@ int add(int a, int b);
 int Point_sum(int a, int b);
 int worker();
 int wyn_main();
+
+// Spawn wrapper functions
+void* __spawn_wrapper_worker(void* arg) {
+    worker();
+    return NULL;
+}
 
 int add(int a, int b) {
     return (a + b);
@@ -869,15 +878,15 @@ int wyn_main() {
     y = 30;
     __auto_type sum = add(10, 20);
     ;
-    Point p = (Point){.x = 3, .y = 4};
+    Point p = *(Point*)wyn_arc_new(sizeof(Point), &(Point){.x = 3, .y = 4})->data;
     ;
     int s = DONE;
     ;
     WynArray arr = ({ WynArray __arr_0 = array_new(); array_push_int(&__arr_0, 1); array_push_int(&__arr_0, 2); array_push_int(&__arr_0, 3); __arr_0; });
     ;
-    WynResult* ok_val = ({ 42; /* ARC retain for ok_val */ });
+    WynResult* ok_val = ({ 42 /* ARC retain for ok_val */ });
     ;
-    WynOptional* some_val = ({ some_int(42); /* ARC retain for some_val */ });
+    WynOptional* some_val = ({ some_int(42) /* ARC retain for some_val */ });
     ;
     int matched = ({ int _match_result_0; switch (p.x) {
         case 3: _match_result_0 = 77; break;
@@ -904,7 +913,7 @@ int wyn_main() {
     ;
     __auto_type ext = Point_sum(3, 4);
     ;
-    worker();
+    wyn_spawn(__spawn_wrapper_worker, NULL);
     return matched;
     if(ok_val) free(ok_val);
     if(some_val) free(some_val);
