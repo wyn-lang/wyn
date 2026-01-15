@@ -823,6 +823,21 @@ int days_to_hours(int days);
 int weeks_to_days(int weeks);
 int day_of_year(int month, int day, int year);
 int wyn_main();
+int seconds_to_minutes(int seconds);
+int seconds_to_hours(int seconds);
+int seconds_to_days(int seconds);
+int minutes_to_hours(int minutes);
+int hours_to_days(int hours);
+int days_to_weeks(int days);
+int weeks_to_months(int weeks);
+int months_to_years(int months);
+int years_to_decades(int years);
+int years_to_centuries(int years);
+int timestamp_to_days(int timestamp);
+int timestamp_to_hours(int timestamp);
+int days_between_years(int year1, int year2);
+int is_weekend_day(int day_of_week);
+int is_weekday(int day_of_week);
 
 int days_in_month(int month) {
     if ((month == 1)) {
@@ -950,5 +965,87 @@ int wyn_main() {
     __auto_type doy = day_of_year(3, 15, 2024);
     ;
     return (((jan_days + feb_days) + leap_2024) + year_days);
+}
+
+int seconds_to_minutes(int seconds) {
+    return (seconds / 60);
+}
+
+int seconds_to_hours(int seconds) {
+    return (seconds / 3600);
+}
+
+int seconds_to_days(int seconds) {
+    return (seconds / 86400);
+}
+
+int minutes_to_hours(int minutes) {
+    return (minutes / 60);
+}
+
+int hours_to_days(int hours) {
+    return (hours / 24);
+}
+
+int days_to_weeks(int days) {
+    return (days / 7);
+}
+
+int weeks_to_months(int weeks) {
+    return (weeks / 4);
+}
+
+int months_to_years(int months) {
+    return (months / 12);
+}
+
+int years_to_decades(int years) {
+    return (years / 10);
+}
+
+int years_to_centuries(int years) {
+    return (years / 100);
+}
+
+int timestamp_to_days(int timestamp) {
+    return (timestamp / 86400);
+}
+
+int timestamp_to_hours(int timestamp) {
+    return (timestamp / 3600);
+}
+
+int days_between_years(int year1, int year2) {
+    if ((year1 > year2)) {
+    return 0;
+    }
+    int total = 0;
+    ;
+    int y = year1;
+    ;
+    while ((y < year2)) {
+    total = (total + days_in_year(y));
+    y = (y + 1);
+    }
+    return total;
+}
+
+int is_weekend_day(int day_of_week) {
+    if ((day_of_week == 0)) {
+    return 1;
+    }
+    if ((day_of_week == 6)) {
+    return 1;
+    }
+    return 0;
+}
+
+int is_weekday(int day_of_week) {
+    __auto_type weekend = is_weekend_day(day_of_week);
+    ;
+    if ((weekend == 1)) {
+    return 0;
+    }
+    return 1;
 }
 

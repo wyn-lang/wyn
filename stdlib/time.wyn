@@ -97,3 +97,85 @@ fn main() -> int {
     
     return jan_days + feb_days + leap_2024 + year_days;
 }
+
+
+// Additional time utilities
+
+fn seconds_to_minutes(seconds: int) -> int {
+    return seconds / 60;
+}
+
+fn seconds_to_hours(seconds: int) -> int {
+    return seconds / 3600;
+}
+
+fn seconds_to_days(seconds: int) -> int {
+    return seconds / 86400;
+}
+
+fn minutes_to_hours(minutes: int) -> int {
+    return minutes / 60;
+}
+
+fn hours_to_days(hours: int) -> int {
+    return hours / 24;
+}
+
+fn days_to_weeks(days: int) -> int {
+    return days / 7;
+}
+
+fn weeks_to_months(weeks: int) -> int {
+    return weeks / 4;
+}
+
+fn months_to_years(months: int) -> int {
+    return months / 12;
+}
+
+fn years_to_decades(years: int) -> int {
+    return years / 10;
+}
+
+fn years_to_centuries(years: int) -> int {
+    return years / 100;
+}
+
+fn timestamp_to_days(timestamp: int) -> int {
+    return timestamp / 86400;
+}
+
+fn timestamp_to_hours(timestamp: int) -> int {
+    return timestamp / 3600;
+}
+
+fn days_between_years(year1: int, year2: int) -> int {
+    if year1 > year2 {
+        return 0;
+    }
+    let mut total = 0;
+    let mut y = year1;
+    while y < year2 {
+        total = total + days_in_year(y);
+        y = y + 1;
+    }
+    return total;
+}
+
+fn is_weekend_day(day_of_week: int) -> int {
+    if day_of_week == 0 {
+        return 1;
+    }
+    if day_of_week == 6 {
+        return 1;
+    }
+    return 0;
+}
+
+fn is_weekday(day_of_week: int) -> int {
+    let weekend = is_weekend_day(day_of_week);
+    if weekend == 1 {
+        return 0;
+    }
+    return 1;
+}
