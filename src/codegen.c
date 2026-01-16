@@ -12,6 +12,8 @@
 #include "optimize.h"
 #include "functional.h"
 #include "hashmap.h"
+#include "hashset.h"
+#include "json.h"
 
 // Forward declarations
 void codegen_stmt(Stmt* stmt);
@@ -2008,6 +2010,8 @@ void codegen_c_header() {
     emit("#include \"optional.h\"\n");
     emit("#include \"result.h\"\n");
     emit("#include \"hashmap.h\"\n");
+    emit("#include \"hashset.h\"\n");
+    emit("#include \"json.h\"\n");
     emit("#include \"async_runtime.h\"\n\n");
     
     // Function declarations for C interface
@@ -2429,101 +2433,8 @@ void codegen_c_header() {
     emit("char* http_error() { return http_last_error[0] ? http_last_error : NULL; }\n");
     emit("char* last_error_get() { return last_error[0] ? last_error : NULL; }\n\n");
     
-    // Simple JSON functions
-    emit("char* json_get_str(const char* json, const char* key) {\n");
-    emit("    char search[256];\n");
-    emit("    snprintf(search, 256, \"\\\\\\\"%%s\\\\\\\":\", key);\n");
-    emit("    char* pos = strstr(json, search);\n");
-    emit("    if(!pos) return NULL;\n");
-    emit("    pos += strlen(search);\n");
-    emit("    while(*pos == ' ' || *pos == '\\\"') pos++;\n");
-    emit("    char* end = pos;\n");
-    emit("    while(*end && *end != '\\\"' && *end != ',' && *end != '}') end++;\n");
-    emit("    int len = end - pos;\n");
-    emit("    char* result = malloc(len + 1);\n");
-    emit("    strncpy(result, pos, len);\n");
-    emit("    result[len] = 0;\n");
-    emit("    return result;\n");
-    emit("}\n\n");
-    
-    emit("int json_get_int(const char* json, const char* key) {\n");
-    emit("    char* val = json_get_str(json, key);\n");
-    emit("    return val ? atoi(val) : 0;\n");
-    emit("}\n\n");
-    
-    emit("int json_get_bool(const char* json, const char* key) {\n");
-    emit("    char* val = json_get_str(json, key);\n");
-    emit("    if(!val) return 0;\n");
-    emit("    return strcmp(val, \"true\") == 0 || strcmp(val, \"1\") == 0;\n");
-    emit("}\n\n");
-    
-    emit("int json_has_key(const char* json, const char* key) {\n");
-    emit("    char search[256];\n");
-    emit("    snprintf(search, 256, \"\\\\\\\"%%s\\\\\\\":\", key);\n");
-    emit("    return strstr(json, search) != NULL;\n");
-    emit("}\n\n");
-    
-    emit("char* json_stringify_int(int val) {\n");
-    emit("    char* r = malloc(20);\n");
-    emit("    sprintf(r, \"%%d\", val);\n");
-    emit("    return r;\n");
-    emit("}\n\n");
-    
-    emit("char* json_stringify_str(const char* val) {\n");
-    emit("    char* r = malloc(strlen(val) + 3);\n");
-    emit("    sprintf(r, \"\\\\\\\"%%s\\\\\\\"\", val);\n");
-    emit("    return r;\n");
-    emit("}\n\n");
-    
-    emit("char* json_stringify_bool(int val) {\n");
-    emit("    return val ? \"true\" : \"false\";\n");
-    emit("}\n\n");
-    
-    emit("char* json_array_stringify(int* arr, int len) {\n");
-    emit("    char* r = malloc(len * 20 + 10);\n");
-    emit("    strcpy(r, \"[\");\n");
-    emit("    for(int i = 0; i < len; i++) {\n");
-    emit("        char buf[20];\n");
-    emit("        sprintf(buf, \"%%d\", arr[i]);\n");
-    emit("        strcat(r, buf);\n");
-    emit("        if(i < len-1) strcat(r, \",\");\n");
-    emit("    }\n");
-    emit("    strcat(r, \"]\");\n");
-    emit("    return r;\n");
-    emit("}\n\n");
-    
-    emit("int json_array_length(const char* json) {\n");
-    emit("    int count = 0;\n");
-    emit("    int depth = 0;\n");
-    emit("    for(const char* p = json; *p; p++) {\n");
-    emit("        if(*p == '[') depth++;\n");
-    emit("        else if(*p == ']') depth--;\n");
-    emit("        else if(*p == ',' && depth == 1) count++;\n");
-    emit("    }\n");
-    emit("    return count > 0 ? count + 1 : 0;\n");
-    emit("}\n\n");
-    
-    emit("char* json_array_get(const char* json, int index) {\n");
-    emit("    int count = 0;\n");
-    emit("    int depth = 0;\n");
-    emit("    const char* start = NULL;\n");
-    emit("    for(const char* p = json; *p; p++) {\n");
-    emit("        if(*p == '[') { depth++; if(depth == 1 && count == index) start = p + 1; }\n");
-    emit("        else if(*p == ']') depth--;\n");
-    emit("        else if(*p == ',' && depth == 1) {\n");
-    emit("            if(count == index && start) {\n");
-    emit("                int len = p - start;\n");
-    emit("                char* r = malloc(len + 1);\n");
-    emit("                strncpy(r, start, len);\n");
-    emit("                r[len] = 0;\n");
-    emit("                return r;\n");
-    emit("            }\n");
-    emit("            count++;\n");
-    emit("            if(count == index) start = p + 1;\n");
-    emit("        }\n");
-    emit("    }\n");
-    emit("    return NULL;\n");
-    emit("}\n\n");
+    // JSON functions moved to json.c (real implementation)
+    // Old string-based stubs commented out - use json_parse() instead
     
     emit("char* url_encode(const char* str) {\n");
     emit("    char* result = malloc(strlen(str) * 3 + 1);\n");

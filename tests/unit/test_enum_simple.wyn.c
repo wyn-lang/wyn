@@ -21,6 +21,8 @@
 #include "optional.h"
 #include "result.h"
 #include "hashmap.h"
+#include "hashset.h"
+#include "json.h"
 #include "async_runtime.h"
 
 int wyn_get_argc(void);
@@ -427,101 +429,6 @@ void http_clear_headers() {
 int http_status() { return http_last_status; }
 char* http_error() { return http_last_error[0] ? http_last_error : NULL; }
 char* last_error_get() { return last_error[0] ? last_error : NULL; }
-
-char* json_get_str(const char* json, const char* key) {
-    char search[256];
-    snprintf(search, 256, "\\\"%s\\\":", key);
-    char* pos = strstr(json, search);
-    if(!pos) return NULL;
-    pos += strlen(search);
-    while(*pos == ' ' || *pos == '\"') pos++;
-    char* end = pos;
-    while(*end && *end != '\"' && *end != ',' && *end != '}') end++;
-    int len = end - pos;
-    char* result = malloc(len + 1);
-    strncpy(result, pos, len);
-    result[len] = 0;
-    return result;
-}
-
-int json_get_int(const char* json, const char* key) {
-    char* val = json_get_str(json, key);
-    return val ? atoi(val) : 0;
-}
-
-int json_get_bool(const char* json, const char* key) {
-    char* val = json_get_str(json, key);
-    if(!val) return 0;
-    return strcmp(val, "true") == 0 || strcmp(val, "1") == 0;
-}
-
-int json_has_key(const char* json, const char* key) {
-    char search[256];
-    snprintf(search, 256, "\\\"%s\\\":", key);
-    return strstr(json, search) != NULL;
-}
-
-char* json_stringify_int(int val) {
-    char* r = malloc(20);
-    sprintf(r, "%d", val);
-    return r;
-}
-
-char* json_stringify_str(const char* val) {
-    char* r = malloc(strlen(val) + 3);
-    sprintf(r, "\\\"%s\\\"", val);
-    return r;
-}
-
-char* json_stringify_bool(int val) {
-    return val ? "true" : "false";
-}
-
-char* json_array_stringify(int* arr, int len) {
-    char* r = malloc(len * 20 + 10);
-    strcpy(r, "[");
-    for(int i = 0; i < len; i++) {
-        char buf[20];
-        sprintf(buf, "%d", arr[i]);
-        strcat(r, buf);
-        if(i < len-1) strcat(r, ",");
-    }
-    strcat(r, "]");
-    return r;
-}
-
-int json_array_length(const char* json) {
-    int count = 0;
-    int depth = 0;
-    for(const char* p = json; *p; p++) {
-        if(*p == '[') depth++;
-        else if(*p == ']') depth--;
-        else if(*p == ',' && depth == 1) count++;
-    }
-    return count > 0 ? count + 1 : 0;
-}
-
-char* json_array_get(const char* json, int index) {
-    int count = 0;
-    int depth = 0;
-    const char* start = NULL;
-    for(const char* p = json; *p; p++) {
-        if(*p == '[') { depth++; if(depth == 1 && count == index) start = p + 1; }
-        else if(*p == ']') depth--;
-        else if(*p == ',' && depth == 1) {
-            if(count == index && start) {
-                int len = p - start;
-                char* r = malloc(len + 1);
-                strncpy(r, start, len);
-                r[len] = 0;
-                return r;
-            }
-            count++;
-            if(count == index) start = p + 1;
-        }
-    }
-    return NULL;
-}
 
 char* url_encode(const char* str) {
     char* result = malloc(strlen(str) * 3 + 1);

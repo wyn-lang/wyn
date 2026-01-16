@@ -266,7 +266,7 @@ int main(int argc, char** argv) {
         fclose(out);
         
         char compile_cmd[1024];
-        snprintf(compile_cmd, 1024, "gcc -I src -o %s/main %s/main.c src/wyn_wrapper.c src/wyn_interface.c src/io.c src/optional.c src/result.c src/arc_runtime.c src/concurrency.c src/async_runtime.c src/safe_memory.c src/error.c src/string_runtime.c src/hashmap.c -lm", dir, dir);
+        snprintf(compile_cmd, 1024, "gcc -I src -o %s/main %s/main.c src/wyn_wrapper.c src/wyn_interface.c src/io.c src/optional.c src/result.c src/arc_runtime.c src/concurrency.c src/async_runtime.c src/safe_memory.c src/error.c src/string_runtime.c src/hashmap.c src/hashset.c src/json.c -lm", dir, dir);
         int result = system(compile_cmd);
         
         if (result == 0) {
@@ -522,7 +522,7 @@ int main(int argc, char** argv) {
         fclose(out);
         
         char compile_cmd[512];
-        snprintf(compile_cmd, 512, "gcc -O2 -I src -o %s.out %s.c src/wyn_wrapper.c src/wyn_interface.c src/io.c src/optional.c src/result.c src/arc_runtime.c src/concurrency.c src/async_runtime.c src/safe_memory.c src/error.c src/string_runtime.c src/hashmap.c -lm", file, file);
+        snprintf(compile_cmd, 512, "gcc -O2 -I src -o %s.out %s.c src/wyn_wrapper.c src/wyn_interface.c src/io.c src/optional.c src/result.c src/arc_runtime.c src/concurrency.c src/async_runtime.c src/safe_memory.c src/error.c src/string_runtime.c src/hashmap.c src/hashset.c src/json.c -lm", file, file);
         int result = system(compile_cmd);
         
         if (result != 0) {
@@ -613,7 +613,7 @@ int main(int argc, char** argv) {
     
     char compile_cmd[512];
     const char* opt_flag = (optimization == OPT_O2) ? "-O2" : (optimization == OPT_O1) ? "-O1" : "-O0";
-    snprintf(compile_cmd, 512, "gcc %s -I src -o %s.out %s.c src/wyn_wrapper.c src/wyn_interface.c src/io.c src/optional.c src/result.c src/arc_runtime.c src/concurrency.c src/async_runtime.c src/safe_memory.c src/error.c src/string_runtime.c src/hashmap.c -lm", opt_flag, argv[file_arg_index], argv[file_arg_index]);
+    snprintf(compile_cmd, 512, "gcc %s -I src -o %s.out %s.c src/wyn_wrapper.c src/wyn_interface.c src/io.c src/optional.c src/result.c src/arc_runtime.c src/concurrency.c src/async_runtime.c src/safe_memory.c src/error.c src/string_runtime.c src/hashmap.c src/hashset.c src/json.c -lm", opt_flag, argv[file_arg_index], argv[file_arg_index]);
     int result = system(compile_cmd);
     
     // Check if output file was actually created
