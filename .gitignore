@@ -7,9 +7,8 @@ wyn
 *.wyn.out
 *.dSYM/
 
-# Generated C code (except tracked test files)
+# Generated C code from .wyn files
 *.wyn.c
-!tests/*.wyn.c
 
 # Build directories
 build/
