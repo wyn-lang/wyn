@@ -86,4 +86,4 @@ Demonstrates:
 For more information about the Wyn language, see:
 - Language specification: `internal-docs/01_LANGUAGE_SPEC.md`
 - Compiler documentation: `internal-docs/03_COMPILER_SPEC.md`
-- Standard library: `wyn/stdlib/`
+- Standard library reference: `STDLIB_REFERENCE.md`

@@ -1,18 +1,22 @@
-# Build artifacts
+# Compiler binary
 wyn
+
+# Generated files
 *.out
 *.o
-*.wyn.c
+*.wyn.out
 *.dSYM/
+
+# Generated C code (except tracked test files)
+*.wyn.c
+!tests/*.wyn.c
+
+# Build directories
+build/
+temp/
 
 # Test artifacts
 tests/test_*
-examples/*.wyn.c
-!tests/*.c
-!tests/*.sh
-
-# Temp files
-temp/
 
 # IDE
 .vscode/
@@ -20,11 +24,10 @@ temp/
 *.swp
 *.swo
 
-# Build artifacts
-*.wyn.out
-*.dSYM/
-build/
+# Logs and backups
 *.log
 *_backup.*
 *.bak
-temp/
+
+# OS
+.DS_Store
