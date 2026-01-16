@@ -202,35 +202,41 @@ int main(int argc, char** argv) {
             
             char* source = read_file(line);
             
-            // If module name is not "main", prefix exported functions
-            if (strcmp(module_name, "main") != 0 && strlen(module_name) > 0) {
-                // Simple text replacement: "export fn name" -> "fn module_name"
-                // This is minimal but works for the basic case
-                char* modified = malloc(strlen(source) * 2); // Extra space for prefixes
-                char* dst = modified;
-                char* src = source;
-                
-                while (*src) {
-                    if (strncmp(src, "export fn ", 10) == 0) {
-                        // Replace "export fn name" with "fn module_name"
-                        strcpy(dst, "fn ");
-                        dst += 3;
-                        strcpy(dst, module_name);
-                        dst += strlen(module_name);
-                        *dst++ = '_';
-                        src += 10; // Skip "export fn "
-                    } else {
-                        *dst++ = *src++;
-                    }
-                }
-                *dst = '\0';
-                
-                fprintf(combined, "// From %s\n%s\n\n", line, modified);
-                free(modified);
-            } else {
-                fprintf(combined, "// From %s\n%s\n\n", line, source);
-            }
+            // Process source: remove imports, prefix exports, replace module::func with module_func
+            char* modified = malloc(strlen(source) * 2);
+            char* dst = modified;
+            char* src = source;
             
+            while (*src) {
+                // Skip import statements
+                if (strncmp(src, "import ", 7) == 0) {
+                    while (*src && *src != ';') src++;
+                    if (*src == ';') src++;
+                    while (*src == ' ' || *src == '\n') src++;
+                    continue;
+                }
+                
+                // Prefix exported functions
+                if (strncmp(src, "export fn ", 10) == 0 && 
+                    strcmp(module_name, "main") != 0 && strlen(module_name) > 0) {
+                    strcpy(dst, "fn ");
+                    dst += 3;
+                    strcpy(dst, module_name);
+                    dst += strlen(module_name);
+                    *dst++ = '_';
+                    src += 10;
+                } else if (src[0] != '\0' && src[1] != '\0' && strncmp(src, "::", 2) == 0) {
+                    // Replace :: with _
+                    *dst++ = '_';
+                    src += 2;
+                } else {
+                    *dst++ = *src++;
+                }
+            }
+            *dst = '\0';
+            
+            fprintf(combined, "// From %s\n%s\n\n", line, modified);
+            free(modified);
             free(source);
         }
         fclose(files);
