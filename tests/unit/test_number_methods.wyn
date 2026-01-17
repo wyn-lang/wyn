@@ -26,8 +26,12 @@ fn test_int_checks() -> int {
     var pos = num.is_positive();
     var neg = num.is_negative();
     var zero = num.is_zero();
-    // even=1, odd=0, pos=1, neg=0, zero=0
-    return even;
+    // even=true, odd=false, pos=true, neg=false, zero=false
+    // Return 1 if even is true, 0 otherwise
+    if (even) {
+        return 1;
+    }
+    return 0;
 }
 
 fn test_float_conversion() -> int {
@@ -64,8 +68,12 @@ fn test_float_checks() -> int {
     var pos = num.is_positive();
     var neg = num.is_negative();
     var finite = num.is_finite();
-    // pos=1, neg=0, finite=1
-    return pos;
+    // pos=true, neg=false, finite=true
+    // Return 1 if pos is true, 0 otherwise
+    if (pos) {
+        return 1;
+    }
+    return 0;
 }
 
 fn test_float_trig() -> int {

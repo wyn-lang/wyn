@@ -1619,8 +1619,8 @@ void codegen_c_header() {
     emit("    if (n > max) return max;\n");
     emit("    return n;\n");
     emit("}\n");
-    emit("int int_is_even(int n) { return n % 2 == 0; }\n");
-    emit("int int_is_odd(int n) { return n % 2 != 0; }\n");
+    emit("int int_is_even(int n) { return n %% 2 == 0; }\n");
+    emit("int int_is_odd(int n) { return n %% 2 != 0; }\n");
     emit("int int_is_positive(int n) { return n > 0; }\n");
     emit("int int_is_negative(int n) { return n < 0; }\n");
     emit("int int_is_zero(int n) { return n == 0; }\n\n");
