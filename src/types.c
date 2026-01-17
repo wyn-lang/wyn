@@ -139,3 +139,208 @@ const char* lookup_method_return_type(const char* receiver_type, const char* met
     
     return NULL;  // Method not found
 }
+
+// Get receiver type string from Type for method dispatch
+const char* get_receiver_type_string(const Type* type) {
+    if (!type) return NULL;
+    
+    switch (type->kind) {
+        case TYPE_STRING: return "string";
+        case TYPE_INT: return "int";
+        case TYPE_FLOAT: return "float";
+        case TYPE_BOOL: return "bool";
+        case TYPE_ARRAY: return "array";
+        case TYPE_MAP: return "map";
+        case TYPE_OPTIONAL: return "option";
+        case TYPE_RESULT: return "result";
+        default: return NULL;
+    }
+}
+
+// Dispatch method call based on receiver type and method name
+// Returns true if method was found, false otherwise
+bool dispatch_method(const char* receiver_type, const char* method_name, int arg_count, MethodDispatch* out) {
+    if (!receiver_type || !method_name || !out) return false;
+    
+    // Default: needs_args = true (most methods need arguments)
+    out->needs_args = true;
+    
+    // Dispatch by receiver type first
+    if (strcmp(receiver_type, "string") == 0) {
+        // String methods
+        if (strcmp(method_name, "len") == 0 && arg_count == 0) {
+            out->c_function = "string_len"; return true;
+        }
+        if (strcmp(method_name, "is_empty") == 0 && arg_count == 0) {
+            out->c_function = "string_is_empty"; return true;
+        }
+        if (strcmp(method_name, "upper") == 0 && arg_count == 0) {
+            out->c_function = "string_upper"; return true;
+        }
+        if (strcmp(method_name, "lower") == 0 && arg_count == 0) {
+            out->c_function = "string_lower"; return true;
+        }
+        if (strcmp(method_name, "capitalize") == 0 && arg_count == 0) {
+            out->c_function = "string_capitalize"; return true;
+        }
+        if (strcmp(method_name, "reverse") == 0 && arg_count == 0) {
+            out->c_function = "string_reverse"; return true;
+        }
+        if (strcmp(method_name, "title") == 0 && arg_count == 0) {
+            out->c_function = "string_title"; return true;
+        }
+        if (strcmp(method_name, "trim_left") == 0 && arg_count == 0) {
+            out->c_function = "string_trim_left"; return true;
+        }
+        if (strcmp(method_name, "trim_right") == 0 && arg_count == 0) {
+            out->c_function = "string_trim_right"; return true;
+        }
+        if (strcmp(method_name, "contains") == 0 && arg_count == 1) {
+            out->c_function = "string_contains"; return true;
+        }
+        if (strcmp(method_name, "starts_with") == 0 && arg_count == 1) {
+            out->c_function = "string_starts_with"; return true;
+        }
+        if (strcmp(method_name, "ends_with") == 0 && arg_count == 1) {
+            out->c_function = "string_ends_with"; return true;
+        }
+        if (strcmp(method_name, "index_of") == 0 && arg_count == 1) {
+            out->c_function = "string_index_of"; return true;
+        }
+        if (strcmp(method_name, "replace") == 0 && arg_count == 2) {
+            out->c_function = "string_replace"; return true;
+        }
+        if (strcmp(method_name, "slice") == 0 && arg_count == 2) {
+            out->c_function = "string_slice"; return true;
+        }
+        if (strcmp(method_name, "repeat") == 0 && arg_count == 1) {
+            out->c_function = "string_repeat"; return true;
+        }
+        return false;
+    }
+    
+    if (strcmp(receiver_type, "int") == 0) {
+        // Integer methods
+        if (strcmp(method_name, "to_string") == 0 && arg_count == 0) {
+            out->c_function = "int_to_string"; return true;
+        }
+        if (strcmp(method_name, "to_float") == 0 && arg_count == 0) {
+            out->c_function = "int_to_float"; return true;
+        }
+        if (strcmp(method_name, "abs") == 0 && arg_count == 0) {
+            out->c_function = "int_abs"; return true;
+        }
+        if (strcmp(method_name, "pow") == 0 && arg_count == 1) {
+            out->c_function = "int_pow"; return true;
+        }
+        if (strcmp(method_name, "min") == 0 && arg_count == 1) {
+            out->c_function = "int_min"; return true;
+        }
+        if (strcmp(method_name, "max") == 0 && arg_count == 1) {
+            out->c_function = "int_max"; return true;
+        }
+        if (strcmp(method_name, "clamp") == 0 && arg_count == 2) {
+            out->c_function = "int_clamp"; return true;
+        }
+        if (strcmp(method_name, "is_even") == 0 && arg_count == 0) {
+            out->c_function = "int_is_even"; return true;
+        }
+        if (strcmp(method_name, "is_odd") == 0 && arg_count == 0) {
+            out->c_function = "int_is_odd"; return true;
+        }
+        if (strcmp(method_name, "is_positive") == 0 && arg_count == 0) {
+            out->c_function = "int_is_positive"; return true;
+        }
+        if (strcmp(method_name, "is_negative") == 0 && arg_count == 0) {
+            out->c_function = "int_is_negative"; return true;
+        }
+        if (strcmp(method_name, "is_zero") == 0 && arg_count == 0) {
+            out->c_function = "int_is_zero"; return true;
+        }
+        return false;
+    }
+    
+    if (strcmp(receiver_type, "float") == 0) {
+        // Float methods
+        if (strcmp(method_name, "to_string") == 0 && arg_count == 0) {
+            out->c_function = "float_to_string"; return true;
+        }
+        if (strcmp(method_name, "to_int") == 0 && arg_count == 0) {
+            out->c_function = "float_to_int"; return true;
+        }
+        if (strcmp(method_name, "round") == 0 && arg_count == 0) {
+            out->c_function = "float_round"; return true;
+        }
+        if (strcmp(method_name, "floor") == 0 && arg_count == 0) {
+            out->c_function = "float_floor"; return true;
+        }
+        if (strcmp(method_name, "ceil") == 0 && arg_count == 0) {
+            out->c_function = "float_ceil"; return true;
+        }
+        if (strcmp(method_name, "abs") == 0 && arg_count == 0) {
+            out->c_function = "float_abs"; return true;
+        }
+        if (strcmp(method_name, "pow") == 0 && arg_count == 1) {
+            out->c_function = "float_pow"; return true;
+        }
+        if (strcmp(method_name, "sqrt") == 0 && arg_count == 0) {
+            out->c_function = "float_sqrt"; return true;
+        }
+        if (strcmp(method_name, "min") == 0 && arg_count == 1) {
+            out->c_function = "float_min"; return true;
+        }
+        if (strcmp(method_name, "max") == 0 && arg_count == 1) {
+            out->c_function = "float_max"; return true;
+        }
+        if (strcmp(method_name, "clamp") == 0 && arg_count == 2) {
+            out->c_function = "float_clamp"; return true;
+        }
+        if (strcmp(method_name, "is_nan") == 0 && arg_count == 0) {
+            out->c_function = "float_is_nan"; return true;
+        }
+        if (strcmp(method_name, "is_infinite") == 0 && arg_count == 0) {
+            out->c_function = "float_is_infinite"; return true;
+        }
+        if (strcmp(method_name, "is_finite") == 0 && arg_count == 0) {
+            out->c_function = "float_is_finite"; return true;
+        }
+        if (strcmp(method_name, "is_positive") == 0 && arg_count == 0) {
+            out->c_function = "float_is_positive"; return true;
+        }
+        if (strcmp(method_name, "is_negative") == 0 && arg_count == 0) {
+            out->c_function = "float_is_negative"; return true;
+        }
+        if (strcmp(method_name, "sin") == 0 && arg_count == 0) {
+            out->c_function = "float_sin"; return true;
+        }
+        if (strcmp(method_name, "cos") == 0 && arg_count == 0) {
+            out->c_function = "float_cos"; return true;
+        }
+        if (strcmp(method_name, "tan") == 0 && arg_count == 0) {
+            out->c_function = "float_tan"; return true;
+        }
+        if (strcmp(method_name, "log") == 0 && arg_count == 0) {
+            out->c_function = "float_log"; return true;
+        }
+        if (strcmp(method_name, "exp") == 0 && arg_count == 0) {
+            out->c_function = "float_exp"; return true;
+        }
+        return false;
+    }
+    
+    if (strcmp(receiver_type, "array") == 0) {
+        // Array methods
+        if (strcmp(method_name, "len") == 0 && arg_count == 0) {
+            out->c_function = "array_len"; return true;
+        }
+        if (strcmp(method_name, "is_empty") == 0 && arg_count == 0) {
+            out->c_function = "array_is_empty"; return true;
+        }
+        if (strcmp(method_name, "contains") == 0 && arg_count == 1) {
+            out->c_function = "array_contains"; return true;
+        }
+        return false;
+    }
+    
+    return false;  // Method not found
+}

@@ -7,6 +7,7 @@
 typedef struct Expr Expr;
 typedef struct Stmt Stmt;
 typedef struct Pattern Pattern;  // T3.3.1: Pattern forward declaration
+typedef struct Type Type;  // Forward declare Type for method dispatch
 
 // Phase 1 Task 1.2: Method Signature Table
 typedef struct {
@@ -18,6 +19,17 @@ typedef struct {
 
 // Lookup method return type given receiver type and method name
 const char* lookup_method_return_type(const char* receiver_type, const char* method_name);
+
+// Get receiver type string from Type for method dispatch
+const char* get_receiver_type_string(const Type* type);
+
+// Dispatch method call based on receiver type and method name
+typedef struct {
+    const char* c_function;  // C function to call (e.g., "string_len")
+    bool needs_args;         // Whether to emit arguments
+} MethodDispatch;
+
+bool dispatch_method(const char* receiver_type, const char* method_name, int arg_count, MethodDispatch* out);
 
 // T1.5.2: LambdaExpr definition (moved from ast.h to break circular dependency)
 typedef struct LambdaExpr {
@@ -47,7 +59,7 @@ typedef enum {
     TYPE_GENERIC,   // T3.1.2: Generic type parameter
 } TypeKind;
 
-typedef struct Type Type;
+// Type already forward declared above
 
 typedef struct {
     Token name;

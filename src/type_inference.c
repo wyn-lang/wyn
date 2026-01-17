@@ -83,8 +83,15 @@ Type* wyn_infer_variable_type(Expr* init_expr, SymbolTable* scope) {
             // Infer from function call return type
             inferred_type = wyn_infer_call_return_type(init_expr, scope);
             break;
+        case EXPR_METHOD_CALL:
+            // Method calls have their type set by checker - use that
+            if (init_expr->expr_type) {
+                inferred_type = init_expr->expr_type;
+            }
+            break;
         default:
-            inferred_type = make_type(TYPE_INT); // Default fallback
+            // No inference - return NULL to use checked type
+            inferred_type = NULL;
             break;
     }
     

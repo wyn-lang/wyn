@@ -765,40 +765,40 @@ Type* check_expr(Expr* expr, SymbolTable* scope) {
                 check_expr(expr->method_call.args[i], scope);
             }
             
-            // Return proper types for string methods
-            Token method = expr->method_call.method;
-            Type* return_type = builtin_int;  // default
-            
-            if (method.length == 9 && memcmp(method.start, "substring", 9) == 0) {
-                return_type = builtin_string;
-            } else if (method.length == 5 && memcmp(method.start, "slice", 5) == 0) {
-                return_type = builtin_string;
-            } else if (method.length == 7 && memcmp(method.start, "indexOf", 7) == 0) {
-                return_type = builtin_int;
-            } else if (method.length == 5 && memcmp(method.start, "upper", 5) == 0) {
-                return_type = builtin_string;
-            } else if (method.length == 5 && memcmp(method.start, "lower", 5) == 0) {
-                return_type = builtin_string;
-            } else if (method.length == 4 && memcmp(method.start, "trim", 4) == 0) {
-                return_type = builtin_string;
-            } else if (method.length == 6 && memcmp(method.start, "repeat", 6) == 0) {
-                return_type = builtin_string;
-            } else if (method.length == 7 && memcmp(method.start, "reverse", 7) == 0) {
-                return_type = builtin_string;
-            } else if (method.length == 7 && memcmp(method.start, "replace", 7) == 0) {
-                return_type = builtin_string;
-            } else if (method.length == 8 && memcmp(method.start, "padStart", 8) == 0) {
-                return_type = builtin_string;
-            } else if (method.length == 6 && memcmp(method.start, "padEnd", 6) == 0) {
-                return_type = builtin_string;
-            } else if (method.length == 12 && memcmp(method.start, "removePrefix", 12) == 0) {
-                return_type = builtin_string;
-            } else if (method.length == 12 && memcmp(method.start, "removeSuffix", 12) == 0) {
-                return_type = builtin_string;
+            // Use method signature table for type inference (Phase 1)
+            const char* receiver_type = get_receiver_type_string(object_type);
+            if (receiver_type) {
+                Token method = expr->method_call.method;
+                char method_name[256];
+                int len = method.length < 255 ? method.length : 255;
+                memcpy(method_name, method.start, len);
+                method_name[len] = '\0';
+                
+                const char* return_type_str = lookup_method_return_type(receiver_type, method_name);
+                if (return_type_str) {
+                    // Map return type string to Type*
+                    if (strcmp(return_type_str, "string") == 0) {
+                        expr->expr_type = builtin_string;
+                        return builtin_string;
+                    } else if (strcmp(return_type_str, "int") == 0) {
+                        expr->expr_type = builtin_int;
+                        return builtin_int;
+                    } else if (strcmp(return_type_str, "float") == 0) {
+                        expr->expr_type = builtin_float;
+                        return builtin_float;
+                    } else if (strcmp(return_type_str, "bool") == 0) {
+                        expr->expr_type = builtin_bool;
+                        return builtin_bool;
+                    } else if (strcmp(return_type_str, "array") == 0) {
+                        expr->expr_type = builtin_array;
+                        return builtin_array;
+                    }
+                }
             }
             
-            expr->expr_type = return_type;
-            return return_type;
+            // Fallback to int
+            expr->expr_type = builtin_int;
+            return builtin_int;
         }
         case EXPR_ARRAY: {
             // Check array elements and ensure type consistency
