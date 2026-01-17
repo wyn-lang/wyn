@@ -313,6 +313,11 @@ static Expr* primary() {
     if (match(TOKEN_NONE)) {
         Expr* expr = alloc_expr();
         expr->type = EXPR_NONE;
+        // Allow optional parentheses: none or none()
+        if (check(TOKEN_LPAREN)) {
+            advance();  // consume '('
+            expect(TOKEN_RPAREN, "Expected ')' after none");
+        }
         return expr;
     }
     

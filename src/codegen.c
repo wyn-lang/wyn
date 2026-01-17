@@ -945,20 +945,9 @@ void codegen_expr(Expr* expr) {
             break;
         };
         case EXPR_SOME: {
-            // Generate type-specific Some constructor
+            // Generate Some constructor using generic some() function
             if (expr->option.value) {
-                // Infer type from the value expression
-                if (expr->option.value->type == EXPR_INT) {
-                    emit("some_int(");
-                } else if (expr->option.value->type == EXPR_FLOAT) {
-                    emit("some_float(");
-                } else if (expr->option.value->type == EXPR_STRING) {
-                    emit("some_string(");
-                } else if (expr->option.value->type == EXPR_BOOL) {
-                    emit("some_bool(");
-                } else {
-                    emit("some_int(");  // Default to int
-                }
+                emit("some(");
                 codegen_expr(expr->option.value);
                 emit(")");
             } else {
@@ -967,27 +956,29 @@ void codegen_expr(Expr* expr) {
             break;
         }
         case EXPR_NONE: {
-            // Generate type-specific None constructor
-            // For now, use generic none() - in full implementation, 
-            // this would be inferred from context
+            // Generate None constructor
             emit("wyn_none()");
             break;
         }
         case EXPR_OK: {
-            // TASK-026: Generate Ok value - just return the inner value directly
+            // Generate Ok value using ok_int() constructor
             if (expr->option.value) {
+                emit("ok_int(");
                 codegen_expr(expr->option.value);
+                emit(")");
             } else {
-                emit("0");  // ok() with no value returns 0
+                emit("ok_void()");
             }
             break;
         }
         case EXPR_ERR: {
-            // TASK-026: Generate Err value - return the error value directly
+            // Generate Err value using err_int() constructor
             if (expr->option.value) {
+                emit("err_int(");
                 codegen_expr(expr->option.value);
+                emit(")");
             } else {
-                emit("1");  // err() with no value returns 1
+                emit("err_int(0)");
             }
             break;
         }
@@ -2482,7 +2473,7 @@ void codegen_stmt(Stmt* stmt) {
             if (needs_arc_management) {
                 emit("({ ");
                 codegen_expr(stmt->var.init);
-                emit(" /* ARC retain for %.*s */ })", stmt->var.name.length, stmt->var.name.start);
+                emit("; /* ARC retain for %.*s */ })", stmt->var.name.length, stmt->var.name.start);
             } else {
                 codegen_expr(stmt->var.init);
             }

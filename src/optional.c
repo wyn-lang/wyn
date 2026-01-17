@@ -179,10 +179,9 @@ bool unwrap_bool(WynOptional* opt) {
 }
 
 // Convenience functions for codegen
-WynOptional* some(void* value) {
-    // This is a generic some() function that the old codegen calls
-    // We need to determine the type somehow - for now, assume int
-    return some_int(*(int*)value);
+WynOptional* some(int value) {
+    // Generic some() function for integers
+    return some_int(value);
 }
 
 WynOptional* none(void) {

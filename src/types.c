@@ -388,5 +388,39 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
         return false;
     }
     
+    if (strcmp(receiver_type, "option") == 0) {
+        // Option methods
+        if (strcmp(method_name, "is_some") == 0 && arg_count == 0) {
+            out->c_function = "wyn_optional_is_some"; return true;
+        }
+        if (strcmp(method_name, "is_none") == 0 && arg_count == 0) {
+            out->c_function = "wyn_optional_is_none"; return true;
+        }
+        if (strcmp(method_name, "unwrap") == 0 && arg_count == 0) {
+            out->c_function = "wyn_optional_unwrap"; return true;
+        }
+        if (strcmp(method_name, "unwrap_or") == 0 && arg_count == 1) {
+            out->c_function = "wyn_optional_unwrap_or"; return true;
+        }
+        return false;
+    }
+    
+    if (strcmp(receiver_type, "result") == 0) {
+        // Result methods
+        if (strcmp(method_name, "is_ok") == 0 && arg_count == 0) {
+            out->c_function = "wyn_result_is_ok"; return true;
+        }
+        if (strcmp(method_name, "is_err") == 0 && arg_count == 0) {
+            out->c_function = "wyn_result_is_err"; return true;
+        }
+        if (strcmp(method_name, "unwrap") == 0 && arg_count == 0) {
+            out->c_function = "wyn_result_unwrap"; return true;
+        }
+        if (strcmp(method_name, "unwrap_or") == 0 && arg_count == 1) {
+            out->c_function = "wyn_result_unwrap_or"; return true;
+        }
+        return false;
+    }
+    
     return false;  // Method not found
 }

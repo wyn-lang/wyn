@@ -1145,7 +1145,6 @@ Type* check_expr(Expr* expr, SymbolTable* scope) {
             expr->expr_type = result_type;
             return result_type;
         }
-        /*
         case EXPR_SOME: {
             // T2.5.1: Some(value) expression - creates optional type
             if (!expr->option.value) {
@@ -1172,7 +1171,27 @@ Type* check_expr(Expr* expr, SymbolTable* scope) {
             expr->expr_type = optional_type;
             return optional_type;
         }
-        */
+        case EXPR_UNARY: {
+            // Type-check unary expressions (!, -, etc.)
+            Type* operand_type = check_expr(expr->unary.operand, scope);
+            if (!operand_type) return NULL;
+            
+            // For boolean NOT (!), expect bool and return bool
+            if (expr->unary.op.type == TOKEN_BANG) {
+                expr->expr_type = builtin_bool;
+                return builtin_bool;
+            }
+            
+            // For numeric negation (-), return the operand type
+            if (expr->unary.op.type == TOKEN_MINUS) {
+                expr->expr_type = operand_type;
+                return operand_type;
+            }
+            
+            // Default: return operand type
+            expr->expr_type = operand_type;
+            return operand_type;
+        }
         default:
             return builtin_int;
     }

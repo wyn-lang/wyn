@@ -15,6 +15,10 @@ typedef struct {
 WynOptional* wyn_some(void* value, size_t size);
 WynOptional* wyn_none(void);
 
+// Generic constructors (for codegen convenience)
+WynOptional* some(int value);
+WynOptional* none(void);
+
 // Optional type operations
 bool wyn_optional_is_some(WynOptional* opt);
 bool wyn_optional_is_none(WynOptional* opt);
