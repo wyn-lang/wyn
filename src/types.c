@@ -203,6 +203,18 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
         if (strcmp(method_name, "split") == 0 && arg_count == 1) {
             out->c_function = "string_split"; return true;
         }
+        if (strcmp(method_name, "chars") == 0 && arg_count == 0) {
+            out->c_function = "string_chars"; return true;
+        }
+        if (strcmp(method_name, "to_bytes") == 0 && arg_count == 0) {
+            out->c_function = "string_to_bytes"; return true;
+        }
+        if (strcmp(method_name, "pad_left") == 0 && arg_count == 2) {
+            out->c_function = "string_pad_left"; return true;
+        }
+        if (strcmp(method_name, "pad_right") == 0 && arg_count == 2) {
+            out->c_function = "string_pad_right"; return true;
+        }
         if (strcmp(method_name, "contains") == 0 && arg_count == 1) {
             out->c_function = "string_contains"; return true;
         }

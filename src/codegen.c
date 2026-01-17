@@ -1571,6 +1571,46 @@ void codegen_c_header() {
     emit("    }\n");
     emit("    free(copy);\n");
     emit("    return arr;\n");
+    emit("}\n");
+    
+    emit("WynArray string_chars(const char* str) {\n");
+    emit("    WynArray arr = array_new();\n");
+    emit("    for (int i = 0; str[i] != '\\0'; i++) {\n");
+    emit("        char* ch = malloc(2);\n");
+    emit("        ch[0] = str[i];\n");
+    emit("        ch[1] = '\\0';\n");
+    emit("        array_push_str(&arr, ch);\n");
+    emit("    }\n");
+    emit("    return arr;\n");
+    emit("}\n");
+    
+    emit("WynArray string_to_bytes(const char* str) {\n");
+    emit("    WynArray arr = array_new();\n");
+    emit("    for (int i = 0; str[i] != '\\0'; i++) {\n");
+    emit("        array_push_int(&arr, (int)(unsigned char)str[i]);\n");
+    emit("    }\n");
+    emit("    return arr;\n");
+    emit("}\n");
+    
+    emit("char* string_pad_left(const char* str, int width, const char* pad) {\n");
+    emit("    int len = strlen(str);\n");
+    emit("    if (len >= width) return strdup(str);\n");
+    emit("    int pad_len = width - len;\n");
+    emit("    char* result = malloc(width + 1);\n");
+    emit("    for (int i = 0; i < pad_len; i++) result[i] = pad[0];\n");
+    emit("    strcpy(result + pad_len, str);\n");
+    emit("    return result;\n");
+    emit("}\n");
+    
+    emit("char* string_pad_right(const char* str, int width, const char* pad) {\n");
+    emit("    int len = strlen(str);\n");
+    emit("    if (len >= width) return strdup(str);\n");
+    emit("    int pad_len = width - len;\n");
+    emit("    char* result = malloc(width + 1);\n");
+    emit("    strcpy(result, str);\n");
+    emit("    for (int i = len; i < width; i++) result[i] = pad[0];\n");
+    emit("    result[width] = '\\0';\n");
+    emit("    return result;\n");
     emit("}\n\n");
     
     // Phase 3 Task 3.1: Integer methods (conversion methods already exist for interpolation)
