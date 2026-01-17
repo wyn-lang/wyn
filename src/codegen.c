@@ -949,7 +949,10 @@ void codegen_expr(Expr* expr) {
                                    (method.length == 8 && memcmp(method.start, "index_of", 8) == 0 && expr->method_call.arg_count == 1) ||
                                    (method.length == 7 && memcmp(method.start, "replace", 7) == 0 && expr->method_call.arg_count == 2) ||
                                    (method.length == 5 && memcmp(method.start, "slice", 5) == 0 && expr->method_call.arg_count == 2) ||
-                                   (method.length == 6 && memcmp(method.start, "repeat", 6) == 0 && expr->method_call.arg_count == 1);
+                                   (method.length == 6 && memcmp(method.start, "repeat", 6) == 0 && expr->method_call.arg_count == 1) ||
+                                   (method.length == 5 && memcmp(method.start, "title", 5) == 0 && expr->method_call.arg_count == 0) ||
+                                   (method.length == 9 && memcmp(method.start, "trim_left", 9) == 0 && expr->method_call.arg_count == 0) ||
+                                   (method.length == 10 && memcmp(method.start, "trim_right", 10) == 0 && expr->method_call.arg_count == 0);
             
             if (is_string_method) {
                 // Handle string methods
@@ -1046,6 +1049,18 @@ void codegen_expr(Expr* expr) {
                     codegen_expr(expr->method_call.object);
                     emit(", ");
                     codegen_expr(expr->method_call.args[0]);
+                    emit(")");
+                } else if (method.length == 5 && memcmp(method.start, "title", 5) == 0) {
+                    emit("string_title(");
+                    codegen_expr(expr->method_call.object);
+                    emit(")");
+                } else if (method.length == 9 && memcmp(method.start, "trim_left", 9) == 0) {
+                    emit("string_trim_left(");
+                    codegen_expr(expr->method_call.object);
+                    emit(")");
+                } else if (method.length == 10 && memcmp(method.start, "trim_right", 10) == 0) {
+                    emit("string_trim_right(");
+                    codegen_expr(expr->method_call.object);
                     emit(")");
                 }
             }
@@ -2450,6 +2465,39 @@ void codegen_c_header() {
     emit("    char* result = malloc(len * count + 1);\n");
     emit("    for (int i = 0; i < count; i++) memcpy(result + i * len, str, len);\n");
     emit("    result[len * count] = '\\0';\n");
+    emit("    return result;\n");
+    emit("}\n");
+    
+    emit("char* string_title(const char* str) {\n");
+    emit("    int len = strlen(str);\n");
+    emit("    char* result = malloc(len + 1);\n");
+    emit("    int capitalize_next = 1;\n");
+    emit("    for (int i = 0; i < len; i++) {\n");
+    emit("        if (str[i] == ' ' || str[i] == '\\t' || str[i] == '\\n') {\n");
+    emit("            result[i] = str[i];\n");
+    emit("            capitalize_next = 1;\n");
+    emit("        } else if (capitalize_next) {\n");
+    emit("            result[i] = toupper(str[i]);\n");
+    emit("            capitalize_next = 0;\n");
+    emit("        } else {\n");
+    emit("            result[i] = tolower(str[i]);\n");
+    emit("        }\n");
+    emit("    }\n");
+    emit("    result[len] = '\\0';\n");
+    emit("    return result;\n");
+    emit("}\n");
+    
+    emit("char* string_trim_left(const char* str) {\n");
+    emit("    while (*str == ' ' || *str == '\\t' || *str == '\\n') str++;\n");
+    emit("    return strdup(str);\n");
+    emit("}\n");
+    
+    emit("char* string_trim_right(const char* str) {\n");
+    emit("    int len = strlen(str);\n");
+    emit("    while (len > 0 && (str[len-1] == ' ' || str[len-1] == '\\t' || str[len-1] == '\\n')) len--;\n");
+    emit("    char* result = malloc(len + 1);\n");
+    emit("    memcpy(result, str, len);\n");
+    emit("    result[len] = '\\0';\n");
     emit("    return result;\n");
     emit("}\n\n");
     
