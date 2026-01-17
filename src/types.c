@@ -13,7 +13,6 @@ static const MethodSignature method_signatures[] = {
     {"string", "trim_right", "string", 0},
     {"string", "capitalize", "string", 0},
     {"string", "title", "string", 0},
-    {"string", "title", "string", 0},
     {"string", "reverse", "string", 0},
     {"string", "to_bytes", "array", 0},  // Returns Vec<int>
     {"string", "chars", "array", 0},     // Returns Vec<string>
