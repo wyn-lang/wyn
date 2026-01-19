@@ -472,8 +472,26 @@ static Expr* primary() {
         return expr;
     }
     
-    // v1.2.3: {} for HashMap literal
+    // v1.2.4: {} for HashMap, {:} for HashSet
     if (match(TOKEN_LBRACE)) {
+        // Check if next token is : followed by }
+        if (check(TOKEN_COLON)) {
+            Token colon = parser.current;
+            advance();  // consume :
+            if (check(TOKEN_RBRACE)) {
+                advance();  // consume }
+                // {:} is HashSet literal
+                Expr* expr = alloc_expr();
+                expr->type = EXPR_HASHSET_LITERAL;
+                expr->array.elements = NULL;
+                expr->array.count = 0;
+                return expr;
+            }
+            // Not {:}, backtrack - this will be an error
+            parser.current = colon;
+        }
+        
+        // Otherwise it's a HashMap
         Expr* expr = alloc_expr();
         expr->type = EXPR_HASHMAP_LITERAL;
         expr->array.elements = NULL;
