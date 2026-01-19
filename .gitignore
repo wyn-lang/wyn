@@ -15,6 +15,7 @@ wyn-macos
 # Build directories
 build/
 temp/
+.dev-scripts/
 
 # Test executables (but not test source files)
 tests/test_lexer
