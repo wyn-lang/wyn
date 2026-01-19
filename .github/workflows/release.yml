@@ -38,18 +38,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc-aarch64-linux-gnu
 
-      - name: Build
+      - name: Test (before cross-compile)
+        if: matrix.os != 'windows-latest'
         run: |
-          if [ "${{ matrix.arch }}" = "aarch64" ]; then
-            CC=aarch64-linux-gnu-gcc make wyn
-          else
-            make wyn
-          fi
-        shell: bash
-
-      - name: Test
-        if: matrix.os != 'windows-latest' && matrix.arch != 'aarch64'
-        run: |
+          # Build native binary for testing
+          make clean
+          make wyn
+          
           # Run module tests
           ./tests/module_tests/test_modules.sh
           ./tests/module_tests/test_module_system.sh
@@ -58,6 +53,16 @@ jobs:
           for f in examples/*.wyn; do
             ./wyn "$f" || exit 1
           done
+        shell: bash
+
+      - name: Build (cross-compile if needed)
+        run: |
+          make clean
+          if [ "${{ matrix.arch }}" = "aarch64" ]; then
+            CC=aarch64-linux-gnu-gcc make wyn
+          else
+            make wyn
+          fi
         shell: bash
 
       - name: Rename binary
