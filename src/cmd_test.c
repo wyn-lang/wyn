@@ -84,10 +84,11 @@ int cmd_test(const char* test_dir, int argc, char** argv) {
            results.total > 0 ? (100.0 * results.passed / results.total) : 0.0);
     printf("Failed:  %d\n", results.failed);
     printf("Time:    %.3fs\n", results.total_time);
-#endif
+    
     if (results.failed == 0) {
         printf("\n🎉 All tests passed!\n");
     }
     
     return results.failed > 0 ? 1 : 0;
+#endif
 }

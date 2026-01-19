@@ -143,11 +143,13 @@ int cmd_compile(const char* target, int argc, char** argv) {
         return compile_file_with_output(target, output_name);
     }
     
-    // Try as directory
+#ifndef _WIN32
+    // Try as directory (not supported on Windows)
     char* main_file = find_main_file(target);
     if (main_file) {
         return compile_file_with_output(main_file, output_name);
     }
+#endif
     
     fprintf(stderr, "Error: Could not find '%s' or main.wyn in directory\n", target);
     return 1;
