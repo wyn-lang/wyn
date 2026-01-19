@@ -274,8 +274,17 @@ int main(int argc, char** argv) {
         codegen_program(prog);
         fclose(out);
         
-        char compile_cmd[1024];
-        snprintf(compile_cmd, 1024, "gcc -I src -o %s/main %s/main.c src/wyn_wrapper.c src/wyn_interface.c src/io.c src/optional.c src/result.c src/arc_runtime.c src/concurrency.c src/async_runtime.c src/safe_memory.c src/error.c src/string_runtime.c src/hashmap.c src/hashset.c src/json.c -lm", dir, dir);
+        // Get WYN_ROOT or use current directory
+        char wyn_root[1024] = ".";
+        char* root_env = getenv("WYN_ROOT");
+        if (root_env) {
+            snprintf(wyn_root, sizeof(wyn_root), "%s", root_env);
+        }
+        
+        char compile_cmd[2048];
+        snprintf(compile_cmd, sizeof(compile_cmd), 
+                 "gcc -I %s/src -o %s/main %s/main.c %s/src/wyn_wrapper.c %s/src/wyn_interface.c %s/src/io.c %s/src/optional.c %s/src/result.c %s/src/arc_runtime.c %s/src/concurrency.c %s/src/async_runtime.c %s/src/safe_memory.c %s/src/error.c %s/src/string_runtime.c %s/src/hashmap.c %s/src/hashset.c %s/src/json.c -lm", 
+                 wyn_root, dir, dir, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root);
         int result = system(compile_cmd);
         
         if (result == 0) {
@@ -530,8 +539,17 @@ int main(int argc, char** argv) {
         codegen_program(prog);
         fclose(out);
         
-        char compile_cmd[512];
-        snprintf(compile_cmd, 512, "gcc -O2 -I src -o %s.out %s.c src/wyn_wrapper.c src/wyn_interface.c src/io.c src/optional.c src/result.c src/arc_runtime.c src/concurrency.c src/async_runtime.c src/safe_memory.c src/error.c src/string_runtime.c src/hashmap.c src/hashset.c src/json.c -lm", file, file);
+        // Get WYN_ROOT or use current directory
+        char wyn_root[1024] = ".";
+        char* root_env = getenv("WYN_ROOT");
+        if (root_env) {
+            snprintf(wyn_root, sizeof(wyn_root), "%s", root_env);
+        }
+        
+        char compile_cmd[2048];
+        snprintf(compile_cmd, sizeof(compile_cmd), 
+                 "gcc -O2 -I %s/src -o %s.out %s.c %s/src/wyn_wrapper.c %s/src/wyn_interface.c %s/src/io.c %s/src/optional.c %s/src/result.c %s/src/arc_runtime.c %s/src/concurrency.c %s/src/async_runtime.c %s/src/safe_memory.c %s/src/error.c %s/src/string_runtime.c %s/src/hashmap.c %s/src/hashset.c %s/src/json.c -lm", 
+                 wyn_root, file, file, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root);
         int result = system(compile_cmd);
         
         if (result != 0) {
@@ -635,7 +653,14 @@ int main(int argc, char** argv) {
     // Free AST
     free_program(prog);
     
-    char compile_cmd[512];
+    // Get WYN_ROOT or use current directory
+    char wyn_root[1024] = ".";
+    char* root_env = getenv("WYN_ROOT");
+    if (root_env) {
+        snprintf(wyn_root, sizeof(wyn_root), "%s", root_env);
+    }
+    
+    char compile_cmd[2048];
     const char* opt_flag = (optimization == OPT_O2) ? "-O2" : (optimization == OPT_O1) ? "-O1" : "-O0";
     char output_bin[256];
     if (output_name) {
@@ -643,7 +668,9 @@ int main(int argc, char** argv) {
     } else {
         snprintf(output_bin, 256, "%s.out", argv[file_arg_index]);
     }
-    snprintf(compile_cmd, 512, "gcc %s -I src -o %s %s.c src/wyn_wrapper.c src/wyn_interface.c src/io.c src/optional.c src/result.c src/arc_runtime.c src/concurrency.c src/async_runtime.c src/safe_memory.c src/error.c src/string_runtime.c src/hashmap.c src/hashset.c src/json.c -lm", opt_flag, output_bin, argv[file_arg_index]);
+    snprintf(compile_cmd, sizeof(compile_cmd), 
+             "gcc %s -I %s/src -o %s %s.c %s/src/wyn_wrapper.c %s/src/wyn_interface.c %s/src/io.c %s/src/optional.c %s/src/result.c %s/src/arc_runtime.c %s/src/concurrency.c %s/src/async_runtime.c %s/src/safe_memory.c %s/src/error.c %s/src/string_runtime.c %s/src/hashmap.c %s/src/hashset.c %s/src/json.c -lm", 
+             opt_flag, wyn_root, output_bin, argv[file_arg_index], wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root);
     int result = system(compile_cmd);
     
     // Check if output file was actually created
