@@ -2181,7 +2181,7 @@ Stmt* enum_decl() {
 }
 
 Stmt* type_alias() {
-    expect(TOKEN_TYPE, "Expected 'type'");
+    expect(TOKEN_TYPEDEF, "Expected 'type'");
     Stmt* stmt = alloc_stmt();
     stmt->type = STMT_TYPE_ALIAS;
     stmt->type_alias.name = parser.current;
@@ -2390,7 +2390,7 @@ Program* parse_program() {
             prog->stmts[prog->count++] = object_decl();
         } else if (check(TOKEN_ENUM)) {
             prog->stmts[prog->count++] = enum_decl();
-        } else if (check(TOKEN_TYPE)) {
+        } else if (check(TOKEN_TYPEDEF)) {
             prog->stmts[prog->count++] = type_alias();
         } else if (check(TOKEN_IMPL)) {
             prog->stmts[prog->count++] = impl_block();

@@ -44,7 +44,8 @@ void wyn_time_sleep_micros(int micros) {
 // Format: format timestamp as string (simple ISO format)
 char* wyn_time_format(long timestamp) {
     static char buffer[32];
-    struct tm* tm_info = localtime(&timestamp);
+    time_t t = (time_t)timestamp;
+    struct tm* tm_info = localtime(&t);
     strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", tm_info);
     return buffer;
 }
@@ -62,36 +63,42 @@ long wyn_time_parse(const char* str) {
 
 // Year: get year from timestamp
 int wyn_time_year(long timestamp) {
-    struct tm* tm_info = localtime(&timestamp);
+    time_t t = (time_t)timestamp;
+    struct tm* tm_info = localtime(&t);
     return tm_info->tm_year + 1900;
 }
 
 // Month: get month from timestamp (1-12)
 int wyn_time_month(long timestamp) {
-    struct tm* tm_info = localtime(&timestamp);
+    time_t t = (time_t)timestamp;
+    struct tm* tm_info = localtime(&t);
     return tm_info->tm_mon + 1;
 }
 
 // Day: get day from timestamp
 int wyn_time_day(long timestamp) {
-    struct tm* tm_info = localtime(&timestamp);
+    time_t t = (time_t)timestamp;
+    struct tm* tm_info = localtime(&t);
     return tm_info->tm_mday;
 }
 
 // Hour: get hour from timestamp
 int wyn_time_hour(long timestamp) {
-    struct tm* tm_info = localtime(&timestamp);
+    time_t t = (time_t)timestamp;
+    struct tm* tm_info = localtime(&t);
     return tm_info->tm_hour;
 }
 
 // Minute: get minute from timestamp
 int wyn_time_minute(long timestamp) {
-    struct tm* tm_info = localtime(&timestamp);
+    time_t t = (time_t)timestamp;
+    struct tm* tm_info = localtime(&t);
     return tm_info->tm_min;
 }
 
 // Second: get second from timestamp
 int wyn_time_second(long timestamp) {
-    struct tm* tm_info = localtime(&timestamp);
+    time_t t = (time_t)timestamp;
+    struct tm* tm_info = localtime(&t);
     return tm_info->tm_sec;
 }

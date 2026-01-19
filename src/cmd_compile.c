@@ -1,7 +1,10 @@
+#define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef _WIN32
 #include <dirent.h>
+#endif
 #include "common.h"
 #include "ast.h"
 #include "wyn_interface.h"

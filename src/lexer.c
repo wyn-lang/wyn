@@ -172,7 +172,7 @@ static TokenType keyword_type(const char* start, int length) {
             break;
         case 't':
             if (length == 4 && memcmp(start, "true", 4) == 0) return TOKEN_TRUE;
-            if (length == 4 && memcmp(start, "type", 4) == 0) return TOKEN_TYPE;
+            if (length == 4 && memcmp(start, "type", 4) == 0) return TOKEN_TYPEDEF;
             if (length == 4 && memcmp(start, "test", 4) == 0) return TOKEN_TEST;
             if (length == 3 && memcmp(start, "try", 3) == 0) return TOKEN_TRY;
             if (length == 5 && memcmp(start, "throw", 5) == 0) return TOKEN_THROW;
