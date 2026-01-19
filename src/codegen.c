@@ -195,17 +195,28 @@ void codegen_expr(Expr* expr) {
             emit("%.*s", expr->token.length, expr->token.start);
             break;
         case EXPR_STRING: {
+            // Check for multi-line string (""")
+            bool is_multiline = (expr->token.length >= 6 && 
+                                expr->token.start[0] == '"' && 
+                                expr->token.start[1] == '"' && 
+                                expr->token.start[2] == '"');
+            
+            int start_offset = is_multiline ? 3 : 1;
+            int end_offset = is_multiline ? 3 : 1;
+            
             // Emit string literal with proper C escape sequences
             emit("\"");
-            for (int i = 1; i < expr->token.length - 1; i++) {
+            for (int i = start_offset; i < expr->token.length - end_offset; i++) {
                 char c = expr->token.start[i];
-                if (c == '\\' && i + 1 < expr->token.length - 1) {
+                if (c == '\\' && i + 1 < expr->token.length - end_offset) {
                     char next = expr->token.start[i + 1];
                     // Emit escape sequences as-is for C
                     emit("\\%c", next);
                     i++;
                 } else if (c == '"') {
                     emit("\\\"");
+                } else if (c == '\n') {
+                    emit("\\n");
                 } else {
                     emit("%c", c);
                 }

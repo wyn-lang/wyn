@@ -681,12 +681,35 @@ static Expr* call() {
             expect(TOKEN_RPAREN, "Expected ')' after arguments");
             expr = call_expr;
         } else if (match(TOKEN_LBRACKET)) {
-            Expr* index_expr = alloc_expr();
-            index_expr->type = EXPR_INDEX;
-            index_expr->index.array = expr;
-            index_expr->index.index = expression();
-            expect(TOKEN_RBRACKET, "Expected ']' after index");
-            expr = index_expr;
+            // Check if this is a slice (arr[1..3]) or index (arr[1])
+            Expr* first_expr = expression();
+            
+            if (match(TOKEN_DOTDOT)) {
+                // It's a slice: arr[start..end]
+                Expr* end_expr = expression();
+                expect(TOKEN_RBRACKET, "Expected ']' after slice");
+                
+                // Convert to method call: arr.slice(start, end)
+                Expr* method_call = alloc_expr();
+                method_call->type = EXPR_METHOD_CALL;
+                method_call->method_call.object = expr;
+                method_call->method_call.method.start = "slice";
+                method_call->method_call.method.length = 5;
+                method_call->method_call.method.line = parser.previous.line;
+                method_call->method_call.arg_count = 2;
+                method_call->method_call.args = malloc(sizeof(Expr*) * 2);
+                method_call->method_call.args[0] = first_expr;
+                method_call->method_call.args[1] = end_expr;
+                expr = method_call;
+            } else {
+                // It's an index: arr[i]
+                expect(TOKEN_RBRACKET, "Expected ']' after index");
+                Expr* index_expr = alloc_expr();
+                index_expr->type = EXPR_INDEX;
+                index_expr->index.array = expr;
+                index_expr->index.index = first_expr;
+                expr = index_expr;
+            }
         } else if (match(TOKEN_DOT)) {
             // Check if this is tuple element access (tuple.0, tuple.1, etc.)
             if (check(TOKEN_INT)) {

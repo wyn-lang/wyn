@@ -39,17 +39,21 @@ wyn file.wyn -O1    # Basic optimizations
 wyn file.wyn -O2    # Advanced optimizations
 ```
 
-### 6. Array Slicing ✓ (already existed via .slice())
+### 7. Array/String Slicing ✓ (already existed via .slice())
 ```wyn
 var arr = [1, 2, 3, 4, 5]
 var sub = arr.slice(1, 3)  // [2, 3]
+var sub2 = arr[1..3]       // Syntax sugar for arr.slice(1, 3)
 ```
 
-### 7. String Slicing ✓ (already existed via .slice())
+### 8. Multi-line Strings ✓
 ```wyn
-var s = "hello"
-var sub = s.slice(0, 2)  // "he"
+var text = """
+    Line 1
+    Line 2
+"""
 ```
+Status: Implemented! Lexer already supported """, added codegen support.
 
 ## Future Features (v1.2+)
 
@@ -60,14 +64,18 @@ var text = """
     Line 2
 """
 ```
-Status: Not yet implemented. Requires lexer changes for """ tokens.
+Status: ✓ IMPLEMENTED in v1.1.0
 
 ### Array/String Slice Syntax
 ```wyn
 var arr = [1, 2, 3, 4, 5]
 var sub = arr[1..3]  // Syntax sugar for arr.slice(1, 3)
 ```
-Status: Not yet implemented. Would require parser changes.
+Status: ✓ IMPLEMENTED in v1.1.0
+
+### Traits (Not Essential)
+Traits are nice-to-have but not essential. Languages like C and Zig don't have them.
+Can be added in v1.2+ if needed.
 
 ## Testing
 

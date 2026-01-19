@@ -105,14 +105,24 @@ test_feature "String slicing" \
 'fn main() -> int { var s = "hello"; var sub = s.slice(0, 2); return sub.len() }' \
 2
 
-# Test 11: Multi-line strings (TODO: not yet implemented)
-# test_feature "Multi-line strings" \
-# 'fn main() -> int { 
-#     var s = """line1
-# line2"""; 
-#     return s.len() 
-# }' \
-# 11
+# Test 11: Multi-line strings
+test_feature "Multi-line strings" \
+'fn main() -> int { 
+    var s = """hello
+world"""
+    return s.len() 
+}' \
+11
+
+# Test 12: Array slice syntax
+test_feature "Array slice syntax" \
+"fn main() -> int { var arr = [10, 20, 30, 40, 50]; var s = arr[1..3]; return s.len() }" \
+2
+
+# Test 13: String slice syntax
+test_feature "String slice syntax" \
+'fn main() -> int { var s = "hello"; var sub = s[0..2]; return sub.len() }' \
+2
 
 echo ""
 echo "=== Results ==="
