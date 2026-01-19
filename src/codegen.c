@@ -14,6 +14,8 @@
 #include "hashmap.h"
 #include "hashset.h"
 #include "json.h"
+#include "module_registry.h"
+#include "module_aliases.h"
 
 // Forward declarations
 void codegen_stmt(Stmt* stmt);
@@ -818,21 +820,7 @@ void codegen_expr(Expr* expr) {
         case EXPR_METHOD_CALL: {
             Token method = expr->method_call.method;
             
-            // Module method calls (module.function())
-            if (expr->method_call.object->type == EXPR_IDENT) {
-                Token obj_name = expr->method_call.object->token;
-                // Check if this is a module call (any identifier followed by method)
-                // Emit as: modulename_methodname(args)
-                emit("%.*s_%.*s(", obj_name.length, obj_name.start, method.length, method.start);
-                for (int i = 0; i < expr->method_call.arg_count; i++) {
-                    if (i > 0) emit(", ");
-                    codegen_expr(expr->method_call.args[i]);
-                }
-                emit(")");
-                break;
-            }
-            
-            // Extension methods on struct types
+            // Extension methods on struct types - CHECK THIS FIRST
             if (expr->method_call.object->expr_type && 
                 expr->method_call.object->expr_type->kind == TYPE_STRUCT) {
                 Token type_name = expr->method_call.object->expr_type->struct_type.name;
@@ -845,6 +833,28 @@ void codegen_expr(Expr* expr) {
                 }
                 emit(")");
                 break;
+            }
+            
+            // Module method calls (module.function()) - CHECK THIS SECOND
+            if (expr->method_call.object->type == EXPR_IDENT) {
+                Token obj_name = expr->method_call.object->token;
+                // Check if this is actually a module (not a variable)
+                char module_name[256];
+                int len = obj_name.length < 255 ? obj_name.length : 255;
+                memcpy(module_name, obj_name.start, len);
+                module_name[len] = '\0';
+                
+                // Only treat as module if it's actually loaded
+                if (is_module_loaded(module_name)) {
+                    // Emit as: modulename_methodname(args)
+                    emit("%.*s_%.*s(", obj_name.length, obj_name.start, method.length, method.start);
+                    for (int i = 0; i < expr->method_call.arg_count; i++) {
+                        if (i > 0) emit(", ");
+                        codegen_expr(expr->method_call.args[i]);
+                    }
+                    emit(")");
+                    break;
+                }
             }
             
             // Type-aware method dispatch (Phase 4)
