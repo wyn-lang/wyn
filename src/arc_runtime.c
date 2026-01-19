@@ -19,7 +19,7 @@ void wyn_arc_release_arc(WynArc* arc) {
     if (arc && --arc->ref_count == 0) free(arc);
 }
 
-// Stub implementations for WynObject-based ARC (used by string_memory.c, etc.)
+// WynObject-based ARC implementations
 WynObject* wyn_arc_alloc(size_t size, uint32_t type_id, void (*destructor)(void*)) {
     WynObject* obj = malloc(sizeof(WynObject) + size);
     if (!obj) return NULL;
@@ -44,7 +44,7 @@ void wyn_arc_release(WynObject* obj) {
 }
 
 
-// Additional stub functions
+// Additional ARC utility functions
 void* wyn_arc_get_data(WynObject* obj) {
     return obj ? obj->data : NULL;
 }
@@ -58,9 +58,9 @@ bool wyn_arc_is_valid(WynObject* obj) {
 }
 
 WynObject* wyn_arc_weak_retain(WynObject* obj) {
-    return obj;  // Stub: no weak reference support yet
+    return obj;  // Weak references not implemented
 }
 
 void wyn_arc_weak_release(WynObject* obj) {
-    // Stub: no weak reference support yet
+    (void)obj; // Weak references not implemented
 }

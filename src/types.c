@@ -30,7 +30,11 @@ static const MethodSignature method_signatures[] = {
     {"string", "repeat", "string", 1},
     {"string", "pad_left", "string", 2},
     {"string", "pad_right", "string", 2},
+    {"string", "lines", "array", 0},     // Returns Vec<string>
+    {"string", "words", "array", 0},     // Returns Vec<string>
     {"string", "concat", "string", 1},
+    {"string", "replace_all", "string", 2},  // replace_all(old, new)
+    {"string", "last_index_of", "int", 1},   // Returns -1 if not found
     
     // Int methods
     {"int", "to_string", "string", 0},
@@ -45,6 +49,7 @@ static const MethodSignature method_signatures[] = {
     {"int", "is_positive", "bool", 0},
     {"int", "is_negative", "bool", 0},
     {"int", "is_zero", "bool", 0},
+    {"int", "sign", "int", 0},  // Returns -1, 0, or 1
     
     // Float methods
     {"float", "to_string", "string", 0},
@@ -74,6 +79,7 @@ static const MethodSignature method_signatures[] = {
     {"float", "log10", "float", 0},
     {"float", "log2", "float", 0},
     {"float", "exp", "float", 0},
+    {"float", "sign", "float", 0},  // Returns -1.0, 0.0, or 1.0
     
     // Bool methods
     {"bool", "to_string", "string", 0},
@@ -89,6 +95,23 @@ static const MethodSignature method_signatures[] = {
     {"array", "index_of", "int", 1},
     {"array", "reverse", "void", 0},   // Mutates in place
     {"array", "sort", "void", 0},      // Mutates in place
+    {"array", "first", "optional", 0},   // Returns Option<T>
+    {"array", "last", "optional", 0},    // Returns Option<T>
+    {"array", "take", "array", 1},     // Returns new array with first n elements
+    {"array", "skip", "array", 1},     // Returns new array skipping first n elements
+    {"array", "slice", "array", 2},    // Returns new array from start to end
+    {"array", "concat", "array", 1},   // Returns new array concatenated with other
+    {"array", "map", "array", 1},       // Higher-order: map(fn) -> array
+    {"array", "filter", "array", 1},    // Higher-order: filter(fn) -> array
+    {"array", "reduce", "int", 2},      // Higher-order: reduce(fn, initial) -> T
+    {"array", "find", "optional", 1},   // find(fn) -> Option<T>
+    {"array", "find_index", "int", 1},  // find_index(fn) -> int (-1 if not found)
+    {"array", "any", "bool", 1},        // any(fn) -> bool
+    {"array", "all", "bool", 1},        // all(fn) -> bool
+    {"array", "partition", "array", 1}, // partition(fn) -> [array, array]
+    {"array", "zip", "array", 1},       // zip(other) -> array of pairs
+    {"array", "flatten", "array", 0},   // flatten() -> array
+    {"array", "unique", "array", 0},    // unique() -> array
     
     // HashMap methods
     {"map", "insert", "void", 2},
@@ -100,6 +123,13 @@ static const MethodSignature method_signatures[] = {
     {"map", "keys", "array", 0},
     {"map", "values", "array", 0},
     {"map", "clear", "void", 0},
+    {"map", "get_or_default", "int", 2},  // Returns value or default
+    {"map", "update", "void", 2},         // Update value with function (defer - needs lambdas)
+    {"map", "merge", "void", 1},          // Merge with another map
+    {"map", "entries", "array", 0},       // Returns array of [key, value] pairs
+    {"map", "for_each", "void", 1},       // for_each(fn) - iterate with function
+    {"map", "filter_keys", "map", 1},     // filter_keys(fn) -> map
+    {"map", "map_values", "map", 1},      // map_values(fn) -> map
     
     // HashSet methods
     {"set", "insert", "void", 1},
@@ -108,18 +138,40 @@ static const MethodSignature method_signatures[] = {
     {"set", "len", "int", 0},
     {"set", "is_empty", "bool", 0},
     {"set", "clear", "void", 0},
+    {"set", "union", "set", 1},
+    {"set", "intersection", "set", 1},
+    {"set", "difference", "set", 1},
+    {"set", "is_subset", "bool", 1},
+    {"set", "is_superset", "bool", 1},
+    {"set", "is_disjoint", "bool", 1},
+    {"set", "symmetric_difference", "set", 1},  // Elements in either but not both
+    {"set", "to_array", "array", 0},            // Convert to array
+    {"set", "from_array", "set", 1},            // Create from array
+    {"set", "filter", "set", 1},                // filter(fn) -> set
+    {"set", "map", "set", 1},                   // map(fn) -> set
+    {"set", "for_each", "void", 1},             // for_each(fn)
     
     // Option methods
     {"option", "is_some", "bool", 0},
     {"option", "is_none", "bool", 0},
     {"option", "unwrap", "int", 0},    // Type depends on Option<T>
     {"option", "unwrap_or", "int", 1}, // Type depends on Option<T>
+    {"option", "expect", "int", 1},    // expect(msg: string) -> T
+    {"option", "or_else", "option", 1}, // or_else(fn: () -> Option<T>) -> Option<T>
+    {"option", "map", "option", 1},    // Higher-order: map(fn) -> Option<U>
+    {"option", "and_then", "option", 1}, // Higher-order: and_then(fn) -> Option<U>
+    {"option", "filter", "option", 1}, // Higher-order: filter(fn) -> Option<T>
     
     // Result methods
     {"result", "is_ok", "bool", 0},
     {"result", "is_err", "bool", 0},
     {"result", "unwrap", "int", 0},    // Type depends on Result<T,E>
     {"result", "unwrap_or", "int", 1}, // Type depends on Result<T,E>
+    {"result", "expect", "int", 1},    // expect(msg: string) -> T
+    {"result", "map_err", "result", 1}, // map_err(fn: E -> F) -> Result<T,F>
+    {"result", "or_else", "result", 1}, // or_else(fn: E -> Result<T,F>) -> Result<T,F>
+    {"result", "map", "result", 1},    // Higher-order: map(fn) -> Result<U,E>
+    {"result", "and_then", "result", 1}, // Higher-order: and_then(fn) -> Result<U,E>
     
     // Sentinel - marks end of table
     {NULL, NULL, NULL, 0}
@@ -235,6 +287,18 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
         }
         if (strcmp(method_name, "repeat") == 0 && arg_count == 1) {
             out->c_function = "string_repeat"; return true;
+        }
+        if (strcmp(method_name, "lines") == 0 && arg_count == 0) {
+            out->c_function = "string_lines"; return true;
+        }
+        if (strcmp(method_name, "words") == 0 && arg_count == 0) {
+            out->c_function = "string_words"; return true;
+        }
+        if (strcmp(method_name, "replace_all") == 0 && arg_count == 2) {
+            out->c_function = "string_replace_all"; return true;
+        }
+        if (strcmp(method_name, "last_index_of") == 0 && arg_count == 1) {
+            out->c_function = "string_last_index_of"; return true;
         }
         return false;
     }
@@ -385,6 +449,120 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
             out->pass_by_ref = true;
             return true;
         }
+        if (strcmp(method_name, "first") == 0 && arg_count == 0) {
+            out->c_function = "array_first"; return true;
+        }
+        if (strcmp(method_name, "last") == 0 && arg_count == 0) {
+            out->c_function = "array_last"; return true;
+        }
+        if (strcmp(method_name, "take") == 0 && arg_count == 1) {
+            out->c_function = "array_take"; return true;
+        }
+        if (strcmp(method_name, "skip") == 0 && arg_count == 1) {
+            out->c_function = "array_skip"; return true;
+        }
+        if (strcmp(method_name, "slice") == 0 && arg_count == 2) {
+            out->c_function = "array_slice"; return true;
+        }
+        if (strcmp(method_name, "concat") == 0 && arg_count == 1) {
+            out->c_function = "array_concat"; return true;
+        }
+        if (strcmp(method_name, "map") == 0 && arg_count == 1) {
+            out->c_function = "wyn_array_map"; return true;
+        }
+        if (strcmp(method_name, "filter") == 0 && arg_count == 1) {
+            out->c_function = "wyn_array_filter"; return true;
+        }
+        if (strcmp(method_name, "reduce") == 0 && arg_count == 2) {
+            out->c_function = "wyn_array_reduce"; return true;
+        }
+        return false;
+    }
+    
+    if (strcmp(receiver_type, "map") == 0) {
+        // Map methods
+        if (strcmp(method_name, "insert") == 0 && arg_count == 2) {
+            out->c_function = "map_set";
+            out->pass_by_ref = true;
+            return true;
+        }
+        if (strcmp(method_name, "get") == 0 && arg_count == 1) {
+            out->c_function = "map_get"; return true;
+        }
+        if (strcmp(method_name, "remove") == 0 && arg_count == 1) {
+            out->c_function = "map_remove";
+            out->pass_by_ref = true;
+            return true;
+        }
+        if (strcmp(method_name, "contains") == 0 && arg_count == 1) {
+            out->c_function = "map_has"; return true;
+        }
+        if (strcmp(method_name, "len") == 0 && arg_count == 0) {
+            out->c_function = "map_len"; return true;
+        }
+        if (strcmp(method_name, "is_empty") == 0 && arg_count == 0) {
+            out->c_function = "map_is_empty"; return true;
+        }
+        if (strcmp(method_name, "clear") == 0 && arg_count == 0) {
+            out->c_function = "map_clear";
+            out->pass_by_ref = true;
+            return true;
+        }
+        if (strcmp(method_name, "get_or_default") == 0 && arg_count == 2) {
+            out->c_function = "map_get_or_default"; return true;
+        }
+        if (strcmp(method_name, "merge") == 0 && arg_count == 1) {
+            out->c_function = "map_merge";
+            out->pass_by_ref = true;
+            return true;
+        }
+        return false;
+    }
+    
+    if (strcmp(receiver_type, "set") == 0) {
+        // HashSet methods
+        if (strcmp(method_name, "insert") == 0 && arg_count == 1) {
+            out->c_function = "set_insert";
+            out->pass_by_ref = true;
+            return true;
+        }
+        if (strcmp(method_name, "contains") == 0 && arg_count == 1) {
+            out->c_function = "set_contains"; return true;
+        }
+        if (strcmp(method_name, "remove") == 0 && arg_count == 1) {
+            out->c_function = "set_remove";
+            out->pass_by_ref = true;
+            return true;
+        }
+        if (strcmp(method_name, "len") == 0 && arg_count == 0) {
+            out->c_function = "set_len"; return true;
+        }
+        if (strcmp(method_name, "is_empty") == 0 && arg_count == 0) {
+            out->c_function = "set_is_empty"; return true;
+        }
+        if (strcmp(method_name, "clear") == 0 && arg_count == 0) {
+            out->c_function = "set_clear";
+            out->pass_by_ref = true;
+            return true;
+        }
+        if (strcmp(method_name, "union") == 0 && arg_count == 1) {
+            out->c_function = "set_union"; return true;
+        }
+        if (strcmp(method_name, "intersection") == 0 && arg_count == 1) {
+            out->c_function = "set_intersection"; return true;
+        }
+        if (strcmp(method_name, "difference") == 0 && arg_count == 1) {
+            out->c_function = "set_difference"; return true;
+        }
+        if (strcmp(method_name, "is_subset") == 0 && arg_count == 1) {
+            out->c_function = "set_is_subset"; return true;
+        }
+        if (strcmp(method_name, "is_superset") == 0 && arg_count == 1) {
+            out->c_function = "set_is_superset"; return true;
+        }
+        if (strcmp(method_name, "is_disjoint") == 0 && arg_count == 1) {
+            out->c_function = "set_is_disjoint"; return true;
+        }
         return false;
     }
     
@@ -402,6 +580,21 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
         if (strcmp(method_name, "unwrap_or") == 0 && arg_count == 1) {
             out->c_function = "wyn_optional_unwrap_or"; return true;
         }
+        if (strcmp(method_name, "expect") == 0 && arg_count == 1) {
+            out->c_function = "wyn_optional_expect"; return true;
+        }
+        if (strcmp(method_name, "or_else") == 0 && arg_count == 1) {
+            out->c_function = "wyn_optional_or_else"; return true;
+        }
+        if (strcmp(method_name, "map") == 0 && arg_count == 1) {
+            out->c_function = "wyn_optional_map"; return true;
+        }
+        if (strcmp(method_name, "and_then") == 0 && arg_count == 1) {
+            out->c_function = "wyn_optional_and_then"; return true;
+        }
+        if (strcmp(method_name, "filter") == 0 && arg_count == 1) {
+            out->c_function = "wyn_optional_filter"; return true;
+        }
         return false;
     }
     
@@ -418,6 +611,21 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
         }
         if (strcmp(method_name, "unwrap_or") == 0 && arg_count == 1) {
             out->c_function = "wyn_result_unwrap_or"; return true;
+        }
+        if (strcmp(method_name, "expect") == 0 && arg_count == 1) {
+            out->c_function = "wyn_result_expect"; return true;
+        }
+        if (strcmp(method_name, "map_err") == 0 && arg_count == 1) {
+            out->c_function = "wyn_result_map_err"; return true;
+        }
+        if (strcmp(method_name, "or_else") == 0 && arg_count == 1) {
+            out->c_function = "wyn_result_or_else"; return true;
+        }
+        if (strcmp(method_name, "map") == 0 && arg_count == 1) {
+            out->c_function = "wyn_result_map"; return true;
+        }
+        if (strcmp(method_name, "and_then") == 0 && arg_count == 1) {
+            out->c_function = "wyn_result_and_then"; return true;
         }
         return false;
     }

@@ -18,6 +18,7 @@ Type* wyn_instantiate_generic_function(const char* name, Type** type_args, int a
 bool wyn_is_generic_function_call(Token function_name);
 Type* wyn_infer_generic_call_type(Token function_name, Expr** args, int arg_count);
 void wyn_register_generic_instantiation(Token func_name, Type** type_args, int type_arg_count);
+void wyn_register_generic_struct_instantiation(Token struct_name, Type** type_args, int type_arg_count);
 bool wyn_types_equal(Type* a, Type* b);
 void wyn_generate_monomorphic_instances(void);
 GenericInstantiation* wyn_get_instantiations(void);

@@ -198,6 +198,38 @@ int unwrap_result_int(WynResult* result) {
     return *(int*)value;
 }
 
+// Task 3.6: Additional Result combinators
+void* wyn_result_expect(WynResult* result, const char* message) {
+    if (!result || !result->is_ok) {
+        fprintf(stderr, "Error: %s\n", message ? message : "Expected Ok value, got Err");
+        if (result && result->error) {
+            fprintf(stderr, "Error details: %s\n", (char*)result->error);
+        }
+        exit(1);
+    }
+    return result->value;
+}
+
+WynResult* wyn_result_map_err(WynResult* result, WynResult* (*error_fn)(void*)) {
+    if (!result) {
+        return wyn_err("Null result", 12);
+    }
+    
+    if (result->is_ok) {
+        return result; // Return Ok value unchanged
+    }
+    
+    // Apply error transformation function
+    return error_fn ? error_fn(result->error) : result;
+}
+
+WynResult* wyn_result_or_else(WynResult* result, WynResult* (*fallback_fn)(void*)) {
+    if (!result || !result->is_ok) {
+        return fallback_fn ? fallback_fn(result ? result->error : NULL) : result;
+    }
+    return result; // Return Ok value unchanged
+}
+
 float unwrap_result_float(WynResult* result) {
     void* value = wyn_result_unwrap(result);
     return *(float*)value;
@@ -244,18 +276,6 @@ WynResult* wyn_result_map(WynResult* result, void* (*map_fn)(void*), size_t new_
     } else {
         // Return the same error
         return wyn_err(result->error, result->error_size);
-    }
-}
-
-WynResult* wyn_result_map_err(WynResult* result, void* (*map_fn)(void*), size_t new_size) {
-    if (!result) return wyn_err("Null result", 12);
-    
-    if (!result->is_ok) {
-        void* new_error = map_fn(result->error);
-        return wyn_err(new_error, new_size);
-    } else {
-        // Return the same Ok value
-        return wyn_ok(result->value, result->value_size);
     }
 }
 

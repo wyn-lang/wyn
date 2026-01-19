@@ -550,6 +550,79 @@ static Expr* primary() {
         return lambda_expr;
     }
 
+    // TASK-7.1: Lambda expression parsing fn(x) => x * 2
+    if (match(TOKEN_FN)) {
+        Expr* lambda_expr = alloc_expr();
+        lambda_expr->type = EXPR_LAMBDA;
+        
+        expect(TOKEN_LPAREN, "Expected '(' after 'fn'");
+        
+        // Parse parameters
+        lambda_expr->lambda.param_count = 0;
+        lambda_expr->lambda.params = malloc(sizeof(Token) * 8);
+        
+        if (!check(TOKEN_RPAREN)) {
+            do {
+                expect(TOKEN_IDENT, "Expected parameter name");
+                lambda_expr->lambda.params[lambda_expr->lambda.param_count++] = parser.previous;
+                
+                // Parse optional type annotation
+                if (match(TOKEN_COLON)) {
+                    // Skip type annotation for now (simplified)
+                    if (check(TOKEN_IDENT)) {
+                        advance(); // Skip type name
+                    }
+                }
+            } while (match(TOKEN_COMMA));
+        }
+        
+        expect(TOKEN_RPAREN, "Expected ')' after lambda parameters");
+        
+        // Parse optional return type annotation
+        if (match(TOKEN_ARROW)) {
+            // Skip return type annotation for now (simplified)
+            if (check(TOKEN_IDENT)) {
+                advance();
+            }
+        }
+        
+        expect(TOKEN_FATARROW, "Expected '=>' after lambda signature");
+        
+        // Parse body - can be expression or block
+        if (check(TOKEN_LBRACE)) {
+            // Block body: { var y = x * 2; return y + 1; }
+            advance(); // consume '{'
+            
+            // For now, skip all statements until we find a return or reach the end
+            // This is a simplified implementation for Task 7.1
+            while (!check(TOKEN_RBRACE) && !check(TOKEN_EOF)) {
+                if (match(TOKEN_RETURN)) {
+                    lambda_expr->lambda.body = expression();
+                    expect(TOKEN_SEMI, "Expected ';' after return expression");
+                    break;
+                } else {
+                    // Skip other statements for now
+                    while (!check(TOKEN_SEMI) && !check(TOKEN_RBRACE) && !check(TOKEN_EOF)) {
+                        advance();
+                    }
+                    if (check(TOKEN_SEMI)) advance();
+                }
+            }
+            
+            expect(TOKEN_RBRACE, "Expected '}' after lambda block body");
+        } else {
+            // Expression body: x * 2
+            lambda_expr->lambda.body = expression();
+        }
+        
+        // Initialize capture fields (will be filled by capture analysis)
+        lambda_expr->lambda.captured_vars = NULL;
+        lambda_expr->lambda.captured_count = 0;
+        lambda_expr->lambda.capture_by_move = NULL;
+        
+        return lambda_expr;
+    }
+
     if (match(TOKEN_LPAREN)) {
         // Check if this is a tuple (has comma) or just grouped expression
         Expr* first_expr = expression();
@@ -777,6 +850,18 @@ static Expr* logical_or() {
     Expr* expr = logical_and();
     
     while (match(TOKEN_OR) || match(TOKEN_PIPEPIPE)) {
+        Token op = parser.previous;
+        Expr* right = logical_and();
+        Expr* binary = alloc_expr();
+        binary->type = EXPR_BINARY;
+        binary->binary.left = expr;
+        binary->binary.op = op;
+        binary->binary.right = right;
+        expr = binary;
+    }
+    
+    // Nil coalescing operator ??
+    while (match(TOKEN_QUESTION_QUESTION)) {
         Token op = parser.previous;
         Expr* right = logical_and();
         Expr* binary = alloc_expr();
@@ -1591,27 +1676,168 @@ Stmt* struct_decl() {
     stmt->struct_decl.fields = malloc(sizeof(Token) * 32);
     stmt->struct_decl.field_types = malloc(sizeof(Expr*) * 32);
     stmt->struct_decl.field_arc_managed = malloc(sizeof(bool) * 32); // T2.5.3: ARC integration
+    stmt->struct_decl.method_count = 0;
+    stmt->struct_decl.methods = malloc(sizeof(FnStmt*) * 32);
     
     while (!check(TOKEN_RBRACE) && !check(TOKEN_EOF)) {
-        stmt->struct_decl.fields[stmt->struct_decl.field_count] = parser.current;
-        expect(TOKEN_IDENT, "Expected field name");
-        expect(TOKEN_COLON, "Expected ':' after field name");
-        stmt->struct_decl.field_types[stmt->struct_decl.field_count] = parse_type(); // Use parse_type for union/optional support
-        
-        // T2.5.3: Determine if field needs ARC management
-        // For now, disable ARC management for struct fields to keep things simple
-        bool needs_arc = false;
-        stmt->struct_decl.field_arc_managed[stmt->struct_decl.field_count] = needs_arc;
-        
-        stmt->struct_decl.field_count++;
-        
-        // Handle optional comma between fields
-        if (!check(TOKEN_RBRACE)) {
-            match(TOKEN_COMMA); // Optional comma
+        // Check if this is a method (fn keyword) or a field
+        if (match(TOKEN_FN)) {
+            // Parse method
+            FnStmt* method = malloc(sizeof(FnStmt));
+            method->name = parser.current;
+            expect(TOKEN_IDENT, "Expected method name");
+            
+            expect(TOKEN_LPAREN, "Expected '(' after method name");
+            method->param_count = 0;
+            method->params = malloc(sizeof(Token) * 16);
+            method->param_types = malloc(sizeof(Expr*) * 16);
+            
+            if (!check(TOKEN_RPAREN)) {
+                do {
+                    method->params[method->param_count] = parser.current;
+                    expect(TOKEN_IDENT, "Expected parameter name");
+                    expect(TOKEN_COLON, "Expected ':' after parameter");
+                    method->param_types[method->param_count] = parse_type();
+                    method->param_count++;
+                } while (match(TOKEN_COMMA));
+            }
+            expect(TOKEN_RPAREN, "Expected ')' after parameters");
+            
+            // Return type
+            if (match(TOKEN_ARROW)) {
+                method->return_type = parse_type();
+            } else {
+                method->return_type = NULL;
+            }
+            
+            // Method body
+            expect(TOKEN_LBRACE, "Expected '{' before method body");
+            Stmt* body = alloc_stmt();
+            body->type = STMT_BLOCK;
+            body->block.count = 0;
+            body->block.stmts = malloc(sizeof(Stmt*) * 64);
+            
+            while (!check(TOKEN_RBRACE) && !check(TOKEN_EOF)) {
+                body->block.stmts[body->block.count++] = statement();
+            }
+            expect(TOKEN_RBRACE, "Expected '}' after method body");
+            
+            method->body = body;
+            method->is_async = false;
+            method->is_extension = false;
+            
+            stmt->struct_decl.methods[stmt->struct_decl.method_count++] = method;
+        } else {
+            // Parse field
+            stmt->struct_decl.fields[stmt->struct_decl.field_count] = parser.current;
+            expect(TOKEN_IDENT, "Expected field name");
+            expect(TOKEN_COLON, "Expected ':' after field name");
+            stmt->struct_decl.field_types[stmt->struct_decl.field_count] = parse_type();
+            
+            // T2.5.3: Determine if field needs ARC management
+            bool needs_arc = false;
+            stmt->struct_decl.field_arc_managed[stmt->struct_decl.field_count] = needs_arc;
+            
+            stmt->struct_decl.field_count++;
+            
+            // Consume optional comma after field
+            match(TOKEN_COMMA);
         }
     }
     
     expect(TOKEN_RBRACE, "Expected '}' after struct fields");
+    return stmt;
+}
+
+Stmt* object_decl() {
+    expect(TOKEN_OBJECT, "Expected 'object'");
+    Stmt* stmt = alloc_stmt();
+    stmt->type = STMT_STRUCT;  // Reuse STMT_STRUCT
+    stmt->struct_decl.name = parser.current;
+    expect(TOKEN_IDENT, "Expected object name");
+    
+    stmt->struct_decl.type_param_count = 0;
+    stmt->struct_decl.type_params = NULL;
+    
+    expect(TOKEN_LBRACE, "Expected '{' after object name");
+    
+    stmt->struct_decl.field_count = 0;
+    stmt->struct_decl.fields = malloc(sizeof(Token) * 32);
+    stmt->struct_decl.field_types = malloc(sizeof(Expr*) * 32);
+    stmt->struct_decl.field_arc_managed = malloc(sizeof(bool) * 32);
+    stmt->struct_decl.method_count = 0;
+    stmt->struct_decl.methods = malloc(sizeof(FnStmt*) * 32);
+    
+    while (!check(TOKEN_RBRACE) && !check(TOKEN_EOF)) {
+        Token field_or_method_name = parser.current;
+        expect(TOKEN_IDENT, "Expected field or method name");
+        expect(TOKEN_COLON, "Expected ':' after name");
+        
+        // Check if this is a method (fn keyword) or a field (type)
+        bool is_method = (parser.current.type == TOKEN_FN) || 
+                        (parser.current.length == 2 && memcmp(parser.current.start, "fn", 2) == 0);
+        
+        if (is_method) {
+            if (parser.current.type == TOKEN_FN) {
+                advance(); // consume 'fn'
+            } else {
+                // It's an identifier that looks like "fn" - treat as method
+                advance();
+            }
+            // Parse method: name: fn(params) -> return_type { body }
+            FnStmt* method = malloc(sizeof(FnStmt));
+            method->name = field_or_method_name;
+            
+            expect(TOKEN_LPAREN, "Expected '(' after 'fn'");
+            method->param_count = 0;
+            method->params = malloc(sizeof(Token) * 16);
+            method->param_types = malloc(sizeof(Expr*) * 16);
+            
+            if (!check(TOKEN_RPAREN)) {
+                do {
+                    method->params[method->param_count] = parser.current;
+                    expect(TOKEN_IDENT, "Expected parameter name");
+                    expect(TOKEN_COLON, "Expected ':' after parameter");
+                    method->param_types[method->param_count] = parse_type();
+                    method->param_count++;
+                } while (match(TOKEN_COMMA));
+            }
+            expect(TOKEN_RPAREN, "Expected ')' after parameters");
+            
+            // Return type
+            if (match(TOKEN_ARROW)) {
+                method->return_type = parse_type();
+            } else {
+                method->return_type = NULL;
+            }
+            
+            // Method body
+            expect(TOKEN_LBRACE, "Expected '{' before method body");
+            Stmt* body = alloc_stmt();
+            body->type = STMT_BLOCK;
+            body->block.count = 0;
+            body->block.stmts = malloc(sizeof(Stmt*) * 64);
+            
+            while (!check(TOKEN_RBRACE) && !check(TOKEN_EOF)) {
+                body->block.stmts[body->block.count++] = statement();
+            }
+            expect(TOKEN_RBRACE, "Expected '}' after method body");
+            
+            method->body = body;
+            method->is_async = false;
+            method->is_extension = false;
+            
+            stmt->struct_decl.methods[stmt->struct_decl.method_count++] = method;
+        } else {
+            // Parse field: name: type
+            stmt->struct_decl.fields[stmt->struct_decl.field_count] = field_or_method_name;
+            stmt->struct_decl.field_types[stmt->struct_decl.field_count] = parse_type();
+            stmt->struct_decl.field_arc_managed[stmt->struct_decl.field_count] = false;
+            stmt->struct_decl.field_count++;
+        }
+    }
+    
+    expect(TOKEN_RBRACE, "Expected '}' after object body");
     return stmt;
 }
 
@@ -1621,6 +1847,35 @@ Stmt* impl_block() {
     Stmt* stmt = alloc_stmt();
     stmt->type = STMT_IMPL;
     
+    // Initialize generic parameters
+    stmt->impl.type_param_count = 0;
+    stmt->impl.type_params = NULL;
+    stmt->impl.trait_bound_count = 0;
+    stmt->impl.trait_bounds = NULL;
+    
+    // Parse optional generic parameters: impl<T: Display>
+    if (check(TOKEN_LT)) {
+        advance(); // consume '<'
+        stmt->impl.type_params = malloc(sizeof(Token) * 8);
+        stmt->impl.trait_bounds = malloc(sizeof(Token) * 8);
+        
+        do {
+            expect(TOKEN_IDENT, "Expected type parameter name");
+            stmt->impl.type_params[stmt->impl.type_param_count] = parser.previous;
+            
+            // Parse optional trait bound: T: Display
+            if (match(TOKEN_COLON)) {
+                expect(TOKEN_IDENT, "Expected trait name after ':'");
+                stmt->impl.trait_bounds[stmt->impl.trait_bound_count] = parser.previous;
+                stmt->impl.trait_bound_count++;
+            }
+            
+            stmt->impl.type_param_count++;
+        } while (match(TOKEN_COMMA));
+        
+        expect(TOKEN_GT, "Expected '>' after generic parameters");
+    }
+    
     // Check for "impl Trait for Type" syntax
     Token first_name = parser.current;
     expect(TOKEN_IDENT, "Expected trait or type name after 'impl'");
@@ -1629,8 +1884,20 @@ Stmt* impl_block() {
         // This is "impl Trait for Type"
         stmt->impl.is_trait_impl = true;
         stmt->impl.trait_name = first_name;
+        
+        // Parse the type name (could be generic like Box<T>)
         stmt->impl.type_name = parser.current;
         expect(TOKEN_IDENT, "Expected type name after 'for'");
+        
+        // Skip generic type arguments if present: Box<T>
+        if (match(TOKEN_LT)) {
+            int depth = 1;
+            while (depth > 0 && !check(TOKEN_EOF)) {
+                if (check(TOKEN_LT)) depth++;
+                else if (check(TOKEN_GT)) depth--;
+                advance();
+            }
+        }
     } else {
         // This is "impl Type"
         stmt->impl.is_trait_impl = false;
@@ -1964,6 +2231,8 @@ Program* parse_program() {
             prog->stmts[prog->count++] = extern_decl();
         } else if (check(TOKEN_STRUCT)) {
             prog->stmts[prog->count++] = struct_decl();
+        } else if (check(TOKEN_OBJECT)) {
+            prog->stmts[prog->count++] = object_decl();
         } else if (check(TOKEN_ENUM)) {
             prog->stmts[prog->count++] = enum_decl();
         } else if (check(TOKEN_TYPE)) {

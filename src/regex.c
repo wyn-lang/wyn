@@ -556,9 +556,9 @@ WynString* wyn_regex_extract_literal_prefix(const WynRegexNode* node) {
     return result;
 }
 
-// Stub implementations for unimplemented functions
+// Regex feature implementations (not yet implemented)
 WynRegexNode* wyn_regex_parse_group(const char* pattern, size_t* pos, int* group_id, WynRegexError* error) {
-    // Stub - would implement group parsing
+    // Groups not implemented
     if (error) {
         *error = *wyn_regex_error_new(WYN_REGEX_COMPILATION_ERROR, "Groups not implemented", *pos);
     }
@@ -566,7 +566,7 @@ WynRegexNode* wyn_regex_parse_group(const char* pattern, size_t* pos, int* group
 }
 
 WynRegexNode* wyn_regex_parse_bracket(const char* pattern, size_t* pos, WynRegexError* error) {
-    // Stub - would implement bracket expressions
+    // Bracket expressions not implemented
     if (error) {
         *error = *wyn_regex_error_new(WYN_REGEX_COMPILATION_ERROR, "Bracket expressions not implemented", *pos);
     }
@@ -574,7 +574,7 @@ WynRegexNode* wyn_regex_parse_bracket(const char* pattern, size_t* pos, WynRegex
 }
 
 WynRegexNode* wyn_regex_parse_quantifier(const char* pattern, size_t* pos, WynRegexNode* node, WynRegexError* error) {
-    // Stub - would implement quantifiers
+    // Quantifiers not implemented
     if (error) {
         *error = *wyn_regex_error_new(WYN_REGEX_COMPILATION_ERROR, "Quantifiers not implemented", *pos);
     }

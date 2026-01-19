@@ -95,6 +95,11 @@ typedef struct {
     Type* err_type;    // The error type (E in Result<T,E>)
 } ResultType;
 
+typedef struct {
+    Token* variants;   // Array of enum variant names
+    int variant_count; // Number of variants
+} EnumType;
+
 struct Type {
     TypeKind kind;
     Token name;
@@ -105,6 +110,7 @@ struct Type {
         OptionalType optional_type;  // T2.5.1: Optional Type Implementation
         UnionType union_type;        // T2.5.2: Union Type Support
         ResultType result_type;      // TASK-026: Result<T,E> Type Implementation
+        EnumType enum_type;          // Enum type with variants
     };
 };
 

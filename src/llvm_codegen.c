@@ -173,6 +173,25 @@ LLVMCodegenContext* get_current_llvm_context(void) {
     return global_context;
 }
 
+// Compatibility functions for generics.c
+#include <stdarg.h>
+
+void wyn_emit(const char* fmt, ...) {
+    if (!output_file) return;
+    
+    va_list args;
+    va_start(args, fmt);
+    vfprintf(output_file, fmt, args);
+    va_end(args);
+}
+
+void codegen_stmt(Stmt* stmt) {
+    if (!stmt || !global_context) return;
+    
+    // Use LLVM statement codegen
+    codegen_statement(stmt, global_context);
+}
+
 #else
 // Fallback when LLVM is not available - use original C codegen
 #include "codegen.h"

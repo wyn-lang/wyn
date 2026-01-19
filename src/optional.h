@@ -24,6 +24,8 @@ bool wyn_optional_is_some(WynOptional* opt);
 bool wyn_optional_is_none(WynOptional* opt);
 void* wyn_optional_unwrap(WynOptional* opt);
 void* wyn_optional_unwrap_or(WynOptional* opt, void* default_value);
+void* wyn_optional_expect(WynOptional* opt, const char* message);
+WynOptional* wyn_optional_or_else(WynOptional* opt, WynOptional* (*fallback_fn)(void));
 
 // Pattern matching support
 bool wyn_optional_match_some(WynOptional* opt, void** out_value);

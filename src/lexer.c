@@ -148,6 +148,7 @@ static TokenType keyword_type(const char* start, int length) {
             break;
         case 'o': 
             if (length == 2 && memcmp(start, "or", 2) == 0) return TOKEN_OR;
+            if (length == 6 && memcmp(start, "object", 6) == 0) return TOKEN_OBJECT;
             if (length == 2 && memcmp(start, "ok", 2) == 0) return TOKEN_OK;
             break;
         case 'p': if (length == 3 && memcmp(start, "pub", 3) == 0) return TOKEN_PUB; break;
@@ -293,6 +294,7 @@ Token next_token() {
         case '>': return match('=') ? make_token(TOKEN_GTEQ) : make_token(TOKEN_GT);
         case '?': 
             if (match('.')) return make_token(TOKEN_QUESTION_DOT);
+            if (match('?')) return make_token(TOKEN_QUESTION_QUESTION);
             return make_token(TOKEN_QUESTION);
     }
     

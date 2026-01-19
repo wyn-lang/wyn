@@ -5,7 +5,7 @@ A modern systems programming language that compiles to C.
 ## Features
 
 - **Modern Syntax** - Clean, expressive syntax inspired by Rust and Go
-- **Object-Oriented Methods** - 71 built-in methods for strings, numbers, and arrays
+- **Object-Oriented Methods** - 128+ built-in methods for strings, numbers, arrays, and collections
 - **Type-Aware Dispatch** - Methods dispatch based on receiver type
 - **Method Chaining** - Fluent API with chainable methods
 - **Generics** - Full generic programming support with monomorphization
@@ -152,23 +152,33 @@ fn main() -> int {
 
 ## Built-in Methods
 
-Wyn provides 71 built-in methods across all core types:
+Wyn provides 128+ built-in methods across all core types:
 
-### String Methods (23)
+### String Methods (27)
 - **Case:** `upper()`, `lower()`, `capitalize()`, `title()`
 - **Whitespace:** `trim()`, `trim_left()`, `trim_right()`, `pad_left()`, `pad_right()`
 - **Info:** `len()`, `is_empty()`
 - **Search:** `contains()`, `starts_with()`, `ends_with()`, `index_of()`
-- **Transform:** `replace()`, `slice()`, `repeat()`, `reverse()`, `split()`
+- **Transform:** `replace()`, `slice()`, `repeat()`, `reverse()`, `split()`, `lines()`, `words()`
 - **Convert:** `chars()`, `to_bytes()`
 
-### Number Methods (33)
+### Number Methods (39)
 **Integer (12):** `to_string()`, `to_float()`, `abs()`, `pow()`, `min()`, `max()`, `clamp()`, `is_even()`, `is_odd()`, `is_positive()`, `is_negative()`, `is_zero()`
 
-**Float (21):** `to_string()`, `to_int()`, `round()`, `floor()`, `ceil()`, `abs()`, `pow()`, `sqrt()`, `min()`, `max()`, `clamp()`, `is_nan()`, `is_infinite()`, `is_finite()`, `is_positive()`, `is_negative()`, `sin()`, `cos()`, `tan()`, `log()`, `exp()`
+**Float (27):** `to_string()`, `to_int()`, `round()`, `floor()`, `ceil()`, `abs()`, `pow()`, `sqrt()`, `min()`, `max()`, `clamp()`, `is_nan()`, `is_infinite()`, `is_finite()`, `is_positive()`, `is_negative()`, `sin()`, `cos()`, `tan()`, `log()`, `exp()`, and more
 
-### Array Methods (9)
-`len()`, `is_empty()`, `contains()`, `push()`, `pop()`, `get()`, `index_of()`, `reverse()`, `sort()`
+### Array Methods (18)
+`len()`, `is_empty()`, `contains()`, `push()`, `pop()`, `get()`, `index_of()`, `reverse()`, `sort()`, `first()`, `last()`, `take()`, `skip()`, `slice()`, `concat()`, and more
+
+### Collection Methods (24)
+**HashMap (12):** `insert()`, `get()`, `remove()`, `contains()`, `len()`, `is_empty()`, `clear()`, `get_or_default()`, `merge()`, and more
+
+**HashSet (12):** `insert()`, `contains()`, `remove()`, `len()`, `is_empty()`, `clear()`, `union()`, `intersection()`, `difference()`, `is_subset()`, `is_superset()`, `is_disjoint()`
+
+### Option/Result Methods (18)
+**Option (9):** `is_some()`, `is_none()`, `unwrap()`, `unwrap_or()`, `expect()`, `or_else()`, `map()`, `and_then()`, `filter()`
+
+**Result (9):** `is_ok()`, `is_err()`, `unwrap()`, `unwrap_or()`, `expect()`, `map_err()`, `or_else()`, `map()`, `and_then()`
 
 
 ### Structs

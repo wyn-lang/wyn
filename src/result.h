@@ -23,6 +23,8 @@ bool wyn_result_is_err(WynResult* result);
 void* wyn_result_unwrap(WynResult* result);
 void* wyn_result_unwrap_err(WynResult* result);
 void* wyn_result_unwrap_or(WynResult* result, void* default_value);
+void* wyn_result_expect(WynResult* result, const char* message);
+WynResult* wyn_result_or_else(WynResult* result, WynResult* (*fallback_fn)(void*));
 
 // Error propagation support (? operator)
 WynResult* wyn_result_propagate(WynResult* result);
@@ -60,7 +62,7 @@ bool unwrap_error_bool(WynResult* result);
 
 // Utility functions for error handling
 WynResult* wyn_result_map(WynResult* result, void* (*map_fn)(void*), size_t new_size);
-WynResult* wyn_result_map_err(WynResult* result, void* (*map_fn)(void*), size_t new_size);
+WynResult* wyn_result_map_err(WynResult* result, WynResult* (*error_fn)(void*));
 WynResult* wyn_result_and_then(WynResult* result, WynResult* (*then_fn)(void*));
 
 #endif

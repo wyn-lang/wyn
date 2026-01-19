@@ -598,51 +598,344 @@ WynFuture* wyn_future_ready(void* value) {
     return future;
 }
 
-// Simplified implementations for join and select (stubs)
+// Join all future implementation
+static WynPollResult join_all_future_poll(WynFuture* future, WynContext* context) {
+    WynJoinFuture* join_all = (WynJoinFuture*)future->data;
+    if (!join_all) return WYN_POLL_READY;
+    
+    if (join_all->completed_count == join_all->future_count) {
+        return WYN_POLL_READY;
+    }
+    
+    size_t completed = 0;
+    for (size_t i = 0; i < join_all->future_count; i++) {
+        if (join_all->results[i] == NULL) {
+            WynPollResult result = wyn_future_poll(join_all->futures[i], context);
+            if (result == WYN_POLL_READY) {
+                join_all->results[i] = join_all->futures[i]->data;
+                completed++;
+            }
+        } else {
+            completed++;
+        }
+    }
+    
+    join_all->completed_count = completed;
+    
+    if (completed == join_all->future_count) {
+        return WYN_POLL_READY;
+    }
+    
+    return WYN_POLL_PENDING;
+}
+
+static void join_all_future_cleanup(WynFuture* future) {
+    if (future && future->data) {
+        WynJoinFuture* join_all = (WynJoinFuture*)future->data;
+        free(join_all->results);
+        free(join_all);
+        future->data = NULL;
+    }
+}
+
 WynFuture* wyn_future_join_all(WynFuture** futures, size_t count) {
-    (void)futures;  // Suppress unused parameter warning
-    (void)count;    // Suppress unused parameter warning
-    // Stub implementation
-    return wyn_future_ready(NULL);
+    if (!futures || count == 0) return wyn_future_ready(NULL);
+    
+    WynJoinFuture* join_all = malloc(sizeof(WynJoinFuture));
+    if (!join_all) return NULL;
+    
+    join_all->futures = futures;
+    join_all->future_count = count;
+    join_all->results = calloc(count, sizeof(void*));
+    join_all->completed_count = 0;
+    
+    if (!join_all->results) {
+        free(join_all);
+        return NULL;
+    }
+    
+    return wyn_future_new(join_all, join_all_future_poll, join_all_future_cleanup);
+}
+
+// Select future implementation
+static WynPollResult select_future_poll(WynFuture* future, WynContext* context) {
+    WynSelectFuture* select = (WynSelectFuture*)future->data;
+    if (!select) return WYN_POLL_READY;
+    
+    if (select->completed_index >= 0) {
+        return WYN_POLL_READY;
+    }
+    
+    for (size_t i = 0; i < select->future_count; i++) {
+        WynPollResult result = wyn_future_poll(select->futures[i], context);
+        if (result == WYN_POLL_READY) {
+            select->completed_index = (int)i;
+            select->result = select->futures[i]->data;
+            return WYN_POLL_READY;
+        }
+    }
+    
+    return WYN_POLL_PENDING;
+}
+
+static void select_future_cleanup(WynFuture* future) {
+    if (future && future->data) {
+        free(future->data);
+        future->data = NULL;
+    }
 }
 
 WynFuture* wyn_future_select(WynFuture** futures, size_t count) {
-    (void)futures;  // Suppress unused parameter warning
-    (void)count;    // Suppress unused parameter warning
-    // Stub implementation
-    return wyn_future_ready(NULL);
+    if (!futures || count == 0) return wyn_future_ready(NULL);
+    
+    WynSelectFuture* select = malloc(sizeof(WynSelectFuture));
+    if (!select) return NULL;
+    
+    select->futures = futures;
+    select->future_count = count;
+    select->completed_index = -1;
+    select->result = NULL;
+    
+    return wyn_future_new(select, select_future_poll, select_future_cleanup);
 }
 
-// Async I/O futures (stubs)
+// Async I/O implementation
+typedef struct {
+    int fd;
+    void* buffer;
+    size_t size;
+    ssize_t bytes_read;
+    bool completed;
+    int error_code;
+} WynAsyncReadFuture;
+
+static WynPollResult async_read_future_poll(WynFuture* future, WynContext* context) {
+    (void)context;  // Suppress unused parameter warning
+    
+    WynAsyncReadFuture* read_future = (WynAsyncReadFuture*)future->data;
+    if (!read_future) return WYN_POLL_READY;
+    
+    if (read_future->completed) {
+        return WYN_POLL_READY;
+    }
+    
+    // Perform non-blocking read
+    ssize_t result = read(read_future->fd, read_future->buffer, read_future->size);
+    
+    if (result >= 0) {
+        read_future->bytes_read = result;
+        read_future->completed = true;
+        read_future->error_code = 0;
+        return WYN_POLL_READY;
+    } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        // Would block, try again later
+        return WYN_POLL_PENDING;
+    } else {
+        // Error occurred
+        read_future->bytes_read = -1;
+        read_future->completed = true;
+        read_future->error_code = errno;
+        return WYN_POLL_READY;
+    }
+}
+
+static void async_read_future_cleanup(WynFuture* future) {
+    if (future && future->data) {
+        free(future->data);
+        future->data = NULL;
+    }
+}
+
 WynFuture* wyn_future_read(int fd, void* buffer, size_t size) {
-    (void)fd;       // Suppress unused parameter warning
-    (void)buffer;   // Suppress unused parameter warning
-    (void)size;     // Suppress unused parameter warning
-    // Stub implementation
-    return wyn_future_ready(NULL);
+    if (!buffer || size == 0) return wyn_future_ready(NULL);
+    
+    WynAsyncReadFuture* read_future = malloc(sizeof(WynAsyncReadFuture));
+    if (!read_future) return NULL;
+    
+    read_future->fd = fd;
+    read_future->buffer = buffer;
+    read_future->size = size;
+    read_future->bytes_read = 0;
+    read_future->completed = false;
+    read_future->error_code = 0;
+    
+    return wyn_future_new(read_future, async_read_future_poll, async_read_future_cleanup);
+}
+
+typedef struct {
+    int fd;
+    const void* buffer;
+    size_t size;
+    ssize_t bytes_written;
+    bool completed;
+    int error_code;
+} WynAsyncWriteFuture;
+
+static WynPollResult async_write_future_poll(WynFuture* future, WynContext* context) {
+    (void)context;  // Suppress unused parameter warning
+    
+    WynAsyncWriteFuture* write_future = (WynAsyncWriteFuture*)future->data;
+    if (!write_future) return WYN_POLL_READY;
+    
+    if (write_future->completed) {
+        return WYN_POLL_READY;
+    }
+    
+    // Perform non-blocking write
+    ssize_t result = write(write_future->fd, write_future->buffer, write_future->size);
+    
+    if (result >= 0) {
+        write_future->bytes_written = result;
+        write_future->completed = true;
+        write_future->error_code = 0;
+        return WYN_POLL_READY;
+    } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        // Would block, try again later
+        return WYN_POLL_PENDING;
+    } else {
+        // Error occurred
+        write_future->bytes_written = -1;
+        write_future->completed = true;
+        write_future->error_code = errno;
+        return WYN_POLL_READY;
+    }
+}
+
+static void async_write_future_cleanup(WynFuture* future) {
+    if (future && future->data) {
+        free(future->data);
+        future->data = NULL;
+    }
 }
 
 WynFuture* wyn_future_write(int fd, const void* buffer, size_t size) {
-    (void)fd;       // Suppress unused parameter warning
-    (void)buffer;   // Suppress unused parameter warning
-    (void)size;     // Suppress unused parameter warning
-    // Stub implementation
-    return wyn_future_ready(NULL);
+    if (!buffer || size == 0) return wyn_future_ready(NULL);
+    
+    WynAsyncWriteFuture* write_future = malloc(sizeof(WynAsyncWriteFuture));
+    if (!write_future) return NULL;
+    
+    write_future->fd = fd;
+    write_future->buffer = buffer;
+    write_future->size = size;
+    write_future->bytes_written = 0;
+    write_future->completed = false;
+    write_future->error_code = 0;
+    
+    return wyn_future_new(write_future, async_write_future_poll, async_write_future_cleanup);
 }
 
-// Future combinators (stubs)
+// Map future implementation
+typedef struct {
+    WynFuture* inner_future;
+    void* (*map_func)(void*);
+    void* result;
+    bool completed;
+} WynMapFuture;
+
+static WynPollResult map_future_poll(WynFuture* future, WynContext* context) {
+    WynMapFuture* map = (WynMapFuture*)future->data;
+    if (!map) return WYN_POLL_READY;
+    
+    if (map->completed) {
+        return WYN_POLL_READY;
+    }
+    
+    WynPollResult result = wyn_future_poll(map->inner_future, context);
+    if (result == WYN_POLL_READY) {
+        map->result = map->map_func(map->inner_future->data);
+        map->completed = true;
+        return WYN_POLL_READY;
+    }
+    
+    return WYN_POLL_PENDING;
+}
+
+static void map_future_cleanup(WynFuture* future) {
+    if (future && future->data) {
+        free(future->data);
+        future->data = NULL;
+    }
+}
+
 WynFuture* wyn_future_map(WynFuture* future, void* (*map_func)(void*)) {
-    (void)future;   // Suppress unused parameter warning
-    (void)map_func; // Suppress unused parameter warning
-    // Stub implementation
-    return wyn_future_ready(NULL);
+    if (!future || !map_func) return wyn_future_ready(NULL);
+    
+    WynMapFuture* map = malloc(sizeof(WynMapFuture));
+    if (!map) return NULL;
+    
+    map->inner_future = future;
+    map->map_func = map_func;
+    map->result = NULL;
+    map->completed = false;
+    
+    return wyn_future_new(map, map_future_poll, map_future_cleanup);
+}
+
+// Then future implementation
+typedef struct {
+    WynFuture* inner_future;
+    WynFuture* (*then_func)(void*);
+    WynFuture* chained_future;
+    void* result;
+    bool inner_completed;
+    bool completed;
+} WynThenFuture;
+
+static WynPollResult then_future_poll(WynFuture* future, WynContext* context) {
+    WynThenFuture* then = (WynThenFuture*)future->data;
+    if (!then) return WYN_POLL_READY;
+    
+    if (then->completed) {
+        return WYN_POLL_READY;
+    }
+    
+    if (!then->inner_completed) {
+        WynPollResult result = wyn_future_poll(then->inner_future, context);
+        if (result == WYN_POLL_READY) {
+            then->inner_completed = true;
+            then->chained_future = then->then_func(then->inner_future->data);
+        } else {
+            return WYN_POLL_PENDING;
+        }
+    }
+    
+    if (then->chained_future) {
+        WynPollResult result = wyn_future_poll(then->chained_future, context);
+        if (result == WYN_POLL_READY) {
+            then->result = then->chained_future->data;
+            then->completed = true;
+            return WYN_POLL_READY;
+        }
+    }
+    
+    return WYN_POLL_PENDING;
+}
+
+static void then_future_cleanup(WynFuture* future) {
+    if (future && future->data) {
+        WynThenFuture* then = (WynThenFuture*)future->data;
+        if (then->chained_future) {
+            wyn_future_free(then->chained_future);
+        }
+        free(then);
+        future->data = NULL;
+    }
 }
 
 WynFuture* wyn_future_then(WynFuture* future, WynFuture* (*then_func)(void*)) {
-    (void)future;    // Suppress unused parameter warning
-    (void)then_func; // Suppress unused parameter warning
-    // Stub implementation
-    return wyn_future_ready(NULL);
+    if (!future || !then_func) return wyn_future_ready(NULL);
+    
+    WynThenFuture* then = malloc(sizeof(WynThenFuture));
+    if (!then) return NULL;
+    
+    then->inner_future = future;
+    then->then_func = then_func;
+    then->chained_future = NULL;
+    then->result = NULL;
+    then->inner_completed = false;
+    then->completed = false;
+    
+    return wyn_future_new(then, then_future_poll, then_future_cleanup);
 }
 
 // Global runtime management

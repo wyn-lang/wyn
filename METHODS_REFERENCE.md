@@ -1,6 +1,6 @@
 # Wyn Methods Quick Reference
 
-## String Methods (23)
+## String Methods (27)
 
 ### Case Conversion
 ```wyn
@@ -40,6 +40,8 @@ text.slice(0, 5)            // Extract substring
 text.repeat(3)              // Repeat N times
 text.reverse()              // Reverse string
 text.split(",")             // Split to array
+text.lines()                // Split by newlines
+text.words()                // Split by whitespace
 ```
 
 ### Conversion
@@ -48,7 +50,7 @@ text.chars()      // To array of chars
 text.to_bytes()   // To array of bytes
 ```
 
-## Number Methods (33)
+## Number Methods (39)
 
 ### Integer Methods (12)
 ```wyn
@@ -66,7 +68,7 @@ num.is_negative()  // Check if negative
 num.is_zero()      // Check if zero
 ```
 
-### Float Methods (21)
+### Float Methods (27)
 ```wyn
 // Conversion
 num.to_string()    // To string
@@ -102,7 +104,7 @@ num.log()          // Natural log
 num.exp()          // Exponential
 ```
 
-## Array Methods (9)
+## Array Methods (18)
 
 ```wyn
 // Information
@@ -115,12 +117,79 @@ arr.index_of(val)  // Find index (-1 if not found)
 
 // Access
 arr.get(index)     // Get element at index
+arr.first()        // Get first element (Option)
+arr.last()         // Get last element (Option)
+
+// Slicing
+arr.take(n)        // Take first n elements
+arr.skip(n)        // Skip first n elements
+arr.slice(start, end)  // Get slice
+arr.concat(other)  // Concatenate arrays
 
 // Mutation (modifies array)
 arr.push(val)      // Add to end
 arr.pop()          // Remove from end (returns value)
 arr.reverse()      // Reverse in place
 arr.sort()         // Sort in place
+```
+
+## Collection Methods (24)
+
+### HashMap Methods (12)
+```wyn
+map.insert(key, val)     // Insert key-value pair
+map.get(key)             // Get value by key
+map.remove(key)          // Remove by key
+map.contains(key)        // Check if key exists
+map.len()                // Number of entries
+map.is_empty()           // Check if empty
+map.clear()              // Remove all entries
+map.get_or_default(key, default)  // Get with fallback
+map.merge(other)         // Merge with another map
+```
+
+### HashSet Methods (12)
+```wyn
+set.insert(val)          // Insert value
+set.contains(val)        // Check if contains value
+set.remove(val)          // Remove value
+set.len()                // Number of elements
+set.is_empty()           // Check if empty
+set.clear()              // Remove all elements
+set.union(other)         // Set union
+set.intersection(other)  // Set intersection
+set.difference(other)    // Set difference
+set.is_subset(other)     // Check if subset
+set.is_superset(other)   // Check if superset
+set.is_disjoint(other)   // Check if disjoint
+```
+
+## Option/Result Methods (18)
+
+### Option Methods (9)
+```wyn
+opt.is_some()            // Check if has value
+opt.is_none()            // Check if no value
+opt.unwrap()             // Get value (panics if None)
+opt.unwrap_or(default)   // Get value or default
+opt.expect(msg)          // Get value with custom panic message
+opt.or_else(fn)          // Alternative if None
+opt.map(fn)              // Transform value if Some
+opt.and_then(fn)         // Chain operations
+opt.filter(fn)           // Filter value
+```
+
+### Result Methods (9)
+```wyn
+res.is_ok()              // Check if Ok
+res.is_err()             // Check if Err
+res.unwrap()             // Get value (panics if Err)
+res.unwrap_or(default)   // Get value or default
+res.expect(msg)          // Get value with custom panic message
+res.map_err(fn)          // Transform error
+res.or_else(fn)          // Alternative if Err
+res.map(fn)              // Transform Ok value
+res.and_then(fn)         // Chain operations
 ```
 
 ## Method Chaining

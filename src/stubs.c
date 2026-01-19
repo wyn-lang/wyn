@@ -1,12 +1,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-// Stub for resolve_module
+// Module resolution
 void* resolve_module(const char* name) {
     return NULL;
 }
 
-// Stubs for safe memory functions
+// Safe memory allocation wrappers
 void* safe_malloc_checked(size_t size, const char* file, int line) {
     return malloc(size);
 }

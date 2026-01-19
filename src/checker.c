@@ -602,6 +602,14 @@ Type* check_expr(Expr* expr, SymbolTable* scope) {
             Type* right = check_expr(expr->binary.right, scope);
             if (!left || !right) return NULL;
             
+            // Nil coalescing operator ??
+            if (expr->binary.op.type == TOKEN_QUESTION_QUESTION) {
+                // Left should be Option<T>, right should be T
+                // Return type is T
+                expr->expr_type = right;
+                return right;
+            }
+            
             // Allow bool operations
             if (expr->binary.op.type == TOKEN_AND || expr->binary.op.type == TOKEN_OR) {
                 expr->expr_type = builtin_bool;
@@ -1192,6 +1200,80 @@ Type* check_expr(Expr* expr, SymbolTable* scope) {
             expr->expr_type = operand_type;
             return operand_type;
         }
+        case EXPR_MATCH: {
+            // Type-check match expression with exhaustiveness checking
+            Type* match_value_type = check_expr(expr->match.value, scope);
+            if (!match_value_type) return NULL;
+            
+            Type* result_type = NULL;
+            bool has_wildcard = false;
+            
+            // Check each match arm
+            for (int i = 0; i < expr->match.arm_count; i++) {
+                MatchArm* arm = &expr->match.arms[i];
+                
+                // Check if this is a wildcard pattern
+                if (arm->pattern.type == TOKEN_UNDERSCORE) {
+                    has_wildcard = true;
+                }
+                
+                // Type-check the result expression
+                Type* arm_type = check_expr(arm->result, scope);
+                if (!arm_type) return NULL;
+                
+                // All arms must have the same type
+                if (result_type == NULL) {
+                    result_type = arm_type;
+                } else if (!types_equal(result_type, arm_type)) {
+                    fprintf(stderr, "Error: Match arms have different types\n");
+                    had_error = true;
+                    return NULL;
+                }
+            }
+            
+            // Check exhaustiveness for enum types
+            if (match_value_type->kind == TYPE_ENUM && !has_wildcard) {
+                // For enum types, check if all variants are covered
+                bool* covered = calloc(match_value_type->enum_type.variant_count, sizeof(bool));
+                
+                for (int i = 0; i < expr->match.arm_count; i++) {
+                    MatchArm* arm = &expr->match.arms[i];
+                    
+                    // Check if this pattern matches an enum variant
+                    if (arm->pattern.type == TOKEN_IDENT) {
+                        // Look for enum variant pattern like Status::PENDING
+                        for (int v = 0; v < match_value_type->enum_type.variant_count; v++) {
+                            Token variant = match_value_type->enum_type.variants[v];
+                            
+                            // Simple string comparison for now
+                            if (arm->pattern.length >= variant.length &&
+                                memcmp(arm->pattern.start + arm->pattern.length - variant.length,
+                                       variant.start, variant.length) == 0) {
+                                covered[v] = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                // Check if any variants are missing
+                for (int v = 0; v < match_value_type->enum_type.variant_count; v++) {
+                    if (!covered[v]) {
+                        Token variant = match_value_type->enum_type.variants[v];
+                        fprintf(stderr, "Error: non-exhaustive match, missing case: %.*s\n",
+                                variant.length, variant.start);
+                        had_error = true;
+                        free(covered);
+                        return NULL;
+                    }
+                }
+                
+                free(covered);
+            }
+            
+            expr->expr_type = result_type ? result_type : builtin_void;
+            return expr->expr_type;
+        }
         default:
             return builtin_int;
     }
@@ -1458,40 +1540,48 @@ void check_stmt(Stmt* stmt, SymbolTable* scope) {
             }
             break;
         case STMT_ENUM:
-            // Register enum type in global scope
-            add_symbol(global_scope, stmt->enum_decl.name, builtin_int, false);
-            
-            // Register each enum variant BOTH as qualified and unqualified
-            for (int i = 0; i < stmt->enum_decl.variant_count; i++) {
-                // Register unqualified variant (e.g., DONE)
-                add_symbol(global_scope, stmt->enum_decl.variants[i], builtin_int, false);
+            // Create proper enum type
+            {
+                Type* enum_type = make_type(TYPE_ENUM);
+                enum_type->name = stmt->enum_decl.name;
+                enum_type->enum_type.variants = stmt->enum_decl.variants;
+                enum_type->enum_type.variant_count = stmt->enum_decl.variant_count;
                 
-                // Register qualified variant with . (e.g., Status.DONE)
-                char qualified_member_dot[128];
-                snprintf(qualified_member_dot, 128, "%.*s.%.*s",
-                        stmt->enum_decl.name.length, stmt->enum_decl.name.start,
-                        stmt->enum_decl.variants[i].length, stmt->enum_decl.variants[i].start);
+                // Register enum type in global scope
+                add_symbol(global_scope, stmt->enum_decl.name, enum_type, false);
                 
-                Token qualified_token_dot = {TOKEN_IDENT, strdup(qualified_member_dot), (int)strlen(qualified_member_dot), 0};
-                add_symbol(global_scope, qualified_token_dot, builtin_int, false);
-                
-                // Register qualified variant with :: (e.g., Status::DONE) - maps to Status_DONE in C
-                char qualified_member_colon[128];
-                snprintf(qualified_member_colon, 128, "%.*s::%.*s",
-                        stmt->enum_decl.name.length, stmt->enum_decl.name.start,
-                        stmt->enum_decl.variants[i].length, stmt->enum_decl.variants[i].start);
-                
-                Token qualified_token_colon = {TOKEN_IDENT, strdup(qualified_member_colon), (int)strlen(qualified_member_colon), 0};
-                add_symbol(global_scope, qualified_token_colon, builtin_int, false);
-                
-                // Also register with _ for C compatibility (e.g., Status_DONE)
-                char qualified_member_underscore[128];
-                snprintf(qualified_member_underscore, 128, "%.*s_%.*s",
-                        stmt->enum_decl.name.length, stmt->enum_decl.name.start,
-                        stmt->enum_decl.variants[i].length, stmt->enum_decl.variants[i].start);
-                
-                Token qualified_token_underscore = {TOKEN_IDENT, strdup(qualified_member_underscore), (int)strlen(qualified_member_underscore), 0};
-                add_symbol(global_scope, qualified_token_underscore, builtin_int, false);
+                // Register each enum variant BOTH as qualified and unqualified
+                for (int i = 0; i < stmt->enum_decl.variant_count; i++) {
+                    // Register unqualified variant (e.g., DONE)
+                    add_symbol(global_scope, stmt->enum_decl.variants[i], enum_type, false);
+                    
+                    // Register qualified variant with . (e.g., Status.DONE)
+                    char qualified_member_dot[128];
+                    snprintf(qualified_member_dot, 128, "%.*s.%.*s",
+                            stmt->enum_decl.name.length, stmt->enum_decl.name.start,
+                            stmt->enum_decl.variants[i].length, stmt->enum_decl.variants[i].start);
+                    
+                    Token qualified_token_dot = {TOKEN_IDENT, strdup(qualified_member_dot), (int)strlen(qualified_member_dot), 0};
+                    add_symbol(global_scope, qualified_token_dot, enum_type, false);
+                    
+                    // Register qualified variant with :: (e.g., Status::DONE) - maps to Status_DONE in C
+                    char qualified_member_colon[128];
+                    snprintf(qualified_member_colon, 128, "%.*s::%.*s",
+                            stmt->enum_decl.name.length, stmt->enum_decl.name.start,
+                            stmt->enum_decl.variants[i].length, stmt->enum_decl.variants[i].start);
+                    
+                    Token qualified_token_colon = {TOKEN_IDENT, strdup(qualified_member_colon), (int)strlen(qualified_member_colon), 0};
+                    add_symbol(global_scope, qualified_token_colon, enum_type, false);
+                    
+                    // Also register with _ for C compatibility (e.g., Status_DONE)
+                    char qualified_member_underscore[128];
+                    snprintf(qualified_member_underscore, 128, "%.*s_%.*s",
+                            stmt->enum_decl.name.length, stmt->enum_decl.name.start,
+                            stmt->enum_decl.variants[i].length, stmt->enum_decl.variants[i].start);
+                    
+                    Token qualified_token_underscore = {TOKEN_IDENT, strdup(qualified_member_underscore), (int)strlen(qualified_member_underscore), 0};
+                    add_symbol(global_scope, qualified_token_underscore, enum_type, false);
+                }
             }
             break;
         case STMT_TYPE_ALIAS:
@@ -1502,13 +1592,117 @@ void check_stmt(Stmt* stmt, SymbolTable* scope) {
             // Register module namespace in scope
             add_symbol(scope, stmt->import.module, builtin_int, false);
             break;
+        case STMT_MATCH: {
+            // Type-check match statement with exhaustiveness checking
+            Type* match_value_type = check_expr(stmt->match_stmt.value, scope);
+            if (!match_value_type) return;
+            
+            bool has_wildcard = false;
+            
+            // Check each match case
+            for (int i = 0; i < stmt->match_stmt.case_count; i++) {
+                MatchCase* match_case = &stmt->match_stmt.cases[i];
+                
+                // Check if this is a wildcard pattern
+                if (match_case->pattern && match_case->pattern->type == PATTERN_WILDCARD) {
+                    has_wildcard = true;
+                }
+                
+                // Type-check the case body
+                if (match_case->body) {
+                    check_stmt(match_case->body, scope);
+                }
+            }
+            
+            // For now, check exhaustiveness by looking for enum-like patterns
+            // even if the type is int (since enum variants are treated as ints)
+            if (!has_wildcard) {
+                // Try to find if this looks like an enum match by checking pattern names
+                // Look for patterns that match known enum variants
+                bool looks_like_enum_match = false;
+                char enum_name[64] = {0};
+                int enum_variant_count = 0;
+                
+                // Scan global scope for enum types and see if patterns match
+                for (int s = 0; s < global_scope->count; s++) {
+                    Symbol* sym = &global_scope->symbols[s];
+                    if (sym->type && sym->type->kind == TYPE_ENUM) {
+                        // Check if any of our patterns match this enum's variants
+                        for (int i = 0; i < stmt->match_stmt.case_count; i++) {
+                            MatchCase* match_case = &stmt->match_stmt.cases[i];
+                            if (match_case->pattern && match_case->pattern->type == PATTERN_IDENT) {
+                                Token pattern_name = match_case->pattern->ident.name;
+                                
+                                // Check if this pattern matches any variant of this enum
+                                for (int v = 0; v < sym->type->enum_type.variant_count; v++) {
+                                    Token variant = sym->type->enum_type.variants[v];
+                                    if (pattern_name.length == variant.length &&
+                                        memcmp(pattern_name.start, variant.start, variant.length) == 0) {
+                                        looks_like_enum_match = true;
+                                        strncpy(enum_name, sym->name.start, 
+                                               sym->name.length < 63 ? sym->name.length : 63);
+                                        enum_variant_count = sym->type->enum_type.variant_count;
+                                        break;
+                                    }
+                                }
+                                if (looks_like_enum_match) break;
+                            }
+                        }
+                        if (looks_like_enum_match) break;
+                    }
+                }
+                
+                if (looks_like_enum_match) {
+                    // Find the enum type again to check exhaustiveness
+                    for (int s = 0; s < global_scope->count; s++) {
+                        Symbol* sym = &global_scope->symbols[s];
+                        if (sym->type && sym->type->kind == TYPE_ENUM && 
+                            strncmp(enum_name, sym->name.start, sym->name.length) == 0) {
+                            
+                            bool* covered = calloc(sym->type->enum_type.variant_count, sizeof(bool));
+                            
+                            // Check which variants are covered
+                            for (int i = 0; i < stmt->match_stmt.case_count; i++) {
+                                MatchCase* match_case = &stmt->match_stmt.cases[i];
+                                if (match_case->pattern && match_case->pattern->type == PATTERN_IDENT) {
+                                    Token pattern_name = match_case->pattern->ident.name;
+                                    
+                                    for (int v = 0; v < sym->type->enum_type.variant_count; v++) {
+                                        Token variant = sym->type->enum_type.variants[v];
+                                        if (pattern_name.length == variant.length &&
+                                            memcmp(pattern_name.start, variant.start, variant.length) == 0) {
+                                            covered[v] = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // Check if any variants are missing
+                            for (int v = 0; v < sym->type->enum_type.variant_count; v++) {
+                                if (!covered[v]) {
+                                    Token variant = sym->type->enum_type.variants[v];
+                                    fprintf(stderr, "Error: non-exhaustive match, missing case: %.*s\n",
+                                            variant.length, variant.start);
+                                    had_error = true;
+                                }
+                            }
+                            
+                            free(covered);
+                            break;
+                        }
+                    }
+                }
+            }
+            break;
+        }
         default:
             break;
     }
 }
 
 void check_program(Program* prog) {
-    // Pass 0: Register all struct types first (so functions can reference them)
+    // Pass 0: Register all struct types and enums first (so functions can reference them)
     for (int i = 0; i < prog->count; i++) {
         if (prog->stmts[i]->type == STMT_STRUCT) {
             StructStmt* struct_decl = &prog->stmts[i]->struct_decl;
@@ -1516,6 +1710,30 @@ void check_program(Program* prog) {
             struct_type->struct_type.name = struct_decl->name;
             struct_type->struct_type.field_count = struct_decl->field_count;
             add_symbol(global_scope, struct_decl->name, struct_type, false);
+        } else if (prog->stmts[i]->type == STMT_ENUM) {
+            // Register enum type and variants early so functions can use them
+            EnumStmt* enum_decl = &prog->stmts[i]->enum_decl;
+            Type* enum_type = make_type(TYPE_ENUM);
+            enum_type->name = enum_decl->name;
+            enum_type->enum_type.variants = enum_decl->variants;
+            enum_type->enum_type.variant_count = enum_decl->variant_count;
+            
+            // Register enum type in global scope
+            add_symbol(global_scope, enum_decl->name, enum_type, false);
+            
+            // Register each enum variant
+            for (int j = 0; j < enum_decl->variant_count; j++) {
+                // Register unqualified variant (e.g., ADD)
+                add_symbol(global_scope, enum_decl->variants[j], enum_type, false);
+                
+                // Register qualified variant with :: (e.g., Operation::ADD)
+                char qualified[128];
+                snprintf(qualified, 128, "%.*s::%.*s",
+                        enum_decl->name.length, enum_decl->name.start,
+                        enum_decl->variants[j].length, enum_decl->variants[j].start);
+                Token qualified_token = {TOKEN_IDENT, strdup(qualified), (int)strlen(qualified), 0};
+                add_symbol(global_scope, qualified_token, enum_type, false);
+            }
         } else if (prog->stmts[i]->type == STMT_EXTERN) {
             // Register extern function
             ExternStmt* ext = &prog->stmts[i]->extern_fn;
@@ -1632,9 +1850,9 @@ void check_program(Program* prog) {
                         } else if (type_name.length == 5 && memcmp(type_name.start, "array", 5) == 0) {
                             param_type = builtin_array;
                         } else {
-                            // Check if it's a struct type
+                            // Check if it's a user-defined type (struct or enum)
                             Symbol* type_symbol = find_symbol(global_scope, type_name);
-                            if (type_symbol && type_symbol->type && type_symbol->type->kind == TYPE_STRUCT) {
+                            if (type_symbol && type_symbol->type) {
                                 param_type = type_symbol->type;
                             }
                         }
@@ -1661,9 +1879,9 @@ void check_program(Program* prog) {
                 } else if (type_name.length == 5 && memcmp(type_name.start, "array", 5) == 0) {
                     fn_type->fn_type.return_type = builtin_array;
                 } else {
-                    // Check if it's a struct type
+                    // Check if it's a user-defined type (struct or enum)
                     Symbol* type_symbol = find_symbol(global_scope, type_name);
-                    if (type_symbol && type_symbol->type && type_symbol->type->kind == TYPE_STRUCT) {
+                    if (type_symbol && type_symbol->type) {
                         fn_type->fn_type.return_type = type_symbol->type;
                     }
                 }
@@ -1793,9 +2011,9 @@ void check_program(Program* prog) {
                 } else if (type_name.length == 5 && memcmp(type_name.start, "array", 5) == 0) {
                     current_function_return_type = builtin_array;
                 } else {
-                    // Check if it's a struct type
+                    // Check if it's a user-defined type (struct or enum)
                     Symbol* type_symbol = find_symbol(global_scope, type_name);
-                    if (type_symbol && type_symbol->type && type_symbol->type->kind == TYPE_STRUCT) {
+                    if (type_symbol && type_symbol->type) {
                         current_function_return_type = type_symbol->type;
                     }
                 }
@@ -1818,6 +2036,12 @@ void check_program(Program* prog) {
                             param_type = builtin_bool;
                         } else if (type_name.length == 5 && memcmp(type_name.start, "array", 5) == 0) {
                             param_type = builtin_array;
+                        } else {
+                            // Check if it's a user-defined type (struct or enum)
+                            Symbol* type_symbol = find_symbol(global_scope, type_name);
+                            if (type_symbol && type_symbol->type) {
+                                param_type = type_symbol->type;
+                            }
                         }
                     } else if (fn->param_types[j]->type == EXPR_ARRAY) {
                         // Handle array types [type]

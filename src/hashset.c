@@ -92,3 +92,116 @@ void hashset_free(WynHashSet* set) {
     }
     free(set);
 }
+
+// Wrapper functions
+void wyn_hashset_insert(WynHashSet* set, const char* key) {
+    hashset_add(set, key);
+}
+
+int wyn_hashset_contains(WynHashSet* set, const char* key) {
+    return hashset_contains(set, key);
+}
+
+void wyn_hashset_remove(WynHashSet* set, const char* key) {
+    hashset_remove(set, key);
+}
+
+int wyn_hashset_len(WynHashSet* set) {
+    int count = 0;
+    for (int i = 0; i < HASHSET_SIZE; i++) {
+        Entry* entry = set->buckets[i];
+        while (entry) {
+            count++;
+            entry = entry->next;
+        }
+    }
+    return count;
+}
+
+int wyn_hashset_is_empty(WynHashSet* set) {
+    return wyn_hashset_len(set) == 0;
+}
+
+void wyn_hashset_clear(WynHashSet* set) {
+    for (int i = 0; i < HASHSET_SIZE; i++) {
+        Entry* entry = set->buckets[i];
+        while (entry) {
+            Entry* next = entry->next;
+            free(entry->key);
+            free(entry);
+            entry = next;
+        }
+        set->buckets[i] = NULL;
+    }
+}
+
+WynHashSet* wyn_hashset_union(WynHashSet* set1, WynHashSet* set2) {
+    WynHashSet* result = hashset_new();
+    for (int i = 0; i < HASHSET_SIZE; i++) {
+        Entry* entry = set1->buckets[i];
+        while (entry) {
+            hashset_add(result, entry->key);
+            entry = entry->next;
+        }
+        entry = set2->buckets[i];
+        while (entry) {
+            hashset_add(result, entry->key);
+            entry = entry->next;
+        }
+    }
+    return result;
+}
+
+WynHashSet* wyn_hashset_intersection(WynHashSet* set1, WynHashSet* set2) {
+    WynHashSet* result = hashset_new();
+    for (int i = 0; i < HASHSET_SIZE; i++) {
+        Entry* entry = set1->buckets[i];
+        while (entry) {
+            if (hashset_contains(set2, entry->key)) {
+                hashset_add(result, entry->key);
+            }
+            entry = entry->next;
+        }
+    }
+    return result;
+}
+
+WynHashSet* wyn_hashset_difference(WynHashSet* set1, WynHashSet* set2) {
+    WynHashSet* result = hashset_new();
+    for (int i = 0; i < HASHSET_SIZE; i++) {
+        Entry* entry = set1->buckets[i];
+        while (entry) {
+            if (!hashset_contains(set2, entry->key)) {
+                hashset_add(result, entry->key);
+            }
+            entry = entry->next;
+        }
+    }
+    return result;
+}
+
+int wyn_hashset_is_subset(WynHashSet* set1, WynHashSet* set2) {
+    for (int i = 0; i < HASHSET_SIZE; i++) {
+        Entry* entry = set1->buckets[i];
+        while (entry) {
+            if (!hashset_contains(set2, entry->key)) {
+                return 0;
+            }
+            entry = entry->next;
+        }
+    }
+    return 1;
+}
+
+int wyn_hashset_is_disjoint(WynHashSet* set1, WynHashSet* set2) {
+    for (int i = 0; i < HASHSET_SIZE; i++) {
+        Entry* entry = set1->buckets[i];
+        while (entry) {
+            if (hashset_contains(set2, entry->key)) {
+                return 0;
+            }
+            entry = entry->next;
+        }
+    }
+    return 1;
+}

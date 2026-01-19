@@ -103,6 +103,7 @@ typedef struct {
     Token* field_names;
     Expr** field_values;
     int field_count;
+    char* monomorphic_name;  // T4.1: For generic struct instantiations
 } StructInitExpr;
 
 typedef struct {
@@ -398,12 +399,18 @@ typedef struct {
     Expr** field_types;
     bool* field_arc_managed;  // T2.5.3: ARC integration for struct fields
     int field_count;
+    FnStmt** methods;         // Methods defined inside struct
+    int method_count;         // Number of methods
 } StructStmt;
 
 typedef struct {
     Token type_name;
     Token trait_name;         // Optional: for "impl Trait for Type"
     bool is_trait_impl;       // True if this is "impl Trait for Type"
+    Token* type_params;       // Generic impl parameters
+    int type_param_count;
+    Token* trait_bounds;      // Trait bounds for type parameters
+    int trait_bound_count;
     FnStmt** methods;
     int method_count;
 } ImplStmt;

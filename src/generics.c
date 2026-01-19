@@ -50,6 +50,16 @@ typedef struct GenericInstantiation {
     struct GenericInstantiation* next;
 } GenericInstantiation;
 
+// T4.1: Generic struct instantiation tracking
+typedef struct GenericStructInstantiation {
+    Token struct_name;
+    Type** type_args;
+    int type_arg_count;
+    char* monomorphic_name;  // Generated name like "Box_int"
+    StructStmt* monomorphic_struct;  // The generated monomorphic struct
+    struct GenericStructInstantiation* next;
+} GenericStructInstantiation;
+
 // Global registries
 static GenericFunction* g_generic_functions = NULL;
 static GenericStruct* g_generic_structs = NULL;
@@ -57,6 +67,7 @@ static int g_generic_function_count = 0;
 static int g_generic_struct_count = 0;
 
 static GenericInstantiation* g_instantiations = NULL;
+static GenericStructInstantiation* g_struct_instantiations = NULL;
 
 // Register a generic function instantiation
 void wyn_register_generic_instantiation(Token func_name, Type** type_args, int type_arg_count) {
@@ -100,6 +111,68 @@ void wyn_register_generic_instantiation(Token func_name, Type** type_args, int t
     
     inst->next = g_instantiations;
     g_instantiations = inst;
+}
+
+// T4.1: Register a generic struct instantiation
+void wyn_register_generic_struct_instantiation(Token struct_name, Type** type_args, int type_arg_count) {
+    // Check if this instantiation already exists
+    GenericStructInstantiation* current = g_struct_instantiations;
+    while (current) {
+        if (current->struct_name.length == struct_name.length &&
+            memcmp(current->struct_name.start, struct_name.start, struct_name.length) == 0 &&
+            current->type_arg_count == type_arg_count) {
+            
+            // Check if type arguments match
+            bool types_match = true;
+            for (int i = 0; i < type_arg_count; i++) {
+                if (!wyn_types_equal(current->type_args[i], type_args[i])) {
+                    types_match = false;
+                    break;
+                }
+            }
+            
+            if (types_match) {
+                return; // Already registered
+            }
+        }
+        current = current->next;
+    }
+    
+    // Create new struct instantiation
+    GenericStructInstantiation* inst = malloc(sizeof(GenericStructInstantiation));
+    inst->struct_name = struct_name;
+    inst->type_arg_count = type_arg_count;
+    inst->type_args = malloc(sizeof(Type*) * type_arg_count);
+    
+    for (int i = 0; i < type_arg_count; i++) {
+        inst->type_args[i] = type_args[i];
+    }
+    
+    // Generate monomorphic name
+    inst->monomorphic_name = malloc(256);
+    wyn_generate_monomorphic_struct_name(struct_name, type_args, type_arg_count, 
+                                        inst->monomorphic_name, 256);
+    
+    // Generate the monomorphic struct
+    GenericStruct* generic_struct = wyn_find_generic_struct(struct_name);
+    if (generic_struct) {
+        inst->monomorphic_struct = (StructStmt*)wyn_monomorphize_struct(generic_struct, type_args, type_arg_count);
+        
+        // Update the monomorphic struct name
+        if (inst->monomorphic_struct) {
+            // Create a new token for the monomorphic name
+            Token new_name;
+            new_name.start = inst->monomorphic_name;
+            new_name.length = strlen(inst->monomorphic_name);
+            new_name.line = struct_name.line;
+            inst->monomorphic_struct->name = new_name;
+        }
+    } else {
+        inst->monomorphic_struct = NULL;
+    }
+    
+    inst->next = g_struct_instantiations;
+    g_struct_instantiations = inst;
 }
 
 // Check if two types are equal (simplified)
@@ -473,7 +546,68 @@ void* wyn_monomorphize_struct(GenericStruct* generic_struct, Type** type_args, i
     
     for (int i = 0; i < generic_struct->original_struct->field_count; i++) {
         monomorphic_struct->fields[i] = generic_struct->original_struct->fields[i];
-        monomorphic_struct->field_types[i] = generic_struct->original_struct->field_types[i];
+        
+        // Substitute type parameters with concrete types
+        Expr* original_type = generic_struct->original_struct->field_types[i];
+        if (original_type && original_type->type == EXPR_IDENT) {
+            // Check if this is a type parameter
+            bool is_type_param = false;
+            int type_param_index = -1;
+            
+            for (int j = 0; j < generic_struct->type_param_count; j++) {
+                if (generic_struct->type_params[j].length == original_type->token.length &&
+                    memcmp(generic_struct->type_params[j].start, original_type->token.start, 
+                           original_type->token.length) == 0) {
+                    is_type_param = true;
+                    type_param_index = j;
+                    break;
+                }
+            }
+            
+            if (is_type_param && type_param_index < type_arg_count) {
+                // Create a new expression with the concrete type
+                Expr* concrete_type = malloc(sizeof(Expr));
+                concrete_type->type = EXPR_IDENT;
+                
+                // Create a token for the concrete type name
+                Token concrete_token;
+                Type* concrete_type_obj = type_args[type_param_index];
+                
+                switch (concrete_type_obj->kind) {
+                    case TYPE_INT:
+                        concrete_token.start = "int";
+                        concrete_token.length = 3;
+                        break;
+                    case TYPE_FLOAT:
+                        concrete_token.start = "float";
+                        concrete_token.length = 5;
+                        break;
+                    case TYPE_STRING:
+                        concrete_token.start = "string";
+                        concrete_token.length = 6;
+                        break;
+                    case TYPE_BOOL:
+                        concrete_token.start = "bool";
+                        concrete_token.length = 4;
+                        break;
+                    default:
+                        concrete_token.start = "int";  // fallback
+                        concrete_token.length = 3;
+                        break;
+                }
+                concrete_token.line = original_type->token.line;
+                concrete_type->token = concrete_token;
+                
+                monomorphic_struct->field_types[i] = concrete_type;
+            } else {
+                // Not a type parameter, copy as-is
+                monomorphic_struct->field_types[i] = original_type;
+            }
+        } else {
+            // Not an identifier, copy as-is
+            monomorphic_struct->field_types[i] = original_type;
+        }
+        
         monomorphic_struct->field_arc_managed[i] = generic_struct->original_struct->field_arc_managed[i];
     }
     
@@ -776,6 +910,21 @@ void wyn_generate_monomorphic_instances_for_codegen(void* prog_ptr) {
     Program* prog = (Program*)prog_ptr;
     GenericInstantiation* current = g_instantiations;
     
+    // First, generate monomorphized struct definitions
+    GenericStructInstantiation* struct_current = g_struct_instantiations;
+    while (struct_current) {
+        if (struct_current->monomorphic_struct) {
+            // Generate the struct definition using codegen_stmt
+            extern void codegen_stmt(Stmt* stmt);
+            Stmt wrapper_stmt;
+            wrapper_stmt.type = STMT_STRUCT;
+            wrapper_stmt.struct_decl = *struct_current->monomorphic_struct;
+            codegen_stmt(&wrapper_stmt);
+        }
+        struct_current = struct_current->next;
+    }
+    
+    // Then generate function declarations and definitions as before
     // First pass: Generate forward declarations
     while (current) {
         GenericFunction* generic_fn = wyn_find_generic_function(current->function_name);

@@ -85,36 +85,6 @@ void wyn_optional_free(WynOptional* opt) {
     }
 }
 
-// Stub implementations for missing functions
-void wyn_check_let_pattern_completeness(void* pattern, void* value_type) {
-    // Stub implementation
-}
-
-void* wyn_create_closure_type(void* lambda, void* scope) {
-    // Stub implementation
-    return NULL;
-}
-
-void wyn_free_pattern(void* pattern) {
-    // Stub implementation
-}
-
-bool wyn_process_let_binding(void* pattern, void* init_expr, void* scope) {
-    // Stub implementation
-    return true;
-}
-
-bool wyn_validate_lambda(void* lambda, void* scope) {
-    // Stub implementation
-    return true;
-}
-
-// Additional missing functions
-void* create_scope(void* parent_scope) {
-    // Stub implementation
-    return NULL;
-}
-
 #define TYPE_GENERIC 999  // Temporary definition
 
 // Type-specific constructors
@@ -186,4 +156,20 @@ WynOptional* some(int value) {
 
 WynOptional* none(void) {
     return wyn_none();
+}
+
+// Task 3.5: Additional Option combinators
+void* wyn_optional_expect(WynOptional* opt, const char* message) {
+    if (!opt || !opt->has_value) {
+        fprintf(stderr, "Error: %s\n", message ? message : "Expected Some value, got None");
+        exit(1);
+    }
+    return opt->value;
+}
+
+WynOptional* wyn_optional_or_else(WynOptional* opt, WynOptional* (*fallback_fn)(void)) {
+    if (opt && opt->has_value) {
+        return opt;
+    }
+    return fallback_fn ? fallback_fn() : wyn_none();
 }

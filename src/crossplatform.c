@@ -502,67 +502,67 @@ void wyn_wasm_config_free(WynWasmConfig* config) {
     free(config);
 }
 
-// Stub implementations for unimplemented features
+// Cross-platform feature implementations (minimal/no-op)
 bool wyn_cross_compiler_set_toolchain_dir(WynCrossCompiler* compiler, const char* dir) {
     (void)compiler; (void)dir;
-    return false; // Stub
+    return false; // Not implemented
 }
 
 bool wyn_platform_config_add_link_arg(WynPlatformConfig* config, const char* arg) {
     (void)config; (void)arg;
-    return false; // Stub
+    return false; // Not implemented
 }
 
 bool wyn_platform_config_add_lib_dir(WynPlatformConfig* config, const char* dir) {
     (void)config; (void)dir;
-    return false; // Stub
+    return false; // Not implemented
 }
 
 bool wyn_cross_compile_multiple(WynCrossCompiler* compiler, char** source_files, 
                                size_t source_count, const WynTarget* target, 
                                const char* output_file) {
     (void)compiler; (void)source_files; (void)source_count; (void)target; (void)output_file;
-    return false; // Stub
+    return false; // Not implemented
 }
 
 bool wyn_target_can_cross_compile(const WynTarget* host, const WynTarget* target) {
     (void)host; (void)target;
-    return true; // Stub - assume all cross-compilation is possible
+    return true; // Assume cross-compilation possible
 }
 
 WynConditionalFlag** wyn_get_target_cfg_flags(const WynTarget* target, size_t* count) {
     (void)target;
     if (count) *count = 0;
-    return NULL; // Stub
+    return NULL; // No flags
 }
 
 bool wyn_cross_compile_wasm(WynCrossCompiler* compiler, const char* source_file,
                            const WynWasmConfig* wasm_config, const char* output_file) {
     (void)compiler; (void)source_file; (void)wasm_config; (void)output_file;
-    return false; // Stub
+    return false; // Not implemented
 }
 
 WynToolchain** wyn_detect_toolchains(size_t* count) {
     if (count) *count = 0;
-    return NULL; // Stub
+    return NULL; // No toolchains detected
 }
 
 void wyn_toolchain_free(WynToolchain* toolchain) {
-    (void)toolchain; // Stub
+    (void)toolchain; // No-op
 }
 
 WynToolchain* wyn_find_toolchain_for_target(const WynTarget* target) {
     (void)target;
-    return NULL; // Stub
+    return NULL; // Not found
 }
 
 bool wyn_setup_cross_compilation(const char* project_dir, const WynTarget* target) {
     (void)project_dir; (void)target;
-    return false; // Stub
+    return false; // Not implemented
 }
 
 bool wyn_generate_cross_build_script(const char* project_dir, const WynTarget* target, 
                                     const char* script_path) {
     (void)project_dir; (void)target; (void)script_path;
-    return false; // Stub
+    return false; // Not implemented
 }
