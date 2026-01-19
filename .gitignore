@@ -1,21 +1,29 @@
 # Compiler binary
 wyn
+wyn-llvm
+wyn-windows.exe
+wyn-linux
+wyn-macos
 
-# Generated files
+# Generated files from compilation
 *.out
 *.o
 *.wyn.out
-*.dSYM/
-
-# Generated C code from .wyn files
 *.wyn.c
+*.dSYM/
 
 # Build directories
 build/
 temp/
 
-# Test artifacts
+# Test executables (but not test source files)
+tests/test_lexer
+tests/test_parser
+tests/test_checker
+tests/test_codegen
 tests/test_*
+!tests/*.c
+!tests/*.h
 
 # IDE
 .vscode/
