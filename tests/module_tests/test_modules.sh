@@ -3,6 +3,9 @@
 
 cd "$(dirname "$0")"
 
+# Set WYN_ROOT so compiler can find src files
+export WYN_ROOT="$(cd ../.. && pwd)"
+
 PASS=0
 FAIL=0
 

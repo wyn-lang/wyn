@@ -69,12 +69,22 @@ static int compile_file_with_output(const char* filename, const char* output_nam
         snprintf(output_bin, sizeof(output_bin), "%s.out", filename);
     }
     
+    // Get the directory where wyn binary is located
+    char wyn_dir[1024] = ".";
+    char* wyn_path = getenv("WYN_ROOT");
+    if (wyn_path) {
+        snprintf(wyn_dir, sizeof(wyn_dir), "%s", wyn_path);
+    }
+    
     char cmd[2048];
     snprintf(cmd, sizeof(cmd), 
-             "gcc -O0 -I src -o %s %s src/wyn_wrapper.c src/wyn_interface.c "
-             "src/io.c src/optional.c src/result.c src/arc_runtime.c "
-             "src/safe_memory.c src/error.c src/string_runtime.c src/hashmap.c src/hashset.c src/json.c -lm 2>&1",
-             output_bin, output_c);
+             "gcc -O0 -I %s/src -o %s %s %s/src/wyn_wrapper.c %s/src/wyn_interface.c "
+             "%s/src/io.c %s/src/optional.c %s/src/result.c %s/src/arc_runtime.c "
+             "%s/src/concurrency.c %s/src/async_runtime.c "
+             "%s/src/safe_memory.c %s/src/error.c %s/src/string_runtime.c %s/src/hashmap.c %s/src/hashset.c %s/src/json.c -lm 2>&1",
+             wyn_dir, output_bin, output_c,
+             wyn_dir, wyn_dir, wyn_dir, wyn_dir, wyn_dir, wyn_dir, wyn_dir, wyn_dir,
+             wyn_dir, wyn_dir, wyn_dir, wyn_dir, wyn_dir, wyn_dir);
     
     int result = system(cmd);
     if (result != 0) {
