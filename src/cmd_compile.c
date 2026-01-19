@@ -102,6 +102,7 @@ static int compile_file(const char* filename) {
     return compile_file_with_output(filename, NULL);
 }
 
+#ifndef _WIN32
 // Find main.wyn in directory
 static char* find_main_file(const char* dir) {
     DIR* d = opendir(dir);
@@ -121,6 +122,7 @@ static char* find_main_file(const char* dir) {
     closedir(d);
     return NULL;
 }
+#endif
 
 // Main compile command
 int cmd_compile(const char* target, int argc, char** argv) {

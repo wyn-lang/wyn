@@ -4,6 +4,8 @@
 #include <sys/stat.h>
 #ifndef _WIN32
 #include <sys/wait.h>  // For WEXITSTATUS
+#else
+#define WEXITSTATUS(x) (x)
 #endif
 
 // Forward declarations
