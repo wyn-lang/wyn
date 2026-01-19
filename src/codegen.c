@@ -21,6 +21,7 @@
 void codegen_stmt(Stmt* stmt);
 void codegen_match_statement(Stmt* stmt); // T1.4.4: Control Flow Agent addition
 Type* make_type(TypeKind kind); // Forward declaration for type creation
+extern bool is_builtin_module(const char* name);  // Module system
 
 static FILE* out = NULL;
 
@@ -844,8 +845,8 @@ void codegen_expr(Expr* expr) {
                 memcpy(module_name, obj_name.start, len);
                 module_name[len] = '\0';
                 
-                // Only treat as module if it's actually loaded
-                if (is_module_loaded(module_name)) {
+                // Treat as module if it's loaded OR if it's a built-in
+                if (is_module_loaded(module_name) || is_builtin_module(module_name)) {
                     // Emit as: modulename_methodname(args)
                     emit("%.*s_%.*s(", obj_name.length, obj_name.start, method.length, method.start);
                     for (int i = 0; i < expr->method_call.arg_count; i++) {

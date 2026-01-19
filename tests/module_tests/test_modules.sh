@@ -124,6 +124,9 @@ echo "PASS: $PASS"
 echo "FAIL: $FAIL"
 echo ""
 
+# Cleanup
+rm -rf /tmp/wyn_modules
+
 if [ $FAIL -eq 0 ]; then
     echo "✓ All module tests passed!"
     exit 0
