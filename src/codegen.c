@@ -915,8 +915,27 @@ void codegen_expr(Expr* expr) {
             break;
         }
         case EXPR_HASHMAP_LITERAL: {
-            // v1.2.3: {} generates hashmap_new()
-            emit("hashmap_new()");
+            // v1.2.4: {} with initialization
+            if (expr->array.count == 0) {
+                // Empty hashmap
+                emit("hashmap_new()");
+            } else {
+                // HashMap with initial values
+                static int map_counter = 0;
+                int map_id = map_counter++;
+                emit("({ WynHashMap* __map_%d = hashmap_new(); ", map_id);
+                
+                // Insert key-value pairs (stored as key, value, key, value...)
+                for (int i = 0; i < expr->array.count; i += 2) {
+                    emit("hashmap_insert(__map_%d, ", map_id);
+                    codegen_expr(expr->array.elements[i]);    // key
+                    emit(", ");
+                    codegen_expr(expr->array.elements[i+1]);  // value
+                    emit("); ");
+                }
+                
+                emit("__map_%d; })", map_id);
+            }
             break;
         }
         case EXPR_HASHSET_LITERAL: {

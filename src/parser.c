@@ -476,13 +476,40 @@ static Expr* primary() {
     if (match(TOKEN_LBRACE)) {
         Expr* expr = alloc_expr();
         expr->type = EXPR_HASHMAP_LITERAL;
-        expr->array.elements = NULL;  // Reuse array structure for now
+        expr->array.elements = NULL;
         expr->array.count = 0;
         
-        // Empty hashmap: {}
+        // Parse key-value pairs: {"key": value, "key2": value2}
         if (!check(TOKEN_RBRACE)) {
-            // TODO: Parse key-value pairs for v1.2.4
-            // For now, only empty {} is supported
+            int capacity = 8;
+            expr->array.elements = malloc(sizeof(Expr*) * capacity);
+            
+            do {
+                // Expect string key
+                if (!check(TOKEN_STRING)) {
+                    fprintf(stderr, "Error: HashMap keys must be strings\n");
+                    break;
+                }
+                Expr* key = expression();
+                
+                // Expect colon
+                if (!match(TOKEN_COLON)) {
+                    fprintf(stderr, "Error: Expected ':' after HashMap key\n");
+                    break;
+                }
+                
+                // Parse value
+                Expr* value = expression();
+                
+                // Store key-value pair (key at even index, value at odd)
+                if (expr->array.count + 1 >= capacity) {
+                    capacity *= 2;
+                    expr->array.elements = realloc(expr->array.elements, sizeof(Expr*) * capacity);
+                }
+                expr->array.elements[expr->array.count++] = key;
+                expr->array.elements[expr->array.count++] = value;
+                
+            } while (match(TOKEN_COMMA));
         }
         
         expect(TOKEN_RBRACE, "Expected '}' after hashmap elements");
