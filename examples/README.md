@@ -1,67 +1,89 @@
-# Wyn Examples
+# Wyn Language Examples
 
-This directory contains example programs demonstrating Wyn language features.
+This directory contains **9 verified working examples** demonstrating various features of the Wyn programming language.
 
-## Basic Examples
-
-- `hello.wyn` - Print statements
-- `calc.wyn` - Arithmetic operations
-- `booleans.wyn` - Boolean logic
-- `const.wyn` - Constant variables
-- `comments.wyn` - Comment syntax
-
-## Control Flow
-
-- `if_else.wyn` - If/else statements
-- `for_loop.wyn` - For loops
-- `while_loop.wyn` - While loops
-- `break_continue.wyn` - Loop control
-
-## Data Structures
-
-- `arrays.wyn` - Array literals and indexing
-- `enums.wyn` - Enum declarations
-- `struct_simple.wyn` - Struct declarations
-- `type_aliases.wyn` - Type aliases
-
-## Advanced Features
-
-- `match.wyn` - Pattern matching
-- `logical.wyn` - Logical operators
-- `compound_assign.wyn` - Compound assignments
-- `assignment.wyn` - Variable assignment
-
-## Algorithms
-
-- `fibonacci.wyn` - Fibonacci sequence
-- `primes.wyn` - Prime number sieve
-- `gcd_lcm.wyn` - GCD and LCM
-- `collatz.wyn` - Collatz conjecture
-- `hanoi.wyn` - Tower of Hanoi
-- `sort.wyn` - Bubble sort
-
-## Comprehensive Demos
-
-- `showcase.wyn` - Multiple features
-- `comprehensive.wyn` - All features
-- `complete_demo.wyn` - Full language demo
-- `final_showcase.wyn` - Ultimate demo
-- `ultimate_demo.wyn` - Everything
-
-## Testing
-
-- `test_suite.wyn` - Comprehensive test suite
-- `stdlib_test.wyn` - Standard library tests
-- `math.wyn` - Math functions
+**Note:** 113 older/experimental examples have been moved to `archive/` directory.
 
 ## Running Examples
 
 ```bash
-./wyn examples/<file>.wyn
-./examples/<file>.wyn.out
+cd wyn
+./wyn ../examples/<example>.wyn
+../examples/<example>.wyn.out
+echo $?
 ```
 
-Or use the build script:
-```bash
-./build.sh examples/<file>.wyn
-```
+## Examples
+
+### calculator.wyn
+Demonstrates:
+- Enums with qualified names (Operation::ADD)
+- Pattern matching
+- Functions with multiple parameters
+- Control flow
+
+**Expected output:** Exit code 41
+
+### fibonacci.wyn
+Demonstrates:
+- Recursive functions
+- Conditional logic
+- Function calls
+
+**Expected output:** Exit code 18 (fib(5) + fib(7) = 5 + 13)
+
+### structs.wyn
+Demonstrates:
+- Struct definitions
+- Struct initialization
+- Functions operating on structs
+- Field access
+
+**Expected output:** Exit code 80 (area 50 + perimeter 30)
+
+### arrays.wyn
+Demonstrates:
+- Array literals
+- Array indexing
+- Loops (while)
+- Mutable variables
+- Array processing functions
+
+**Expected output:** Exit code 37 (sum 28 + max 9)
+
+### generics.wyn
+Demonstrates:
+- Generic functions
+- Type parameters
+- Generic instantiation
+- Comparison operators
+
+**Expected output:** Exit code 67 (42 + 20 + 5)
+
+## Language Features Demonstrated
+
+- ✅ Variables (let, let mut)
+- ✅ Functions
+- ✅ Structs
+- ✅ Enums
+- ✅ Arrays
+- ✅ Generics
+- ✅ Pattern matching
+- ✅ Control flow (if, while)
+- ✅ Recursion
+- ✅ Operators (+, -, *, /, >, ==)
+
+## Creating Your Own Examples
+
+1. Create a new .wyn file in this directory
+2. Write your Wyn code
+3. Compile with `./wyn ../examples/yourfile.wyn`
+4. Run with `../examples/yourfile.wyn.out`
+5. Check exit code with `echo $?`
+
+## Documentation
+
+For more information about the Wyn language, see:
+- Language specification: `internal-docs/01_LANGUAGE_SPEC.md`
+- Compiler documentation: `internal-docs/03_COMPILER_SPEC.md`
+- Standard library reference: `STDLIB_REFERENCE.md`

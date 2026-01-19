@@ -38,6 +38,9 @@ void free_expr(Expr* expr) {
         case EXPR_UNARY:
             free_expr(expr->unary.operand);
             break;
+        case EXPR_AWAIT:
+            free_expr(expr->await.expr);
+            break;
         case EXPR_MATCH:
             free_match_expr(&expr->match);
             break;
@@ -78,10 +81,17 @@ void free_expr(Expr* expr) {
         case EXPR_TUPLE:
             free_tuple_expr(&expr->tuple);
             break;
+        case EXPR_TUPLE_INDEX:
+            free_expr(expr->tuple_index.tuple);
+            break;
         case EXPR_INDEX_ASSIGN:
             free_expr(expr->index_assign.object);
             free_expr(expr->index_assign.index);
             free_expr(expr->index_assign.value);
+            break;
+        case EXPR_FIELD_ASSIGN:
+            free_expr(expr->field_assign.object);
+            free_expr(expr->field_assign.value);
             break;
         case EXPR_OPTIONAL_TYPE:  // T2.5.1: Optional Type Implementation
             free_expr(expr->optional_type.inner_type);
@@ -102,6 +112,7 @@ void free_expr(Expr* expr) {
         case EXPR_NONE:
         case EXPR_DESTRUCTURE:
         case EXPR_SPREAD:
+        case EXPR_PATTERN:
             // No additional cleanup needed for these types
             break;
     }
@@ -126,8 +137,24 @@ void free_stmt(Stmt* stmt) {
         case STMT_BLOCK:
             free_block_stmt(&stmt->block);
             break;
+        case STMT_UNSAFE:
+            free_block_stmt(&stmt->block);
+            break;
         case STMT_FN:
             free_fn_stmt(&stmt->fn);
+            break;
+        case STMT_EXTERN:
+            if (stmt->extern_fn.params) free(stmt->extern_fn.params);
+            if (stmt->extern_fn.param_types) {
+                for (int i = 0; i < stmt->extern_fn.param_count; i++) {
+                    if (stmt->extern_fn.param_types[i]) free_expr(stmt->extern_fn.param_types[i]);
+                }
+                free(stmt->extern_fn.param_types);
+            }
+            if (stmt->extern_fn.return_type) free_expr(stmt->extern_fn.return_type);
+            break;
+        case STMT_MACRO:
+            if (stmt->macro.params) free(stmt->macro.params);
             break;
         case STMT_STRUCT:
             free_struct_stmt(&stmt->struct_decl);
@@ -178,6 +205,9 @@ void free_stmt(Stmt* stmt) {
         case STMT_THROW:
             free_expr(stmt->throw_stmt.value);
             break;
+        case STMT_CATCH:
+            free_stmt(stmt->catch_stmt.body);
+            break;
         case STMT_TEST:  // T1.6.2: Testing Framework Agent addition
             free_stmt(stmt->test_stmt.body);
             break;
@@ -200,6 +230,7 @@ void free_stmt(Stmt* stmt) {
         case STMT_BREAK:
         case STMT_CONTINUE:
         case STMT_ASYNC_FN:
+        case STMT_MODULE:
             // No additional cleanup needed
             break;
     }
@@ -382,7 +413,14 @@ void free_import_stmt(ImportStmt* stmt) {
 
 void free_try_stmt(TryStmt* stmt) {
     free_stmt(stmt->try_block);
-    free_stmt(stmt->catch_block);
+    free_stmt(stmt->try_block);
+    for (int i = 0; i < stmt->catch_count; i++) {
+        free_stmt(stmt->catch_blocks[i]);
+    }
+    if (stmt->catch_blocks) free(stmt->catch_blocks);
+    if (stmt->exception_types) free(stmt->exception_types);
+    if (stmt->exception_vars) free(stmt->exception_vars);
+    if (stmt->finally_block) free_stmt(stmt->finally_block);
 }
 
 // T1.1.5: RAII Pattern Implementation

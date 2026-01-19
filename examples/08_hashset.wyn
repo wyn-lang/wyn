@@ -1,0 +1,32 @@
+// HashSet - Using hash sets for unique collections
+fn main() -> int {
+    // Create a new hash set
+    let set = hashset_new();
+    
+    // Add elements
+    hashset_add(set, "apple");
+    hashset_add(set, "banana");
+    hashset_add(set, "cherry");
+    
+    // Try to add duplicate
+    hashset_add(set, "apple");
+    
+    // Check membership
+    if hashset_contains(set, "apple") == 1 {
+        print_str("Set contains apple");
+    }
+    
+    if hashset_contains(set, "grape") == 0 {
+        print_str("Set does not contain grape");
+    }
+    
+    // Remove element
+    hashset_remove(set, "banana");
+    
+    if hashset_contains(set, "banana") == 0 {
+        print_str("Banana removed successfully");
+    }
+    
+    hashset_free(set);
+    return 0;
+}

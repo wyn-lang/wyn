@@ -57,11 +57,23 @@ Type* wyn_infer_variable_type(Expr* init_expr, SymbolTable* scope) {
         case EXPR_BOOL:
             inferred_type = make_type(TYPE_BOOL);
             break;
-        case EXPR_ARRAY:
-            inferred_type = make_type(TYPE_ARRAY);
+        case EXPR_ARRAY: {
+            // Infer array element type from first element
+            if (init_expr->array.count > 0) {
+                Type* element_type = check_expr(init_expr->array.elements[0], scope);
+                if (element_type) {
+                    inferred_type = make_type(TYPE_ARRAY);
+                    // Store element type (simplified - in full implementation would use proper array type structure)
+                    inferred_type->name = (Token){TOKEN_IDENT, "array", 5, 0};
+                }
+            } else {
+                inferred_type = make_type(TYPE_ARRAY);
+            }
             break;
+        }
         case EXPR_STRUCT_INIT:
             inferred_type = make_type(TYPE_STRUCT);
+            inferred_type->struct_type.name = init_expr->struct_init.type_name;
             break;
         case EXPR_BINARY:
             // Infer from binary operation result
@@ -71,8 +83,15 @@ Type* wyn_infer_variable_type(Expr* init_expr, SymbolTable* scope) {
             // Infer from function call return type
             inferred_type = wyn_infer_call_return_type(init_expr, scope);
             break;
+        case EXPR_METHOD_CALL:
+            // Method calls have their type set by checker - use that
+            if (init_expr->expr_type) {
+                inferred_type = init_expr->expr_type;
+            }
+            break;
         default:
-            inferred_type = make_type(TYPE_INT); // Default fallback
+            // No inference - return NULL to use checked type
+            inferred_type = NULL;
             break;
     }
     
@@ -149,7 +168,7 @@ Type* wyn_infer_binary_result_type(Expr* binary_expr) {
     }
     
     // For arithmetic operations, result type depends on operands
-    TokenType op = binary_expr->binary.op.type;
+    WynTokenType op = binary_expr->binary.op.type;
     
     if (op == TOKEN_PLUS || op == TOKEN_MINUS || op == TOKEN_STAR || op == TOKEN_SLASH) {
         // Arithmetic operations - check operand types

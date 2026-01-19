@@ -1,0 +1,23 @@
+// Generics - Generic functions with type parameters
+fn identity<T>(x: T) -> T {
+    return x;
+}
+
+fn max<T>(a: T, b: T) -> T {
+    if a > b {
+        return a;
+    }
+    return b;
+}
+
+fn main() -> int {
+    let num = identity(42);
+    let larger = max(10, 20);
+    
+    print_str("Identity: ");
+    print(num);
+    print_str("Max: ");
+    print(larger);
+    
+    return 0;
+}

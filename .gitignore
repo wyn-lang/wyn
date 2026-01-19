@@ -1,18 +1,30 @@
-# Build artifacts
+# Compiler binary
 wyn
+wyn-llvm
+wyn-windows.exe
+wyn-linux
+wyn-macos
+
+# Generated files from compilation
 *.out
 *.o
-.wyn.c
+*.wyn.out
+*.wyn.c
 *.dSYM/
 
-# Test artifacts
-tests/test_*
-examples/*.wyn.c
-!tests/*.c
-!tests/*.sh
-
-# Temp files
+# Build directories
+build/
 temp/
+.dev-scripts/
+
+# Test executables (but not test source files)
+tests/test_lexer
+tests/test_parser
+tests/test_checker
+tests/test_codegen
+tests/test_*
+!tests/*.c
+!tests/*.h
 
 # IDE
 .vscode/
@@ -20,11 +32,10 @@ temp/
 *.swp
 *.swo
 
-# Build artifacts
-*.wyn.out
-*.dSYM/
-build/
+# Logs and backups
 *.log
 *_backup.*
 *.bak
-temp/
+
+# OS
+.DS_Store

@@ -52,13 +52,15 @@ static void skip_whitespace() {
             advance();
         } else if (c == '/' && peek_next() == '/') {
             while (peek() != '\n' && !is_at_end()) advance();
+        } else if (c == '#') {
+            while (peek() != '\n' && !is_at_end()) advance();
         } else {
             break;
         }
     }
 }
 
-static Token make_token(TokenType type) {
+static Token make_token(WynTokenType type) {
     Token token;
     token.type = type;
     token.start = lexer.start;
@@ -68,22 +70,31 @@ static Token make_token(TokenType type) {
 }
 
 static Token number() {
+    // Hex literals: 0xFF
     if (*(lexer.current - 1) == '0' && (peek() == 'x' || peek() == 'X')) {
         advance();
         while (isxdigit(peek())) advance();
         return make_token(TOKEN_INT);
     }
     
-    while (isdigit(peek())) advance();
+    // Binary literals: 0b1010
+    if (*(lexer.current - 1) == '0' && (peek() == 'b' || peek() == 'B')) {
+        advance();
+        while (peek() == '0' || peek() == '1') advance();
+        return make_token(TOKEN_INT);
+    }
+    
+    // Regular numbers with optional underscores
+    while (isdigit(peek()) || peek() == '_') advance();
     if (peek() == '.' && isdigit(peek_next())) {
         advance();
-        while (isdigit(peek())) advance();
+        while (isdigit(peek()) || peek() == '_') advance();
         return make_token(TOKEN_FLOAT);
     }
     return make_token(TOKEN_INT);
 }
 
-static TokenType keyword_type(const char* start, int length) {
+static WynTokenType keyword_type(const char* start, int length) {
     switch (start[0]) {
         case 'a': 
             if (length == 3 && memcmp(start, "and", 3) == 0) return TOKEN_AND;
@@ -99,18 +110,23 @@ static TokenType keyword_type(const char* start, int length) {
             if (length == 7 && memcmp(start, "channel", 7) == 0) return TOKEN_CHANNEL;
             if (length == 5 && memcmp(start, "catch", 5) == 0) return TOKEN_CATCH;
             break;
+        case 'E':
+            if (length == 3 && memcmp(start, "Err", 3) == 0) return TOKEN_ERR;
+            break;
         case 'e':
             if (length == 4 && memcmp(start, "else", 4) == 0) return TOKEN_ELSE;
             if (length == 6 && memcmp(start, "elseif", 6) == 0) return TOKEN_ELSEIF;
             if (length == 4 && memcmp(start, "enum", 4) == 0) return TOKEN_ENUM;
-            if (length == 3 && memcmp(start, "err", 3) == 0) return TOKEN_ERR;
             if (length == 6 && memcmp(start, "export", 6) == 0) return TOKEN_EXPORT;
+            if (length == 3 && memcmp(start, "err", 3) == 0) return TOKEN_ERR;
+            if (length == 6 && memcmp(start, "extern", 6) == 0) return TOKEN_EXTERN;
             break;
         case 'f':
             if (length == 5 && memcmp(start, "false", 5) == 0) return TOKEN_FALSE;
             if (length == 2 && memcmp(start, "fn", 2) == 0) return TOKEN_FN;
             if (length == 3 && memcmp(start, "for", 3) == 0) return TOKEN_FOR;
             if (length == 4 && memcmp(start, "from", 4) == 0) return TOKEN_FROM;
+            if (length == 7 && memcmp(start, "finally", 7) == 0) return TOKEN_FINALLY;
             break;
         case 'i':
             if (length == 2 && memcmp(start, "if", 2) == 0) return TOKEN_IF;
@@ -118,19 +134,30 @@ static TokenType keyword_type(const char* start, int length) {
             if (length == 2 && memcmp(start, "in", 2) == 0) return TOKEN_IN;
             if (length == 6 && memcmp(start, "import", 6) == 0) return TOKEN_IMPORT;
             break;
+        case 'l':
+            if (length == 3 && memcmp(start, "let", 3) == 0) return TOKEN_LET;
+            break;
         case 'm':
             if (length == 5 && memcmp(start, "match", 5) == 0) return TOKEN_MATCH;
             if (length == 3 && memcmp(start, "mut", 3) == 0) return TOKEN_MUT;
             if (length == 3 && memcmp(start, "map", 3) == 0) return TOKEN_MAP;
             if (length == 6 && memcmp(start, "module", 6) == 0) return TOKEN_MODULE;
+            if (length == 5 && memcmp(start, "macro", 5) == 0) return TOKEN_MACRO;
             break;
         case 'n': 
             if (length == 3 && memcmp(start, "not", 3) == 0) return TOKEN_NOT;
             if (length == 4 && memcmp(start, "none", 4) == 0) return TOKEN_NONE;
             if (length == 4 && memcmp(start, "null", 4) == 0) return TOKEN_NULL;
             break;
+        case 'N':
+            if (length == 4 && memcmp(start, "None", 4) == 0) return TOKEN_NONE;
+            break;
+        case 'O':
+            if (length == 2 && memcmp(start, "Ok", 2) == 0) return TOKEN_OK;
+            break;
         case 'o': 
             if (length == 2 && memcmp(start, "or", 2) == 0) return TOKEN_OR;
+            if (length == 6 && memcmp(start, "object", 6) == 0) return TOKEN_OBJECT;
             if (length == 2 && memcmp(start, "ok", 2) == 0) return TOKEN_OK;
             break;
         case 'p': if (length == 3 && memcmp(start, "pub", 3) == 0) return TOKEN_PUB; break;
@@ -140,13 +167,19 @@ static TokenType keyword_type(const char* start, int length) {
             if (length == 4 && memcmp(start, "some", 4) == 0) return TOKEN_SOME;
             if (length == 5 && memcmp(start, "spawn", 5) == 0) return TOKEN_SPAWN;
             break;
+        case 'S':
+            if (length == 4 && memcmp(start, "Some", 4) == 0) return TOKEN_SOME;
+            break;
         case 't':
             if (length == 4 && memcmp(start, "true", 4) == 0) return TOKEN_TRUE;
-            if (length == 4 && memcmp(start, "type", 4) == 0) return TOKEN_TYPE;
+            if (length == 4 && memcmp(start, "type", 4) == 0) return TOKEN_TYPEDEF;
             if (length == 4 && memcmp(start, "test", 4) == 0) return TOKEN_TEST;
             if (length == 3 && memcmp(start, "try", 3) == 0) return TOKEN_TRY;
             if (length == 5 && memcmp(start, "throw", 5) == 0) return TOKEN_THROW;
             if (length == 5 && memcmp(start, "trait", 5) == 0) return TOKEN_TRAIT;
+            break;
+        case 'u':
+            if (length == 6 && memcmp(start, "unsafe", 6) == 0) return TOKEN_UNSAFE;
             break;
         case 'v': if (length == 3 && memcmp(start, "var", 3) == 0) return TOKEN_VAR; break;
         case 'w': if (length == 5 && memcmp(start, "while", 5) == 0) return TOKEN_WHILE; break;
@@ -157,7 +190,7 @@ static TokenType keyword_type(const char* start, int length) {
 static Token identifier() {
     while (isalnum(peek()) || peek() == '_') advance();
     int length = (int)(lexer.current - lexer.start);
-    TokenType type = keyword_type(lexer.start, length);
+    WynTokenType type = keyword_type(lexer.start, length);
     return make_token(type);
 }
 
@@ -205,7 +238,15 @@ Token next_token() {
     char c = advance();
     
     if (isdigit(c)) return number();
-    if (isalpha(c) || c == '_') return identifier();
+    if (isalpha(c)) return identifier();
+    if (c == '_') {
+        // Check if it's a standalone underscore or part of an identifier
+        if (isalnum(peek())) {
+            return identifier(); // Part of identifier like _var or var_
+        } else {
+            return make_token(TOKEN_UNDERSCORE); // Standalone underscore for pattern matching
+        }
+    }
     if (c == '"') return string();
     if (c == '\'') {
         // Character literal
@@ -231,7 +272,9 @@ Token next_token() {
             }
             return make_token(TOKEN_DOT);
         case ';': return make_token(TOKEN_SEMI);
-        case ':': return make_token(TOKEN_COLON);
+        case ':':
+            if (match(':')) return make_token(TOKEN_COLONCOLON);
+            return make_token(TOKEN_COLON);
         case '+': 
             if (match('+')) return make_token(TOKEN_PLUSPLUS);
             if (match('=')) return make_token(TOKEN_PLUSEQ);
@@ -260,6 +303,7 @@ Token next_token() {
         case '>': return match('=') ? make_token(TOKEN_GTEQ) : make_token(TOKEN_GT);
         case '?': 
             if (match('.')) return make_token(TOKEN_QUESTION_DOT);
+            if (match('?')) return make_token(TOKEN_QUESTION_QUESTION);
             return make_token(TOKEN_QUESTION);
     }
     

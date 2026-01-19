@@ -1,0 +1,35 @@
+// Test HashSet implementation
+fn main() -> int {
+    // Test basic add and contains
+    let set = hashset_new();
+    hashset_add(set, "apple");
+    hashset_add(set, "banana");
+    hashset_add(set, "cherry");
+    
+    if hashset_contains(set, "apple") != 1 {
+        return 1;
+    }
+    
+    if hashset_contains(set, "banana") != 1 {
+        return 2;
+    }
+    
+    if hashset_contains(set, "missing") != 0 {
+        return 3;
+    }
+    
+    // Test remove
+    hashset_remove(set, "banana");
+    if hashset_contains(set, "banana") != 0 {
+        return 4;
+    }
+    
+    // Test duplicate add (should not increase size)
+    hashset_add(set, "apple");
+    if hashset_contains(set, "apple") != 1 {
+        return 5;
+    }
+    
+    hashset_free(set);
+    return 0;
+}

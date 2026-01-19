@@ -7,6 +7,30 @@
 typedef struct Expr Expr;
 typedef struct Stmt Stmt;
 typedef struct Pattern Pattern;  // T3.3.1: Pattern forward declaration
+typedef struct Type Type;  // Forward declare Type for method dispatch
+
+// Phase 1 Task 1.2: Method Signature Table
+typedef struct {
+    const char* receiver_type;  // "string", "int", "float", etc.
+    const char* method_name;    // "upper", "lower", "abs", etc.
+    const char* return_type;    // "string", "int", "float", etc.
+    int param_count;            // Number of parameters (excluding self)
+} MethodSignature;
+
+// Lookup method return type given receiver type and method name
+const char* lookup_method_return_type(const char* receiver_type, const char* method_name);
+
+// Get receiver type string from Type for method dispatch
+const char* get_receiver_type_string(const Type* type);
+
+// Dispatch method call based on receiver type and method name
+typedef struct {
+    const char* c_function;  // C function to call (e.g., "string_len")
+    bool needs_args;         // Whether to emit arguments
+    bool pass_by_ref;        // Whether to pass receiver by reference (&obj)
+} MethodDispatch;
+
+bool dispatch_method(const char* receiver_type, const char* method_name, int arg_count, MethodDispatch* out);
 
 // T1.5.2: LambdaExpr definition (moved from ast.h to break circular dependency)
 typedef struct LambdaExpr {
@@ -32,9 +56,11 @@ typedef enum {
     TYPE_MAP,
     TYPE_OPTIONAL,  // T2.5.1: Optional Type Implementation
     TYPE_UNION,     // T2.5.2: Union Type Support
+    TYPE_RESULT,    // TASK-026: Result<T,E> Type Implementation
+    TYPE_GENERIC,   // T3.1.2: Generic type parameter
 } TypeKind;
 
-typedef struct Type Type;
+// Type already forward declared above
 
 typedef struct {
     Token name;
@@ -47,6 +73,7 @@ typedef struct {
     Type** param_types;
     int param_count;
     Type* return_type;
+    bool is_variadic;  // Support for variadic functions (e.g., printf)
 } FunctionType;
 
 typedef struct {
@@ -63,6 +90,16 @@ typedef struct {
     int type_count;    // Number of types in the union
 } UnionType;
 
+typedef struct {
+    Type* ok_type;     // The success type (T in Result<T,E>)
+    Type* err_type;    // The error type (E in Result<T,E>)
+} ResultType;
+
+typedef struct {
+    Token* variants;   // Array of enum variant names
+    int variant_count; // Number of variants
+} EnumType;
+
 struct Type {
     TypeKind kind;
     Token name;
@@ -72,6 +109,8 @@ struct Type {
         MapType map_type;
         OptionalType optional_type;  // T2.5.1: Optional Type Implementation
         UnionType union_type;        // T2.5.2: Union Type Support
+        ResultType result_type;      // TASK-026: Result<T,E> Type Implementation
+        EnumType enum_type;          // Enum type with variants
     };
 };
 
@@ -93,6 +132,8 @@ typedef struct SymbolTable {
 
 // Symbol table operations
 void add_symbol(SymbolTable* scope, Token name, Type* type, bool is_mutable);
+Symbol* find_symbol(SymbolTable* scope, Token name);
+SymbolTable* get_global_scope(void);
 
 // T2.5.4: Type Inference Improvements
 typedef struct {
@@ -136,6 +177,14 @@ Type* wyn_infer_generic_call_type(Token function_name, Expr** args, int arg_coun
 void wyn_generate_monomorphic_name(Token base_name, Type** type_args, int type_arg_count, 
                                    char* buffer, size_t buffer_size);
 bool wyn_is_type_parameter(GenericFunction* generic_fn, Token type_name);
+void wyn_register_generic_instantiation(Token func_name, Type** type_args, int type_arg_count);
+void wyn_collect_generic_instantiations_from_program(void* prog_ptr);
+void wyn_collect_generic_instantiations_from_stmt(void* stmt_ptr);
+void wyn_collect_generic_instantiations_from_expr(void* expr_ptr);
+void wyn_generate_monomorphic_instances_for_codegen(void* prog_ptr);
+void wyn_emit_monomorphic_function_declaration(void* original_fn, Type** type_args, int type_arg_count, const char* monomorphic_name);
+void wyn_emit_monomorphic_function_definition(void* original_fn, Type** type_args, int type_arg_count, const char* monomorphic_name);
+void wyn_emit(const char* fmt, ...); // Global emit function for code generation
 GenericStats wyn_get_generic_stats(void);
 void wyn_print_generic_stats(void);
 void wyn_list_generic_functions(void);

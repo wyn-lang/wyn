@@ -1,0 +1,21 @@
+// Async/Await - Asynchronous programming
+async fn fetch_data() -> int {
+    return 42;
+}
+
+async fn process_data(value: int) -> int {
+    return value * 2;
+}
+
+fn main() -> int {
+    let future1 = fetch_data();
+    let data = await future1;
+    
+    let future2 = process_data(data);
+    let result = await future2;
+    
+    print_str("Result: ");
+    print(result);
+    
+    return 0;
+}

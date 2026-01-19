@@ -24,12 +24,14 @@ typedef enum {
     EXPR_FIELD_ACCESS,
     EXPR_BOOL,
     EXPR_UNARY,
+    EXPR_AWAIT,
     EXPR_MATCH,
     EXPR_TERNARY,
     EXPR_SOME,
     EXPR_NONE,
     EXPR_OK,
     EXPR_ERR,
+    EXPR_TRY,           // TASK-026: ? operator for error propagation
     EXPR_PIPELINE,
     EXPR_IF_EXPR,
     EXPR_STRING_INTERP,
@@ -37,12 +39,14 @@ typedef enum {
     EXPR_LAMBDA,
     EXPR_DESTRUCTURE,
     EXPR_SPREAD,
-    EXPR_TRY,
     EXPR_MAP,
     EXPR_TUPLE,
+    EXPR_TUPLE_INDEX,   // Tuple element access (tuple.0, tuple.1, etc.)
     EXPR_INDEX_ASSIGN,
+    EXPR_FIELD_ASSIGN,  // Field assignment (obj.field = value)
     EXPR_OPTIONAL_TYPE,  // T2.5.1: Optional Type Implementation
     EXPR_UNION_TYPE,     // T2.5.2: Union Type Support
+    EXPR_RESULT_TYPE,    // TASK-026: Result<T,E> Type Implementation
     EXPR_PATTERN,        // T3.3.1: Pattern expressions for destructuring
 } ExprType;
 
@@ -99,17 +103,23 @@ typedef struct {
     Token* field_names;
     Expr** field_values;
     int field_count;
+    char* monomorphic_name;  // T4.1: For generic struct instantiations
 } StructInitExpr;
 
 typedef struct {
     Expr* object;
     Token field;
+    bool is_enum_access;  // True if this is enum member access (EnumName.MEMBER)
 } FieldAccessExpr;
 
 typedef struct {
     Token op;
     Expr* operand;
 } UnaryExpr;
+
+typedef struct {
+    Expr* expr;
+} AwaitExpr;
 
 // T3.3.1: Pattern structures for destructuring
 typedef struct Pattern Pattern;
@@ -234,10 +244,21 @@ typedef struct {
 } TupleExpr;
 
 typedef struct {
+    Expr* tuple;
+    int index;
+} TupleIndexExpr;
+
+typedef struct {
     Expr* object;
     Expr* index;
     Expr* value;
 } IndexAssignExpr;
+
+typedef struct {
+    Expr* object;
+    Token field;
+    Expr* value;
+} FieldAssignExpr;
 
 typedef struct {
     Expr* inner_type;  // The type that is optional (T in T?)
@@ -247,6 +268,15 @@ typedef struct {
     Expr** types;      // Array of types in the union (T, U, V, ...)
     int type_count;    // Number of types in the union
 } UnionTypeExpr;
+
+typedef struct {
+    Expr* ok_type;     // The success type (T in Result<T,E>)
+    Expr* err_type;    // The error type (E in Result<T,E>)
+} ResultTypeExpr;
+
+typedef struct {
+    Expr* value;       // Expression that might fail (for ? operator)
+} TryExpr;
 
 struct Expr {
     ExprType type;
@@ -262,6 +292,7 @@ struct Expr {
         StructInitExpr struct_init;
         FieldAccessExpr field_access;
         UnaryExpr unary;
+        AwaitExpr await;
         MatchExpr match;
         OptionExpr option;
         TernaryExpr ternary;
@@ -272,9 +303,13 @@ struct Expr {
         LambdaExpr lambda;
         MapExpr map;
         TupleExpr tuple;
+        TupleIndexExpr tuple_index;
         IndexAssignExpr index_assign;
+        FieldAssignExpr field_assign;
         OptionalTypeExpr optional_type;  // T2.5.1: Optional Type Implementation
         UnionTypeExpr union_type;        // T2.5.2: Union Type Support
+        ResultTypeExpr result_type;      // TASK-026: Result<T,E> Type Implementation
+        TryExpr try_expr;                // TASK-026: ? operator for error propagation
     };
 };
 
@@ -283,7 +318,9 @@ typedef enum {
     STMT_VAR,
     STMT_RETURN,
     STMT_BLOCK,
+    STMT_UNSAFE,
     STMT_FN,
+    STMT_EXTERN,
     STMT_STRUCT,
     STMT_IMPL,
     STMT_IF,
@@ -293,15 +330,18 @@ typedef enum {
     STMT_CONTINUE,
     STMT_ENUM,
     STMT_TYPE_ALIAS,
+    STMT_MACRO,
     STMT_IMPORT,
     STMT_EXPORT,
     STMT_ASYNC_FN,
     STMT_TRY,
+    STMT_CATCH,      // TASK-026: Catch block for error handling
     STMT_THROW,
     STMT_TEST,  // T1.6.2: Testing Framework Agent addition
     STMT_MATCH, // T1.4.3: Control Flow Agent addition
     STMT_TRAIT, // T3.2.1: Trait definition statement
     STMT_MODULE, // T3.5.1: Module declaration statement
+    STMT_SPAWN, // Concurrency: spawn statement
 } StmtType;
 
 typedef struct Stmt Stmt;
@@ -312,6 +352,7 @@ typedef struct {
     Expr* type;
     Expr* init;
     bool is_const;
+    bool is_mutable;     // Whether variable is declared with 'mut'
     bool uses_pattern;   // T3.3.2: Whether this uses pattern matching
 } VarStmt;
 
@@ -336,7 +377,19 @@ typedef struct {
     Expr* return_type;
     Stmt* body;
     bool is_public;
+    bool is_async;
+    Token receiver_type;      // For extension methods: fn Type.method()
+    bool is_extension;        // True if this is an extension method
 } FnStmt;
+
+typedef struct {
+    Token name;
+    Token* params;
+    Expr** param_types;
+    int param_count;
+    Expr* return_type;
+    bool is_variadic;  // For functions like printf(format, ...)
+} ExternStmt;
 
 typedef struct {
     Token name;
@@ -346,10 +399,19 @@ typedef struct {
     Expr** field_types;
     bool* field_arc_managed;  // T2.5.3: ARC integration for struct fields
     int field_count;
+    FnStmt** methods;         // Methods defined inside struct
+    int method_count;         // Number of methods
+    bool is_public;           // Whether struct is public (for modules)
 } StructStmt;
 
 typedef struct {
     Token type_name;
+    Token trait_name;         // Optional: for "impl Trait for Type"
+    bool is_trait_impl;       // True if this is "impl Trait for Type"
+    Token* type_params;       // Generic impl parameters
+    int type_param_count;
+    Token* trait_bounds;      // Trait bounds for type parameters
+    int trait_bound_count;
     FnStmt** methods;
     int method_count;
 } ImplStmt;
@@ -397,7 +459,16 @@ typedef struct {
 } TypeAliasStmt;
 
 typedef struct {
+    Token name;
+    Token* params;
+    int param_count;
+    Token body;  // Store as token for simple text substitution
+} MacroStmt;
+
+typedef struct {
     Token module;
+    Token path;      // Optional path like "wyn:math"
+    Token alias;     // Optional alias for "import math as m"
     Token* items;
     int item_count;
 } ImportStmt;
@@ -414,13 +485,22 @@ typedef struct {
 
 typedef struct {
     Stmt* try_block;
-    Token exception_var;  // Variable to bind caught exception
-    Stmt* catch_block;
+    Token* exception_types;  // Types of exceptions to catch
+    Token* exception_vars;   // Variables to bind caught exceptions
+    Stmt** catch_blocks;     // Multiple catch blocks
+    int catch_count;         // Number of catch blocks
+    Stmt* finally_block;     // Optional finally block
 } TryStmt;
 
 typedef struct {
     Expr* value;  // Expression to throw
 } ThrowStmt;
+
+typedef struct {
+    Token exception_type;  // Type of exception to catch
+    Token exception_var;   // Variable to bind caught exception
+    Stmt* body;           // Catch block body
+} CatchStmt;
 
 // T1.4.2: Break/Continue Implementation - Control Flow Agent addition
 typedef struct {
@@ -452,6 +532,7 @@ struct Stmt {
         ReturnStmt ret;
         BlockStmt block;
         FnStmt fn;
+        ExternStmt extern_fn;
         StructStmt struct_decl;
         ImplStmt impl;
         TraitStmt trait_decl;      // T3.2.1: Trait definition statement
@@ -461,10 +542,12 @@ struct Stmt {
         ForStmt for_stmt;
         EnumStmt enum_decl;
         TypeAliasStmt type_alias;
+        MacroStmt macro;
         ImportStmt import;
         ExportStmt export;
         TryStmt try_stmt;
         ThrowStmt throw_stmt;
+        CatchStmt catch_stmt;        // TASK-026: Catch statement
         BreakStmt break_stmt;      // T1.4.2: Control Flow Agent addition
         ContinueStmt continue_stmt; // T1.4.2: Control Flow Agent addition
         MatchStmt match_stmt;      // T1.4.3: Control Flow Agent addition
@@ -473,6 +556,9 @@ struct Stmt {
             Stmt* body;
             bool is_async;
         } test_stmt;
+        struct {  // Spawn statement
+            Expr* call;
+        } spawn;
     };
 };
 

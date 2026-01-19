@@ -19,7 +19,7 @@ static inline char* _dirname(const char* path) {
     return dir;
 }
 
-// Stub implementations for Unix functions not available on Windows
+// Windows compatibility shims for Unix functions
 #define fork() (-1)
 #define pipe(fds) (-1)
 #define dup2(oldfd, newfd) (-1)

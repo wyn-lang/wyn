@@ -1,0 +1,17 @@
+// Modules - Using the module system
+import math;
+
+fn main() -> int {
+    let sum = math::add(10, 20);
+    let product = math::multiply(5, 6);
+    let squared = math::power2(7);
+    
+    print_str("Sum: ");
+    print(sum);
+    print_str("Product: ");
+    print(product);
+    print_str("Power2: ");
+    print(squared);
+    
+    return 0;
+}
