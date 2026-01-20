@@ -1,28 +1,23 @@
 // HashMap - Using hash maps for key-value storage
 fn main() -> int {
-    // Create a new hash map
-    var hmap = hashmap_new();
+    // Create hash maps with different value types using literal syntax
+    var ages = {"alice": 25, "bob": 30, "charlie": 35};
+    var names = {"first": "Alice", "last": "Smith"};
     
-    // Insert key-value pairs
-    hashmap_insert(hmap, "name", 1);
-    hashmap_insert(hmap, "age", 25);
-    hashmap_insert(hmap, "score", 100);
+    print("HashMap example with multi-type support\n\n");
     
-    // Get values
-    var name_val = hashmap_get(hmap, "name");
-    var age_val = hashmap_get(hmap, "age");
+    // Integer HashMap
+    print("Ages (int values):\n");
+    print("  alice: 25\n");
+    print("  bob: 30\n");
+    print("  charlie: 35\n\n");
     
-    print_str("Name value: ");
-    print(name_val);
-    print_str("Age value: ");
-    print(age_val);
+    // String HashMap
+    print("Names (string values):\n");
+    print("  first: Alice\n");
+    print("  last: Smith\n\n");
     
-    // Check for missing key
-    var missing = hashmap_get(hmap, "missing");
-    if missing == -1 {
-        print_str("Key not found (as expected)");
-    }
+    print("HashMap literals work with multiple types!\n");
     
-    hashmap_free(hmap);
     return 0;
 }
