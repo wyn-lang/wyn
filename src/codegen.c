@@ -1384,6 +1384,7 @@ void codegen_expr(Expr* expr) {
 }
 
 void codegen_c_header() {
+    emit("#define _POSIX_C_SOURCE 200809L\n");
     emit("#include <stdio.h>\n");
     emit("#include <stdlib.h>\n");
     emit("#include <stdint.h>\n");
@@ -1395,6 +1396,7 @@ void codegen_c_header() {
     emit("#include <stdarg.h>\n");
     emit("#include <setjmp.h>\n");
     emit("#include <sys/socket.h>\n");
+    emit("#include <sys/time.h>\n");
     emit("#include <netinet/in.h>\n");
     emit("#include <netdb.h>\n");
     emit("#include <unistd.h>\n");
@@ -2201,7 +2203,7 @@ void codegen_c_header() {
     emit("    struct sockaddr_in addr;\n");
     emit("    memset(&addr, 0, sizeof(addr));\n");
     emit("    addr.sin_family = AF_INET;\n");
-    emit("    memcpy(&addr.sin_addr.s_addr, server->h_addr, server->h_length);\n");
+    emit("    memcpy(&addr.sin_addr.s_addr, server->h_addr_list[0], server->h_length);\n");
     emit("    addr.sin_port = htons(port);\n");
     emit("    \n");
     emit("    if(connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {\n");

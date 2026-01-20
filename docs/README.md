@@ -1,7 +1,7 @@
 # Wyn Language Documentation
 
-![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)
-**Latest: v1.2.2**
+![Version](https://img.shields.io/badge/version-1.3.2-blue.svg)
+**Latest: v1.3.2**
 
 Welcome to the official documentation for the Wyn programming language - a modern systems programming language where everything is an object.
 
@@ -20,9 +20,8 @@ Welcome to the official documentation for the Wyn programming language - a moder
 
 ## Quick Links
 
-- **GitHub Repository:** [wyn-lang/wyn](https://github.com/wyn-lang/wyn)
 - **Examples Directory:** [../examples/](../examples/)
-- **Issue Tracker:** [GitHub Issues](https://github.com/wyn-lang/wyn/issues)
+- **Changelog:** [../CHANGELOG.md](../CHANGELOG.md)
 
 ## What is Wyn?
 
@@ -44,10 +43,10 @@ let result = 42.abs() + "hello".len() + 16.0.sqrt()
 
 ## Version Information
 
-**Current Version:** 1.2.2  
+**Current Version:** 1.3.2  
 **Status:** Production Ready  
 **License:** See [LICENSE](../LICENSE)
 
 ---
 
-*This documentation is for Wyn v1.2.2. For older versions, see the git history.*
+*This documentation is for Wyn v1.3.2. For older versions, see the changelog.*
