@@ -1,35 +1,31 @@
-// Test HashSet implementation
+// Test HashSet with OO method syntax
 fn main() -> int {
-    // Test basic add and contains
-    let set = hashset_new();
-    hashset_add(set, "apple");
-    hashset_add(set, "banana");
-    hashset_add(set, "cherry");
+    // Test creation with initialization
+    var set = {:"apple", "banana", "cherry"};
     
-    if hashset_contains(set, "apple") != 1 {
+    if (!set.contains("apple")) {
         return 1;
     }
     
-    if hashset_contains(set, "banana") != 1 {
+    if (!set.contains("banana")) {
         return 2;
     }
     
-    if hashset_contains(set, "missing") != 0 {
+    if (set.contains("missing")) {
         return 3;
     }
     
-    // Test remove
-    hashset_remove(set, "banana");
-    if hashset_contains(set, "banana") != 0 {
+    // Test insert method
+    set.insert("date");
+    if (!set.contains("date")) {
         return 4;
     }
     
-    // Test duplicate add (should not increase size)
-    hashset_add(set, "apple");
-    if hashset_contains(set, "apple") != 1 {
+    // Test remove method
+    set.remove("banana");
+    if (set.contains("banana")) {
         return 5;
     }
     
-    hashset_free(set);
     return 0;
 }

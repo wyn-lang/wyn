@@ -204,6 +204,7 @@ const char* get_receiver_type_string(const Type* type) {
         case TYPE_BOOL: return "bool";
         case TYPE_ARRAY: return "array";
         case TYPE_MAP: return "map";
+        case TYPE_SET: return "set";
         case TYPE_OPTIONAL: return "option";
         case TYPE_RESULT: return "result";
         default: return NULL;
@@ -483,7 +484,6 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
         // Map methods
         if (strcmp(method_name, "insert") == 0 && arg_count == 2) {
             out->c_function = "map_set";
-            out->pass_by_ref = true;
             return true;
         }
         if (strcmp(method_name, "get") == 0 && arg_count == 1) {
@@ -491,7 +491,6 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
         }
         if (strcmp(method_name, "remove") == 0 && arg_count == 1) {
             out->c_function = "map_remove";
-            out->pass_by_ref = true;
             return true;
         }
         if (strcmp(method_name, "contains") == 0 && arg_count == 1) {
@@ -505,7 +504,6 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
         }
         if (strcmp(method_name, "clear") == 0 && arg_count == 0) {
             out->c_function = "map_clear";
-            out->pass_by_ref = true;
             return true;
         }
         if (strcmp(method_name, "get_or_default") == 0 && arg_count == 2) {
@@ -513,7 +511,6 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
         }
         if (strcmp(method_name, "merge") == 0 && arg_count == 1) {
             out->c_function = "map_merge";
-            out->pass_by_ref = true;
             return true;
         }
         return false;
@@ -522,16 +519,16 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
     if (strcmp(receiver_type, "set") == 0) {
         // HashSet methods
         if (strcmp(method_name, "insert") == 0 && arg_count == 1) {
-            out->c_function = "set_insert";
-            out->pass_by_ref = true;
+            out->c_function = "hashset_add";
+            
             return true;
         }
         if (strcmp(method_name, "contains") == 0 && arg_count == 1) {
-            out->c_function = "set_contains"; return true;
+            out->c_function = "hashset_contains"; return true;
         }
         if (strcmp(method_name, "remove") == 0 && arg_count == 1) {
-            out->c_function = "set_remove";
-            out->pass_by_ref = true;
+            out->c_function = "hashset_remove";
+            
             return true;
         }
         if (strcmp(method_name, "len") == 0 && arg_count == 0) {
@@ -542,7 +539,6 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
         }
         if (strcmp(method_name, "clear") == 0 && arg_count == 0) {
             out->c_function = "set_clear";
-            out->pass_by_ref = true;
             return true;
         }
         if (strcmp(method_name, "union") == 0 && arg_count == 1) {
