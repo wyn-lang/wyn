@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.2] - 2026-01-20
+
+### Fixed
+- **Windows MinGW Compatibility** - Added `-std=c11` flag to all GCC compilation commands
+  - Fixes GitHub issue #1: hello world compilation on Windows 7 MinGW-winlibs
+  - Ensures `_Generic` macro support across all platforms
+  - Affects: normal compilation, `wyn run`, `wyn build`, and cross-compilation
+
 ## [1.3.0] - 2026-01-20
 
 ### Added
