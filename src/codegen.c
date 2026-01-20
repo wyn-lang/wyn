@@ -1384,6 +1384,7 @@ void codegen_expr(Expr* expr) {
 }
 
 void codegen_c_header() {
+    emit("#define _POSIX_C_SOURCE 200809L\n");
     emit("#include <stdio.h>\n");
     emit("#include <stdlib.h>\n");
     emit("#include <stdint.h>\n");
@@ -1395,6 +1396,7 @@ void codegen_c_header() {
     emit("#include <stdarg.h>\n");
     emit("#include <setjmp.h>\n");
     emit("#include <sys/socket.h>\n");
+    emit("#include <sys/time.h>\n");
     emit("#include <netinet/in.h>\n");
     emit("#include <netdb.h>\n");
     emit("#include <unistd.h>\n");
