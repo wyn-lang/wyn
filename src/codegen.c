@@ -2203,7 +2203,7 @@ void codegen_c_header() {
     emit("    struct sockaddr_in addr;\n");
     emit("    memset(&addr, 0, sizeof(addr));\n");
     emit("    addr.sin_family = AF_INET;\n");
-    emit("    memcpy(&addr.sin_addr.s_addr, server->h_addr, server->h_length);\n");
+    emit("    memcpy(&addr.sin_addr.s_addr, server->h_addr_list[0], server->h_length);\n");
     emit("    addr.sin_port = htons(port);\n");
     emit("    \n");
     emit("    if(connect(sock, (struct sockaddr*)&addr, sizeof(addr)) < 0) {\n");
