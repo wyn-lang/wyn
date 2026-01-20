@@ -36,13 +36,14 @@ fn main() -> int {
 42.abs()              // Methods on integers
 "hello".upper()       // Methods on strings
 [1,2,3].len()         // Methods on arrays
+{"a": 1}.get("a")     // Methods on hashmaps
 ```
 
 ### Clean Collection Syntax
 ```wyn
 var arr = [1, 2, 3];                    // Array
 var hmap = {"key": 10, "key2": 20};     // HashMap
-var hset = {:};                          // HashSet
+var hset = {:"item1", "item2"};         // HashSet
 ```
 
 ### Simple Variable Declaration
@@ -69,16 +70,15 @@ const immutable = 20;  // Immutable
 fn main() -> int {
     // Collections with clean syntax
     var scores = {"alice": 95, "bob": 87};
-    var tags = {:};
+    var tags = {:"urgent", "important"};
     var numbers = [1, 2, 3, 4, 5];
     
-    // Everything is an object
+    // Everything is an object - use method syntax
     var len = numbers.len();
-    var sum = numbers.contains(3);
+    var has_three = numbers.contains(3);
+    var alice_score = scores.get("alice");
     
-    // HashMap operations
-    var alice_score = hashmap_get(scores, "alice");
-    print_int(alice_score);  // 95
+    print(alice_score);  // 95
     
     return 0;
 }
@@ -103,8 +103,7 @@ See [CHANGELOG.md](CHANGELOG.md) for version history and release notes.
 - HashMap multi-type support (int, float, string, bool)
 - HashSet initialization syntax: `{:"item1", "item2"}`
 - Full standard library with 60+ functions
-- HashSet literal syntax: `{:}`
-- HashSet operations: `set_union()`, `set_intersection()`, etc.
+- Object-oriented method syntax for all collections
 
 ### Bug Fixes
 - Fixed impl methods calling other methods
