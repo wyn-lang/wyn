@@ -871,14 +871,17 @@ Type* check_expr(Expr* expr, SymbolTable* scope) {
             return builtin_array;
         }
         case EXPR_HASHMAP_LITERAL: {
-            // v1.2.3: {} creates a hashmap
-            expr->expr_type = builtin_int;  // Placeholder - hashmap type
-            return builtin_int;
+            // v1.3.0: {} creates a hashmap with proper type
+            Type* map_type = make_type(TYPE_MAP);
+            expr->expr_type = map_type;
+            return map_type;
         }
         case EXPR_HASHSET_LITERAL: {
-            // v1.2.3: () creates a hashset
-            expr->expr_type = builtin_int;  // Placeholder - hashset type
-            return builtin_int;
+            // v1.3.0: {:} creates a hashset with proper type  
+            // Use TYPE_MAP for now (HashSet is a special map)
+            Type* set_type = make_type(TYPE_MAP);
+            expr->expr_type = set_type;
+            return set_type;
         }
         case EXPR_INDEX: {
             Type* array_type = check_expr(expr->index.array, scope);
