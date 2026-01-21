@@ -9,6 +9,7 @@
 #include "platform.h"
 #include "llvm_codegen.h"
 #include "optimize.h"
+#include "module.h"
 
 void init_lexer(const char* source);
 void init_parser();
@@ -262,6 +263,7 @@ int main(int argc, char** argv) {
         init_parser();
         set_parser_filename("temp/combined.wyn");  // Set filename for better error messages
         init_checker();
+        check_all_modules();  // Type check loaded modules
         
         Program* prog = parse_program();
         if (!prog) {
@@ -356,6 +358,7 @@ int main(int argc, char** argv) {
         init_parser();
         set_parser_filename(file);  // Set filename for better error messages
         init_checker();
+        check_all_modules();  // Type check loaded modules
         
         Program* prog = parse_program();
         if (!prog) {
@@ -466,6 +469,7 @@ int main(int argc, char** argv) {
         init_lexer(source);
         init_parser();
         init_checker();
+        check_all_modules();  // Type check loaded modules
         
         Program* prog = parse_program();
         if (!prog) {
@@ -525,6 +529,7 @@ int main(int argc, char** argv) {
         init_parser();
         set_parser_filename(file);  // Set filename for better error messages
         init_checker();
+        check_all_modules();  // Type check loaded modules
         
         Program* prog = parse_program();
         if (!prog) {
@@ -621,6 +626,7 @@ int main(int argc, char** argv) {
     init_parser();
     set_parser_filename(argv[file_arg_index]);  // Set filename for better error messages
     init_checker();
+    check_all_modules();  // Type check loaded modules
     
     Program* prog = parse_program();
     if (!prog) {

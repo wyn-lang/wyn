@@ -138,6 +138,9 @@ void free_stmt(Stmt* stmt) {
         case STMT_VAR:
             free_var_stmt(&stmt->var);
             break;
+        case STMT_CONST:
+            free_var_stmt(&stmt->const_stmt);  // Reuse VarStmt structure
+            break;
         case STMT_RETURN:
             free_expr(stmt->ret.value);
             break;

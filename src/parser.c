@@ -1311,24 +1311,43 @@ Stmt* statement() {
     
     if (match(TOKEN_VAR) || match(TOKEN_CONST)) {
         Stmt* stmt = alloc_stmt();
-        stmt->type = STMT_VAR;
         WynTokenType decl_type = parser.previous.type;
         
-        // var = mutable, const = immutable
-        stmt->var.is_const = (decl_type == TOKEN_CONST);
-        stmt->var.is_mutable = (decl_type == TOKEN_VAR);
-        stmt->var.name = parser.current;
+        if (decl_type == TOKEN_CONST) {
+            stmt->type = STMT_CONST;
+            stmt->const_stmt.is_const = true;
+            stmt->const_stmt.is_mutable = false;
+            stmt->const_stmt.name = parser.current;
+        } else {
+            stmt->type = STMT_VAR;
+            stmt->var.is_const = false;
+            stmt->var.is_mutable = true;
+            stmt->var.name = parser.current;
+        }
+        
         expect(TOKEN_IDENT, "Expected variable name");
         
         // Check for type annotation: var name: type = value
         if (match(TOKEN_COLON)) {
-            stmt->var.type = parse_type();
+            if (decl_type == TOKEN_CONST) {
+                stmt->const_stmt.type = parse_type();
+            } else {
+                stmt->var.type = parse_type();
+            }
         } else {
-            stmt->var.type = NULL;
+            if (decl_type == TOKEN_CONST) {
+                stmt->const_stmt.type = NULL;
+            } else {
+                stmt->var.type = NULL;
+            }
         }
         
         expect(TOKEN_EQ, "Expected '=' after variable name");
-        stmt->var.init = expression();
+        if (decl_type == TOKEN_CONST) {
+            stmt->const_stmt.init = expression();
+        } else {
+            stmt->var.init = expression();
+        }
         return stmt;
     }
     
@@ -2235,6 +2254,7 @@ Stmt* enum_decl() {
     Stmt* stmt = alloc_stmt();
     stmt->type = STMT_ENUM;
     stmt->enum_decl.name = parser.current;
+    stmt->enum_decl.is_public = false;  // Initialize to false
     expect(TOKEN_IDENT, "Expected enum name");
     expect(TOKEN_LBRACE, "Expected '{' after enum name");
     
@@ -2448,6 +2468,11 @@ Program* parse_program() {
                 // It's pub struct
                 Stmt* stmt = struct_decl();
                 stmt->struct_decl.is_public = true;
+                prog->stmts[prog->count++] = stmt;
+            } else if (check(TOKEN_ENUM)) {
+                // It's pub enum
+                Stmt* stmt = enum_decl();
+                stmt->enum_decl.is_public = true;
                 prog->stmts[prog->count++] = stmt;
             } else {
                 // It's pub fn or pub async - function() will handle it

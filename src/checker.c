@@ -1511,6 +1511,50 @@ void check_stmt(Stmt* stmt, SymbolTable* scope) {
             check_stmt(stmt->for_stmt.body, scope);
             break;
         }
+        case STMT_FN: {
+            // Handle function definitions inside modules
+            FnStmt* fn = &stmt->fn;
+            
+            // Create function scope for parameter type checking
+            SymbolTable fn_scope = {0};
+            fn_scope.parent = scope;
+            fn_scope.capacity = 32;
+            fn_scope.symbols = calloc(32, sizeof(Symbol));
+            fn_scope.count = 0;
+            
+            // Add parameters to function scope with proper types
+            for (int j = 0; j < fn->param_count; j++) {
+                Type* param_type = builtin_int; // default
+                
+                if (fn->param_types[j]) {
+                    if (fn->param_types[j]->type == EXPR_IDENT) {
+                        Token type_name = fn->param_types[j]->token;
+                        if (type_name.length == 3 && memcmp(type_name.start, "int", 3) == 0) {
+                            param_type = builtin_int;
+                        } else if ((type_name.length == 6 && memcmp(type_name.start, "string", 6) == 0) ||
+                                   (type_name.length == 3 && memcmp(type_name.start, "str", 3) == 0)) {
+                            param_type = builtin_string;
+                        } else if (type_name.length == 5 && memcmp(type_name.start, "float", 5) == 0) {
+                            param_type = builtin_float;
+                        } else if (type_name.length == 4 && memcmp(type_name.start, "bool", 4) == 0) {
+                            param_type = builtin_bool;
+                        } else if (type_name.length == 5 && memcmp(type_name.start, "array", 5) == 0) {
+                            param_type = builtin_array;
+                        }
+                    }
+                }
+                
+                add_symbol(&fn_scope, fn->params[j], param_type, true);
+            }
+            
+            // Check function body with parameters in scope
+            if (fn->body) {
+                check_stmt(fn->body, &fn_scope);
+            }
+            
+            free(fn_scope.symbols);
+            break;
+        }
         case STMT_EXPORT:
             // Check the exported statement
             check_stmt(stmt->export.stmt, scope);
@@ -1863,7 +1907,7 @@ void check_stmt(Stmt* stmt, SymbolTable* scope) {
 }
 
 void check_program(Program* prog) {
-    // Pass 0: Register all struct types and enums first (so functions can reference them)
+    // Pass 0: Register all struct types, enums, and constants first (so functions can reference them)
     for (int i = 0; i < prog->count; i++) {
         if (prog->stmts[i]->type == STMT_STRUCT) {
             StructStmt* struct_decl = &prog->stmts[i]->struct_decl;
@@ -1930,6 +1974,25 @@ void check_program(Program* prog) {
             }
             fn_type->fn_type.return_type = builtin_int; // Simplified
             add_function_overload(global_scope, macro->name, fn_type, false);
+        } else if (prog->stmts[i]->type == STMT_CONST) {
+            // Register module-level constants early so functions can use them
+            VarStmt* const_stmt = &prog->stmts[i]->const_stmt;
+            
+            // Determine type from initializer
+            Type* const_type = builtin_int; // default
+            if (const_stmt->init) {
+                if (const_stmt->init->type == EXPR_STRING) {
+                    const_type = builtin_string;
+                } else if (const_stmt->init->type == EXPR_FLOAT) {
+                    const_type = builtin_float;
+                } else if (const_stmt->init->type == EXPR_BOOL) {
+                    const_type = builtin_bool;
+                } else if (const_stmt->init->type == EXPR_INT) {
+                    const_type = builtin_int;
+                }
+            }
+            
+            add_symbol(global_scope, const_stmt->name, const_type, false);
         }
     }
     

@@ -318,6 +318,7 @@ struct Expr {
 typedef enum {
     STMT_EXPR,
     STMT_VAR,
+    STMT_CONST,
     STMT_RETURN,
     STMT_BLOCK,
     STMT_UNSAFE,
@@ -453,6 +454,7 @@ typedef struct {
     Token name;
     Token* variants;
     int variant_count;
+    bool is_public;
 } EnumStmt;
 
 typedef struct {
@@ -531,6 +533,7 @@ struct Stmt {
     union {
         Expr* expr;
         VarStmt var;
+        VarStmt const_stmt;  // Reuse VarStmt structure for constants
         ReturnStmt ret;
         BlockStmt block;
         FnStmt fn;

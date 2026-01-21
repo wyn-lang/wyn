@@ -49,3 +49,14 @@ int get_all_modules(ModuleEntry** out_modules, int max_count) {
 int get_all_modules_raw(void** out_modules, int max_count) {
     return get_all_modules((ModuleEntry**)out_modules, max_count);
 }
+
+int get_module_count(void) {
+    return global_module_registry.count;
+}
+
+Program* get_module_at(int index) {
+    if (index < 0 || index >= global_module_registry.count) {
+        return NULL;
+    }
+    return global_module_registry.modules[index]->ast;
+}

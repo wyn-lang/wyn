@@ -8,10 +8,43 @@
 static char* module_paths[16];
 static int module_path_count = 0;
 
+// Circular import detection
+static char* loading_stack[32];
+static int loading_stack_count = 0;
+
 void add_module_path(const char* path) {
     if (module_path_count < 16) {
         module_paths[module_path_count++] = strdup(path);
     }
+}
+
+static bool is_in_loading_stack(const char* module_name) {
+    for (int i = 0; i < loading_stack_count; i++) {
+        if (strcmp(loading_stack[i], module_name) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void push_loading_stack(const char* module_name) {
+    if (loading_stack_count < 32) {
+        loading_stack[loading_stack_count++] = strdup(module_name);
+    }
+}
+
+static void pop_loading_stack() {
+    if (loading_stack_count > 0) {
+        free(loading_stack[--loading_stack_count]);
+    }
+}
+
+static void print_circular_import_error(const char* module_name) {
+    fprintf(stderr, "Error: Circular import detected: ");
+    for (int i = 0; i < loading_stack_count; i++) {
+        fprintf(stderr, "%s -> ", loading_stack[i]);
+    }
+    fprintf(stderr, "%s\n", module_name);
 }
 
 // Check if module is built-in (has C implementation)
@@ -148,9 +181,19 @@ Program* load_module(const char* module_name) {
         return get_module(module_name);
     }
     
+    // Check for circular import
+    if (is_in_loading_stack(module_name)) {
+        print_circular_import_error(module_name);
+        return NULL;
+    }
+    
+    // Add to loading stack
+    push_loading_stack(module_name);
+    
     char* path = resolve_module_path(module_name);
     if (!path) {
         fprintf(stderr, "Error: Module '%s' not found\n", module_name);
+        pop_loading_stack();
         return NULL;
     }
     
@@ -159,6 +202,7 @@ Program* load_module(const char* module_name) {
     if (!f) {
         fprintf(stderr, "Error: Could not open module '%s'\n", path);
         free(path);
+        pop_loading_stack();
         return NULL;
     }
     
@@ -202,5 +246,29 @@ Program* load_module(const char* module_name) {
         register_module(module_name, prog);
     }
     
+    // Remove from loading stack
+    pop_loading_stack();
+    
     return prog;
+}
+
+// Type check all loaded modules (call after init_checker)
+void check_all_modules(void) {
+    extern void check_stmt(void* stmt, void* scope);
+    extern SymbolTable* get_global_scope();
+    extern int get_module_count();
+    extern Program* get_module_at(int index);
+    
+    SymbolTable* scope = get_global_scope();
+    if (!scope) return;
+    
+    int count = get_module_count();
+    for (int i = 0; i < count; i++) {
+        Program* prog = get_module_at(i);
+        if (prog) {
+            for (int j = 0; j < prog->count; j++) {
+                check_stmt(prog->stmts[j], scope);
+            }
+        }
+    }
 }

@@ -1119,12 +1119,21 @@ void codegen_expr(Expr* expr) {
             // Use monomorphic name if available (for generic structs)
             const char* actual_type_name;
             int actual_type_name_len;
+            static char prefixed_type_name[128];
+            
             if (expr->struct_init.monomorphic_name) {
                 actual_type_name = expr->struct_init.monomorphic_name;
                 actual_type_name_len = strlen(actual_type_name);
             } else {
-                actual_type_name = type_name.start;
-                actual_type_name_len = type_name.length;
+                // Check if we need to add module prefix
+                if (current_module_prefix) {
+                    snprintf(prefixed_type_name, 128, "%s_%.*s", current_module_prefix, type_name.length, type_name.start);
+                    actual_type_name = prefixed_type_name;
+                    actual_type_name_len = strlen(prefixed_type_name);
+                } else {
+                    actual_type_name = type_name.start;
+                    actual_type_name_len = type_name.length;
+                }
             }
             
             // Simple heuristic: types starting with uppercase likely need ARC
@@ -3024,6 +3033,7 @@ static void emit_function_with_prefix(Stmt* fn_stmt, const char* prefix) {
     
     // Determine return type
     const char* return_type = "int";
+    static char custom_return_type[128];
     if (fn_stmt->fn.return_type) {
         if (fn_stmt->fn.return_type->type == EXPR_IDENT) {
             Token rt = fn_stmt->fn.return_type->token;
@@ -3033,6 +3043,16 @@ static void emit_function_with_prefix(Stmt* fn_stmt, const char* prefix) {
                 return_type = "double";
             } else if (rt.length == 4 && memcmp(rt.start, "bool", 4) == 0) {
                 return_type = "bool";
+            } else if (rt.length == 3 && memcmp(rt.start, "int", 3) == 0) {
+                return_type = "int";
+            } else {
+                // Custom struct type - add module prefix if in module context
+                if (current_module_prefix) {
+                    snprintf(custom_return_type, 128, "%s_%.*s", current_module_prefix, rt.length, rt.start);
+                } else {
+                    snprintf(custom_return_type, 128, "%.*s", rt.length, rt.start);
+                }
+                return_type = custom_return_type;
             }
         }
     }
@@ -3061,9 +3081,15 @@ static void emit_function_with_prefix(Stmt* fn_stmt, const char* prefix) {
                     c_type = "WynArray";
                 } else if (type_token.length == 3 && memcmp(type_token.start, "int", 3) == 0) {
                     c_type = "int";
+                } else if (type_token.length == 3 && memcmp(type_token.start, "int", 3) == 0) {
+                    c_type = "int";
                 } else {
-                    // Assume struct type
-                    emit("%.*s ", type_token.length, type_token.start);
+                    // Custom struct type - add module prefix if in module context
+                    if (current_module_prefix) {
+                        emit("%s_%.*s ", current_module_prefix, type_token.length, type_token.start);
+                    } else {
+                        emit("%.*s ", type_token.length, type_token.start);
+                    }
                     goto emit_param_name;
                 }
                 
@@ -3227,13 +3253,20 @@ void codegen_stmt(Stmt* stmt) {
                     }
                 } else if (stmt->var.init->type == EXPR_STRUCT_INIT) {
                     // Use the struct type name (monomorphic if available)
-                    static char struct_type[64];
+                    static char struct_type[128];
                     if (stmt->var.init->struct_init.monomorphic_name) {
-                        snprintf(struct_type, 64, "%s", stmt->var.init->struct_init.monomorphic_name);
+                        snprintf(struct_type, 128, "%s", stmt->var.init->struct_init.monomorphic_name);
                     } else {
-                        snprintf(struct_type, 64, "%.*s", 
-                                 stmt->var.init->struct_init.type_name.length,
-                                 stmt->var.init->struct_init.type_name.start);
+                        // Add module prefix if in module context
+                        if (current_module_prefix) {
+                            snprintf(struct_type, 128, "%s_%.*s", current_module_prefix,
+                                     stmt->var.init->struct_init.type_name.length,
+                                     stmt->var.init->struct_init.type_name.start);
+                        } else {
+                            snprintf(struct_type, 128, "%.*s", 
+                                     stmt->var.init->struct_init.type_name.length,
+                                     stmt->var.init->struct_init.type_name.start);
+                        }
                     }
                     c_type = struct_type;
                     needs_arc_management = false;
@@ -3664,14 +3697,29 @@ void codegen_stmt(Stmt* stmt) {
                          stmt->struct_decl.fields[i].start);
                 }
             }
-            emit("} %.*s;\n\n", 
-                 stmt->struct_decl.name.length,
-                 stmt->struct_decl.name.start);
-            
-            // T2.5.3: Generate ARC cleanup function for struct
-            emit("void %.*s_cleanup(%.*s* obj) {\n",
-                 stmt->struct_decl.name.length, stmt->struct_decl.name.start,
-                 stmt->struct_decl.name.length, stmt->struct_decl.name.start);
+            // Emit struct name with module prefix if in module context
+            if (current_module_prefix) {
+                emit("} %s_%.*s;\n\n", 
+                     current_module_prefix,
+                     stmt->struct_decl.name.length,
+                     stmt->struct_decl.name.start);
+                
+                // T2.5.3: Generate ARC cleanup function for struct
+                emit("void %s_%.*s_cleanup(%s_%.*s* obj) {\n",
+                     current_module_prefix,
+                     stmt->struct_decl.name.length, stmt->struct_decl.name.start,
+                     current_module_prefix,
+                     stmt->struct_decl.name.length, stmt->struct_decl.name.start);
+            } else {
+                emit("} %.*s;\n\n", 
+                     stmt->struct_decl.name.length,
+                     stmt->struct_decl.name.start);
+                
+                // T2.5.3: Generate ARC cleanup function for struct
+                emit("void %.*s_cleanup(%.*s* obj) {\n",
+                     stmt->struct_decl.name.length, stmt->struct_decl.name.start,
+                     stmt->struct_decl.name.length, stmt->struct_decl.name.start);
+            }
             for (int i = 0; i < stmt->struct_decl.field_count; i++) {
                 if (stmt->struct_decl.field_arc_managed[i]) {
                     emit("    if (obj->%.*s) wyn_arc_release(obj->%.*s);\n",
@@ -3761,23 +3809,48 @@ void codegen_stmt(Stmt* stmt) {
                 }
                 emit("\n");
             }
-            emit("} %.*s;\n\n", 
-                 stmt->enum_decl.name.length,
-                 stmt->enum_decl.name.start);
-            
-            // Generate qualified constants for EnumName.MEMBER access
-            for (int i = 0; i < stmt->enum_decl.variant_count; i++) {
-                emit("#define %.*s_%.*s %d\n",
-                     stmt->enum_decl.name.length, stmt->enum_decl.name.start,
-                     stmt->enum_decl.variants[i].length, stmt->enum_decl.variants[i].start,
-                     i);
+            // Emit enum name with module prefix if in module context
+            if (current_module_prefix) {
+                emit("} %s_%.*s;\n\n", 
+                     current_module_prefix,
+                     stmt->enum_decl.name.length,
+                     stmt->enum_decl.name.start);
+                
+                // Generate qualified constants for EnumName.MEMBER access
+                for (int i = 0; i < stmt->enum_decl.variant_count; i++) {
+                    emit("#define %s_%.*s_%.*s %d\n",
+                         current_module_prefix,
+                         stmt->enum_decl.name.length, stmt->enum_decl.name.start,
+                         stmt->enum_decl.variants[i].length, stmt->enum_decl.variants[i].start,
+                         i);
+                }
+            } else {
+                emit("} %.*s;\n\n", 
+                     stmt->enum_decl.name.length,
+                     stmt->enum_decl.name.start);
+                
+                // Generate qualified constants for EnumName.MEMBER access
+                for (int i = 0; i < stmt->enum_decl.variant_count; i++) {
+                    emit("#define %.*s_%.*s %d\n",
+                         stmt->enum_decl.name.length, stmt->enum_decl.name.start,
+                         stmt->enum_decl.variants[i].length, stmt->enum_decl.variants[i].start,
+                         i);
+                }
             }
             emit("\n");
             
-            // Generate toString function for enum
-            emit("const char* %.*s_toString(%.*s val) {\n",
-                 stmt->enum_decl.name.length, stmt->enum_decl.name.start,
-                 stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+            // Generate toString function for enum with module prefix
+            if (current_module_prefix) {
+                emit("const char* %s_%.*s_toString(%s_%.*s val) {\n",
+                     current_module_prefix,
+                     stmt->enum_decl.name.length, stmt->enum_decl.name.start,
+                     current_module_prefix,
+                     stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+            } else {
+                emit("const char* %.*s_toString(%.*s val) {\n",
+                     stmt->enum_decl.name.length, stmt->enum_decl.name.start,
+                     stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+            }
             emit("    switch(val) {\n");
             for (int i = 0; i < stmt->enum_decl.variant_count; i++) {
                 emit("        case %.*s: return \"%.*s\";\n",
@@ -4014,7 +4087,21 @@ void codegen_stmt(Stmt* stmt) {
                         typedef struct { char* name; Program* ast; } ModuleEntry;
                         ModuleEntry* mod = (ModuleEntry*)all_modules_raw[m];
                         
-                        // First: emit forward declarations for all functions
+                        // First: emit structs and enums with module prefix
+                        const char* saved_prefix = current_module_prefix;
+                        current_module_prefix = mod->name;
+                        
+                        for (int i = 0; i < mod->ast->count; i++) {
+                            Stmt* s = mod->ast->stmts[i];
+                            if ((s->type == STMT_STRUCT && s->struct_decl.is_public) ||
+                                (s->type == STMT_ENUM && s->enum_decl.is_public)) {
+                                codegen_stmt(s);
+                            }
+                        }
+                        
+                        current_module_prefix = saved_prefix;
+                        
+                        // Second: emit forward declarations for all functions
                         for (int i = 0; i < mod->ast->count; i++) {
                             Stmt* s = mod->ast->stmts[i];
                             if (s->type == STMT_FN) {
@@ -4025,6 +4112,7 @@ void codegen_stmt(Stmt* stmt) {
                                 
                                 // Determine return type
                                 const char* return_type = "int";
+                                static char custom_ret_type[128];
                                 if (s->fn.return_type) {
                                     if (s->fn.return_type->type == EXPR_IDENT) {
                                         Token rt = s->fn.return_type->token;
@@ -4034,6 +4122,12 @@ void codegen_stmt(Stmt* stmt) {
                                             return_type = "double";
                                         } else if (rt.length == 4 && memcmp(rt.start, "bool", 4) == 0) {
                                             return_type = "bool";
+                                        } else if (rt.length == 3 && memcmp(rt.start, "int", 3) == 0) {
+                                            return_type = "int";
+                                        } else {
+                                            // Custom struct type - add module prefix
+                                            snprintf(custom_ret_type, 128, "%s_%.*s", mod->name, rt.length, rt.start);
+                                            return_type = custom_ret_type;
                                         }
                                     }
                                 }
@@ -4044,7 +4138,9 @@ void codegen_stmt(Stmt* stmt) {
                                 for (int j = 0; j < s->fn.param_count; j++) {
                                     if (j > 0) emit(", ");
                                     
+                                    // Determine parameter type
                                     const char* param_type = "int";
+                                    static char custom_param_type[128];
                                     if (s->fn.param_types[j]) {
                                         if (s->fn.param_types[j]->type == EXPR_IDENT) {
                                             Token pt = s->fn.param_types[j]->token;
@@ -4054,8 +4150,14 @@ void codegen_stmt(Stmt* stmt) {
                                                 param_type = "double";
                                             } else if (pt.length == 4 && memcmp(pt.start, "bool", 4) == 0) {
                                                 param_type = "bool";
+                                            } else if (pt.length == 3 && memcmp(pt.start, "int", 3) == 0) {
+                                                param_type = "int";
                                             } else if (pt.length == 5 && memcmp(pt.start, "array", 5) == 0) {
                                                 param_type = "WynArray";
+                                            } else {
+                                                // Custom struct type - add module prefix
+                                                snprintf(custom_param_type, 128, "%s_%.*s", mod->name, pt.length, pt.start);
+                                                param_type = custom_param_type;
                                             }
                                         }
                                     }
@@ -4064,14 +4166,6 @@ void codegen_stmt(Stmt* stmt) {
                                 }
                                 
                                 emit(");\n");
-                            }
-                        }
-                        
-                        // Second: emit structs
-                        for (int i = 0; i < mod->ast->count; i++) {
-                            Stmt* s = mod->ast->stmts[i];
-                            if (s->type == STMT_STRUCT && s->struct_decl.is_public) {
-                                codegen_stmt(s);
                             }
                         }
                         
@@ -4181,6 +4275,37 @@ void codegen_stmt(Stmt* stmt) {
         case STMT_MATCH:  // T1.4.4: Control Flow Agent addition
             codegen_match_statement(stmt);
             break;
+        case STMT_CONST: {
+            // Module-level constants - emit as static const
+            const char* c_type = "int";
+            bool type_has_const = false;
+            
+            // Determine type from initializer
+            if (stmt->const_stmt.init) {
+                if (stmt->const_stmt.init->type == EXPR_STRING) {
+                    c_type = "char*";  // Don't include const here, we'll add it below
+                } else if (stmt->const_stmt.init->type == EXPR_FLOAT) {
+                    c_type = "double";
+                } else if (stmt->const_stmt.init->type == EXPR_BOOL) {
+                    c_type = "bool";
+                } else if (stmt->const_stmt.init->type == EXPR_INT) {
+                    c_type = "int";
+                }
+            }
+            
+            // Emit as static const with module prefix
+            if (current_module_prefix) {
+                emit("static const %s %s_%.*s = ", c_type, current_module_prefix, 
+                     stmt->const_stmt.name.length, stmt->const_stmt.name.start);
+            } else {
+                emit("static const %s %.*s = ", c_type, 
+                     stmt->const_stmt.name.length, stmt->const_stmt.name.start);
+            }
+            
+            codegen_expr(stmt->const_stmt.init);
+            emit(";\n");
+            break;
+        }
         default:
             break;
     }
@@ -4195,6 +4320,9 @@ static void scan_stmt_for_lambdas(Stmt* stmt) {
     switch (stmt->type) {
         case STMT_VAR:
             if (stmt->var.init) scan_expr_for_lambdas(stmt->var.init);
+            break;
+        case STMT_CONST:
+            if (stmt->const_stmt.init) scan_expr_for_lambdas(stmt->const_stmt.init);
             break;
         case STMT_RETURN:
             if (stmt->ret.value) scan_expr_for_lambdas(stmt->ret.value);
@@ -4457,6 +4585,13 @@ void codegen_program(Program* prog) {
     // Generate all structs, enums, and type aliases first
     for (int i = 0; i < prog->count; i++) {
         if (prog->stmts[i]->type == STMT_STRUCT || prog->stmts[i]->type == STMT_ENUM || prog->stmts[i]->type == STMT_TYPE_ALIAS) {
+            codegen_stmt(prog->stmts[i]);
+        }
+    }
+    
+    // Generate module-level constants
+    for (int i = 0; i < prog->count; i++) {
+        if (prog->stmts[i]->type == STMT_CONST) {
             codegen_stmt(prog->stmts[i]);
         }
     }
@@ -4805,7 +4940,7 @@ void codegen_program(Program* prog) {
         } else {
             // Multiple statements or non-expression statements
             for (int i = 0; i < prog->count; i++) {
-                if (prog->stmts[i]->type != STMT_FN) {
+                if (prog->stmts[i]->type != STMT_FN && prog->stmts[i]->type != STMT_CONST) {
                     emit("    ");
                     codegen_stmt(prog->stmts[i]);
                 }
