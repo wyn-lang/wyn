@@ -267,6 +267,19 @@ void codegen_expr(Expr* expr) {
             memcpy(temp_ident, expr->token.start, expr->token.length);
             temp_ident[expr->token.length] = '\0';
             
+            // If we're inside a module function, check if this identifier needs module prefix
+            if (current_module_prefix && !strchr(temp_ident, ':')) {
+                // Check if this is a simple identifier (no :: or .)
+                // Prefix it with the module name for module-level constants
+                // This is a heuristic: if it's all uppercase or starts with uppercase, it's likely a constant
+                bool looks_like_constant = (temp_ident[0] >= 'A' && temp_ident[0] <= 'Z');
+                if (looks_like_constant) {
+                    emit("%s_%s", current_module_prefix, temp_ident);
+                    free(ident);
+                    break;
+                }
+            }
+            
             char* dot = strchr(temp_ident, '.');
             if (dot) {
                 *dot = '\0';  // Split at dot
@@ -4166,6 +4179,29 @@ void codegen_stmt(Stmt* stmt) {
                                 }
                                 
                                 emit(");\n");
+                            }
+                        }
+                        
+                        // Second: emit constants
+                        for (int i = 0; i < mod->ast->count; i++) {
+                            Stmt* s = mod->ast->stmts[i];
+                            if (s->type == STMT_CONST) {
+                                VarStmt* const_stmt = &s->const_stmt;
+                                
+                                // Determine type
+                                if (const_stmt->init) {
+                                    if (const_stmt->init->type == EXPR_STRING) {
+                                        emit("const char* %s_%.*s = ", mod->name, const_stmt->name.length, const_stmt->name.start);
+                                    } else if (const_stmt->init->type == EXPR_FLOAT) {
+                                        emit("double %s_%.*s = ", mod->name, const_stmt->name.length, const_stmt->name.start);
+                                    } else if (const_stmt->init->type == EXPR_BOOL) {
+                                        emit("bool %s_%.*s = ", mod->name, const_stmt->name.length, const_stmt->name.start);
+                                    } else {
+                                        emit("int %s_%.*s = ", mod->name, const_stmt->name.length, const_stmt->name.start);
+                                    }
+                                    codegen_expr(const_stmt->init);
+                                    emit(";\n");
+                                }
                             }
                         }
                         

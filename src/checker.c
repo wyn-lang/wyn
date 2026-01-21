@@ -1555,6 +1555,26 @@ void check_stmt(Stmt* stmt, SymbolTable* scope) {
             free(fn_scope.symbols);
             break;
         }
+        case STMT_CONST: {
+            // Handle module-level constants
+            VarStmt* const_stmt = &stmt->const_stmt;
+            Type* const_type = builtin_int;
+            
+            if (const_stmt->init) {
+                if (const_stmt->init->type == EXPR_STRING) {
+                    const_type = builtin_string;
+                } else if (const_stmt->init->type == EXPR_FLOAT) {
+                    const_type = builtin_float;
+                } else if (const_stmt->init->type == EXPR_BOOL) {
+                    const_type = builtin_bool;
+                } else if (const_stmt->init->type == EXPR_INT) {
+                    const_type = builtin_int;
+                }
+            }
+            
+            add_symbol(scope, const_stmt->name, const_type, true);
+            break;
+        }
         case STMT_EXPORT:
             // Check the exported statement
             check_stmt(stmt->export.stmt, scope);
