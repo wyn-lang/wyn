@@ -15,9 +15,9 @@ fn main() -> int {
     var dist1 = distance_from_origin(p1);
     var dist2 = distance_from_origin(p2);
     
-    print_str("Distance 1: ");
+    print("Distance 1: ");
     print(dist1);
-    print_str("Distance 2: ");
+    print("Distance 2: ");
     print(dist2);
     
     return 0;

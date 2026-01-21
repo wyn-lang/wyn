@@ -4,24 +4,26 @@ fn main() -> int {
     var set = {:"apple", "banana", "cherry"};
     
     // Add element
-    hashset_add(set, "date");
+    set.add("date");
     
     // Try to add duplicate (no effect)
-    hashset_add(set, "apple");
+    set.add("apple");
     
     // Check membership
-    if (hashset_contains(set, "apple")) {
+    if (set.contains("apple")) {
         print("Set contains apple\n");
     }
     
-    if (!hashset_contains(set, "grape")) {
+    var has_grape = set.contains("grape");
+    if (has_grape == 0) {
         print("Set does not contain grape\n");
     }
     
     // Remove element
-    hashset_remove(set, "banana");
+    set.remove("banana");
     
-    if (!hashset_contains(set, "banana")) {
+    var has_banana = set.contains("banana");
+    if (has_banana == 0) {
         print("Banana removed successfully\n");
     }
     

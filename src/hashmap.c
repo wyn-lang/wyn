@@ -203,6 +203,18 @@ void hashmap_remove(WynHashMap* map, const char* key) {
     }
 }
 
+int hashmap_len(WynHashMap* map) {
+    int count = 0;
+    for (int i = 0; i < HASHMAP_SIZE; i++) {
+        Entry* entry = map->buckets[i];
+        while (entry) {
+            count++;
+            entry = entry->next;
+        }
+    }
+    return count;
+}
+
 void hashmap_free(WynHashMap* map) {
     for (int i = 0; i < HASHMAP_SIZE; i++) {
         Entry* entry = map->buckets[i];

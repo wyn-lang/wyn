@@ -1,5 +1,130 @@
 # Changelog
 
+## [1.4.0] - 2026-01-20
+
+### Changed (BREAKING)
+- **Unified print() function** - Replaced type-specific print functions with polymorphic `print()`
+  - Migration: Replace `print_int(x)`, `print_str(s)`, `print_float(f)` with `print(x)`, `print(s)`, `print(f)`
+  - Reason: Consistency with "everything is an object" philosophy
+  - Uses C11 `_Generic` for type dispatch
+
+### Added
+- **Pure Object-Oriented API** - All operations now use method syntax
+  - String methods: `.concat()`, `.parse_int()`, `.parse_float()`
+  - Number methods: `.to_string()` on int and float
+  - No standalone functions needed - everything is a method or module call
+  - Example: `"42".parse_int()` instead of `str_parse_int("42")`
+  - Example: `42.to_string()` instead of `int_to_str(42)`
+  - Example: `s1.concat(s2)` instead of `str_concat(s1, s2)`
+
+- **Standard Library Modules** - Organized functionality with `::` syntax
+  - `File::read()`, `File::write()`, `File::exists()`, `File::delete()`
+  - `System::exec()`, `System::exit()`
+  - `Math::pow()`, `Math::sqrt()`
+  - All modules available without import
+  - Clean namespace separation
+
+- **HashMap Indexing Syntax** - Access HashMap values with bracket notation
+  - Get: `var value = map["key"]`
+  - Set: `map["key"] = value`
+  - Cleaner than function-style API
+
+- **HashMap Methods** - Object-oriented method syntax for HashMaps
+  - `.has(key)` - Check if key exists
+  - `.remove(key)` - Remove key-value pair
+  - `.len()` - Get number of entries
+  - `map["key"]` - Index syntax for get/set
+  - Example: `if (scores.has("alice")) { var score = scores["alice"]; }`
+
+- **HashSet Methods** - Object-oriented method syntax for HashSets
+  - `.add(item)` - Add element to set
+  - `.contains(item)` - Check if element exists
+  - `.remove(item)` - Remove element
+  - `.len()` - Get number of elements
+  - Example: `tags.add("urgent")`
+
+- **Enhanced String Functions** - New string utilities for real-world apps
+  - `char_at(text, index)` - Get character at position
+  - `is_numeric(text)` - Check if string is numeric
+  - `str_count(text, substr)` - Count substring occurrences
+  - `str_contains_substr(text, substr)` - Check if substring exists
+  - `split_get(text, delim, index)` - Get specific split element
+  - `split_count(text, delim)` - Count split elements
+
+- **Enhanced Array Methods** - Statistical and manipulation functions
+  - `.first()` - Get first element
+  - `.last()` - Get last element
+  - `.clear()` - Remove all elements
+  - `.min()` - Get minimum value
+  - `.max()` - Get maximum value
+  - `.sum()` - Sum all elements
+  - `.average()` - Calculate average
+  - `.remove(value)` - Remove all occurrences
+  - `.insert(index, value)` - Insert at position
+
+- **Sample Applications** - Four production-ready apps demonstrating real-world usage
+  - log-analyzer: File I/O and pattern detection
+  - process-monitor: System monitoring with ps/uptime
+  - csv-processor: CSV parsing and validation
+  - disk-analyzer: Disk usage analysis with find/du
+
+- **Comprehensive stdlib demo** - New example (12_comprehensive_stdlib.wyn) showcasing all major features
+  - 23 examples total (was 22)
+  - Demonstrates strings, arrays, HashMaps, HashSets, type conversions, integer methods, string splitting
+
+- **String splitting functions** - New `split_get()` and `split_count()` for working with split strings
+  - `split_get(text, delim, index)` - Get specific element from split result
+  - `split_count(text, delim)` - Count elements in split result
+  - Solves the string array indexing limitation
+
+- **Character access function** - New `char_at(text, index)` for accessing individual characters
+  - Returns single character as string
+  - Safe bounds checking (returns "" if out of bounds)
+
+- **Number validation function** - New `is_numeric(text)` for validating numeric strings
+  - Returns 1 if string is a valid number, 0 otherwise
+  - Handles negative numbers
+  - Use before `str_parse_int()` to avoid ambiguity
+
+- **Array `.first()` and `.last()` methods** - Now return int directly (not Optional)
+  - Returns 0 if array is empty
+  - Can be used directly with `print()` and assignments
+
+- **Array `.clear()` method** - Clear all elements from array
+  - Sets array length to 0
+  - Memory efficient
+
+### Improved
+- **Documentation Consistency** - All docs updated to use OO method syntax
+  - 52 instances of old print API updated
+  - Examples demonstrate best practices
+  - Consistent "everything is an object" approach
+
+- **Standard Library** - Comprehensive stdlib already in place
+  - String module: 15 functions (split, join, replace, trim, etc.)
+  - Array module: 18 functions (map, filter, reduce, sort, etc.)
+  - Time module: 13 functions (now, sleep, format, parse, etc.)
+  - Crypto module: 9 functions (hash, base64, random, etc.)
+
+- **Better error messages** - Helpful hints for unknown methods with suggestions
+
+- **Updated examples** - All active examples use new v1.4.0 syntax
+  - 06_hashmap.wyn - Showcases indexing and methods
+  - 08_hashset.wyn - Fixed precedence issues, uses method syntax
+
+### Changed
+- **Math module cleanup** - Removed trivial functions (math.add, math.multiply)
+  - Users should use operators: +, -, *, / for basic arithmetic
+  - Kept useful functions: pow, sqrt, abs, floor, ceil, round, sin, cos, tan, log, exp, min, max, pi, e
+
+### Technical
+- Added `hashmap_len()` function for HashMap size queries
+- Fixed HashMap indexing codegen to use correct functions
+- Updated method dispatch in types.c for HashMap/HashSet
+- All regression tests passing (23/23 examples compile and run)
+
+---
+
 ## [1.3.2] - 2026-01-20
 
 ### Fixed

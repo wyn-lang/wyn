@@ -1,7 +1,7 @@
 # Wyn Examples
 
-![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)
-**Latest: v1.2.2**
+![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)
+**Latest: v1.4.0**
 
 This page provides an overview of all examples available in the [`../examples/`](../examples/) directory, with explanations of what each example demonstrates.
 
@@ -23,7 +23,7 @@ echo $?  # Check exit code
 
 ```wyn
 fn main() -> int {
-    print_str("Hello, World!");
+    print("Hello, World!");
     return 0;
 }
 ```
@@ -62,7 +62,7 @@ fn main() -> int {
 
 ```wyn
 fn main() -> int {
-    print_str("Hello from Wyn!");
+    print("Hello from Wyn!");
     return 42;
 }
 ```
@@ -811,4 +811,4 @@ To contribute a new example:
 
 ---
 
-*These examples are for Wyn v1.2.2. All examples are tested and verified to work correctly.*
+*These examples are for Wyn v1.4.0. All examples are tested and verified to work correctly.*

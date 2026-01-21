@@ -1,7 +1,7 @@
 # Wyn Language Guide
 
-![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)
-**Latest: v1.2.2**
+![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)
+**Latest: v1.4.0**
 
 Complete reference for the Wyn programming language syntax and features.
 
@@ -78,7 +78,7 @@ fn add(a: int, b: int) -> int {
 ### No Return Value
 ```wyn
 fn print_hello() -> void {
-    print_str("Hello!");
+    print("Hello!");
 }
 ```
 
@@ -105,11 +105,11 @@ fn process(x: string) -> string {
 ### If Statements
 ```wyn
 if x > 0 {
-    print_str("Positive");
+    print("Positive");
 } else if x < 0 {
-    print_str("Negative");
+    print("Negative");
 } else {
-    print_str("Zero");
+    print("Zero");
 }
 ```
 
@@ -133,7 +133,7 @@ for i in 0..10 {
 ```wyn
 match value {
     Some(x) => print(x),
-    None => print_str("No value")
+    None => print("No value")
 }
 ```
 
@@ -444,4 +444,4 @@ fn process_array(arr: array<int>) -> int {
 
 ---
 
-*This guide covers Wyn v1.2.2. For the latest updates, see the [GitHub repository](https://github.com/wyn-lang/wyn).*
+*This guide covers Wyn v1.4.0. For the latest updates, see the [GitHub repository](https://github.com/wyn-lang/wyn).*

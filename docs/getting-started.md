@@ -1,7 +1,7 @@
 # Getting Started with Wyn
 
-![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)
-**Latest: v1.2.2**
+![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)
+**Latest: v1.4.0**
 
 Welcome to Wyn! This guide will help you install Wyn and write your first program.
 
@@ -45,7 +45,7 @@ Create a file called `hello.wyn`:
 
 ```wyn
 fn main() -> int {
-    print_str("Hello, World!");
+    print("Hello, World!");
     return 0;
 }
 ```
@@ -87,9 +87,9 @@ fn main() -> int {
     let score: int = 100;
     let pi: float = 3.14159;
     
-    print_str(name);
+    print(name);
     print(age);
-    print_float(height);
+    print(height);
     
     return 0;
 }
@@ -105,7 +105,7 @@ fn add(a: int, b: int) -> int {
 }
 
 fn greet(name: string) -> void {
-    print_str("Hello, " + name + "!");
+    print("Hello, " + name + "!");
 }
 
 fn main() -> int {
@@ -126,11 +126,11 @@ fn main() -> int {
     let x = 10;
     
     if x > 0 {
-        print_str("Positive");
+        print("Positive");
     } else if x < 0 {
-        print_str("Negative");
+        print("Negative");
     } else {
-        print_str("Zero");
+        print("Zero");
     }
     
     return 0;
@@ -172,7 +172,7 @@ fn main() -> int {
         age: 30
     };
     
-    print_str(person.name);
+    print(person.name);
     print(person.age);
     
     return 0;
@@ -206,7 +206,7 @@ fn main() -> int {
 ```wyn
 fn divide(a: int, b: int) -> int {
     if b == 0 {
-        print_str("Error: Division by zero");
+        print("Error: Division by zero");
         return -1;  // Error indicator
     }
     return a / b;
@@ -237,12 +237,12 @@ fn main() -> int {
     let trimmed = str_trim(text);
     
     print(len);           // Output: 15
-    print_str(upper);     // Output:   HELLO WORLD  
-    print_str(trimmed);   // Output: Hello World
+    print(upper);         // Output:   HELLO WORLD  
+    print(trimmed);       // Output: Hello World
     
     // String comparison
     if str_eq(trimmed, "Hello World") {
-        print_str("Strings match!");
+        print("Strings match!");
     }
     
     return 0;
@@ -258,14 +258,14 @@ fn main() -> int {
     let success = file_write("/tmp/test.txt", content);
     
     if success == 1 {
-        print_str("File written successfully");
+        print("File written successfully");
         
         // Read from file
         let data = file_read("/tmp/test.txt");
-        print_str("File contents:");
-        print_str(data);
+        print("File contents:");
+        print(data);
     } else {
-        print_str("Failed to write file");
+        print("Failed to write file");
     }
     
     return 0;
@@ -305,9 +305,9 @@ Create test functions to verify your code works:
 fn test_add() -> void {
     let result = add(2, 3);
     if result == 5 {
-        print_str("✓ add test passed");
+        print("✓ add test passed");
     } else {
-        print_str("✗ add test failed");
+        print("✗ add test failed");
     }
 }
 
@@ -326,10 +326,10 @@ fn main() -> int {
 1. **Use print statements** to trace execution:
    ```wyn
    fn debug_function(x: int) -> int {
-       print_str("Entering function with x =");
+       print("Entering function with x =");
        print(x);
        let result = x * 2;
-       print_str("Result =");
+       print("Result =");
        print(result);
        return result;
    }
@@ -339,7 +339,7 @@ fn main() -> int {
    ```wyn
    let result = some_function();
    if result == -1 {
-       print_str("Function failed");
+       print("Function failed");
        return 1;  // Exit with error
    }
    ```
@@ -417,4 +417,4 @@ fn main() -> int {
 
 **Congratulations!** You're now ready to start programming in Wyn. Check out the [examples](examples.md) for more inspiration, or dive into the [language guide](language-guide.md) for advanced features.
 
-*This guide covers Wyn v1.2.2. For the latest updates, see the [GitHub repository](https://github.com/wyn-lang/wyn).*
+*This guide covers Wyn v1.4.0. For the latest updates, see the [GitHub repository](https://github.com/wyn-lang/wyn).*

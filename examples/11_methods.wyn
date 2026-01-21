@@ -42,7 +42,7 @@ fn main() -> int {
     // HashSet with initialization
     print("=== HashSet ===\n");
     var tags = {:"urgent", "important"};
-    var has_urgent = hashset_contains(tags, "urgent");
+    var has_urgent = tags.contains("urgent");
     print("HashSet: {urgent, important}\n");
     print("Has urgent: true\n\n");
     

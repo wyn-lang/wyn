@@ -216,12 +216,14 @@ void init_checker() {
         "print", "print_float", "print_str", "print_bool", "print_hex", "print_bin", "println", "print_debug", "input", "input_float", "input_line", "printf_wyn", "sin_approx", "cos_approx", "pi_const", "e_const",
         "str_len", "str_eq", "str_concat", "str_upper", "str_lower", "str_contains", "str_starts_with", "str_ends_with", "str_trim",
         "str_replace", "str_split", "str_join", "int_to_str", "str_to_int", "str_repeat", "str_reverse", "str_parse_int", "str_parse_float", "str_free",
+        "split_get", "split_count", "char_at", "is_numeric", "str_count", "str_contains_substr",
         "abs_val", "min", "max", "pow_int", "clamp", "sign", "gcd", "lcm", "is_even", "is_odd",
         "sqrt_int", "ceil_int", "floor_int", "round_int", "abs_float",
         "swap", "clamp_float", "lerp", "map_range",
         "bit_set", "bit_clear", "bit_toggle", "bit_check", "bit_count",
         "arr_sum", "arr_max", "arr_min", "arr_contains", "arr_find", "arr_reverse", "arr_sort", "arr_count", "arr_fill", "arr_all", "arr_join", "arr_map_double", "arr_map_square", "arr_filter_positive", "arr_filter_even", "arr_filter_greater_than_3", "arr_reduce_sum", "arr_reduce_product",
-        "file_read", "file_write", "file_exists", "file_size", "file_delete", "file_append", "file_copy", "last_error_get",
+        "file_exists", "file_size", "file_delete", "file_append", "file_copy", "last_error_get",
+        // NOTE: file_read, file_write, sys_exec are registered separately with proper types
         "random_int", "random_range", "random_float", "seed_random", "time_now", "time_format",
         "range", "array_new", "array_push", "array_pop", "array_length_dyn", "len",
         "assert_eq", "assert_true", "assert_false", "panic", "todo",
@@ -257,7 +259,7 @@ void init_checker() {
         "wyn_crypto_random_bytes", "wyn_crypto_random_hex", "wyn_crypto_xor_cipher"
     };
     
-    for (int i = 0; i < 217; i++) {
+    for (int i = 0; i < 214; i++) {  // Updated count: 217 - 3 = 214
         Token tok = {TOKEN_IDENT, stdlib_funcs[i], (int)strlen(stdlib_funcs[i]), 0};
         add_symbol(global_scope, tok, builtin_int, false);
     }
@@ -650,18 +652,43 @@ Type* check_expr(Expr* expr, SymbolTable* scope) {
                 return right;
             }
             
-            // Allow bool operations
-            if (expr->binary.op.type == TOKEN_AND || expr->binary.op.type == TOKEN_OR) {
-                expr->expr_type = builtin_bool;
-                return builtin_bool;
+            // Allow bool operations (both && and 'and', || and 'or')
+            if (expr->binary.op.type == TOKEN_AND || expr->binary.op.type == TOKEN_OR ||
+                expr->binary.op.type == TOKEN_AMPAMP || expr->binary.op.type == TOKEN_PIPEPIPE) {
+                // Both sides should be bool-compatible (bool or int)
+                // In C, int and bool are interchangeable in boolean context
+                bool left_ok = (left->kind == TYPE_BOOL || left->kind == TYPE_INT);
+                bool right_ok = (right->kind == TYPE_BOOL || right->kind == TYPE_INT);
+                
+                if (!left_ok || !right_ok) {
+                    fprintf(stderr, "Error at line %d: Boolean operation requires bool or int operands\n", 
+                            expr->binary.op.line);
+                    had_error = true;
+                    return NULL;
+                }
+                // Return int (which works as bool in C)
+                expr->expr_type = builtin_int;
+                return builtin_int;
             }
             
             // Comparison operators return bool
             if (expr->binary.op.type == TOKEN_EQEQ || expr->binary.op.type == TOKEN_BANGEQ ||
                 expr->binary.op.type == TOKEN_LT || expr->binary.op.type == TOKEN_GT ||
                 expr->binary.op.type == TOKEN_LTEQ || expr->binary.op.type == TOKEN_GTEQ) {
-                expr->expr_type = builtin_bool;
-                return builtin_bool;
+                // Allow comparing compatible types
+                // Int and bool are compatible for comparison
+                bool types_compatible = (left->kind == right->kind) ||
+                                       (left->kind == TYPE_INT && right->kind == TYPE_BOOL) ||
+                                       (left->kind == TYPE_BOOL && right->kind == TYPE_INT);
+                
+                if (!types_compatible) {
+                    fprintf(stderr, "Error at line %d: Cannot compare different types\n", 
+                            expr->binary.op.line);
+                    had_error = true;
+                    return NULL;
+                }
+                expr->expr_type = builtin_int;  // Return int (works as bool)
+                return builtin_int;
             }
             
             // Allow string concatenation with + operator
@@ -672,8 +699,8 @@ Type* check_expr(Expr* expr, SymbolTable* scope) {
             }
             
             if (left->kind != right->kind) {
-                fprintf(stderr, "Error at line %d: Type mismatch in binary expression\n", 
-                        expr->binary.op.line);
+                fprintf(stderr, "Error at line %d: Type mismatch in binary expression (left: %d, right: %d, op: %d)\n", 
+                        expr->binary.op.line, left->kind, right->kind, expr->binary.op.type);
                 had_error = true;
                 return NULL;
             }
@@ -703,6 +730,7 @@ Type* check_expr(Expr* expr, SymbolTable* scope) {
                     free(arg_types);
                     return return_type;
                 }
+                
                 
                 // T1.5.3: Function overloading support with T1.5.4: Parameter validation
                 // Collect argument types for overload resolution
@@ -900,6 +928,56 @@ Type* check_expr(Expr* expr, SymbolTable* scope) {
                     fprintf(stderr, "Error: Array index must be int\n");
                     return NULL;
                 }
+                
+                // Try to infer element type from array source
+                // Check if array came from a function that returns string array
+                if (expr->index.array->type == EXPR_CALL) {
+                    Token callee = expr->index.array->call.callee->token;
+                    // System::args returns string array
+                    if (callee.length == 12 && memcmp(callee.start, "System::args", 12) == 0) {
+                        return builtin_string;
+                    }
+                    // File::list_dir returns string array
+                    if (callee.length == 14 && memcmp(callee.start, "File::list_dir", 14) == 0) {
+                        return builtin_string;
+                    }
+                }
+                
+                // Check if indexing a variable - look up its source
+                if (expr->index.array->type == EXPR_IDENT) {
+                    // For now, use heuristic based on variable name
+                    Token var_name = expr->index.array->token;
+                    if ((var_name.length == 4 && memcmp(var_name.start, "args", 4) == 0) ||
+                        (var_name.length == 5 && memcmp(var_name.start, "files", 5) == 0) ||
+                        (var_name.length == 5 && memcmp(var_name.start, "names", 5) == 0) ||
+                        (var_name.length == 5 && memcmp(var_name.start, "parts", 5) == 0) ||
+                        (var_name.length == 7 && memcmp(var_name.start, "entries", 7) == 0)) {
+                        return builtin_string;
+                    }
+                }
+                
+                // Check if array came from string method that returns string array
+                if (expr->index.array->type == EXPR_METHOD_CALL) {
+                    Token method = expr->index.array->method_call.method;
+                    if ((method.length == 5 && memcmp(method.start, "split", 5) == 0) ||
+                        (method.length == 5 && memcmp(method.start, "chars", 5) == 0) ||
+                        (method.length == 5 && memcmp(method.start, "words", 5) == 0) ||
+                        (method.length == 5 && memcmp(method.start, "lines", 5) == 0)) {
+                        return builtin_string;
+                    }
+                }
+                
+                // Check array literals - if first element is string, assume string array
+                if (expr->index.array->type == EXPR_ARRAY) {
+                    if (expr->index.array->array.count > 0) {
+                        Type* first_type = check_expr(expr->index.array->array.elements[0], scope);
+                        if (first_type && first_type->kind == TYPE_STRING) {
+                            return builtin_string;
+                        }
+                    }
+                }
+                
+                // Default to int for unknown arrays
                 return builtin_int;
             }
         }
@@ -1855,6 +1933,173 @@ void check_program(Program* prog) {
         }
     }
     
+    // Register standard library modules (always available, no import needed)
+    {
+        // File module
+        Token file_read_tok = {TOKEN_IDENT, "File::read", 10, 0};
+        Type* file_read_type = make_type(TYPE_FUNCTION);
+        file_read_type->fn_type.param_count = 1;
+        file_read_type->fn_type.param_types = malloc(sizeof(Type*) * 1);
+        file_read_type->fn_type.param_types[0] = builtin_string;
+        file_read_type->fn_type.return_type = builtin_string;
+        add_symbol(global_scope, file_read_tok, file_read_type, false);
+        
+        Token file_write_tok = {TOKEN_IDENT, "File::write", 11, 0};
+        Type* file_write_type = make_type(TYPE_FUNCTION);
+        file_write_type->fn_type.param_count = 2;
+        file_write_type->fn_type.param_types = malloc(sizeof(Type*) * 2);
+        file_write_type->fn_type.param_types[0] = builtin_string;
+        file_write_type->fn_type.param_types[1] = builtin_string;
+        file_write_type->fn_type.return_type = builtin_int;
+        add_symbol(global_scope, file_write_tok, file_write_type, false);
+        
+        Token file_exists_tok = {TOKEN_IDENT, "File::exists", 12, 0};
+        Type* file_exists_type = make_type(TYPE_FUNCTION);
+        file_exists_type->fn_type.param_count = 1;
+        file_exists_type->fn_type.param_types = malloc(sizeof(Type*) * 1);
+        file_exists_type->fn_type.param_types[0] = builtin_string;
+        file_exists_type->fn_type.return_type = builtin_int;
+        add_symbol(global_scope, file_exists_tok, file_exists_type, false);
+        
+        Token file_delete_tok = {TOKEN_IDENT, "File::delete", 12, 0};
+        Type* file_delete_type = make_type(TYPE_FUNCTION);
+        file_delete_type->fn_type.param_count = 1;
+        file_delete_type->fn_type.param_types = malloc(sizeof(Type*) * 1);
+        file_delete_type->fn_type.param_types[0] = builtin_string;
+        file_delete_type->fn_type.return_type = builtin_int;
+        add_symbol(global_scope, file_delete_tok, file_delete_type, false);
+        
+        Token file_list_dir_tok = {TOKEN_IDENT, "File::list_dir", 14, 0};
+        Type* file_list_dir_type = make_type(TYPE_FUNCTION);
+        file_list_dir_type->fn_type.param_count = 1;
+        file_list_dir_type->fn_type.param_types = malloc(sizeof(Type*) * 1);
+        file_list_dir_type->fn_type.param_types[0] = builtin_string;
+        file_list_dir_type->fn_type.return_type = builtin_array;
+        add_symbol(global_scope, file_list_dir_tok, file_list_dir_type, false);
+        
+        Token file_is_file_tok = {TOKEN_IDENT, "File::is_file", 13, 0};
+        Type* file_is_file_type = make_type(TYPE_FUNCTION);
+        file_is_file_type->fn_type.param_count = 1;
+        file_is_file_type->fn_type.param_types = malloc(sizeof(Type*) * 1);
+        file_is_file_type->fn_type.param_types[0] = builtin_string;
+        file_is_file_type->fn_type.return_type = builtin_int;
+        add_symbol(global_scope, file_is_file_tok, file_is_file_type, false);
+        
+        Token file_is_dir_tok = {TOKEN_IDENT, "File::is_dir", 12, 0};
+        Type* file_is_dir_type = make_type(TYPE_FUNCTION);
+        file_is_dir_type->fn_type.param_count = 1;
+        file_is_dir_type->fn_type.param_types = malloc(sizeof(Type*) * 1);
+        file_is_dir_type->fn_type.param_types[0] = builtin_string;
+        file_is_dir_type->fn_type.return_type = builtin_int;
+        add_symbol(global_scope, file_is_dir_tok, file_is_dir_type, false);
+        
+        Token file_get_cwd_tok = {TOKEN_IDENT, "File::get_cwd", 13, 0};
+        Type* file_get_cwd_type = make_type(TYPE_FUNCTION);
+        file_get_cwd_type->fn_type.param_count = 0;
+        file_get_cwd_type->fn_type.param_types = NULL;
+        file_get_cwd_type->fn_type.return_type = builtin_string;
+        add_symbol(global_scope, file_get_cwd_tok, file_get_cwd_type, false);
+        
+        Token file_create_dir_tok = {TOKEN_IDENT, "File::create_dir", 16, 0};
+        Type* file_create_dir_type = make_type(TYPE_FUNCTION);
+        file_create_dir_type->fn_type.param_count = 1;
+        file_create_dir_type->fn_type.param_types = malloc(sizeof(Type*) * 1);
+        file_create_dir_type->fn_type.param_types[0] = builtin_string;
+        file_create_dir_type->fn_type.return_type = builtin_int;
+        add_symbol(global_scope, file_create_dir_tok, file_create_dir_type, false);
+        
+        Token file_file_size_tok = {TOKEN_IDENT, "File::file_size", 15, 0};
+        Type* file_file_size_type = make_type(TYPE_FUNCTION);
+        file_file_size_type->fn_type.param_count = 1;
+        file_file_size_type->fn_type.param_types = malloc(sizeof(Type*) * 1);
+        file_file_size_type->fn_type.param_types[0] = builtin_string;
+        file_file_size_type->fn_type.return_type = builtin_int;
+        add_symbol(global_scope, file_file_size_tok, file_file_size_type, false);
+        
+        Token file_path_join_tok = {TOKEN_IDENT, "File::path_join", 15, 0};
+        Type* file_path_join_type = make_type(TYPE_FUNCTION);
+        file_path_join_type->fn_type.param_count = 2;
+        file_path_join_type->fn_type.param_types = malloc(sizeof(Type*) * 2);
+        file_path_join_type->fn_type.param_types[0] = builtin_string;
+        file_path_join_type->fn_type.param_types[1] = builtin_string;
+        file_path_join_type->fn_type.return_type = builtin_string;
+        add_symbol(global_scope, file_path_join_tok, file_path_join_type, false);
+        
+        Token file_basename_tok = {TOKEN_IDENT, "File::basename", 14, 0};
+        Type* file_basename_type = make_type(TYPE_FUNCTION);
+        file_basename_type->fn_type.param_count = 1;
+        file_basename_type->fn_type.param_types = malloc(sizeof(Type*) * 1);
+        file_basename_type->fn_type.param_types[0] = builtin_string;
+        file_basename_type->fn_type.return_type = builtin_string;
+        add_symbol(global_scope, file_basename_tok, file_basename_type, false);
+        
+        // System module
+        Token sys_exec_tok = {TOKEN_IDENT, "System::exec", 12, 0};
+        Type* sys_exec_type = make_type(TYPE_FUNCTION);
+        sys_exec_type->fn_type.param_count = 1;
+        sys_exec_type->fn_type.param_types = malloc(sizeof(Type*) * 1);
+        sys_exec_type->fn_type.param_types[0] = builtin_string;
+        sys_exec_type->fn_type.return_type = builtin_string;
+        add_symbol(global_scope, sys_exec_tok, sys_exec_type, false);
+        
+        Token sys_exit_tok = {TOKEN_IDENT, "System::exit", 12, 0};
+        Type* sys_exit_type = make_type(TYPE_FUNCTION);
+        sys_exit_type->fn_type.param_count = 1;
+        sys_exit_type->fn_type.param_types = malloc(sizeof(Type*) * 1);
+        sys_exit_type->fn_type.param_types[0] = builtin_int;
+        sys_exit_type->fn_type.return_type = builtin_void;
+        add_symbol(global_scope, sys_exit_tok, sys_exit_type, false);
+        
+        Token sys_args_tok = {TOKEN_IDENT, "System::args", 12, 0};
+        Type* sys_args_type = make_type(TYPE_FUNCTION);
+        sys_args_type->fn_type.param_count = 0;
+        sys_args_type->fn_type.param_types = NULL;
+        sys_args_type->fn_type.return_type = builtin_array;
+        add_symbol(global_scope, sys_args_tok, sys_args_type, false);
+        
+        Token sys_env_tok = {TOKEN_IDENT, "System::env", 11, 0};
+        Type* sys_env_type = make_type(TYPE_FUNCTION);
+        sys_env_type->fn_type.param_count = 1;
+        sys_env_type->fn_type.param_types = malloc(sizeof(Type*) * 1);
+        sys_env_type->fn_type.param_types[0] = builtin_string;
+        sys_env_type->fn_type.return_type = builtin_string;
+        add_symbol(global_scope, sys_env_tok, sys_env_type, false);
+        
+        // Math module (update to Math:: from math.)
+        Token math_pow_tok = {TOKEN_IDENT, "Math::pow", 9, 0};
+        Type* math_pow_type = make_type(TYPE_FUNCTION);
+        math_pow_type->fn_type.param_count = 2;
+        math_pow_type->fn_type.param_types = malloc(sizeof(Type*) * 2);
+        math_pow_type->fn_type.param_types[0] = builtin_float;
+        math_pow_type->fn_type.param_types[1] = builtin_float;
+        math_pow_type->fn_type.return_type = builtin_float;
+        add_symbol(global_scope, math_pow_tok, math_pow_type, false);
+        
+        Token math_sqrt_tok = {TOKEN_IDENT, "Math::sqrt", 10, 0};
+        Type* math_sqrt_type = make_type(TYPE_FUNCTION);
+        math_sqrt_type->fn_type.param_count = 1;
+        math_sqrt_type->fn_type.param_types = malloc(sizeof(Type*) * 1);
+        math_sqrt_type->fn_type.param_types[0] = builtin_float;
+        math_sqrt_type->fn_type.return_type = builtin_float;
+        add_symbol(global_scope, math_sqrt_tok, math_sqrt_type, false);
+        
+        // Time module
+        Token time_now_tok = {TOKEN_IDENT, "Time::now", 9, 0};
+        Type* time_now_type = make_type(TYPE_FUNCTION);
+        time_now_type->fn_type.param_count = 0;
+        time_now_type->fn_type.param_types = NULL;
+        time_now_type->fn_type.return_type = builtin_int;
+        add_symbol(global_scope, time_now_tok, time_now_type, false);
+        
+        Token time_sleep_tok = {TOKEN_IDENT, "Time::sleep", 11, 0};
+        Type* time_sleep_type = make_type(TYPE_FUNCTION);
+        time_sleep_type->fn_type.param_count = 1;
+        time_sleep_type->fn_type.param_types = malloc(sizeof(Type*) * 1);
+        time_sleep_type->fn_type.param_types[0] = builtin_int;
+        time_sleep_type->fn_type.return_type = builtin_void;
+        add_symbol(global_scope, time_sleep_tok, time_sleep_type, false);
+    }
+    
     // First pass: process imports and register functions with their signatures
     for (int i = 0; i < prog->count; i++) {
         if (prog->stmts[i]->type == STMT_IMPORT) {
@@ -1869,29 +2114,52 @@ void check_program(Program* prog) {
                 // Register the module itself as a namespace
                 add_symbol(global_scope, import->module, builtin_int, false); // Module type (simplified)
                 
-                // Register math module functions with both qualified and unqualified names
-                Token add_name = {TOKEN_IDENT, "add", 3, 0};
-                Token multiply_name = {TOKEN_IDENT, "multiply", 8, 0};
-                Token pi_name = {TOKEN_IDENT, "PI", 2, 0};
+                // Register math module functions - only useful ones (not add/multiply/etc)
+                // Users should use operators: +, -, *, / for basic arithmetic
+                Token math_pow = {TOKEN_IDENT, "math.pow", 8, 0};
+                Token math_sqrt = {TOKEN_IDENT, "math.sqrt", 9, 0};
+                Token math_abs = {TOKEN_IDENT, "math.abs", 8, 0};
+                Token math_floor = {TOKEN_IDENT, "math.floor", 10, 0};
+                Token math_ceil = {TOKEN_IDENT, "math.ceil", 9, 0};
+                Token math_round = {TOKEN_IDENT, "math.round", 10, 0};
+                Token math_sin = {TOKEN_IDENT, "math.sin", 8, 0};
+                Token math_cos = {TOKEN_IDENT, "math.cos", 8, 0};
+                Token math_tan = {TOKEN_IDENT, "math.tan", 8, 0};
+                Token math_log = {TOKEN_IDENT, "math.log", 8, 0};
+                Token math_exp = {TOKEN_IDENT, "math.exp", 8, 0};
+                Token math_min = {TOKEN_IDENT, "math.min", 8, 0};
+                Token math_max = {TOKEN_IDENT, "math.max", 8, 0};
+                Token math_pi = {TOKEN_IDENT, "math.pi", 7, 0};
+                Token math_e = {TOKEN_IDENT, "math.e", 6, 0};
                 
-                Token math_add = {TOKEN_IDENT, "math.add", 8, 0};
-                Token math_multiply = {TOKEN_IDENT, "math.multiply", 13, 0};
-                Token math_pi = {TOKEN_IDENT, "math.PI", 7, 0};
+                Type* math_fn_type = make_type(TYPE_FUNCTION);
+                math_fn_type->fn_type.param_count = 2;
+                math_fn_type->fn_type.param_types = malloc(sizeof(Type*) * 2);
+                math_fn_type->fn_type.param_types[0] = builtin_float;
+                math_fn_type->fn_type.param_types[1] = builtin_float;
+                math_fn_type->fn_type.return_type = builtin_float;
                 
-                Type* fn_type = make_type(TYPE_FUNCTION);
-                fn_type->fn_type.param_count = 2;
-                fn_type->fn_type.param_types = malloc(sizeof(Type*) * 2);
-                fn_type->fn_type.param_types[0] = builtin_int;
-                fn_type->fn_type.param_types[1] = builtin_int;
-                fn_type->fn_type.return_type = builtin_int;
+                Type* math_fn1_type = make_type(TYPE_FUNCTION);
+                math_fn1_type->fn_type.param_count = 1;
+                math_fn1_type->fn_type.param_types = malloc(sizeof(Type*) * 1);
+                math_fn1_type->fn_type.param_types[0] = builtin_float;
+                math_fn1_type->fn_type.return_type = builtin_float;
                 
-                // Register both qualified and unqualified names
-                add_symbol(global_scope, add_name, fn_type, false);
-                add_symbol(global_scope, multiply_name, fn_type, false);
-                add_symbol(global_scope, pi_name, builtin_float, false);
-                add_symbol(global_scope, math_add, fn_type, false);
-                add_symbol(global_scope, math_multiply, fn_type, false);
+                add_symbol(global_scope, math_pow, math_fn_type, false);
+                add_symbol(global_scope, math_sqrt, math_fn1_type, false);
+                add_symbol(global_scope, math_abs, math_fn1_type, false);
+                add_symbol(global_scope, math_floor, math_fn1_type, false);
+                add_symbol(global_scope, math_ceil, math_fn1_type, false);
+                add_symbol(global_scope, math_round, math_fn1_type, false);
+                add_symbol(global_scope, math_sin, math_fn1_type, false);
+                add_symbol(global_scope, math_cos, math_fn1_type, false);
+                add_symbol(global_scope, math_tan, math_fn1_type, false);
+                add_symbol(global_scope, math_log, math_fn1_type, false);
+                add_symbol(global_scope, math_exp, math_fn1_type, false);
+                add_symbol(global_scope, math_min, math_fn_type, false);
+                add_symbol(global_scope, math_max, math_fn_type, false);
                 add_symbol(global_scope, math_pi, builtin_float, false);
+                add_symbol(global_scope, math_e, builtin_float, false);
             }
         } else if (prog->stmts[i]->type == STMT_FN) {
             FnStmt* fn = &prog->stmts[i]->fn;

@@ -39,7 +39,7 @@ fn main() -> int {
 42.abs()              // Methods on integers
 "hello".upper()       // Methods on strings
 [1,2,3].len()         // Methods on arrays
-{"a": 1}.get("a")     // Methods on hashmaps
+{"a": 1}["a"]         // HashMap indexing
 ```
 
 ### Clean Collection Syntax
@@ -61,7 +61,7 @@ const immutable = 20;  // Immutable
 
 - **Type aliases:** `type UserId = int`
 - **Extension methods:** `impl Point { fn sum(self) -> int }`
-- **String interpolation:** `"Hello {name}!"`
+- **String interpolation:** `"Hello ${name}!"`
 - **Pattern matching:** Exhaustive enum matching
 - **Generics:** `Option<T>`, `Result<T, E>`
 - **Async/await:** Future-based concurrency
@@ -82,7 +82,7 @@ fn main() -> int {
     // Everything is an object - use method syntax
     var len = numbers.len();
     var has_three = numbers.contains(3);
-    var alice_score = scores.get("alice");
+    var alice_score = scores["alice"];
     
     print(alice_score);  // 95
     
@@ -104,7 +104,15 @@ fn main() -> int {
 
 See [CHANGELOG.md](CHANGELOG.md) for version history and release notes.
 
-### Latest Features
+### Latest Features (v1.4.0)
+
+- **Polymorphic print()** - Single print function for all types
+- **HashMap indexing** - `map["key"]` syntax for get/set
+- **HashMap Methods:** `.has()`, `.remove()`, `.len()` and `map["key"]` indexing
+- **HashSet methods** - `.add()`, `.contains()`, `.remove()`, `.len()`
+- **Consistent OO syntax** - All examples and docs use method-first approach
+
+### Previous Features
 
 - HashMap multi-type support (int, float, string, bool)
 - HashSet initialization syntax: `{:"item1", "item2"}`

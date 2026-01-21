@@ -859,7 +859,18 @@ void codegen_expr(Expr* expr) {
             }
             
             // Type-aware method dispatch (Phase 4)
-            const char* receiver_type = get_receiver_type_string(expr->method_call.object->expr_type);
+            Type* object_type = expr->method_call.object->expr_type;
+            
+            const char* receiver_type = get_receiver_type_string(object_type);
+            
+            // Debug: print what we got
+            if (object_type) {
+            } else {
+            }
+            if (receiver_type) {
+            } else {
+            }
+            
             if (receiver_type) {
                 char method_name[256];
                 int len = method.length < 255 ? method.length : 255;
@@ -889,6 +900,18 @@ void codegen_expr(Expr* expr) {
             if (receiver_type) {
                 fprintf(stderr, "Error: Unknown method '%.*s' for type '%s'\n", 
                         method.length, method.start, receiver_type);
+                
+                // Provide helpful hints
+                if (strcmp(receiver_type, "map") == 0) {
+                    fprintf(stderr, "Hint: Available HashMap methods: .has(key), .get(key), .remove(key), .len()\n");
+                    fprintf(stderr, "      Or use indexing: map[\"key\"] to get/set values\n");
+                } else if (strcmp(receiver_type, "set") == 0) {
+                    fprintf(stderr, "Hint: Available HashSet methods: .add(item), .contains(item), .remove(item), .len()\n");
+                } else if (strcmp(receiver_type, "array") == 0) {
+                    fprintf(stderr, "Hint: Available array methods: .len(), .push(item), .pop(), .contains(item), .sort()\n");
+                } else if (strcmp(receiver_type, "string") == 0) {
+                    fprintf(stderr, "Hint: Available string methods: .len(), .upper(), .lower(), .trim(), .contains(substr)\n");
+                }
             } else {
                 fprintf(stderr, "Error: Unknown method '%.*s' (no type info)\n", 
                         method.length, method.start);
@@ -973,17 +996,71 @@ void codegen_expr(Expr* expr) {
             break;
         }
         case EXPR_INDEX: {
-            // Check if this is map indexing by looking at the object
-            // For now, assume if index is a string, it's a map
+            // Check if this is map indexing by looking at the expression type
+            // For HashMap indexing, use hashmap_get_int
             if (expr->index.index->type == EXPR_STRING) {
-                // Map indexing: map["key"] -> map_get(map, "key")
-                emit("map_get(");
+                // Map indexing: map["key"] -> hashmap_get_int(map, "key")
+                emit("hashmap_get_int(");
                 codegen_expr(expr->index.array);
                 emit(", ");
                 codegen_expr(expr->index.index);
                 emit(")");
             } else {
                 // Array indexing with tagged union support
+                // Determine if this is a string array by checking the source
+                bool is_string_array = false;
+                
+                // Check method calls that return string arrays
+                if (expr->index.array->type == EXPR_METHOD_CALL) {
+                    Token method = expr->index.array->method_call.method;
+                    if ((method.length == 5 && memcmp(method.start, "split", 5) == 0) ||
+                        (method.length == 5 && memcmp(method.start, "chars", 5) == 0) ||
+                        (method.length == 5 && memcmp(method.start, "words", 5) == 0) ||
+                        (method.length == 5 && memcmp(method.start, "lines", 5) == 0)) {
+                        is_string_array = true;
+                    }
+                }
+                
+                // Check function calls that return string arrays
+                if (expr->index.array->type == EXPR_CALL) {
+                    Token callee = expr->index.array->call.callee->token;
+                    // System::args returns string array
+                    if (callee.length == 12 && memcmp(callee.start, "System::args", 12) == 0) {
+                        is_string_array = true;
+                    }
+                    // File::list_dir returns string array
+                    if (callee.length == 14 && memcmp(callee.start, "File::list_dir", 14) == 0) {
+                        is_string_array = true;
+                    }
+                }
+                
+                // Check identifiers - if variable was assigned from string array
+                // For now, we track common patterns
+                if (expr->index.array->type == EXPR_IDENT) {
+                    Token var_name = expr->index.array->token;
+                    // Common variable names for string arrays
+                    if ((var_name.length == 4 && memcmp(var_name.start, "args", 4) == 0) ||
+                        (var_name.length == 5 && memcmp(var_name.start, "files", 5) == 0) ||
+                        (var_name.length == 5 && memcmp(var_name.start, "names", 5) == 0) ||
+                        (var_name.length == 5 && memcmp(var_name.start, "parts", 5) == 0) ||
+                        (var_name.length == 7 && memcmp(var_name.start, "entries", 7) == 0)) {
+                        is_string_array = true;
+                    }
+                }
+                
+                // Check array literals - if first element is string, assume string array
+                if (expr->index.array->type == EXPR_ARRAY) {
+                    if (expr->index.array->array.count > 0) {
+                        Expr* first = expr->index.array->array.elements[0];
+                        if (first->type == EXPR_STRING) {
+                            is_string_array = true;
+                        }
+                    }
+                }
+                
+                // Check identifiers - look up in symbol table (TODO: needs type info)
+                // For now, we can't determine this without better type tracking
+                
                 // Check if this is chained indexing (matrix[0][1])
                 if (expr->index.array->type == EXPR_INDEX) {
                     // This is chained indexing: arr[i][j]
@@ -1010,11 +1087,22 @@ void codegen_expr(Expr* expr) {
                     }
                 } else {
                     // Single indexing: arr[i]
-                    emit("array_get_int(");
-                    codegen_expr(expr->index.array);
-                    emit(", ");
-                    codegen_expr(expr->index.index);
-                    emit(")");
+                    // Always use array_get_str for known string arrays
+                    // For unknown types, check if we're in a string context
+                    if (is_string_array) {
+                        emit("array_get_str(");
+                        codegen_expr(expr->index.array);
+                        emit(", ");
+                        codegen_expr(expr->index.index);
+                        emit(")");
+                    } else {
+                        // Return WynValue - caller must handle
+                        emit("array_get(");
+                        codegen_expr(expr->index.array);
+                        emit(", ");
+                        codegen_expr(expr->index.index);
+                        emit(")");
+                    }
                 }
             }
             break;
@@ -1328,10 +1416,10 @@ void codegen_expr(Expr* expr) {
         case EXPR_INDEX_ASSIGN: {
             // Handle ARC-managed array assignment
             if (expr->index_assign.index->type == EXPR_STRING) {
-                // Map assignment: map["key"] = value -> map_set(&map, "key", value)
-                emit("map_set(&(");
+                // Map assignment: map["key"] = value -> hashmap_insert_int(map, "key", value)
+                emit("hashmap_insert_int(");
                 codegen_expr(expr->index_assign.object);
-                emit("), ");
+                emit(", ");
                 codegen_expr(expr->index_assign.index);
                 emit(", ");
                 codegen_expr(expr->index_assign.value);
@@ -1395,6 +1483,8 @@ void codegen_c_header() {
     emit("#include <ctype.h>\n");
     emit("#include <stdarg.h>\n");
     emit("#include <setjmp.h>\n");
+    emit("#include <dirent.h>\n");
+    emit("#include <sys/stat.h>\n");
     emit("#include <sys/socket.h>\n");
     emit("#include <sys/time.h>\n");
     emit("#include <netinet/in.h>\n");
@@ -1410,6 +1500,9 @@ void codegen_c_header() {
     emit("#include \"result.h\"\n");
     emit("#include \"hashmap.h\"\n");
     emit("#include \"hashset.h\"\n");
+    emit("\n// Global argc/argv for System::args()\n");
+    emit("int __wyn_argc = 0;\n");
+    emit("char** __wyn_argv = NULL;\n\n");
     emit("#include \"json.h\"\n");
     emit("#include \"async_runtime.h\"\n\n");
     
@@ -1565,6 +1658,13 @@ void codegen_c_header() {
     emit("    if (arr.data[index].type == WYN_TYPE_STRING) return arr.data[index].data.string_val;\n");
     emit("    return \"\";\n");
     emit("}\n");
+    emit("WynValue array_get(WynArray arr, int index) {\n");
+    emit("    WynValue val = {0};\n");
+    emit("    if (index >= 0 && index < arr.count) val = arr.data[index];\n");
+    emit("    return val;\n");
+    emit("}\n");
+    emit("#define ARRAY_GET_STR(arr, idx) (array_get(arr, idx).data.string_val)\n");
+    emit("#define ARRAY_GET_INT(arr, idx) (array_get(arr, idx).data.int_val)\n");
     emit("WynArray* array_get_array(WynArray arr, int index) {\n");
     emit("    if (index < 0 || index >= arr.count) return NULL;\n");
     emit("    if (arr.data[index].type == WYN_TYPE_ARRAY) return arr.data[index].data.array_val;\n");
@@ -1606,10 +1706,6 @@ void codegen_c_header() {
     emit("    arr->count--;\n");
     emit("    return arr->data[arr->count].data.int_val;\n");
     emit("}\n");
-    emit("int array_get(WynArray arr, int index) {\n");
-    emit("    if (index < 0 || index >= arr.count) return 0;\n");
-    emit("    return arr.data[index].data.int_val;\n");
-    emit("}\n");
     emit("int array_index_of(WynArray arr, int value) {\n");
     emit("    for (int i = 0; i < arr.count; i++) {\n");
     emit("        if (arr.data[i].type == WYN_TYPE_INT && arr.data[i].data.int_val == value) return i;\n");
@@ -1635,21 +1731,76 @@ void codegen_c_header() {
     emit("    }\n");
     emit("}\n\n");
     
-    // New array methods for Task 3.2
-    emit("WynOptional* array_first(WynArray arr) {\n");
-    emit("    if (arr.count > 0) {\n");
-    emit("        return some_int(arr.data[0].data.int_val);\n");
-    emit("    } else {\n");
-    emit("        return none_int();\n");
-    emit("    }\n");
+    // Array first/last - return int directly (0 if empty)
+    emit("int array_first(WynArray arr) {\n");
+    emit("    if (arr.count == 0) return 0;\n");
+    emit("    return array_get_int(arr, 0);\n");
     emit("}\n");
     
-    emit("WynOptional* array_last(WynArray arr) {\n");
-    emit("    if (arr.count > 0) {\n");
-    emit("        return some_int(arr.data[arr.count - 1].data.int_val);\n");
-    emit("    } else {\n");
-    emit("        return none_int();\n");
+    emit("int array_last(WynArray arr) {\n");
+    emit("    if (arr.count == 0) return 0;\n");
+    emit("    return array_get_int(arr, arr.count - 1);\n");
+    emit("}\n");
+    
+    emit("void array_clear(WynArray* arr) {\n");
+    emit("    arr->count = 0;\n");
+    emit("}\n");
+    
+    emit("int array_min(WynArray arr) {\n");
+    emit("    if (arr.count == 0) return 0;\n");
+    emit("    int min = array_get_int(arr, 0);\n");
+    emit("    for (int i = 1; i < arr.count; i++) {\n");
+    emit("        int val = array_get_int(arr, i);\n");
+    emit("        if (val < min) min = val;\n");
     emit("    }\n");
+    emit("    return min;\n");
+    emit("}\n");
+    
+    emit("int array_max(WynArray arr) {\n");
+    emit("    if (arr.count == 0) return 0;\n");
+    emit("    int max = array_get_int(arr, 0);\n");
+    emit("    for (int i = 1; i < arr.count; i++) {\n");
+    emit("        int val = array_get_int(arr, i);\n");
+    emit("        if (val > max) max = val;\n");
+    emit("    }\n");
+    emit("    return max;\n");
+    emit("}\n");
+    
+    emit("int array_sum(WynArray arr) {\n");
+    emit("    int sum = 0;\n");
+    emit("    for (int i = 0; i < arr.count; i++) {\n");
+    emit("        sum += array_get_int(arr, i);\n");
+    emit("    }\n");
+    emit("    return sum;\n");
+    emit("}\n");
+    
+    emit("int array_average(WynArray arr) {\n");
+    emit("    if (arr.count == 0) return 0;\n");
+    emit("    return array_sum(arr) / arr.count;\n");
+    emit("}\n");
+    
+    emit("void array_remove_value(WynArray* arr, int value) {\n");
+    emit("    int write_idx = 0;\n");
+    emit("    for (int i = 0; i < arr->count; i++) {\n");
+    emit("        if (array_get_int(*arr, i) != value) {\n");
+    emit("            arr->data[write_idx++] = arr->data[i];\n");
+    emit("        }\n");
+    emit("    }\n");
+    emit("    arr->count = write_idx;\n");
+    emit("}\n");
+    
+    emit("void array_insert(WynArray* arr, int index, int value) {\n");
+    emit("    if (index < 0 || index > arr->count) return;\n");
+    emit("    if (arr->count >= arr->capacity) {\n");
+    emit("        arr->capacity = arr->capacity == 0 ? 4 : arr->capacity * 2;\n");
+    emit("        arr->data = realloc(arr->data, sizeof(WynValue) * arr->capacity);\n");
+    emit("    }\n");
+    emit("    for (int i = arr->count; i > index; i--) {\n");
+    emit("        arr->data[i] = arr->data[i-1];\n");
+    emit("    }\n");
+    emit("    arr->data[index].type = WYN_TYPE_INT;\n");
+    emit("    arr->data[index].data.int_val = value;\n");
+    emit("    arr->count++;\n");
     emit("}\n");
     
     emit("WynArray array_take(WynArray arr, int n) {\n");
@@ -1687,6 +1838,27 @@ void codegen_c_header() {
     emit("            result.data = realloc(result.data, sizeof(WynValue) * result.capacity);\n");
     emit("        }\n");
     emit("        result.data[result.count++] = arr.data[i];\n");
+    emit("    }\n");
+    emit("    return result;\n");
+    emit("}\n");
+    
+    emit("char* array_join(WynArray arr, const char* sep) {\n");
+    emit("    if (arr.count == 0) return \"\";\n");
+    emit("    int total_len = 0;\n");
+    emit("    int sep_len = strlen(sep);\n");
+    emit("    for (int i = 0; i < arr.count; i++) {\n");
+    emit("        if (arr.data[i].type == WYN_TYPE_STRING) {\n");
+    emit("            total_len += strlen(arr.data[i].data.string_val);\n");
+    emit("        }\n");
+    emit("        if (i < arr.count - 1) total_len += sep_len;\n");
+    emit("    }\n");
+    emit("    char* result = malloc(total_len + 1);\n");
+    emit("    result[0] = '\\0';\n");
+    emit("    for (int i = 0; i < arr.count; i++) {\n");
+    emit("        if (arr.data[i].type == WYN_TYPE_STRING) {\n");
+    emit("            strcat(result, arr.data[i].data.string_val);\n");
+    emit("        }\n");
+    emit("        if (i < arr.count - 1) strcat(result, sep);\n");
     emit("    }\n");
     emit("    return result;\n");
     emit("}\n");
@@ -1755,6 +1927,38 @@ void codegen_c_header() {
     emit("    }\n");
     emit("    result[len] = '\\0';\n");
     emit("    return result;\n");
+    emit("}\n");
+    
+    emit("int string_is_alpha(const char* str) {\n");
+    emit("    if (!str || !*str) return 0;\n");
+    emit("    for (int i = 0; str[i]; i++) {\n");
+    emit("        if (!isalpha(str[i])) return 0;\n");
+    emit("    }\n");
+    emit("    return 1;\n");
+    emit("}\n");
+    
+    emit("int string_is_digit(const char* str) {\n");
+    emit("    if (!str || !*str) return 0;\n");
+    emit("    for (int i = 0; str[i]; i++) {\n");
+    emit("        if (!isdigit(str[i])) return 0;\n");
+    emit("    }\n");
+    emit("    return 1;\n");
+    emit("}\n");
+    
+    emit("int string_is_alnum(const char* str) {\n");
+    emit("    if (!str || !*str) return 0;\n");
+    emit("    for (int i = 0; str[i]; i++) {\n");
+    emit("        if (!isalnum(str[i])) return 0;\n");
+    emit("    }\n");
+    emit("    return 1;\n");
+    emit("}\n");
+    
+    emit("int string_is_whitespace(const char* str) {\n");
+    emit("    if (!str || !*str) return 0;\n");
+    emit("    for (int i = 0; str[i]; i++) {\n");
+    emit("        if (!isspace(str[i])) return 0;\n");
+    emit("    }\n");
+    emit("    return 1;\n");
     emit("}\n");
     
     // Phase 2 Task 2.1: Additional string methods
@@ -2457,6 +2661,14 @@ void codegen_c_header() {
     emit("void print_bool_no_nl(bool b) { printf(\"%%s\", b ? \"true\" : \"false\"); }\n");
     emit("void print_array(WynArray arr) { printf(\"[\"); for(int i = 0; i < arr.count; i++) { if(i > 0) printf(\", \"); printf(\"%%d\", array_get_int(arr, i)); } printf(\"]\\n\"); }\n");
     emit("void print_array_no_nl(WynArray arr) { printf(\"[\"); for(int i = 0; i < arr.count; i++) { if(i > 0) printf(\", \"); printf(\"%%d\", array_get_int(arr, i)); } printf(\"]\"); }\n");
+    emit("void print_value(WynValue v) {\n");
+    emit("    switch(v.type) {\n");
+    emit("        case WYN_TYPE_INT: printf(\"%%d\\n\", v.data.int_val); break;\n");
+    emit("        case WYN_TYPE_FLOAT: printf(\"%%g\\n\", v.data.float_val); break;\n");
+    emit("        case WYN_TYPE_STRING: printf(\"%%s\\n\", v.data.string_val); break;\n");
+    emit("        default: printf(\"<value>\\n\"); break;\n");
+    emit("    }\n");
+    emit("}\n");
     
     emit("#define print_no_nl(x) _Generic((x), \\\n");
     emit("    int: print_int_no_nl, \\\n");
@@ -2479,6 +2691,7 @@ void codegen_c_header() {
     emit("    const char*: print_str, \\\n");
     emit("    bool: print_bool, \\\n");
     emit("    WynArray: print_array, \\\n");
+    emit("    WynValue: print_value, \\\n");
     emit("    default: print_int)(x)\n\n");
     emit("int input() { int x = 0; if (scanf(\"%%d\", &x) != 1) { while(getchar() != '\\n') { /* clear input buffer */ } return 0; } return x; }\n");
     emit("float input_float() { float x = 0.0f; if (scanf(\"%%f\", &x) != 1) { while(getchar() != '\\n') { /* clear input buffer */ } return 0.0f; } return x; }\n");
@@ -2545,7 +2758,7 @@ void codegen_c_header() {
     emit("int lcm(int a, int b) { return a * b / gcd(a, b); }\n");
     emit("int is_even(int x) { return x %% 2 == 0; }\n");
     emit("int is_odd(int x) { return x %% 2 != 0; }\n");
-    emit("char* file_read(const char* path) {\n");
+    emit("char* File_read(const char* path) {\n");
     emit("    last_error[0] = 0;\n");
     emit("    FILE* f = fopen(path, \"r\");\n");
     emit("    if(!f) { snprintf(last_error, 256, \"Cannot open file: %%s\", path); return NULL; }\n");
@@ -2559,7 +2772,74 @@ void codegen_c_header() {
     emit("    fclose(f);\n");
     emit("    return buf;\n");
     emit("}\n");
-    emit("int file_write(const char* path, const char* data) {\n");
+    
+    emit("WynArray File_list_dir(const char* path) {\n");
+    emit("    WynArray arr = array_new();\n");
+    emit("    DIR* dir = opendir(path);\n");
+    emit("    if (!dir) return arr;\n");
+    emit("    struct dirent* entry;\n");
+    emit("    while ((entry = readdir(dir)) != NULL) {\n");
+    emit("        if (strcmp(entry->d_name, \".\") == 0 || strcmp(entry->d_name, \"..\") == 0) continue;\n");
+    emit("        char* name = malloc(strlen(entry->d_name) + 1);\n");
+    emit("        strcpy(name, entry->d_name);\n");
+    emit("        array_push_str(&arr, name);\n");
+    emit("    }\n");
+    emit("    closedir(dir);\n");
+    emit("    return arr;\n");
+    emit("}\n");
+    
+    emit("int File_is_file(const char* path) {\n");
+    emit("    struct stat st;\n");
+    emit("    if (stat(path, &st) != 0) return 0;\n");
+    emit("    return S_ISREG(st.st_mode);\n");
+    emit("}\n");
+    
+    emit("int File_is_dir(const char* path) {\n");
+    emit("    struct stat st;\n");
+    emit("    if (stat(path, &st) != 0) return 0;\n");
+    emit("    return S_ISDIR(st.st_mode);\n");
+    emit("}\n");
+    
+    emit("char* File_get_cwd() {\n");
+    emit("    char* buf = malloc(1024);\n");
+    emit("    if (getcwd(buf, 1024) == NULL) { free(buf); return \"\"; }\n");
+    emit("    return buf;\n");
+    emit("}\n");
+    
+    emit("int File_create_dir(const char* path) {\n");
+    emit("    return mkdir(path, 0755) == 0;\n");
+    emit("}\n");
+    
+    emit("int File_file_size(const char* path) {\n");
+    emit("    struct stat st;\n");
+    emit("    if (stat(path, &st) != 0) return -1;\n");
+    emit("    return (int)st.st_size;\n");
+    emit("}\n");
+    
+    emit("char* File_path_join(const char* a, const char* b) {\n");
+    emit("    int len_a = strlen(a);\n");
+    emit("    int len_b = strlen(b);\n");
+    emit("    int needs_sep = (len_a > 0 && a[len_a-1] != '/') ? 1 : 0;\n");
+    emit("    char* result = malloc(len_a + len_b + needs_sep + 1);\n");
+    emit("    strcpy(result, a);\n");
+    emit("    if (needs_sep) strcat(result, \"/\");\n");
+    emit("    strcat(result, b);\n");
+    emit("    return result;\n");
+    emit("}\n");
+    
+    emit("char* File_basename(const char* path) {\n");
+    emit("    const char* last_slash = strrchr(path, '/');\n");
+    emit("    if (last_slash == NULL) {\n");
+    emit("        char* result = malloc(strlen(path) + 1);\n");
+    emit("        strcpy(result, path);\n");
+    emit("        return result;\n");
+    emit("    }\n");
+    emit("    char* result = malloc(strlen(last_slash));\n");
+    emit("    strcpy(result, last_slash + 1);\n");
+    emit("    return result;\n");
+    emit("}\n");
+    
+    emit("int File_write(const char* path, const char* data) {\n");
     emit("    last_error[0] = 0;\n");
     emit("    FILE* f = fopen(path, \"w\");\n");
     emit("    if(!f) { snprintf(last_error, 256, \"Cannot write file: %%s\", path); return 0; }\n");
@@ -2567,7 +2847,8 @@ void codegen_c_header() {
     emit("    fclose(f);\n");
     emit("    return 1;\n");
     emit("}\n");
-    emit("int file_exists(const char* path) { FILE* f = fopen(path, \"r\"); if(f) { fclose(f); return 1; } return 0; }\n");
+    emit("int File_exists(const char* path) { FILE* f = fopen(path, \"r\"); if(f) { fclose(f); return 1; } return 0; }\n");
+    emit("int File_delete(const char* path) { return remove(path) == 0; }\n");
     emit("int file_size(const char* path) {\n");
     emit("    last_error[0] = 0;\n");
     emit("    FILE* f = fopen(path, \"r\");\n");
@@ -2604,6 +2885,56 @@ void codegen_c_header() {
     emit("    fclose(d);\n");
     emit("    return 1;\n");
     emit("}\n");
+    
+    // System execution
+    emit("char* System_exec(const char* cmd) {\n");
+    emit("    FILE* pipe = popen(cmd, \"r\");\n");
+    emit("    if (!pipe) return \"\";\n");
+    emit("    char* result = malloc(65536);\n");
+    emit("    result[0] = 0;\n");
+    emit("    char buffer[1024];\n");
+    emit("    while (fgets(buffer, sizeof(buffer), pipe) != NULL) {\n");
+    emit("        strcat(result, buffer);\n");
+    emit("    }\n");
+    emit("    pclose(pipe);\n");
+    emit("    return result;\n");
+    emit("}\n");
+    
+    emit("void System_exit(int code) { exit(code); }\n");
+    
+    emit("char* System_env(const char* key) {\n");
+    emit("    char* val = getenv(key);\n");
+    emit("    if (!val) return \"\";\n");
+    emit("    char* result = malloc(strlen(val) + 1);\n");
+    emit("    strcpy(result, val);\n");
+    emit("    return result;\n");
+    emit("}\n\n");
+    
+    emit("WynArray System_args() {\n");
+    emit("    WynArray arr;\n");
+    emit("    arr.data = malloc(__wyn_argc * sizeof(WynValue));\n");
+    emit("    arr.count = __wyn_argc;\n");
+    emit("    arr.capacity = __wyn_argc;\n");
+    emit("    for (int i = 0; i < __wyn_argc; i++) {\n");
+    emit("        arr.data[i].type = WYN_TYPE_STRING;\n");
+    emit("        arr.data[i].data.string_val = __wyn_argv[i];\n");
+    emit("    }\n");
+    emit("    return arr;\n");
+    emit("}\n\n");
+    
+    // Math module functions
+    emit("double Math_pow(double x, double y) { return pow(x, y); }\n");
+    emit("double Math_sqrt(double x) { return sqrt(x); }\n");
+    
+    // Time module functions
+    emit("int Time_now() { return (int)time(NULL); }\n");
+    emit("void Time_sleep(int milliseconds) {\n");
+    emit("    struct timespec ts;\n");
+    emit("    ts.tv_sec = milliseconds / 1000;\n");
+    emit("    ts.tv_nsec = (milliseconds %% 1000) * 1000000;\n");
+    emit("    nanosleep(&ts, NULL);\n");
+    emit("}\n");
+    
     emit("int arr_sum(WynArray arr, int len) { int s = 0; for(int i = 0; i < len; i++) s += array_get_int(arr, i); return s; }\n");
     emit("int arr_max(WynArray arr, int len) { int m = array_get_int(arr, 0); for(int i = 1; i < len; i++) { int val = array_get_int(arr, i); if(val > m) m = val; } return m; }\n");
     emit("int arr_min(WynArray arr, int len) { int m = array_get_int(arr, 0); for(int i = 1; i < len; i++) { int val = array_get_int(arr, i); if(val < m) m = val; } return m; }\n");
@@ -2650,6 +2981,12 @@ void codegen_c_header() {
     emit("double abs_float(double x) { return fabs(x); }\n");
     emit("char* str_replace(const char* s, const char* old, const char* new) { int count = 0; const char* p = s; int oldlen = strlen(old); int newlen = strlen(new); while((p = strstr(p, old))) { count++; p += oldlen; } int total = strlen(s) + count * (newlen - oldlen) + 1; char* r = malloc(total); char* dst = r; p = s; while(*p) { if(strncmp(p, old, oldlen) == 0) { memcpy(dst, new, newlen); dst += newlen; p += oldlen; } else { *dst++ = *p++; } } *dst = 0; return r; }\n");
     emit("char** str_split(const char* s, const char* delim, int* count) { char** r = malloc(100 * sizeof(char*)); *count = 0; char* copy = malloc(strlen(s) + 1); strcpy(copy, s); char* tok = strtok(copy, delim); while(tok && *count < 100) { r[*count] = malloc(strlen(tok) + 1); strcpy(r[*count], tok); (*count)++; tok = strtok(NULL, delim); } return r; }\n");
+    emit("char* split_get(const char* s, const char* delim, int index) { int count = 0; char** parts = str_split(s, delim, &count); if (index < 0 || index >= count) return \"\"; return parts[index]; }\n");
+    emit("int split_count(const char* s, const char* delim) { int count = 0; str_split(s, delim, &count); return count; }\n");
+    emit("char* char_at(const char* s, int index) { if (index < 0 || index >= strlen(s)) return \"\"; static char buf[2]; buf[0] = s[index]; buf[1] = '\\0'; return buf; }\n");
+    emit("int is_numeric(const char* s) { if (!s || !*s) return 0; int i = 0; if (s[0] == '-' || s[0] == '+') i++; if (!s[i]) return 0; while (s[i]) { if (s[i] < '0' || s[i] > '9') return 0; i++; } return 1; }\n");
+    emit("int str_count(const char* s, const char* substr) { if (!s || !substr || !*substr) return 0; int count = 0; const char* p = s; while ((p = strstr(p, substr)) != NULL) { count++; p += strlen(substr); } return count; }\n");
+    emit("int str_contains_substr(const char* s, const char* substr) { return strstr(s, substr) != NULL; }\n");
     emit("char* str_join(char** arr, int len, const char* sep) { int total = 0; for(int i = 0; i < len; i++) total += strlen(arr[i]); total += (len - 1) * strlen(sep) + 1; char* r = malloc(total); r[0] = 0; for(int i = 0; i < len; i++) { if(i > 0) strcat(r, sep); strcat(r, arr[i]); } return r; }\n");
     emit("char* int_to_str(int n) { char* r = malloc(12); sprintf(r, \"%%d\", n); return r; }\n");
     emit("int str_to_int(const char* s) { return atoi(s); }\n");
@@ -2884,6 +3221,42 @@ void codegen_stmt(Stmt* stmt) {
                     // v1.2.3: HashSet literal
                     c_type = "WynHashSet*";
                     needs_arc_management = false;
+                } else if (stmt->var.init->type == EXPR_INDEX) {
+                    // Array/map indexing - infer from source
+                    if (stmt->var.init->index.array->type == EXPR_CALL) {
+                        Token callee = stmt->var.init->index.array->call.callee->token;
+                        if ((callee.length == 12 && memcmp(callee.start, "System::args", 12) == 0) ||
+                            (callee.length == 14 && memcmp(callee.start, "File::list_dir", 14) == 0)) {
+                            c_type = "const char*";
+                            is_already_const = true;
+                        }
+                    } else if (stmt->var.init->index.array->type == EXPR_METHOD_CALL) {
+                        Token method = stmt->var.init->index.array->method_call.method;
+                        if ((method.length == 5 && memcmp(method.start, "split", 5) == 0) ||
+                            (method.length == 5 && memcmp(method.start, "chars", 5) == 0) ||
+                            (method.length == 5 && memcmp(method.start, "words", 5) == 0) ||
+                            (method.length == 5 && memcmp(method.start, "lines", 5) == 0)) {
+                            c_type = "const char*";
+                            is_already_const = true;
+                        }
+                    } else if (stmt->var.init->index.array->type == EXPR_IDENT) {
+                        Token var_name = stmt->var.init->index.array->token;
+                        if ((var_name.length == 4 && memcmp(var_name.start, "args", 4) == 0) ||
+                            (var_name.length == 5 && memcmp(var_name.start, "files", 5) == 0) ||
+                            (var_name.length == 5 && memcmp(var_name.start, "names", 5) == 0) ||
+                            (var_name.length == 5 && memcmp(var_name.start, "parts", 5) == 0) ||
+                            (var_name.length == 7 && memcmp(var_name.start, "entries", 7) == 0)) {
+                            c_type = "const char*";
+                            is_already_const = true;
+                        }
+                    } else if (stmt->var.init->index.array->type == EXPR_ARRAY) {
+                        if (stmt->var.init->index.array->array.count > 0) {
+                            if (stmt->var.init->index.array->array.elements[0]->type == EXPR_STRING) {
+                                c_type = "const char*";
+                                is_already_const = true;
+                            }
+                        }
+                    }
                 } else if (stmt->var.init->type == EXPR_TUPLE) {
                     // Tuple type - use __auto_type (GCC/Clang extension)
                     c_type = "__auto_type";
@@ -3641,22 +4014,23 @@ void codegen_stmt(Stmt* stmt) {
                     builtin_modules_emitted = true;
                     
                     if (strcmp(module_name, "math") == 0) {
-                        emit("int math_add(int a, int b) { return a + b; }\n");
-                        emit("int math_multiply(int a, int b) { return a * b; }\n");
-                        emit("int math_abs(int n) { return n < 0 ? -n : n; }\n");
-                        emit("int math_max(int a, int b) { return a > b ? a : b; }\n");
-                        emit("int math_min(int a, int b) { return a < b ? a : b; }\n");
-                        emit("int math_pow(int base, int exp) {\n");
-                        emit("    int result = 1;\n");
-                        emit("    for (int i = 0; i < exp; i++) result *= base;\n");
-                        emit("    return result;\n");
-                        emit("}\n");
-                        emit("int math_sqrt(int n) {\n");
-                        emit("    if (n < 0) return 0;\n");
-                        emit("    int x = n, y = 1;\n");
-                        emit("    while (x > y) { x = (x + y) / 2; y = n / x; }\n");
-                        emit("    return x;\n");
-                        emit("}\n");
+                        // Math module - useful functions only (use +, -, *, / operators for basic arithmetic)
+                        emit("#include <math.h>\n");
+                        emit("double math_pow(double base, double exp) { return pow(base, exp); }\n");
+                        emit("double math_sqrt(double x) { return sqrt(x); }\n");
+                        emit("double math_abs(double x) { return fabs(x); }\n");
+                        emit("double math_floor(double x) { return floor(x); }\n");
+                        emit("double math_ceil(double x) { return ceil(x); }\n");
+                        emit("double math_round(double x) { return round(x); }\n");
+                        emit("double math_sin(double x) { return sin(x); }\n");
+                        emit("double math_cos(double x) { return cos(x); }\n");
+                        emit("double math_tan(double x) { return tan(x); }\n");
+                        emit("double math_log(double x) { return log(x); }\n");
+                        emit("double math_exp(double x) { return exp(x); }\n");
+                        emit("double math_min(double a, double b) { return a < b ? a : b; }\n");
+                        emit("double math_max(double a, double b) { return a > b ? a : b; }\n");
+                        emit("const double math_pi = 3.14159265358979323846;\n");
+                        emit("const double math_e = 2.71828182845904523536;\n");
                     }
                 }
             }
@@ -4332,7 +4706,9 @@ void codegen_program(Program* prog) {
     
     // If no main function, create one that executes all statements
     if (!has_main) {
-        emit("int main() {\n");
+        emit("int main(int argc, char** argv) {\n");
+        emit("    __wyn_argc = argc;\n");
+        emit("    __wyn_argv = argv;\n");
         
         // Special case: single expression should return its value
         if (prog->count == 1 && prog->stmts[0]->type == STMT_EXPR) {
@@ -4360,6 +4736,9 @@ void codegen_program(Program* prog) {
             emit("    return 0;\n");
         }
         emit("}\n");
+    } else {
+        // User defined main() is renamed to wyn_main during codegen
+        // wyn_wrapper.c provides the actual main() that calls wyn_main()
     }
     
     // Note: main() wrapper is provided by wyn_wrapper.c, not generated here
