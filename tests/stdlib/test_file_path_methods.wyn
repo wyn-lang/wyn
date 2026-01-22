@@ -1,0 +1,35 @@
+// Test File path manipulation methods
+
+fn main() -> int {
+    // Test path_join
+    var path1 = File::path_join("dir", "file.txt");
+    if path1.len() == 0 {
+        return 1;
+    }
+    
+    // Test basename
+    var base = File::basename("/path/to/file.txt");
+    if base.len() == 0 {
+        return 2;
+    }
+    
+    // Test dirname
+    var dir = File::dirname("/path/to/file.txt");
+    if dir.len() == 0 {
+        return 3;
+    }
+    
+    // Test extension
+    var ext = File::extension("file.txt");
+    if ext.len() == 0 {
+        return 4;
+    }
+    
+    // Test get_cwd
+    var cwd = File::get_cwd();
+    if cwd.len() == 0 {
+        return 5;
+    }
+    
+    return 0;
+}

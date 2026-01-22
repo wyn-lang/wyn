@@ -2192,6 +2192,15 @@ void codegen_c_header() {
     emit("    return 1;\n");
     emit("}\n");
     
+    emit("const char* string_char_at(const char* str, int index) {\n");
+    emit("    int len = strlen(str);\n");
+    emit("    if (index < 0 || index >= len) return \"\";\n");
+    emit("    char* result = malloc(2);\n");
+    emit("    result[0] = str[index];\n");
+    emit("    result[1] = '\\0';\n");
+    emit("    return result;\n");
+    emit("}\n");
+    
     // Phase 2 Task 2.1: Additional string methods
     emit("char* string_capitalize(const char* str) {\n");
     emit("    int len = strlen(str);\n");
@@ -3067,6 +3076,26 @@ void codegen_c_header() {
     emit("    }\n");
     emit("    char* result = malloc(strlen(last_slash));\n");
     emit("    strcpy(result, last_slash + 1);\n");
+    emit("    return result;\n");
+    emit("}\n");
+    
+    emit("char* File_dirname(const char* path) {\n");
+    emit("    const char* last_slash = strrchr(path, '/');\n");
+    emit("    if (last_slash == NULL) return \".\";\n");
+    emit("    int len = last_slash - path;\n");
+    emit("    if (len == 0) return \"/\";\n");
+    emit("    char* result = malloc(len + 1);\n");
+    emit("    strncpy(result, path, len);\n");
+    emit("    result[len] = '\\0';\n");
+    emit("    return result;\n");
+    emit("}\n");
+    
+    emit("char* File_extension(const char* path) {\n");
+    emit("    const char* last_dot = strrchr(path, '.');\n");
+    emit("    const char* last_slash = strrchr(path, '/');\n");
+    emit("    if (last_dot == NULL || (last_slash != NULL && last_dot < last_slash)) return \"\";\n");
+    emit("    char* result = malloc(strlen(last_dot));\n");
+    emit("    strcpy(result, last_dot + 1);\n");
     emit("    return result;\n");
     emit("}\n");
     

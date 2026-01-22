@@ -35,6 +35,11 @@ static const MethodSignature method_signatures[] = {
     {"string", "concat", "string", 1},
     {"string", "replace_all", "string", 2},  // replace_all(old, new)
     {"string", "last_index_of", "int", 1},   // Returns -1 if not found
+    {"string", "is_alpha", "bool", 0},       // Check if all alphabetic
+    {"string", "is_digit", "bool", 0},       // Check if all numeric
+    {"string", "is_alnum", "bool", 0},       // Check if alphanumeric
+    {"string", "is_whitespace", "bool", 0},  // Check if all whitespace
+    {"string", "char_at", "string", 1},      // Get char at index
     
     // Int methods
     {"int", "to_string", "string", 0},
@@ -319,6 +324,9 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
         }
         if (strcmp(method_name, "is_whitespace") == 0 && arg_count == 0) {
             out->c_function = "string_is_whitespace"; return true;
+        }
+        if (strcmp(method_name, "char_at") == 0 && arg_count == 1) {
+            out->c_function = "string_char_at"; return true;
         }
         if (strcmp(method_name, "parse_int") == 0 && arg_count == 0) {
             out->c_function = "str_parse_int"; return true;

@@ -2268,6 +2268,22 @@ void check_program(Program* prog) {
         file_basename_type->fn_type.return_type = builtin_string;
         add_symbol(global_scope, file_basename_tok, file_basename_type, false);
         
+        Token file_dirname_tok = {TOKEN_IDENT, "File::dirname", 13, 0};
+        Type* file_dirname_type = make_type(TYPE_FUNCTION);
+        file_dirname_type->fn_type.param_count = 1;
+        file_dirname_type->fn_type.param_types = malloc(sizeof(Type*) * 1);
+        file_dirname_type->fn_type.param_types[0] = builtin_string;
+        file_dirname_type->fn_type.return_type = builtin_string;
+        add_symbol(global_scope, file_dirname_tok, file_dirname_type, false);
+        
+        Token file_extension_tok = {TOKEN_IDENT, "File::extension", 15, 0};
+        Type* file_extension_type = make_type(TYPE_FUNCTION);
+        file_extension_type->fn_type.param_count = 1;
+        file_extension_type->fn_type.param_types = malloc(sizeof(Type*) * 1);
+        file_extension_type->fn_type.param_types[0] = builtin_string;
+        file_extension_type->fn_type.return_type = builtin_string;
+        add_symbol(global_scope, file_extension_tok, file_extension_type, false);
+        
         // System module
         Token sys_exec_tok = {TOKEN_IDENT, "System::exec", 12, 0};
         Type* sys_exec_type = make_type(TYPE_FUNCTION);

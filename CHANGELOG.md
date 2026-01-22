@@ -2,6 +2,32 @@
 
 ## [1.4.0] - 2026-01-22
 
+### Added - Standard Library Expansion
+
+**String Character Methods:**
+- `.is_alpha()` - Check if all characters are alphabetic
+- `.is_digit()` - Check if all characters are numeric
+- `.is_alnum()` - Check if all characters are alphanumeric
+- `.is_whitespace()` - Check if all whitespace
+- `.char_at(index)` - Get character at index
+
+**File Path Manipulation:**
+- `File::dirname(path)` - Extract directory from path
+- `File::extension(path)` - Extract file extension
+- `File::path_join(a, b)` - Join paths safely (already existed, now documented)
+- `File::basename(path)` - Extract filename (already existed, now documented)
+- `File::get_cwd()` - Get current directory (already existed, now documented)
+
+**File System Operations (already existed, now validated):**
+- `File::list_dir(path)` - List directory contents
+- `File::is_file(path)` - Check if path is file
+- `File::is_dir(path)` - Check if path is directory
+- `File::create_dir(path)` - Create directory
+- `File::file_size(path)` - Get file size
+
+**System Operations (already existed, now validated):**
+- `System::args()` - Get command line arguments as array
+
 ### Added - Module System (Major Feature)
 - **Nested Modules** - Java/TypeScript-style syntax with `.` separator
   - Import: `import network.http`

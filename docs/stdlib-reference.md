@@ -217,6 +217,12 @@ Checks if all characters are alphanumeric.
 #### `.is_whitespace() -> bool`
 Checks if all characters are whitespace.
 
+#### `.char_at(index: int) -> string`
+Returns character at index as a string.
+```wyn
+var ch = "hello".char_at(1);  // "e"
+```
+
 ### Conversion
 
 #### `.parse_int() -> int`
@@ -548,6 +554,18 @@ var path = File::path_join(dir, filename);
 Extracts filename from path.
 ```wyn
 var name = File::basename("/tmp/file.txt");  // "file.txt"
+```
+
+#### `File::dirname(path: string) -> string`
+Extracts directory from path.
+```wyn
+var dir = File::dirname("/tmp/file.txt");  // "/tmp"
+```
+
+#### `File::extension(path: string) -> string`
+Extracts file extension.
+```wyn
+var ext = File::extension("file.txt");  // "txt"
 ```
 
 ---
