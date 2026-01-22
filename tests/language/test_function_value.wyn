@@ -1,0 +1,17 @@
+// Test: Functions as first-class values
+
+fn twice(x: int) -> int {
+    return x * 2;
+}
+
+fn apply(f: fn(int) -> int, x: int) -> int {
+    return f(x);
+}
+
+fn main() -> int {
+    var result = apply(twice, 5);
+    if result != 10 {
+        return 1;
+    }
+    return 0;
+}

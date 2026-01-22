@@ -2522,7 +2522,10 @@ void check_program(Program* prog) {
                         param_type = builtin_int; // Fallback
                     }
                 } else if (fn->param_types[j]) {
-                    if (fn->param_types[j]->type == EXPR_IDENT) {
+                    if (fn->param_types[j]->type == EXPR_FN_TYPE) {
+                        // Handle function type parameters: fn(T) -> R
+                        param_type = check_expr(fn->param_types[j], global_scope);
+                    } else if (fn->param_types[j]->type == EXPR_IDENT) {
                         Token type_name = fn->param_types[j]->token;
                         if (type_name.length == 3 && memcmp(type_name.start, "int", 3) == 0) {
                             param_type = builtin_int;
@@ -2600,23 +2603,27 @@ void check_program(Program* prog) {
                 fn_type->fn_type.param_types = malloc(sizeof(Type*) * fn->param_count);
                 for (int j = 0; j < fn->param_count; j++) {
                     Type* param_type = builtin_int; // default
-                    if (fn->param_types[j] && fn->param_types[j]->type == EXPR_IDENT) {
-                        Token type_name = fn->param_types[j]->token;
-                        if (type_name.length == 3 && memcmp(type_name.start, "int", 3) == 0) {
-                            param_type = builtin_int;
-                        } else if (type_name.length == 6 && memcmp(type_name.start, "string", 6) == 0) {
-                            param_type = builtin_string;
-                        } else if (type_name.length == 5 && memcmp(type_name.start, "float", 5) == 0) {
-                            param_type = builtin_float;
-                        } else if (type_name.length == 4 && memcmp(type_name.start, "bool", 4) == 0) {
-                            param_type = builtin_bool;
-                        } else if (type_name.length == 5 && memcmp(type_name.start, "array", 5) == 0) {
-                            param_type = builtin_array;
-                        } else {
-                            // Check if it's a struct type
-                            Symbol* type_symbol = find_symbol(global_scope, type_name);
-                            if (type_symbol && type_symbol->type && type_symbol->type->kind == TYPE_STRUCT) {
-                                param_type = type_symbol->type;
+                    if (fn->param_types[j]) {
+                        if (fn->param_types[j]->type == EXPR_FN_TYPE) {
+                            param_type = check_expr(fn->param_types[j], global_scope);
+                        } else if (fn->param_types[j]->type == EXPR_IDENT) {
+                            Token type_name = fn->param_types[j]->token;
+                            if (type_name.length == 3 && memcmp(type_name.start, "int", 3) == 0) {
+                                param_type = builtin_int;
+                            } else if (type_name.length == 6 && memcmp(type_name.start, "string", 6) == 0) {
+                                param_type = builtin_string;
+                            } else if (type_name.length == 5 && memcmp(type_name.start, "float", 5) == 0) {
+                                param_type = builtin_float;
+                            } else if (type_name.length == 4 && memcmp(type_name.start, "bool", 4) == 0) {
+                                param_type = builtin_bool;
+                            } else if (type_name.length == 5 && memcmp(type_name.start, "array", 5) == 0) {
+                                param_type = builtin_array;
+                            } else {
+                                // Check if it's a struct type
+                                Symbol* type_symbol = find_symbol(global_scope, type_name);
+                                if (type_symbol && type_symbol->type && type_symbol->type->kind == TYPE_STRUCT) {
+                                    param_type = type_symbol->type;
+                                }
                             }
                         }
                     }
@@ -2798,10 +2805,19 @@ bool types_equal(Type* a, Type* b) {
         case TYPE_BOOL:
         case TYPE_VOID:
             return true;
+        case TYPE_FUNCTION: {
+            // Compare function signatures
+            if (a->fn_type.param_count != b->fn_type.param_count) return false;
+            for (int i = 0; i < a->fn_type.param_count; i++) {
+                if (!types_equal(a->fn_type.param_types[i], b->fn_type.param_types[i])) {
+                    return false;
+                }
+            }
+            return types_equal(a->fn_type.return_type, b->fn_type.return_type);
+        }
         case TYPE_ARRAY:
         case TYPE_STRUCT:
         case TYPE_ENUM:
-        case TYPE_FUNCTION:
         case TYPE_MAP:
         case TYPE_OPTIONAL:
         case TYPE_UNION:

@@ -3953,7 +3953,44 @@ void codegen_stmt(Stmt* stmt) {
                            stmt->fn.receiver_type.length, stmt->fn.receiver_type.start);
                     param_type = custom_type_buf;
                 } else if (stmt->fn.param_types[i]) {
-                    if (stmt->fn.param_types[i]->type == EXPR_IDENT) {
+                    if (stmt->fn.param_types[i]->type == EXPR_FN_TYPE) {
+                        // Function type: fn(T) -> R becomes function pointer
+                        FnTypeExpr* fn_type = &stmt->fn.param_types[i]->fn_type;
+                        
+                        // Build return type
+                        const char* ret_type = "int";
+                        if (fn_type->return_type && fn_type->return_type->type == EXPR_IDENT) {
+                            Token rt = fn_type->return_type->token;
+                            if (rt.length == 3 && memcmp(rt.start, "int", 3) == 0) ret_type = "int";
+                            else if (rt.length == 6 && memcmp(rt.start, "string", 6) == 0) ret_type = "char*";
+                            else if (rt.length == 5 && memcmp(rt.start, "float", 5) == 0) ret_type = "double";
+                            else if (rt.length == 4 && memcmp(rt.start, "bool", 4) == 0) ret_type = "bool";
+                        }
+                        
+                        // Build parameter types
+                        char params_buf[256] = "";
+                        for (int j = 0; j < fn_type->param_count; j++) {
+                            if (j > 0) strcat(params_buf, ", ");
+                            const char* pt = "int";
+                            if (fn_type->param_types[j] && fn_type->param_types[j]->type == EXPR_IDENT) {
+                                Token pt_tok = fn_type->param_types[j]->token;
+                                if (pt_tok.length == 3 && memcmp(pt_tok.start, "int", 3) == 0) pt = "int";
+                                else if (pt_tok.length == 6 && memcmp(pt_tok.start, "string", 6) == 0) pt = "char*";
+                                else if (pt_tok.length == 5 && memcmp(pt_tok.start, "float", 5) == 0) pt = "double";
+                                else if (pt_tok.length == 4 && memcmp(pt_tok.start, "bool", 4) == 0) pt = "bool";
+                            }
+                            strcat(params_buf, pt);
+                        }
+                        
+                        // Generate function pointer type: ret_type (*param_name)(params)
+                        snprintf(custom_type_buf, sizeof(custom_type_buf), "%s (*", ret_type);
+                        param_type = custom_type_buf;
+                        emit("%s", param_type);
+                        emit("%.*s)(", stmt->fn.params[i].length, stmt->fn.params[i].start);
+                        emit("%s", params_buf);
+                        emit(")");
+                        continue; // Skip the normal emit below
+                    } else if (stmt->fn.param_types[i]->type == EXPR_IDENT) {
                         Token type_name = stmt->fn.param_types[i]->token;
                         if (type_name.length == 3 && memcmp(type_name.start, "int", 3) == 0) {
                             param_type = "int";
@@ -5278,7 +5315,40 @@ void codegen_program(Program* prog) {
                 bool is_struct_type = false;
                 
                 if (fn->param_types[j]) {
-                    if (fn->param_types[j]->type == EXPR_IDENT) {
+                    if (fn->param_types[j]->type == EXPR_FN_TYPE) {
+                        // Function type: fn(T) -> R becomes function pointer
+                        FnTypeExpr* fn_type = &fn->param_types[j]->fn_type;
+                        
+                        // Build return type
+                        const char* ret_type = "int";
+                        if (fn_type->return_type && fn_type->return_type->type == EXPR_IDENT) {
+                            Token rt = fn_type->return_type->token;
+                            if (rt.length == 3 && memcmp(rt.start, "int", 3) == 0) ret_type = "int";
+                            else if (rt.length == 6 && memcmp(rt.start, "string", 6) == 0) ret_type = "char*";
+                            else if (rt.length == 5 && memcmp(rt.start, "float", 5) == 0) ret_type = "double";
+                            else if (rt.length == 4 && memcmp(rt.start, "bool", 4) == 0) ret_type = "bool";
+                        }
+                        
+                        // Build parameter types
+                        char params_buf[256] = "";
+                        for (int k = 0; k < fn_type->param_count; k++) {
+                            if (k > 0) strcat(params_buf, ", ");
+                            const char* pt = "int";
+                            if (fn_type->param_types[k] && fn_type->param_types[k]->type == EXPR_IDENT) {
+                                Token pt_tok = fn_type->param_types[k]->token;
+                                if (pt_tok.length == 3 && memcmp(pt_tok.start, "int", 3) == 0) pt = "int";
+                                else if (pt_tok.length == 6 && memcmp(pt_tok.start, "string", 6) == 0) pt = "char*";
+                                else if (pt_tok.length == 5 && memcmp(pt_tok.start, "float", 5) == 0) pt = "double";
+                                else if (pt_tok.length == 4 && memcmp(pt_tok.start, "bool", 4) == 0) pt = "bool";
+                            }
+                            strcat(params_buf, pt);
+                        }
+                        
+                        // Generate function pointer type: ret_type (*param_name)(params)
+                        emit("%s (*%.*s)(", ret_type, fn->params[j].length, fn->params[j].start);
+                        emit("%s)", params_buf);
+                        continue; // Skip the normal emit below
+                    } else if (fn->param_types[j]->type == EXPR_IDENT) {
                         Token type_name = fn->param_types[j]->token;
                         if (type_name.length == 3 && memcmp(type_name.start, "int", 3) == 0) {
                             param_type = "int";
