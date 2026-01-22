@@ -382,7 +382,8 @@ void codegen_expr(Expr* expr) {
                 // Don't prefix common local variable names or single-letter variables
                 bool is_single_letter = (strlen(temp_ident) == 1);
                 const char* common_locals[] = {"i", "j", "k", "x", "y", "z", "n", "result", "temp", "value", 
-                                               "a", "b", "c", "d", "e", "f", "g", "h", "m", "p", "q", "r", "s", "t", NULL};
+                                               "a", "b", "c", "d", "e", "f", "g", "h", "m", "p", "q", "r", "s", "t",
+                                               "content", "path", "text", "count", "lines", "words", NULL};
                 bool is_common_local = false;
                 for (int i = 0; common_locals[i] != NULL; i++) {
                     if (strcmp(temp_ident, common_locals[i]) == 0) {
