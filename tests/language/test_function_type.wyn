@@ -1,0 +1,32 @@
+// Test basic function type and closure
+
+fn double(x: int) -> int {
+    return x * 2;
+}
+
+fn apply(arr: [int], func: fn(int) -> int) -> [int] {
+    var result = [];
+    var i = 0;
+    while i < arr.len() {
+        result.push(func(arr[i]));
+        i = i + 1;
+    }
+    return result;
+}
+
+fn main() -> int {
+    var numbers = [1, 2, 3];
+    var doubled = apply(numbers, double);
+    
+    if doubled[0] != 2 {
+        return 1;
+    }
+    if doubled[1] != 4 {
+        return 2;
+    }
+    if doubled[2] != 6 {
+        return 3;
+    }
+    
+    return 0;
+}

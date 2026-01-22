@@ -2861,6 +2861,30 @@ static Stmt* parse_match_statement() {
 static Expr* parse_type() {
     Expr* base_type;
     
+    // Handle function types: fn(T1, T2) -> R
+    if (match(TOKEN_FN)) {
+        expect(TOKEN_LPAREN, "Expected '(' after 'fn'");
+        
+        base_type = alloc_expr();
+        base_type->type = EXPR_FN_TYPE;
+        base_type->fn_type.param_types = malloc(sizeof(Expr*) * 8);
+        base_type->fn_type.param_count = 0;
+        
+        // Parse parameter types
+        if (!check(TOKEN_RPAREN)) {
+            do {
+                base_type->fn_type.param_types[base_type->fn_type.param_count++] = parse_type();
+            } while (match(TOKEN_COMMA));
+        }
+        
+        expect(TOKEN_RPAREN, "Expected ')' after function parameter types");
+        expect(TOKEN_ARROW, "Expected '->' after function parameters");
+        
+        base_type->fn_type.return_type = parse_type();
+        
+        return base_type;
+    }
+    
     // Handle array types [type]
     if (match(TOKEN_LBRACKET)) {
         Expr* element_type = parse_type(); // Recursive call for nested arrays
