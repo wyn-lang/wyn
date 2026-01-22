@@ -2316,6 +2316,15 @@ void check_program(Program* prog) {
         sys_env_type->fn_type.return_type = builtin_string;
         add_symbol(global_scope, sys_env_tok, sys_env_type, false);
         
+        Token sys_set_env_tok = {TOKEN_IDENT, "System::set_env", 15, 0};
+        Type* sys_set_env_type = make_type(TYPE_FUNCTION);
+        sys_set_env_type->fn_type.param_count = 2;
+        sys_set_env_type->fn_type.param_types = malloc(sizeof(Type*) * 2);
+        sys_set_env_type->fn_type.param_types[0] = builtin_string;
+        sys_set_env_type->fn_type.param_types[1] = builtin_string;
+        sys_set_env_type->fn_type.return_type = builtin_int;
+        add_symbol(global_scope, sys_set_env_tok, sys_set_env_type, false);
+        
         // Math module (update to Math:: from math.)
         Token math_pow_tok = {TOKEN_IDENT, "Math::pow", 9, 0};
         Type* math_pow_type = make_type(TYPE_FUNCTION);
@@ -2349,6 +2358,14 @@ void check_program(Program* prog) {
         time_sleep_type->fn_type.param_types[0] = builtin_int;
         time_sleep_type->fn_type.return_type = builtin_void;
         add_symbol(global_scope, time_sleep_tok, time_sleep_type, false);
+        
+        Token time_format_tok = {TOKEN_IDENT, "Time::format", 12, 0};
+        Type* time_format_type = make_type(TYPE_FUNCTION);
+        time_format_type->fn_type.param_count = 1;
+        time_format_type->fn_type.param_types = malloc(sizeof(Type*) * 1);
+        time_format_type->fn_type.param_types[0] = builtin_int;
+        time_format_type->fn_type.return_type = builtin_string;
+        add_symbol(global_scope, time_format_tok, time_format_type, false);
     }
     
     // First pass: process imports and register functions with their signatures

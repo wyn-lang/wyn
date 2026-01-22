@@ -28,6 +28,12 @@
 **System Operations (already existed, now validated):**
 - `System::args()` - Get command line arguments as array
 
+**System Environment (NEW):**
+- `System::set_env(key, value)` - Set environment variable
+
+**Time Operations (NEW):**
+- `Time::format(timestamp)` - Format timestamp as human-readable string
+
 ### Added - Module System (Major Feature)
 - **Nested Modules** - Java/TypeScript-style syntax with `.` separator
   - Import: `import network.http`

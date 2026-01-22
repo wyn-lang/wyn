@@ -1,0 +1,23 @@
+// Test environment variable operations
+
+fn main() -> int {
+    // Test getting environment variable
+    var path = System::env("PATH");
+    if path.len() == 0 {
+        return 1;
+    }
+    
+    // Test setting environment variable
+    var result = System::set_env("WYN_TEST", "hello");
+    if result == 0 {
+        return 2;
+    }
+    
+    // Verify it was set
+    var value = System::env("WYN_TEST");
+    if value.len() == 0 {
+        return 3;
+    }
+    
+    return 0;
+}

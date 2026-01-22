@@ -601,6 +601,18 @@ Gets environment variable.
 var home = System::env("HOME");
 ```
 
+#### `System::set_env(key: string, value: string) -> bool`
+Sets environment variable.
+```wyn
+System::set_env("MY_VAR", "value");
+```
+
+#### `System::args() -> array<string>`
+Gets command line arguments.
+```wyn
+var args = System::args();
+```
+
 ---
 
 ## Time Module
@@ -617,6 +629,13 @@ var timestamp = Time::now();
 Sleeps for specified milliseconds.
 ```wyn
 Time::sleep(1000);  // Sleep 1 second
+```
+
+#### `Time::format(timestamp: int) -> string`
+Formats timestamp as human-readable string.
+```wyn
+var now = Time::now();
+var formatted = Time::format(now);  // "2026-01-22 14:30:45"
 ```
 
 ---

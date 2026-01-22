@@ -1,0 +1,20 @@
+// Test time operations
+
+fn main() -> int {
+    // Test Time::now
+    var now = Time::now();
+    if now == 0 {
+        return 1;
+    }
+    
+    // Test Time::sleep (1000ms = 1 second)
+    Time::sleep(1000);
+    
+    // Verify time advanced
+    var after = Time::now();
+    if after <= now {
+        return 2;
+    }
+    
+    return 0;
+}

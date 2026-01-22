@@ -3170,6 +3170,14 @@ void codegen_c_header() {
     emit("    return result;\n");
     emit("}\n\n");
     
+    emit("int System_set_env(const char* key, const char* value) {\n");
+    emit("    #ifdef _WIN32\n");
+    emit("    return _putenv_s(key, value) == 0;\n");
+    emit("    #else\n");
+    emit("    return setenv(key, value, 1) == 0;\n");
+    emit("    #endif\n");
+    emit("}\n\n");
+    
     emit("WynArray System_args() {\n");
     emit("    WynArray arr;\n");
     emit("    arr.data = malloc(__wyn_argc * sizeof(WynValue));\n");
@@ -3193,6 +3201,14 @@ void codegen_c_header() {
     emit("    ts.tv_sec = milliseconds / 1000;\n");
     emit("    ts.tv_nsec = (milliseconds %% 1000) * 1000000;\n");
     emit("    nanosleep(&ts, NULL);\n");
+    emit("}\n");
+    
+    emit("char* Time_format(int timestamp) {\n");
+    emit("    time_t t = (time_t)timestamp;\n");
+    emit("    struct tm* tm_info = localtime(&t);\n");
+    emit("    char* buffer = malloc(64);\n");
+    emit("    strftime(buffer, 64, \"%%Y-%%m-%%d %%H:%%M:%%S\", tm_info);\n");
+    emit("    return buffer;\n");
     emit("}\n");
     
     emit("int arr_sum(WynArray arr, int len) { int s = 0; for(int i = 0; i < len; i++) s += array_get_int(arr, i); return s; }\n");
