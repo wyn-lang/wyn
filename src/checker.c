@@ -26,6 +26,112 @@ static Type* builtin_array = NULL;
 static bool had_error = false;
 static Type* current_function_return_type = NULL;
 
+// Module visibility tracking
+static char current_module_name[256] = "";
+
+typedef struct {
+    char module_name[128];
+    char function_name[128];
+    bool is_public;
+} FunctionVisibility;
+
+static FunctionVisibility function_registry[512];
+static int function_registry_count = 0;
+
+// Module collision tracking
+typedef struct {
+    char short_name[128];
+    char full_path[256];
+    int line_number;
+} ImportedModule;
+
+static ImportedModule imported_modules[128];
+static int imported_modules_count = 0;
+
+void set_current_module(const char* name) {
+    if (name) {
+        strncpy(current_module_name, name, 255);
+        current_module_name[255] = '\0';
+    } else {
+        current_module_name[0] = '\0';
+    }
+}
+
+static void register_import(const char* full_path, int line) {
+    // Extract short name (last component after /)
+    const char* last_slash = strrchr(full_path, '/');
+    const char* short_name = last_slash ? last_slash + 1 : full_path;
+    
+    // Just register - don't error yet
+    // Error will happen at call site if short name is used ambiguously
+    if (imported_modules_count < 128) {
+        strncpy(imported_modules[imported_modules_count].short_name, short_name, 127);
+        strncpy(imported_modules[imported_modules_count].full_path, full_path, 255);
+        imported_modules[imported_modules_count].line_number = line;
+        imported_modules_count++;
+    }
+}
+
+static bool is_ambiguous_module(const char* name, char* first_path, int* first_line, char* second_path, int* second_line) {
+    int count = 0;
+    int indices[2] = {-1, -1};
+    const char* first_full_path = NULL;
+    
+    for (int i = 0; i < imported_modules_count; i++) {
+        if (strcmp(imported_modules[i].short_name, name) == 0) {
+            // Check if this is a different full path
+            if (count == 0) {
+                first_full_path = imported_modules[i].full_path;
+                indices[0] = i;
+                count = 1;
+            } else if (strcmp(imported_modules[i].full_path, first_full_path) != 0) {
+                // Different full path - this is ambiguous
+                if (count == 1) {
+                    indices[1] = i;
+                }
+                count++;
+            }
+            // Same full path - duplicate import, not ambiguous
+        }
+    }
+    
+    if (count > 1) {
+        strcpy(first_path, imported_modules[indices[0]].full_path);
+        *first_line = imported_modules[indices[0]].line_number;
+        strcpy(second_path, imported_modules[indices[1]].full_path);
+        *second_line = imported_modules[indices[1]].line_number;
+        return true;
+    }
+    return false;
+}
+
+static void register_function_visibility(const char* module, const char* func, bool is_public) {
+    if (function_registry_count < 512) {
+        strncpy(function_registry[function_registry_count].module_name, module, 127);
+        strncpy(function_registry[function_registry_count].function_name, func, 127);
+        function_registry[function_registry_count].is_public = is_public;
+        function_registry_count++;
+    }
+}
+
+static bool check_function_visibility(const char* module, const char* func) {
+    // If calling from same module, always allowed
+    if (strcmp(current_module_name, module) == 0) {
+        return true;
+    }
+    
+    // Check if function is public
+    for (int i = 0; i < function_registry_count; i++) {
+        if (strcmp(function_registry[i].module_name, module) == 0 &&
+            strcmp(function_registry[i].function_name, func) == 0) {
+            return function_registry[i].is_public;
+        }
+    }
+    
+    // Not found - assume public for backwards compatibility
+    return true;
+}
+
 static void print_type_name(Type* type) {
     if (!type) {
         fprintf(stderr, "unknown");
@@ -744,15 +850,59 @@ Type* check_expr(Expr* expr, SymbolTable* scope) {
                 
                 // Check if this is a module-qualified function call (e.g., math::add)
                 bool is_qualified = false;
+                char qual_module[128] = "";
+                char qual_func[128] = "";
+                
                 for (int i = 0; i < expr->call.callee->token.length - 1; i++) {
                     if (expr->call.callee->token.start[i] == ':' && expr->call.callee->token.start[i+1] == ':') {
                         is_qualified = true;
+                        // Extract module and function names
+                        int mod_len = i;
+                        int func_len = expr->call.callee->token.length - i - 2;
+                        snprintf(qual_module, 128, "%.*s", mod_len, expr->call.callee->token.start);
+                        snprintf(qual_func, 128, "%.*s", func_len, expr->call.callee->token.start + i + 2);
                         break;
                     }
                 }
                 
+                // Check visibility for module-qualified calls
+                if (is_qualified && qual_module[0] != '\0') {
+                    // Check if module name is ambiguous
+                    char first_path[256], second_path[256];
+                    int first_line, second_line;
+                    if (is_ambiguous_module(qual_module, first_path, &first_line, second_path, &second_line)) {
+                        fprintf(stderr, "Error at line %d: Ambiguous module name '%s'\n",
+                                expr->call.callee->token.line, qual_module);
+                        fprintf(stderr, "  Could refer to:\n");
+                        fprintf(stderr, "    - %s (imported at line %d)\n", first_path, first_line);
+                        fprintf(stderr, "    - %s (imported at line %d)\n", second_path, second_line);
+                        fprintf(stderr, "  Use full path to disambiguate:\n");
+                        
+                        char c_ident1[256], c_ident2[256];
+                        strcpy(c_ident1, first_path);
+                        strcpy(c_ident2, second_path);
+                        for (char* p = c_ident1; *p; p++) if (*p == '/') *p = '_';
+                        for (char* p = c_ident2; *p; p++) if (*p == '/') *p = '_';
+                        
+                        fprintf(stderr, "    - %s::%s()\n", c_ident1, qual_func);
+                        fprintf(stderr, "    - %s::%s()\n", c_ident2, qual_func);
+                        had_error = true;
+                        free(arg_types);
+                        return builtin_int;
+                    }
+                    
+                    if (!check_function_visibility(qual_module, qual_func)) {
+                        fprintf(stderr, "Error at line %d: Function '%s' in module '%s' is private\n",
+                                expr->call.callee->token.line, qual_func, qual_module);
+                        fprintf(stderr, "  Note: Only 'pub' functions can be called from outside the module\n");
+                        had_error = true;
+                        free(arg_types);
+                        return builtin_int;
+                    }
+                }
+                
                 if (is_qualified && !best_match) {
-                    // Module-qualified function - assume it's valid
+                    // Module-qualified function - assume it's valid if visibility passed
                     expr->expr_type = builtin_int;  // Default return type
                     free(arg_types);
                     return builtin_int;
@@ -1816,6 +1966,8 @@ void check_stmt(Stmt* stmt, SymbolTable* scope) {
         case STMT_IMPORT:
             // Register module namespace in scope
             add_symbol(scope, stmt->import.module, builtin_int, false);
+            // Check for collision
+            register_import(stmt->import.module.start, stmt->import.module.line);
             break;
         case STMT_MATCH: {
             // Type-check match statement with exhaustiveness checking
@@ -2508,6 +2660,13 @@ void check_program(Program* prog) {
                 if (inferred_return) {
                     current_function_return_type = inferred_return;
                 }
+            }
+            
+            // Register function visibility if in a module
+            if (current_module_name[0] != '\0') {
+                char func_name[128];
+                snprintf(func_name, 128, "%.*s", fn->name.length, fn->name.start);
+                register_function_visibility(current_module_name, func_name, fn->is_public);
             }
             
             check_stmt(fn->body, &local_scope);

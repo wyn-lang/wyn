@@ -68,29 +68,43 @@ void preload_imports(const char* source) {
             // Skip whitespace
             while (*p == ' ' || *p == '\t') p++;
             
-            // Extract module name
-            const char* start = p;
-            while ((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z') || *p == '_') p++;
+            // Check for relative imports
+            char module_name[256];
+            int len = 0;
             
-            if (p > start) {
-                char module_name[256];
-                int len = p - start;
-                if (len < 256) {
-                    memcpy(module_name, start, len);
-                    module_name[len] = '\0';
-                    
-                    // Skip optional "as alias"
-                    while (*p == ' ' || *p == '\t') p++;
-                    if (strncmp(p, "as ", 3) == 0) {
-                        p += 3;
-                        // Skip alias name
-                        while ((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z') || *p == '_') p++;
-                    }
-                    
-                    // Always try to load user modules first
-                    // User modules override built-ins
-                    load_module(module_name);
+            // Handle root::, self::
+            if (strncmp(p, "root::", 6) == 0) {
+                strcpy(module_name, "crate/");
+                len = 6;
+                p += 6;
+            } else if (strncmp(p, "self::", 6) == 0) {
+                strcpy(module_name, "self/");
+                len = 5;
+                p += 6;
+            }
+            
+            // Extract module name (including . for nested modules, convert to /)
+            while (((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z') || *p == '_' || *p == '.') && len < 255) {
+                if (*p == '.') {
+                    module_name[len++] = '/';  // Convert . to /
+                } else {
+                    module_name[len++] = *p;
                 }
+                p++;
+            }
+            module_name[len] = '\0';
+            
+            if (len > 0) {
+                // Skip optional "as alias"
+                while (*p == ' ' || *p == '\t') p++;
+                if (strncmp(p, "as ", 3) == 0) {
+                    p += 3;
+                    // Skip alias name
+                    while ((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z') || *p == '_') p++;
+                }
+                
+                // Load module
+                load_module(module_name);
             }
         }
         p++;
@@ -98,6 +112,49 @@ void preload_imports(const char* source) {
 }
 
 static char source_directory[512] = ".";
+static char current_module_path[512] = "";
+
+void set_current_module_path(const char* path) {
+    if (path) {
+        strncpy(current_module_path, path, 511);
+        current_module_path[511] = '\0';
+    } else {
+        current_module_path[0] = '\0';
+    }
+}
+
+// Resolve relative module paths
+static char* resolve_relative_path(const char* module_name) {
+    if (strncmp(module_name, "crate/", 6) == 0) {
+        // Absolute from root - just remove crate/ prefix
+        return strdup(module_name + 6);
+        
+    } else if (strncmp(module_name, "self/", 5) == 0) {
+        // Same directory as current module
+        if (current_module_path[0] == '\0') {
+            return strdup(module_name + 5);
+        }
+        
+        char* last_slash = strrchr(current_module_path, '/');
+        if (!last_slash) {
+            return strdup(module_name + 5);
+        }
+        
+        char resolved[512];
+        int dir_len = last_slash - current_module_path;
+        snprintf(resolved, 512, "%.*s/%s", dir_len, current_module_path, module_name + 5);
+        return strdup(resolved);
+    }
+    
+    // Not relative
+    return strdup(module_name);
+}
+
+// Public wrapper for codegen
+char* resolve_relative_module_name(const char* module_name) {
+    return resolve_relative_path(module_name);
+}
+
 
 void set_source_directory(const char* source_file) {
     // Extract directory from source file path
@@ -173,27 +230,37 @@ char* resolve_module_path(const char* module_name) {
 }
 
 Program* load_module(const char* module_name) {
+    // Resolve relative paths
+    char* resolved_name = resolve_relative_path(module_name);
+    if (!resolved_name) {
+        return NULL;
+    }
+    
     // Check if already loaded
     extern bool is_module_loaded(const char* name);
     extern Program* get_module(const char* name);
     
-    if (is_module_loaded(module_name)) {
-        return get_module(module_name);
+    if (is_module_loaded(resolved_name)) {
+        Program* prog = get_module(resolved_name);
+        free(resolved_name);
+        return prog;
     }
     
     // Check for circular import
-    if (is_in_loading_stack(module_name)) {
-        print_circular_import_error(module_name);
+    if (is_in_loading_stack(resolved_name)) {
+        print_circular_import_error(resolved_name);
+        free(resolved_name);
         return NULL;
     }
     
     // Add to loading stack
-    push_loading_stack(module_name);
+    push_loading_stack(resolved_name);
     
-    char* path = resolve_module_path(module_name);
+    char* path = resolve_module_path(resolved_name);
     if (!path) {
-        fprintf(stderr, "Error: Module '%s' not found\n", module_name);
+        fprintf(stderr, "Error: Module '%s' not found\n", resolved_name);
         pop_loading_stack();
+        free(resolved_name);
         return NULL;
     }
     
@@ -216,8 +283,18 @@ Program* load_module(const char* module_name) {
     fclose(f);
     free(path);
     
+    // Save current module path before loading imports
+    char saved_module_path[512];
+    strncpy(saved_module_path, current_module_path, 511);
+    saved_module_path[511] = '\0';
+    
     // Recursively preload any imports in this module
+    // Set current module path for relative imports
+    set_current_module_path(resolved_name);
     preload_imports(source);
+    
+    // Restore module path
+    set_current_module_path(saved_module_path);
     
     // Save parser state
     extern void save_parser_state();
@@ -243,32 +320,37 @@ Program* load_module(const char* module_name) {
     // Register module
     if (prog) {
         extern void register_module(const char* name, Program* ast);
-        register_module(module_name, prog);
+        register_module(resolved_name, prog);
     }
     
     // Remove from loading stack
     pop_loading_stack();
     
+    free(resolved_name);
     return prog;
 }
 
 // Type check all loaded modules (call after init_checker)
 void check_all_modules(void) {
-    extern void check_stmt(void* stmt, void* scope);
-    extern SymbolTable* get_global_scope();
+    extern void check_program(Program* prog);
     extern int get_module_count();
     extern Program* get_module_at(int index);
-    
-    SymbolTable* scope = get_global_scope();
-    if (!scope) return;
+    extern const char* get_module_name_by_ast(Program* ast);
+    extern void set_current_module(const char* name);
     
     int count = get_module_count();
     for (int i = 0; i < count; i++) {
         Program* prog = get_module_at(i);
         if (prog) {
-            for (int j = 0; j < prog->count; j++) {
-                check_stmt(prog->stmts[j], scope);
-            }
+            // Set current module for visibility checking
+            const char* module_name = get_module_name_by_ast(prog);
+            set_current_module(module_name);
+            
+            // Run full check on each module
+            check_program(prog);
         }
     }
+    
+    // Clear module context
+    set_current_module(NULL);
 }

@@ -1,6 +1,29 @@
 # Changelog
 
-## [1.4.0] - 2026-01-20
+## [1.4.0] - 2026-01-22
+
+### Added - Module System (Major Feature)
+- **Nested Modules** - Java/TypeScript-style syntax with `.` separator
+  - Import: `import network.http`
+  - Use short name: `http::get()`
+  - Or full path: `network_http::get()`
+  - Filesystem: `network/http.wyn`
+
+- **Relative Imports** - Navigate module hierarchy easily
+  - `root::` - Import from project root (absolute)
+  - `self::` - Import from current directory (relative)
+  - Example: `import root::config` (root), `import self::utils` (sibling)
+
+- **Visibility Control** - Encapsulation with `pub` keyword
+  - Functions are private by default
+  - Use `pub fn` for public API
+  - Cross-module access checking
+  - Example: `pub fn api()` (public), `fn helper()` (private)
+
+- **Module Name Collision Detection** - Prevents ambiguous imports
+  - Detects when two modules have same short name
+  - Clear error messages with suggestions
+  - Example: `import network.http` + `import storage.http` → error with fix suggestions
 
 ### Changed (BREAKING)
 - **Unified print() function** - Replaced type-specific print functions with polymorphic `print()`
@@ -62,11 +85,11 @@
   - `.remove(value)` - Remove all occurrences
   - `.insert(index, value)` - Insert at position
 
-- **Sample Applications** - Four production-ready apps demonstrating real-world usage
-  - log-analyzer: File I/O and pattern detection
-  - process-monitor: System monitoring with ps/uptime
-  - csv-processor: CSV parsing and validation
-  - disk-analyzer: Disk usage analysis with find/du
+- **Sample Applications** - Nine production-ready apps organized by category (sample-apps/)
+  - **Utilities:** file-finder, disk-analyzer, process-monitor, build-monitor
+  - **Data Processing:** log-analyzer, csv-processor, text-processor
+  - **Dev Tools:** code-stats
+  - **Tutorials:** calculator-modules (module system demo)
 
 - **Comprehensive stdlib demo** - New example (12_comprehensive_stdlib.wyn) showcasing all major features
   - 23 examples total (was 22)

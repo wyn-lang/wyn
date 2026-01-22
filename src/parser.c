@@ -1409,9 +1409,93 @@ Stmt* statement() {
         Stmt* stmt = alloc_stmt();
         stmt->type = STMT_IMPORT;
         
-        // Parse: import name [as alias] [from "path"]
+        // Check for selective import: import { a, b } from module
+        if (match(TOKEN_LBRACE)) {
+            stmt->import.items = malloc(sizeof(Token) * 32);
+            stmt->import.item_count = 0;
+            
+            do {
+                expect(TOKEN_IDENT, "Expected identifier in import list");
+                stmt->import.items[stmt->import.item_count++] = parser.previous;
+            } while (match(TOKEN_COMMA) && stmt->import.item_count < 32);
+            
+            expect(TOKEN_RBRACE, "Expected '}' after import list");
+            expect(TOKEN_FROM, "Expected 'from' after import list");
+            expect(TOKEN_IDENT, "Expected module name after 'from'");
+            
+            // Build module path
+            char* module_path = malloc(256);
+            int len = 0;
+            memcpy(module_path, parser.previous.start, parser.previous.length);
+            len = parser.previous.length;
+            
+            while (match(TOKEN_DOT)) {
+                module_path[len++] = '/';
+                expect(TOKEN_IDENT, "Expected identifier after '.'");
+                memcpy(module_path + len, parser.previous.start, parser.previous.length);
+                len += parser.previous.length;
+            }
+            module_path[len] = '\0';
+            
+            stmt->import.module.start = module_path;
+            stmt->import.module.length = len;
+            stmt->import.module.type = TOKEN_IDENT;
+            stmt->import.module.line = parser.previous.line;
+            stmt->import.alias.start = NULL;
+            stmt->import.alias.length = 0;
+            stmt->import.path.start = NULL;
+            stmt->import.path.length = 0;
+            
+            return stmt;
+        }
+        
+        // Check for relative imports: root::, self::
+        bool is_relative = false;
+        char relative_prefix[32] = "";
+        
+        if (match(TOKEN_ROOT)) {
+            strcpy(relative_prefix, "crate");
+            is_relative = true;
+            expect(TOKEN_COLONCOLON, "Expected '::' after 'root'");
+        } else if (match(TOKEN_SELF)) {
+            strcpy(relative_prefix, "self");
+            is_relative = true;
+            expect(TOKEN_COLONCOLON, "Expected '::' after 'self'");
+        }
+        
+        // Parse: import name [.name]* [as alias]
         expect(TOKEN_IDENT, "Expected module name after 'import'");
-        stmt->import.module = parser.previous;
+        
+        // Build module path with . support (like Java)
+        char* module_path = malloc(256);
+        int len = 0;
+        
+        // Add relative prefix if present
+        if (is_relative) {
+            len = snprintf(module_path, 256, "%s/", relative_prefix);
+        }
+        
+        // Copy first identifier
+        memcpy(module_path + len, parser.previous.start, parser.previous.length);
+        len += parser.previous.length;
+        
+        // Handle . for nested modules (convert to / for filesystem)
+        while (match(TOKEN_DOT)) {
+            module_path[len++] = '/';
+            expect(TOKEN_IDENT, "Expected identifier after '.'");
+            memcpy(module_path + len, parser.previous.start, parser.previous.length);
+            len += parser.previous.length;
+        }
+        module_path[len] = '\0';
+        
+        stmt->import.module.start = module_path;
+        stmt->import.module.length = len;
+        stmt->import.module.type = TOKEN_IDENT;
+        stmt->import.module.line = parser.previous.line;
+        
+        // Initialize items for non-selective imports
+        stmt->import.items = NULL;
+        stmt->import.item_count = 0;
         
         // Optional: as alias
         if (match(TOKEN_AS)) {
@@ -1419,12 +1503,10 @@ Stmt* statement() {
             stmt->import.alias = parser.previous;
             
             // Register alias globally
-            char module_name[256], alias_name[256];
-            snprintf(module_name, sizeof(module_name), "%.*s",
-                    stmt->import.module.length, stmt->import.module.start);
+            char alias_name[256];
             snprintf(alias_name, sizeof(alias_name), "%.*s",
                     stmt->import.alias.length, stmt->import.alias.start);
-            register_parser_module_alias(alias_name, module_name);
+            register_parser_module_alias(alias_name, module_path);
         } else {
             stmt->import.alias.start = NULL;
             stmt->import.alias.length = 0;
@@ -1435,7 +1517,6 @@ Stmt* statement() {
             expect(TOKEN_STRING, "Expected string path after 'from'");
             stmt->import.path = parser.previous;
         } else {
-            // No path specified - use default
             stmt->import.path.start = NULL;
             stmt->import.path.length = 0;
         }
@@ -2319,8 +2400,92 @@ Program* parse_program() {
         if (match(TOKEN_IMPORT)) {
             Stmt* stmt = safe_malloc(sizeof(Stmt));
             stmt->type = STMT_IMPORT;
+            
+            // Check for selective import: import { a, b } from module
+            if (match(TOKEN_LBRACE)) {
+                stmt->import.items = malloc(sizeof(Token) * 32);
+                stmt->import.item_count = 0;
+                
+                do {
+                    expect(TOKEN_IDENT, "Expected identifier in import list");
+                    stmt->import.items[stmt->import.item_count++] = parser.previous;
+                } while (match(TOKEN_COMMA) && stmt->import.item_count < 32);
+                
+                expect(TOKEN_RBRACE, "Expected '}' after import list");
+                expect(TOKEN_FROM, "Expected 'from' after import list");
+                expect(TOKEN_IDENT, "Expected module name after 'from'");
+                
+                // Build module path
+                char* module_path = malloc(256);
+                int len = 0;
+                memcpy(module_path, parser.previous.start, parser.previous.length);
+                len = parser.previous.length;
+                
+                while (match(TOKEN_DOT)) {
+                    module_path[len++] = '/';
+                    expect(TOKEN_IDENT, "Expected identifier after '.'");
+                    memcpy(module_path + len, parser.previous.start, parser.previous.length);
+                    len += parser.previous.length;
+                }
+                module_path[len] = '\0';
+                
+                stmt->import.module.start = module_path;
+                stmt->import.module.length = len;
+                stmt->import.module.type = TOKEN_IDENT;
+                stmt->import.module.line = parser.previous.line;
+                stmt->import.alias.start = NULL;
+                stmt->import.alias.length = 0;
+                stmt->import.path.start = NULL;
+                stmt->import.path.length = 0;
+                
+                return stmt;
+            }
+            
+            // Check for relative imports: super::, crate::, self::
+            bool is_relative = false;
+            char relative_prefix[32] = "";
+            
+            if (match(TOKEN_ROOT)) {
+                strcpy(relative_prefix, "crate");
+                is_relative = true;
+                expect(TOKEN_COLONCOLON, "Expected '::' after 'root'");
+            } else if (match(TOKEN_SELF)) {
+                strcpy(relative_prefix, "self");
+                is_relative = true;
+                expect(TOKEN_COLONCOLON, "Expected '::' after 'self'");
+            }
+            
             expect(TOKEN_IDENT, "Expected module name");
-            stmt->import.module = parser.previous;
+            
+            // Build module path with . support (like Java)
+            char* module_path = malloc(256);
+            int len = 0;
+            
+            // Add relative prefix if present
+            if (is_relative) {
+                len = snprintf(module_path, 256, "%s/", relative_prefix);
+            }
+            
+            memcpy(module_path + len, parser.previous.start, parser.previous.length);
+            len += parser.previous.length;
+            
+            // Handle . for nested modules (convert to / for filesystem)
+            while (match(TOKEN_DOT)) {
+                module_path[len++] = '/';
+                expect(TOKEN_IDENT, "Expected identifier after '.'");
+                memcpy(module_path + len, parser.previous.start, parser.previous.length);
+                len += parser.previous.length;
+            }
+            module_path[len] = '\0';
+            
+            stmt->import.module.start = module_path;
+            stmt->import.module.length = len;
+            stmt->import.module.type = TOKEN_IDENT;
+            stmt->import.module.line = parser.previous.line;
+            
+            // Initialize items for non-selective imports
+            stmt->import.items = NULL;
+            stmt->import.item_count = 0;
             
             // Optional: as alias
             if (match(TOKEN_AS)) {

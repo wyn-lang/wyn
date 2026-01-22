@@ -264,37 +264,93 @@ async fn parallel_work() -> int {
 
 ## Modules
 
-### Exporting Functions
+Wyn has a powerful module system with nested modules, visibility control, and relative imports.
+
+### Creating a Module
+
 ```wyn
-// math.wyn
-export fn add(a: int, b: int) -> int {
+// math_utils.wyn
+pub fn add(a: int, b: int) -> int {
     return a + b;
 }
 
-export fn multiply(a: int, b: int) -> int {
+pub fn multiply(a: int, b: int) -> int {
     return a * b;
+}
+
+fn internal_helper() -> int {  // Private by default
+    return 42;
 }
 ```
 
 ### Importing Modules
+
 ```wyn
 // main.wyn
-import math;
+import math_utils
 
 fn main() -> int {
-    return math::add(1, 2);
+    var sum = math_utils::add(1, 2);
+    var product = math_utils::multiply(3, 4);
+    return sum + product;
+}
+```
+
+### Nested Modules
+
+Use `.` syntax like Java/TypeScript:
+
+```wyn
+// File: network/http.wyn
+pub fn get(url: string) -> string {
+    return "HTTP response";
+}
+
+// File: main.wyn
+import network.http
+
+fn main() -> int {
+    var response = http::get("example.com");  // Short name
+    // Or use full path: network_http::get()
+    return 0;
+}
+```
+
+### Relative Imports
+
+```wyn
+// In company/product/feature.wyn
+import root::utils           // Parent: company/product/utils
+import root::root::config   // Grandparent: company/config
+import root::database        // Root: database
+import self::helpers          // Same dir: company/product/feature/helpers
+```
+
+### Visibility Control
+
+```wyn
+// module.wyn
+pub fn public_api() -> int {    // Accessible from outside
+    return private_helper();
+}
+
+fn private_helper() -> int {    // Only accessible within module
+    return 42;
 }
 ```
 
 ### Multiple Imports
+
 ```wyn
-import math;
-import utils;
+import math_utils
+import string_utils
+import network.http
 
 fn main() -> int {
-    let sum = math::add(1, 2);
-    let product = utils::multiply(3, 4);
-    return sum + product;
+    var sum = math_utils::add(1, 2);
+    var upper = string_utils::uppercase("hello");
+    var response = http::get("example.com");
+    return 0;
 }
 ```
 

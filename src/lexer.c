@@ -109,6 +109,7 @@ static WynTokenType keyword_type(const char* start, int length) {
             if (length == 8 && memcmp(start, "continue", 8) == 0) return TOKEN_CONTINUE;
             if (length == 7 && memcmp(start, "channel", 7) == 0) return TOKEN_CHANNEL;
             if (length == 5 && memcmp(start, "catch", 5) == 0) return TOKEN_CATCH;
+            if (length == 5 && memcmp(start, "catch", 5) == 0) return TOKEN_CATCH;
             break;
         case 'E':
             if (length == 3 && memcmp(start, "Err", 3) == 0) return TOKEN_ERR;
@@ -161,11 +162,15 @@ static WynTokenType keyword_type(const char* start, int length) {
             if (length == 2 && memcmp(start, "ok", 2) == 0) return TOKEN_OK;
             break;
         case 'p': if (length == 3 && memcmp(start, "pub", 3) == 0) return TOKEN_PUB; break;
-        case 'r': if (length == 6 && memcmp(start, "return", 6) == 0) return TOKEN_RETURN; break;
+        case 'r': 
+            if (length == 6 && memcmp(start, "return", 6) == 0) return TOKEN_RETURN;
+            if (length == 4 && memcmp(start, "root", 4) == 0) return TOKEN_ROOT;
+            break;
         case 's': 
             if (length == 6 && memcmp(start, "struct", 6) == 0) return TOKEN_STRUCT;
             if (length == 4 && memcmp(start, "some", 4) == 0) return TOKEN_SOME;
             if (length == 5 && memcmp(start, "spawn", 5) == 0) return TOKEN_SPAWN;
+            if (length == 4 && memcmp(start, "self", 4) == 0) return TOKEN_SELF;
             break;
         case 'S':
             if (length == 4 && memcmp(start, "Some", 4) == 0) return TOKEN_SOME;

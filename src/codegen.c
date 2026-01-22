@@ -16,6 +16,7 @@
 #include "json.h"
 #include "module_registry.h"
 #include "module_aliases.h"
+#include "scope.h"
 
 // Forward declarations
 void codegen_stmt(Stmt* stmt);
@@ -27,6 +28,101 @@ static FILE* out = NULL;
 
 // Current module being emitted (for prefixing internal calls)
 static const char* current_module_prefix = NULL;
+
+// Identifier scope tracking for proper identifier resolution
+static IdentScope* current_ident_scope = NULL;
+static IdentScope* module_ident_scope = NULL;
+
+// Convert module name to C identifier (network/http -> network_http)
+static const char* module_to_c_ident(const char* module_name) {
+    static char c_ident[256];
+    int i = 0;
+    for (const char* p = module_name; *p && i < 255; p++, i++) {
+        c_ident[i] = (*p == '/') ? '_' : *p;
+    }
+    c_ident[i] = '\0';
+    return c_ident;
+}
+
+// Simple function registry for current module
+static char* module_functions[256];
+static int module_function_count = 0;
+
+// Map short module names to full paths (http -> network/http)
+static struct {
+    char short_name[64];
+    char full_path[256];
+} module_short_names[64];
+static int module_short_name_count = 0;
+
+static void register_module_short_name(const char* full_path) {
+    // Extract short name (last part after /)
+    const char* last_slash = strrchr(full_path, '/');
+    const char* short_name = last_slash ? last_slash + 1 : full_path;
+    
+    if (module_short_name_count < 64) {
+        strncpy(module_short_names[module_short_name_count].short_name, short_name, 63);
+        strncpy(module_short_names[module_short_name_count].full_path, full_path, 255);
+        module_short_name_count++;
+    }
+}
+
+static const char* resolve_short_module_name(const char* short_name) {
+    for (int i = 0; i < module_short_name_count; i++) {
+        if (strcmp(module_short_names[i].short_name, short_name) == 0) {
+            return module_short_names[i].full_path;
+        }
+    }
+    return short_name;  // Not found, return as-is
+}
+
+// Parameter tracking for current function
+static char* current_function_params[64];
+static int current_param_count = 0;
+
+static void register_module_function(const char* name) {
+    if (module_function_count < 256) {
+        module_functions[module_function_count++] = strdup(name);
+    }
+}
+
+static bool is_module_function(const char* name) {
+    for (int i = 0; i < module_function_count; i++) {
+        if (strcmp(module_functions[i], name) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void clear_module_functions() {
+    for (int i = 0; i < module_function_count; i++) {
+        free(module_functions[i]);
+    }
+    module_function_count = 0;
+}
+
+static void register_parameter(const char* name) {
+    if (current_param_count < 64) {
+        current_function_params[current_param_count++] = strdup(name);
+    }
+}
+
+static bool is_parameter(const char* name) {
+    for (int i = 0; i < current_param_count; i++) {
+        if (strcmp(current_function_params[i], name) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void clear_parameters() {
+    for (int i = 0; i < current_param_count; i++) {
+        free(current_function_params[i]);
+    }
+    current_param_count = 0;
+}
 
 // Module alias tracking
 static struct {
@@ -268,28 +364,65 @@ void codegen_expr(Expr* expr) {
             temp_ident[expr->token.length] = '\0';
             
             // If we're inside a module function, check if this identifier needs module prefix
-            if (current_module_prefix && !strchr(temp_ident, ':')) {
+            if (current_module_prefix && !strchr(temp_ident, ':') && !strchr(temp_ident, '.')) {
+                // Check if this is a parameter - never prefix parameters
+                if (is_parameter(temp_ident)) {
+                    // This is a parameter, emit as-is
+                    emit("%s", temp_ident);
+                    free(ident);
+                    break;
+                }
+                
                 // Check if this is a simple identifier (no :: or .)
-                // Prefix it with the module name for module-level constants
-                // This is a heuristic: if it's all uppercase or starts with uppercase, it's likely a constant
-                bool looks_like_constant = (temp_ident[0] >= 'A' && temp_ident[0] <= 'Z');
-                if (looks_like_constant) {
+                // For module-level identifiers, we need to prefix them
+                // Heuristic: uppercase = constant, lowercase = might be module var or local var
+                bool looks_like_module_level = (temp_ident[0] >= 'A' && temp_ident[0] <= 'Z') || 
+                                               (temp_ident[0] >= 'a' && temp_ident[0] <= 'z');
+                
+                // Don't prefix common local variable names or single-letter variables
+                bool is_single_letter = (strlen(temp_ident) == 1);
+                const char* common_locals[] = {"i", "j", "k", "x", "y", "z", "n", "result", "temp", "value", 
+                                               "a", "b", "c", "d", "e", "f", "g", "h", "m", "p", "q", "r", "s", "t", NULL};
+                bool is_common_local = false;
+                for (int i = 0; common_locals[i] != NULL; i++) {
+                    if (strcmp(temp_ident, common_locals[i]) == 0) {
+                        is_common_local = true;
+                        break;
+                    }
+                }
+                
+                if (looks_like_module_level && !is_common_local && !is_single_letter) {
+                    // Try prefixing - if it doesn't exist, C compiler will error
                     emit("%s_%s", current_module_prefix, temp_ident);
                     free(ident);
                     break;
                 }
             }
             
+            // Check if this is a module.function or module::function call and resolve alias
             char* dot = strchr(temp_ident, '.');
-            if (dot) {
+            char* colon = strstr(temp_ident, "::");
+            
+            if (colon) {
+                // Handle module::function syntax
+                char function_part[256];
+                strcpy(function_part, colon + 2);  // Save function name
+                *colon = '\0';  // Split at ::
+                
+                // Resolve short name (http -> network/http)
+                const char* full_path = resolve_short_module_name(temp_ident);
+                const char* resolved = resolve_module_alias(full_path);
+                
+                // Rebuild identifier with resolved module name
+                snprintf(temp_ident, sizeof(temp_ident), "%s::%s", resolved, function_part);
+            } else if (dot) {
+                // Handle module.function syntax
+                char function_part[256];
+                strcpy(function_part, dot + 1);  // Save function name
                 *dot = '\0';  // Split at dot
                 const char* resolved = resolve_module_alias(temp_ident);
-                if (resolved != temp_ident) {
-                    // Alias was resolved - rebuild identifier
-                    snprintf(temp_ident, sizeof(temp_ident), "%s.%s", resolved, dot + 1);
-                } else {
-                    *dot = '.';  // Restore dot
-                }
+                // Rebuild identifier with resolved module name
+                snprintf(temp_ident, sizeof(temp_ident), "%s.%s", resolved, function_part);
             }
             
             // Check if this is a C keyword that needs prefix
@@ -307,13 +440,20 @@ void codegen_expr(Expr* expr) {
             
             strcpy(ident + offset, temp_ident);
             
-            // Replace :: with _
+            // Replace :: with _ and / with _
             for (int i = offset; ident[i] && ident[i+1]; i++) {
                 if (ident[i] == ':' && ident[i+1] == ':') {
                     ident[i] = '_';
                     // Shift rest of string left by 1
                     memmove(ident + i + 1, ident + i + 2, strlen(ident + i + 2) + 1);
+                } else if (ident[i] == '/') {
+                    ident[i] = '_';
                 }
+            }
+            // Check last character for /
+            int len = strlen(ident);
+            if (len > 0 && ident[len-1] == '/') {
+                ident[len-1] = '_';
             }
             
             emit("%s", ident);
@@ -768,14 +908,56 @@ void codegen_expr(Expr* expr) {
                                 emit("%s", overload->mangled_name);
                             } else {
                                 // Check if we're in a module and need to prefix
-                                if (current_module_prefix) {
+                                // BUT: don't prefix if the callee is already module-qualified (contains ::)
+                                bool is_module_qualified = false;
+                                if (expr->call.callee->type == EXPR_IDENT) {
+                                    for (int i = 0; i < expr->call.callee->token.length - 1; i++) {
+                                        if (expr->call.callee->token.start[i] == ':' && 
+                                            expr->call.callee->token.start[i+1] == ':') {
+                                            is_module_qualified = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                
+                                // Check if this is an internal module function call
+                                bool is_internal_call = false;
+                                if (current_module_prefix && !is_module_qualified && expr->call.callee->type == EXPR_IDENT) {
+                                    char func_name[256];
+                                    snprintf(func_name, 256, "%.*s", expr->call.callee->token.length, expr->call.callee->token.start);
+                                    is_internal_call = is_module_function(func_name);
+                                }
+                                
+                                // Only prefix if NOT an internal call
+                                if (current_module_prefix && !is_module_qualified && !is_internal_call) {
                                     emit("%s_", current_module_prefix);
                                 }
                                 codegen_expr(expr->call.callee);
                             }
                         } else {
                             // Check if we're in a module and need to prefix
-                            if (current_module_prefix) {
+                            // BUT: don't prefix if the callee is already module-qualified (contains ::)
+                            bool is_module_qualified = false;
+                            if (expr->call.callee->type == EXPR_IDENT) {
+                                for (int i = 0; i < expr->call.callee->token.length - 1; i++) {
+                                    if (expr->call.callee->token.start[i] == ':' && 
+                                        expr->call.callee->token.start[i+1] == ':') {
+                                        is_module_qualified = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            
+                            // Check if this is an internal module function call
+                            bool is_internal_call = false;
+                            if (current_module_prefix && !is_module_qualified && expr->call.callee->type == EXPR_IDENT) {
+                                char func_name[256];
+                                snprintf(func_name, 256, "%.*s", expr->call.callee->token.length, expr->call.callee->token.start);
+                                is_internal_call = is_module_function(func_name);
+                            }
+                            
+                            // Only prefix if NOT an internal call
+                            if (current_module_prefix && !is_module_qualified && !is_internal_call) {
                                 emit("%s_", current_module_prefix);
                             }
                             codegen_expr(expr->call.callee);
@@ -1120,10 +1302,37 @@ void codegen_expr(Expr* expr) {
             }
             break;
         }
-        case EXPR_ASSIGN:
-            emit("%.*s = ", expr->assign.name.length, expr->assign.name.start);
+        case EXPR_ASSIGN: {
+            // Check if we need to prefix the assignment target with module name
+            char target_name[512];
+            memcpy(target_name, expr->assign.name.start, expr->assign.name.length);
+            target_name[expr->assign.name.length] = '\0';
+            
+            if (current_module_prefix && !strchr(target_name, ':') && !strchr(target_name, '.')) {
+                // Check if this looks like a module-level variable
+                // Don't prefix common local variable names or single-letter variables
+                bool is_single_letter = (strlen(target_name) == 1);
+                const char* common_locals[] = {"i", "j", "k", "x", "y", "z", "n", "result", "temp", "value",
+                                               "a", "b", "c", "d", "e", "f", "g", "h", "m", "p", "q", "r", "s", "t", NULL};
+                bool is_common_local = false;
+                for (int i = 0; common_locals[i] != NULL; i++) {
+                    if (strcmp(target_name, common_locals[i]) == 0) {
+                        is_common_local = true;
+                        break;
+                    }
+                }
+                
+                if (!is_common_local && !is_single_letter) {
+                    emit("%s_%.*s = ", current_module_prefix, expr->assign.name.length, expr->assign.name.start);
+                } else {
+                    emit("%.*s = ", expr->assign.name.length, expr->assign.name.start);
+                }
+            } else {
+                emit("%.*s = ", expr->assign.name.length, expr->assign.name.start);
+            }
             codegen_expr(expr->assign.value);
             break;
+        }
         case EXPR_STRUCT_INIT: {
             // Check if type needs ARC management
             bool needs_arc = false;
@@ -3034,9 +3243,20 @@ static void emit_function_with_prefix(Stmt* fn_stmt, const char* prefix) {
         return;
     }
     
+    // Convert module name to C identifier
+    const char* c_prefix = module_to_c_ident(prefix);
+    
     // Set module context for internal call prefixing
     const char* saved_prefix = current_module_prefix;
     current_module_prefix = prefix;
+    
+    // Register function parameters for scope tracking
+    clear_parameters();
+    for (int i = 0; i < fn_stmt->fn.param_count; i++) {
+        char param_name[256];
+        snprintf(param_name, 256, "%.*s", fn_stmt->fn.params[i].length, fn_stmt->fn.params[i].start);
+        register_parameter(param_name);
+    }
     
     // Emit function signature with module prefix
     // Private functions are static (not accessible from outside)
@@ -3070,7 +3290,7 @@ static void emit_function_with_prefix(Stmt* fn_stmt, const char* prefix) {
         }
     }
     
-    emit("%s %s_%.*s(", return_type, prefix, fn_stmt->fn.name.length, fn_stmt->fn.name.start);
+    emit("%s %s_%.*s(", return_type, c_prefix, fn_stmt->fn.name.length, fn_stmt->fn.name.start);
     
     // Parameters
     for (int i = 0; i < fn_stmt->fn.param_count; i++) {
@@ -4073,6 +4293,22 @@ void codegen_stmt(Stmt* stmt) {
             snprintf(module_name, sizeof(module_name), "%.*s", 
                     stmt->import.module.length, stmt->import.module.start);
             
+            // Handle selective imports: import { get, post } from module
+            if (stmt->import.item_count > 0) {
+                // Register each imported item with module prefix
+                for (int i = 0; i < stmt->import.item_count; i++) {
+                    char item_name[256];
+                    snprintf(item_name, sizeof(item_name), "%.*s",
+                            stmt->import.items[i].length, stmt->import.items[i].start);
+                    
+                    // Map item_name -> module_name::item_name
+                    char full_name[512];
+                    const char* c_mod = module_to_c_ident(module_name);
+                    snprintf(full_name, sizeof(full_name), "%s_%s", c_mod, item_name);
+                    register_module_alias(item_name, full_name);
+                }
+            }
+            
             // Register alias if present
             if (stmt->import.alias.start != NULL) {
                 char alias_name[256];
@@ -4083,10 +4319,15 @@ void codegen_stmt(Stmt* stmt) {
             
             extern bool is_builtin_module(const char* name);
             extern bool is_module_loaded(const char* name);
+            extern char* resolve_relative_module_name(const char* name);
+            
+            // Resolve relative paths (crate/config -> config)
+            char* resolved_module_name = resolve_relative_module_name(module_name);
+            const char* lookup_name = resolved_module_name ? resolved_module_name : module_name;
             
             // Priority: User modules > Built-ins
             // This allows community to override/extend built-in modules
-            if (is_module_loaded(module_name)) {
+            if (is_module_loaded(lookup_name)) {
                 // User module exists - emit all loaded modules once
                 static bool user_modules_emitted = false;
                 if (!user_modules_emitted) {
@@ -4100,9 +4341,24 @@ void codegen_stmt(Stmt* stmt) {
                         typedef struct { char* name; Program* ast; } ModuleEntry;
                         ModuleEntry* mod = (ModuleEntry*)all_modules_raw[m];
                         
+                        // Register short name mapping for nested modules
+                        register_module_short_name(mod->name);
+                        
+                        // Register all functions in this module for internal call resolution
+                        clear_module_functions();
+                        for (int i = 0; i < mod->ast->count; i++) {
+                            Stmt* s = mod->ast->stmts[i];
+                            if (s->type == STMT_FN) {
+                                char func_name[256];
+                                snprintf(func_name, 256, "%.*s", s->fn.name.length, s->fn.name.start);
+                                register_module_function(func_name);
+                            }
+                        }
+                        
                         // First: emit structs and enums with module prefix
                         const char* saved_prefix = current_module_prefix;
                         current_module_prefix = mod->name;
+                        const char* c_mod_name = module_to_c_ident(mod->name);
                         
                         for (int i = 0; i < mod->ast->count; i++) {
                             Stmt* s = mod->ast->stmts[i];
@@ -4139,13 +4395,13 @@ void codegen_stmt(Stmt* stmt) {
                                             return_type = "int";
                                         } else {
                                             // Custom struct type - add module prefix
-                                            snprintf(custom_ret_type, 128, "%s_%.*s", mod->name, rt.length, rt.start);
+                                            snprintf(custom_ret_type, 128, "%s_%.*s", c_mod_name, rt.length, rt.start);
                                             return_type = custom_ret_type;
                                         }
                                     }
                                 }
                                 
-                                emit("%s %s_%.*s(", return_type, mod->name, s->fn.name.length, s->fn.name.start);
+                                emit("%s %s_%.*s(", return_type, c_mod_name, s->fn.name.length, s->fn.name.start);
                                 
                                 // Emit parameters with types
                                 for (int j = 0; j < s->fn.param_count; j++) {
@@ -4169,7 +4425,7 @@ void codegen_stmt(Stmt* stmt) {
                                                 param_type = "WynArray";
                                             } else {
                                                 // Custom struct type - add module prefix
-                                                snprintf(custom_param_type, 128, "%s_%.*s", mod->name, pt.length, pt.start);
+                                                snprintf(custom_param_type, 128, "%s_%.*s", c_mod_name, pt.length, pt.start);
                                                 param_type = custom_param_type;
                                             }
                                         }
@@ -4191,16 +4447,37 @@ void codegen_stmt(Stmt* stmt) {
                                 // Determine type
                                 if (const_stmt->init) {
                                     if (const_stmt->init->type == EXPR_STRING) {
-                                        emit("const char* %s_%.*s = ", mod->name, const_stmt->name.length, const_stmt->name.start);
+                                        emit("const char* %s_%.*s = ", c_mod_name, const_stmt->name.length, const_stmt->name.start);
                                     } else if (const_stmt->init->type == EXPR_FLOAT) {
-                                        emit("double %s_%.*s = ", mod->name, const_stmt->name.length, const_stmt->name.start);
+                                        emit("double %s_%.*s = ", c_mod_name, const_stmt->name.length, const_stmt->name.start);
                                     } else if (const_stmt->init->type == EXPR_BOOL) {
-                                        emit("bool %s_%.*s = ", mod->name, const_stmt->name.length, const_stmt->name.start);
+                                        emit("bool %s_%.*s = ", c_mod_name, const_stmt->name.length, const_stmt->name.start);
                                     } else {
-                                        emit("int %s_%.*s = ", mod->name, const_stmt->name.length, const_stmt->name.start);
+                                        emit("int %s_%.*s = ", c_mod_name, const_stmt->name.length, const_stmt->name.start);
                                     }
                                     codegen_expr(const_stmt->init);
                                     emit(";\n");
+                                }
+                            } else if (s->type == STMT_VAR) {
+                                // Module-level variables (mutable state)
+                                VarStmt* var_stmt = &s->var;
+                                
+                                // Determine type
+                                if (var_stmt->init) {
+                                    if (var_stmt->init->type == EXPR_STRING) {
+                                        emit("const char* %s_%.*s = ", c_mod_name, var_stmt->name.length, var_stmt->name.start);
+                                    } else if (var_stmt->init->type == EXPR_FLOAT) {
+                                        emit("double %s_%.*s = ", c_mod_name, var_stmt->name.length, var_stmt->name.start);
+                                    } else if (var_stmt->init->type == EXPR_BOOL) {
+                                        emit("bool %s_%.*s = ", c_mod_name, var_stmt->name.length, var_stmt->name.start);
+                                    } else {
+                                        emit("int %s_%.*s = ", c_mod_name, var_stmt->name.length, var_stmt->name.start);
+                                    }
+                                    codegen_expr(var_stmt->init);
+                                    emit(";\n");
+                                } else {
+                                    // No initializer - default to 0
+                                    emit("int %s_%.*s = 0;\n", c_mod_name, var_stmt->name.length, var_stmt->name.start);
                                 }
                             }
                         }
@@ -4214,13 +4491,13 @@ void codegen_stmt(Stmt* stmt) {
                         }
                     }
                 }
-            } else if (is_builtin_module(module_name)) {
+            } else if (is_builtin_module(lookup_name)) {
                 // Built-in module (only if no user override)
                 static bool builtin_modules_emitted = false;
                 if (!builtin_modules_emitted) {
                     builtin_modules_emitted = true;
                     
-                    if (strcmp(module_name, "math") == 0) {
+                    if (strcmp(lookup_name, "math") == 0) {
                         // Math module - useful functions only (use +, -, *, / operators for basic arithmetic)
                         emit("#include <math.h>\n");
                         emit("double math_pow(double base, double exp) { return pow(base, exp); }\n");
@@ -4240,6 +4517,10 @@ void codegen_stmt(Stmt* stmt) {
                         emit("const double math_e = 2.71828182845904523536;\n");
                     }
                 }
+            }
+            
+            if (resolved_module_name) {
+                free(resolved_module_name);
             }
             break;
         }

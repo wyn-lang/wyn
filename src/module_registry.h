@@ -28,6 +28,9 @@ Program* get_module(const char* name);
 // Check if module is loaded
 bool is_module_loaded(const char* name);
 
+// Get module name by AST pointer
+const char* get_module_name_by_ast(Program* ast);
+
 // Get module count and access by index
 int get_module_count(void);
 Program* get_module_at(int index);

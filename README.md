@@ -59,6 +59,7 @@ const immutable = 20;  // Immutable
 
 ### Core Features
 
+- **Module system:** Nested modules with visibility control
 - **Type aliases:** `type UserId = int`
 - **Extension methods:** `impl Point { fn sum(self) -> int }`
 - **String interpolation:** `"Hello ${name}!"`
@@ -90,6 +91,26 @@ fn main() -> int {
 }
 ```
 
+### Module System
+
+```wyn
+// utils/math.wyn
+pub fn add(a: int, b: int) -> int {
+    return a + b;
+}
+
+// main.wyn
+import utils.math
+
+fn main() -> int {
+    var sum = math::add(1, 2);  // Short name
+    print(sum);
+    return 0;
+}
+```
+
+See [docs/modules.md](docs/modules.md) for complete module guide.
+
 ---
 
 ## Documentation
@@ -106,6 +127,7 @@ See [CHANGELOG.md](CHANGELOG.md) for version history and release notes.
 
 ### Latest Features (v1.4.0)
 
+- **Module system** - Nested modules, visibility control, relative imports
 - **Polymorphic print()** - Single print function for all types
 - **HashMap indexing** - `map["key"]` syntax for get/set
 - **HashMap Methods:** `.has()`, `.remove()`, `.len()` and `map["key"]` indexing
