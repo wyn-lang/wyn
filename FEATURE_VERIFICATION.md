@@ -5,6 +5,39 @@
 
 ---
 
+## Async/Await - Complete ✅
+
+### Features
+- ✅ `async fn` - Asynchronous function declaration
+- ✅ `await` - Wait for async result
+- ✅ `WynFuture` - Future type for async operations
+- ✅ Non-blocking execution
+- ✅ Automatic future management
+
+### Example
+```wyn
+async fn fetch_data() -> int {
+    Time::sleep(1);
+    return 42;
+}
+
+fn main() -> int {
+    var result = await fetch_data();
+    print("Result:", result);
+    return 0;
+}
+```
+
+### Implementation
+- Future-based async runtime
+- Polling mechanism with `wyn_block_on()`
+- Automatic state management
+- Works with all return types
+
+**Status: FULLY WORKING ✅**
+
+---
+
 ## Array Features - 21 Methods ✅
 
 ### Basic Operations (5)
@@ -138,12 +171,13 @@ All time operations work.
 
 **Wyn v1.4.0 is COMPLETE with:**
 
-1. ✅ **114+ stdlib methods** - All working
-2. ✅ **Function types** - Complete implementation
-3. ✅ **Functional programming** - .map(), .filter(), .reduce()
-4. ✅ **Array features** - All 21 methods verified
-5. ✅ **Networking** - All 5 functions verified
-6. ✅ **Zero regressions** - 100% backward compatible
+1. ✅ **Async/await** - Full asynchronous programming support
+2. ✅ **114+ stdlib methods** - All working
+3. ✅ **Function types** - Complete implementation
+4. ✅ **Functional programming** - .map(), .filter(), .reduce()
+5. ✅ **Array features** - All 21 methods verified
+6. ✅ **Networking** - All 5 functions verified
+7. ✅ **Zero regressions** - 100% backward compatible
 
 **Status: PRODUCTION READY** 🚀
 
