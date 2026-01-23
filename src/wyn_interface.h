@@ -31,4 +31,12 @@ int wyn_store_file_content(const char* path);
 // Get stored content validity
 int wyn_get_content_valid(void);
 
+// Stub implementations for v1.4 showcase (TODO: implement properly)
+int _write(const char* path, const char* content);
+int _exists(const char* path);
+char* _read(const char* path);
+long _file_size(const char* path);
+char* _get_cwd(void);
+long _now(void);
+
 #endif // WYN_INTERFACE_H

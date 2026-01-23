@@ -4,6 +4,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
+#ifdef _WIN32
+#include <direct.h>
+#define getcwd _getcwd
+#else
+#include <unistd.h>
+#endif
 #include "io.h"  // Use existing file functions
 
 // Global storage for command line arguments
@@ -102,4 +109,47 @@ int wyn_write_file(const char* path, const char* content) {
     fprintf(f, "%s", content);
     fclose(f);
     return 1;  // Success
+}
+
+
+// Stub implementations for unimplemented v1.4 features
+// TODO: Implement these properly
+int _write(const char* path, const char* content) {
+    return wyn_write_file(path, content);
+}
+
+int _exists(const char* path) {
+    FILE* f = fopen(path, "r");
+    if (f) {
+        fclose(f);
+        return 1;
+    }
+    return 0;
+}
+
+char* _read(const char* path) {
+    return wyn_read_file(path);
+}
+
+long _file_size(const char* path) {
+    FILE* f = fopen(path, "rb");
+    if (!f) return -1;
+    fseek(f, 0, SEEK_END);
+    long size = ftell(f);
+    fclose(f);
+    return size;
+}
+
+char* _get_cwd(void) {
+    static char cwd[1024];
+    #ifdef _WIN32
+    _getcwd(cwd, sizeof(cwd));
+    #else
+    getcwd(cwd, sizeof(cwd));
+    #endif
+    return cwd;
+}
+
+long _now(void) {
+    return (long)time(NULL);
 }
