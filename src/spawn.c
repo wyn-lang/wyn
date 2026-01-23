@@ -1,10 +1,12 @@
 // Spawn runtime implementation
+#ifndef _WIN32
+#define _DEFAULT_SOURCE
+#endif
 #include "spawn.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdatomic.h>
 #ifndef _WIN32
-#define _DEFAULT_SOURCE
 #include <unistd.h>
 #include <sched.h>
 #ifdef __APPLE__
