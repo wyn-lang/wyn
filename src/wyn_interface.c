@@ -5,13 +5,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <sys/stat.h>
 #ifdef _WIN32
 #include <direct.h>
+#include <windows.h>
 #define getcwd _getcwd
 #else
 #include <unistd.h>
 #endif
 #include "io.h"  // Use existing file functions
+#include "collections.h"  // For WynArray
 
 // Global storage for command line arguments
 static int global_argc = 0;
@@ -152,4 +155,61 @@ char* _get_cwd(void) {
 
 long _now(void) {
     return (long)time(NULL);
+}
+
+// Additional stubs for file explorer example
+WynArray _list_dir(const char* path) {
+    (void)path;
+    WynArray arr = {0};
+    return arr;
+}
+
+int _is_file(const char* path) {
+    return _exists(path) && !_is_dir(path);
+}
+
+int _is_dir(const char* path) {
+    #ifdef _WIN32
+    DWORD attrs = GetFileAttributesA(path);
+    return (attrs != INVALID_FILE_ATTRIBUTES) && (attrs & FILE_ATTRIBUTE_DIRECTORY);
+    #else
+    struct stat st;
+    return (stat(path, &st) == 0) && S_ISDIR(st.st_mode);
+    #endif
+}
+
+const char* _extension(const char* path) {
+    const char* dot = strrchr(path, '.');
+    return dot ? dot + 1 : "";
+}
+
+char* _path_join(const char* dir, const char* file) {
+    static char result[2048];
+    snprintf(result, sizeof(result), "%s/%s", dir, file);
+    return result;
+}
+
+const char* _basename(const char* path) {
+    const char* last_slash = strrchr(path, '/');
+    #ifdef _WIN32
+    const char* last_backslash = strrchr(path, '\\');
+    if (last_backslash > last_slash) last_slash = last_backslash;
+    #endif
+    return last_slash ? last_slash + 1 : path;
+}
+
+char* _dirname(const char* path) {
+    static char result[2048];
+    const char* last_slash = strrchr(path, '/');
+    #ifdef _WIN32
+    const char* last_backslash = strrchr(path, '\\');
+    if (last_backslash > last_slash) last_slash = last_backslash;
+    #endif
+    if (last_slash) {
+        size_t len = last_slash - path;
+        memcpy(result, path, len);
+        result[len] = '\0';
+        return result;
+    }
+    return ".";
 }
