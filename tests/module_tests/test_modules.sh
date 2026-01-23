@@ -49,9 +49,43 @@ else
     ((FAIL++))
 fi
 
-# Test 2: Module with struct (SKIP - struct literals with module prefix not yet supported)
+# Test 2: Module with struct
 echo -n "Testing module with struct... "
-echo "⚠ SKIP (module-qualified struct literals not yet implemented)"
+cat > /tmp/wyn_modules/point.wyn << 'EOF'
+pub struct Point {
+    x: int,
+    y: int
+}
+
+pub fn distance(p: Point) -> int {
+    return p.x + p.y
+}
+EOF
+
+cat > /tmp/test_struct.wyn << 'EOF'
+import point
+
+fn main() -> int {
+    var p = point.Point { x: 3, y: 4 }
+    return point.distance(p)
+}
+EOF
+
+../../wyn /tmp/test_struct.wyn 2>&1 >/dev/null
+if [ -f /tmp/test_struct.wyn.out ]; then
+    /tmp/test_struct.wyn.out 2>/dev/null
+    exit_code=$?
+    if [ "$exit_code" -eq 7 ]; then
+        echo "✓ PASS"
+        ((PASS++))
+    else
+        echo "✗ FAIL (exit $exit_code, expected 7)"
+        ((FAIL++))
+    fi
+else
+    echo "✗ FAIL (compile error)"
+    ((FAIL++))
+fi
 
 # Test 3: Nested imports
 echo -n "Testing nested imports... "

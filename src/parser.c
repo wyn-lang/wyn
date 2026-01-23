@@ -860,7 +860,26 @@ static Expr* call() {
                 
                 Expr* struct_expr = alloc_expr();
                 struct_expr->type = EXPR_STRUCT_INIT;
-                struct_expr->struct_init.type_name = field_or_method;
+                
+                // Store the full module.Type name by creating a combined token
+                // expr is the module identifier, field_or_method is the Type
+                static char combined_name[256];
+                int module_len = 0;
+                if (expr->type == EXPR_IDENT) {
+                    module_len = expr->token.length;
+                    snprintf(combined_name, 256, "%.*s.%.*s", 
+                             expr->token.length, expr->token.start,
+                             field_or_method.length, field_or_method.start);
+                } else {
+                    snprintf(combined_name, 256, "%.*s", 
+                             field_or_method.length, field_or_method.start);
+                }
+                
+                Token combined_token = field_or_method;
+                combined_token.start = combined_name;
+                combined_token.length = strlen(combined_name);
+                
+                struct_expr->struct_init.type_name = combined_token;
                 struct_expr->struct_init.field_names = malloc(sizeof(Token) * 16);
                 struct_expr->struct_init.field_values = malloc(sizeof(Expr*) * 16);
                 struct_expr->struct_init.field_count = 0;

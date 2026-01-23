@@ -3996,15 +3996,24 @@ void codegen_stmt(Stmt* stmt) {
                     if (stmt->var.init->struct_init.monomorphic_name) {
                         snprintf(struct_type, 128, "%s", stmt->var.init->struct_init.monomorphic_name);
                     } else {
-                        // Add module prefix if in module context
-                        if (current_module_prefix) {
-                            snprintf(struct_type, 128, "%s_%.*s", current_module_prefix,
-                                     stmt->var.init->struct_init.type_name.length,
-                                     stmt->var.init->struct_init.type_name.start);
+                        // Check if type_name contains a module prefix (from member expression)
+                        // e.g., point.Point should become point_Point
+                        Token type_name = stmt->var.init->struct_init.type_name;
+                        
+                        char temp_name[128];
+                        snprintf(temp_name, 128, "%.*s", type_name.length, type_name.start);
+                        
+                        // Check if there's a dot in the name (module.Type)
+                        char* dot = strchr(temp_name, '.');
+                        if (dot) {
+                            // Replace dot with underscore: point.Point → point_Point
+                            *dot = '_';
+                            snprintf(struct_type, 128, "%s", temp_name);
+                        } else if (current_module_prefix) {
+                            // Add module prefix if in module context
+                            snprintf(struct_type, 128, "%s_%.*s", current_module_prefix, type_name.length, type_name.start);
                         } else {
-                            snprintf(struct_type, 128, "%.*s", 
-                                     stmt->var.init->struct_init.type_name.length,
-                                     stmt->var.init->struct_init.type_name.start);
+                            snprintf(struct_type, 128, "%.*s", type_name.length, type_name.start);
                         }
                     }
                     c_type = struct_type;
