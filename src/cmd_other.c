@@ -11,6 +11,8 @@
 #else
 #define WEXITSTATUS(x) (x)
 #include <windows.h>   // For Sleep, GetModuleFileNameA
+#include <direct.h>    // For _mkdir
+#define mkdir(path, mode) _mkdir(path)
 #endif
 
 // Forward declarations

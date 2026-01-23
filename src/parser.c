@@ -2462,7 +2462,8 @@ Program* parse_program() {
                 stmt->import.path.start = NULL;
                 stmt->import.path.length = 0;
                 
-                return stmt;
+                prog->stmts[prog->count++] = stmt;
+                continue;
             }
             
             // Check for relative imports: super::, crate::, self::

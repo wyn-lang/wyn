@@ -2,8 +2,12 @@
 #include "spawn.h"
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <stdatomic.h>
+#ifndef _WIN32
+#include <unistd.h>
+#else
+#include <windows.h>
+#endif
 
 WynScheduler* global_scheduler = NULL;
 
@@ -200,7 +204,14 @@ void wyn_scheduler_shutdown(WynScheduler* sched) {
 void wyn_spawn(WynSpawnFunc func, void* arg) {
     if (!global_scheduler) {
         // Lazy init with CPU count workers
-        int num_cpus = sysconf(_SC_NPROCESSORS_ONLN);
+        int num_cpus = 4;  // Default
+        #ifdef _WIN32
+        SYSTEM_INFO sysinfo;
+        GetSystemInfo(&sysinfo);
+        num_cpus = sysinfo.dwNumberOfProcessors;
+        #else
+        num_cpus = sysconf(_SC_NPROCESSORS_ONLN);
+        #endif
         if (num_cpus < 1) num_cpus = 4;
         global_scheduler = wyn_scheduler_init(num_cpus);
         wyn_scheduler_start(global_scheduler);
