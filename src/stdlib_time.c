@@ -1,5 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 #include <time.h>
+#include <string.h>
 #ifndef _WIN32
 #include <sys/time.h>
 #include <unistd.h>
