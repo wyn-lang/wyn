@@ -31,4 +31,6 @@ fn main() {
     // Chained: filter evens, then double
     var result = numbers.filter(even_only).map(twice);
     print(result);  // [4, 8]
+    
+    return 0;
 }

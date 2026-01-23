@@ -90,9 +90,19 @@ static int install_package(const char* name, const char* version) {
         }
     }
     
-    // Try version as package name (for future registry)
+    // Package not found
     printf("  ✗ Package %s not found\n", name);
-    printf("    Source: %s (not a git URL or local path)\n", source);
+    printf("    Source: %s\n", source);
+    printf("\n");
+    printf("    Supported formats:\n");
+    printf("      - Git URL: https://github.com/user/repo\n");
+    printf("      - Local path: /path/to/package\n");
+    printf("      - Relative path: ../shared/utils\n");
+    printf("\n");
+    printf("    Example wyn.toml:\n");
+    printf("      [dependencies]\n");
+    printf("      mylib = \"https://github.com/user/mylib\"\n");
+    printf("      utils = \"/home/user/shared/utils\"\n");
     return -1;
 }
 
