@@ -5,7 +5,6 @@
 #include <sys/stat.h>
 #ifdef _WIN32
 #include <direct.h>
-#define mkdir(path, mode) _mkdir(path)
 #endif
 #include "package.h"
 #include "toml.h"
@@ -19,7 +18,7 @@ static int ensure_package_dir() {
     char wyn_dir[1024];
     snprintf(wyn_dir, sizeof(wyn_dir), "%s/.wyn", home);
     #ifdef _WIN32
-    mkdir(wyn_dir);
+    _mkdir(wyn_dir);
     #else
     mkdir(wyn_dir, 0755);
     #endif
@@ -27,7 +26,7 @@ static int ensure_package_dir() {
     char pkg_dir[1024];
     snprintf(pkg_dir, sizeof(pkg_dir), "%s/.wyn/packages", home);
     #ifdef _WIN32
-    mkdir(pkg_dir);
+    _mkdir(pkg_dir);
     #else
     mkdir(pkg_dir, 0755);
     #endif

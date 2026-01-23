@@ -12,7 +12,6 @@
 #define WEXITSTATUS(x) (x)
 #include <windows.h>   // For Sleep, GetModuleFileNameA
 #include <direct.h>    // For _mkdir
-#define mkdir(path, mode) _mkdir(path)
 #endif
 
 // Forward declarations
@@ -468,7 +467,7 @@ int cmd_init(const char* name, int argc, char** argv) {
     
     // Create project directory
     #ifdef _WIN32
-    if (mkdir(name) != 0) {
+    if (_mkdir(name) != 0) {
     #else
     if (mkdir(name, 0755) != 0) {
     #endif

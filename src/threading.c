@@ -2,9 +2,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef _WIN32
 #include <unistd.h>
-#include <errno.h>
 #include <sys/time.h>
+#include <sched.h>
+#else
+#include <windows.h>
+#define usleep(us) Sleep((us) / 1000)
+#define sched_yield() SwitchToThread()
+#endif
+#include <errno.h>
 
 // Thread management
 WynThread* wyn_thread_spawn(WynThreadFunc func, void* arg) {

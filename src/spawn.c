@@ -5,8 +5,13 @@
 #include <stdatomic.h>
 #ifndef _WIN32
 #include <unistd.h>
+#include <sched.h>
 #else
 #include <windows.h>
+// Windows doesn't have usleep, use Sleep (milliseconds) instead
+#define usleep(us) Sleep((us) / 1000)
+// Windows doesn't have sched_yield, use SwitchToThread
+#define sched_yield() SwitchToThread()
 #endif
 
 WynScheduler* global_scheduler = NULL;
