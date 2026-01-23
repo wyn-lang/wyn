@@ -1811,7 +1811,7 @@ void codegen_c_header() {
     emit("#include \"wyn_interface.h\"\n");
     emit("#include \"io.h\"\n");
     emit("#include \"arc_runtime.h\"\n");
-    emit("#include \"goroutine.h\"\n");  // Goroutine-style runtime
+    emit("#include \"spawn.h\"\n");  // Spawn runtime
     emit("#include \"optional.h\"\n");
     emit("#include \"result.h\"\n");
     emit("#include \"hashmap.h\"\n");
@@ -4181,7 +4181,7 @@ void codegen_stmt(Stmt* stmt) {
             emit("continue;\n");
             break;
         case STMT_SPAWN: {
-            // Spawn: use goroutine-style lightweight tasks (not OS threads)
+            // Spawn: lightweight tasks (not OS threads)
             // Wrapper functions are generated in pre-scan phase
             if (stmt->spawn.call->type == EXPR_CALL && 
                 stmt->spawn.call->call.callee->type == EXPR_IDENT &&
@@ -4194,8 +4194,8 @@ void codegen_stmt(Stmt* stmt) {
                 memcpy(func_name, callee->token.start, len);
                 func_name[len] = '\0';
                 
-                // Generate goroutine spawn call (lightweight task)
-                emit("wyn_go(__spawn_wrapper_");
+                // Generate spawn call
+                emit("wyn_spawn(__spawn_wrapper_");
                 emit(func_name);
                 emit(", NULL);\n");
             } else {
@@ -5780,9 +5780,8 @@ void codegen_program(Program* prog) {
     if (spawn_wrapper_count > 0) {
         emit("// Spawn wrapper functions\n");
         for (int i = 0; i < spawn_wrapper_count; i++) {
-            emit("void* __spawn_wrapper_%s(void* arg) {\n", spawn_wrappers[i].func_name);
+            emit("void __spawn_wrapper_%s(void* arg) {\n", spawn_wrappers[i].func_name);
             emit("    %s();\n", spawn_wrappers[i].func_name);
-            emit("    return NULL;\n");
             emit("}\n\n");
         }
     }
