@@ -1,5 +1,4 @@
 // Spawn runtime implementation
-#define _POSIX_C_SOURCE 200809L
 #include "spawn.h"
 #include <stdlib.h>
 #include <string.h>
@@ -7,6 +6,9 @@
 #ifndef _WIN32
 #include <unistd.h>
 #include <sched.h>
+#ifdef __APPLE__
+#include <sys/sysctl.h>
+#endif
 #else
 #include <windows.h>
 // Windows doesn't have usleep, use Sleep (milliseconds) instead
@@ -215,6 +217,9 @@ void wyn_spawn(WynSpawnFunc func, void* arg) {
         SYSTEM_INFO sysinfo;
         GetSystemInfo(&sysinfo);
         num_cpus = sysinfo.dwNumberOfProcessors;
+        #elif defined(__APPLE__)
+        size_t len = sizeof(num_cpus);
+        sysctlbyname("hw.ncpu", &num_cpus, &len, NULL, 0);
         #else
         num_cpus = sysconf(_SC_NPROCESSORS_ONLN);
         #endif
