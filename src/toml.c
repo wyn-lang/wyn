@@ -30,6 +30,11 @@ WynConfig* wyn_config_parse(const char* filename) {
     WynConfig* config = calloc(1, sizeof(WynConfig));
     char line[1024];
     char current_section[64] = "";
+    
+    // Allocate initial dependency array
+    config->dependencies = malloc(sizeof(WynDependency) * 16);
+    config->dependency_count = 0;
+    int dep_capacity = 16;
 
     while (fgets(line, sizeof(line), f)) {
         char* trimmed = trim(line);
@@ -62,6 +67,16 @@ WynConfig* wyn_config_parse(const char* filename) {
             else if (strcmp(key, "author") == 0) config->project.author = value;
             else if (strcmp(key, "description") == 0) config->project.description = value;
             else free(value);
+        } else if (strcmp(current_section, "dependencies") == 0) {
+            // Add dependency
+            if (config->dependency_count >= dep_capacity) {
+                dep_capacity *= 2;
+                config->dependencies = realloc(config->dependencies, 
+                                              sizeof(WynDependency) * dep_capacity);
+            }
+            config->dependencies[config->dependency_count].name = strdup(key);
+            config->dependencies[config->dependency_count].version = value;
+            config->dependency_count++;
         } else {
             free(value);
         }

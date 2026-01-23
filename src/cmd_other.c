@@ -4,13 +4,13 @@
 #include <sys/stat.h>
 #ifndef _WIN32
 #include <sys/wait.h>  // For WEXITSTATUS
-#include <unistd.h>    // For sleep
+#include <unistd.h>    // For sleep, readlink
 #ifdef __APPLE__
 #include <mach-o/dyld.h>  // For _NSGetExecutablePath
 #endif
 #else
 #define WEXITSTATUS(x) (x)
-#include <windows.h>   // For Sleep
+#include <windows.h>   // For Sleep, GetModuleFileNameA
 #endif
 
 // Forward declarations
@@ -539,12 +539,36 @@ int cmd_watch(const char* file, int argc, char** argv) {
         return 1;
     }
     
+    // Get current executable path
+    char exe_path[2048];
+    #ifdef __APPLE__
+    uint32_t size = sizeof(exe_path);
+    if (_NSGetExecutablePath(exe_path, &size) != 0) {
+        fprintf(stderr, "Error: Could not determine executable path\n");
+        return 1;
+    }
+    #elif defined(__linux__)
+    ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
+    if (len == -1) {
+        fprintf(stderr, "Error: Could not determine executable path\n");
+        return 1;
+    }
+    exe_path[len] = '\0';
+    #elif defined(_WIN32)
+    if (GetModuleFileNameA(NULL, exe_path, sizeof(exe_path)) == 0) {
+        fprintf(stderr, "Error: Could not determine executable path\n");
+        return 1;
+    }
+    #else
+    strcpy(exe_path, "wyn");  // Fallback
+    #endif
+    
     printf("Watching %s for changes (Ctrl+C to stop)...\n", file);
     
     // Initial build
     printf("\n[%s] Building...\n", file);
-    char cmd[2048];
-    snprintf(cmd, sizeof(cmd), "wyn run %s 2>&1", file);
+    char cmd[4096];
+    snprintf(cmd, sizeof(cmd), "%s run %s 2>&1", exe_path, file);
     int result = system(cmd);
     if (result == 0) {
         printf("[%s] ✓ Build successful\n", file);
