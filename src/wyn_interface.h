@@ -32,11 +32,20 @@ int wyn_store_file_content(const char* path);
 int wyn_get_content_valid(void);
 
 // Stub implementations for v1.4 showcase (TODO: implement properly)
+typedef struct { void* data; int count; int capacity; } WynArray;
+
 int _write(const char* path, const char* content);
 int _exists(const char* path);
 char* _read(const char* path);
 long _file_size(const char* path);
 char* _get_cwd(void);
 long _now(void);
+WynArray _list_dir(const char* path);
+int _is_dir(const char* path);
+int _is_file(const char* path);
+const char* _extension(const char* path);
+char* _path_join(const char* dir, const char* file);
+const char* _basename(const char* path);
+char* _dirname(const char* path);
 
 #endif // WYN_INTERFACE_H
