@@ -751,6 +751,21 @@ int create_new_project(const char* project_name) {
         return 1;
     }
     
+    // Create wyn.toml
+    snprintf(path, sizeof(path), "%s/wyn.toml", project_name);
+    FILE* toml_file = fopen(path, "w");
+    if (!toml_file) {
+        fprintf(stderr, "Error: Failed to create wyn.toml\n");
+        return 1;
+    }
+    fprintf(toml_file, "[project]\n");
+    fprintf(toml_file, "name = \"%s\"\n", project_name);
+    fprintf(toml_file, "version = \"0.1.0\"\n");
+    fprintf(toml_file, "entry = \"src/main.wyn\"\n");
+    fprintf(toml_file, "\n[dependencies]\n");
+    fprintf(toml_file, "# Add dependencies here\n");
+    fclose(toml_file);
+    
     // Create main.wyn
     snprintf(path, sizeof(path), "%s/src/main.wyn", project_name);
     FILE* main_file = fopen(path, "w");
@@ -780,6 +795,7 @@ int create_new_project(const char* project_name) {
     }
     
     printf("Created new Wyn project: %s\n", project_name);
+    printf("  %s/wyn.toml\n", project_name);
     printf("  %s/src/main.wyn\n", project_name);
     printf("  %s/tests/test_main.wyn\n", project_name);
     printf("  %s/README.md\n", project_name);
