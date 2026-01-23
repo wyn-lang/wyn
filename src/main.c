@@ -287,11 +287,21 @@ int main(int argc, char** argv) {
         codegen_program(prog);
         fclose(out);
         
-        // Get WYN_ROOT or use current directory
+        // Get WYN_ROOT or auto-detect
         char wyn_root[1024] = ".";
         char* root_env = getenv("WYN_ROOT");
         if (root_env) {
             snprintf(wyn_root, sizeof(wyn_root), "%s", root_env);
+        } else {
+            // Auto-detect: check if src/wyn_wrapper.c exists, if not try ./wyn
+            FILE* test = fopen("./src/wyn_wrapper.c", "r");
+            if (!test) {
+                test = fopen("./wyn/src/wyn_wrapper.c", "r");
+                if (test) {
+                    snprintf(wyn_root, sizeof(wyn_root), "./wyn");
+                }
+            }
+            if (test) fclose(test);
         }
         
         char compile_cmd[4096];
@@ -555,11 +565,21 @@ int main(int argc, char** argv) {
         codegen_program(prog);
         fclose(out);
         
-        // Get WYN_ROOT or use current directory
+        // Get WYN_ROOT or auto-detect
         char wyn_root[1024] = ".";
         char* root_env = getenv("WYN_ROOT");
         if (root_env) {
             snprintf(wyn_root, sizeof(wyn_root), "%s", root_env);
+        } else {
+            // Auto-detect: check if src/wyn_wrapper.c exists, if not try ./wyn
+            FILE* test = fopen("./src/wyn_wrapper.c", "r");
+            if (!test) {
+                test = fopen("./wyn/src/wyn_wrapper.c", "r");
+                if (test) {
+                    snprintf(wyn_root, sizeof(wyn_root), "./wyn");
+                }
+            }
+            if (test) fclose(test);
         }
         
         char compile_cmd[4096];
@@ -670,11 +690,21 @@ int main(int argc, char** argv) {
     // Free AST
     free_program(prog);
     
-    // Get WYN_ROOT or use current directory
+    // Get WYN_ROOT or auto-detect
     char wyn_root[1024] = ".";
     char* root_env = getenv("WYN_ROOT");
     if (root_env) {
         snprintf(wyn_root, sizeof(wyn_root), "%s", root_env);
+    } else {
+        // Auto-detect: check if src/wyn_wrapper.c exists, if not try ./wyn
+        FILE* test = fopen("./src/wyn_wrapper.c", "r");
+        if (!test) {
+            test = fopen("./wyn/src/wyn_wrapper.c", "r");
+            if (test) {
+                snprintf(wyn_root, sizeof(wyn_root), "./wyn");
+            }
+        }
+        if (test) fclose(test);
     }
     
     char compile_cmd[2048];

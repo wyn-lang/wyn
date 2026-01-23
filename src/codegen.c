@@ -487,12 +487,70 @@ void codegen_expr(Expr* expr) {
                 bool right_is_string = (expr->binary.right->type == EXPR_STRING) ||
                                       (expr->binary.right->expr_type && expr->binary.right->expr_type->kind == TYPE_STRING);
                 
+                bool left_is_int = (expr->binary.left->expr_type && expr->binary.left->expr_type->kind == TYPE_INT);
+                bool right_is_int = (expr->binary.right->expr_type && expr->binary.right->expr_type->kind == TYPE_INT);
+                
                 if (left_is_string || right_is_string) {
-                    // Use ARC-managed string concatenation
+                    // Use ARC-managed string concatenation with automatic conversion
                     emit("wyn_string_concat_safe(");
+                    
+                    // Convert left operand to string if it's an int
+                    if (left_is_int && !left_is_string) {
+                        emit("int_to_string(");
+                        codegen_expr(expr->binary.left);
+                        emit(")");
+                    } else {
+                        codegen_expr(expr->binary.left);
+                    }
+                    
+                    emit(", ");
+                    
+                    // Convert right operand to string if it's an int
+                    if (right_is_int && !right_is_string) {
+                        emit("int_to_string(");
+                        codegen_expr(expr->binary.right);
+                        emit(")");
+                    } else {
+                        codegen_expr(expr->binary.right);
+                    }
+                    
+                    emit(")");
+                    break;
+                }
+            }
+            
+            // Special handling for string comparison operators
+            if (expr->binary.op.type == TOKEN_EQEQ || expr->binary.op.type == TOKEN_BANGEQ ||
+                expr->binary.op.type == TOKEN_LT || expr->binary.op.type == TOKEN_GT ||
+                expr->binary.op.type == TOKEN_LTEQ || expr->binary.op.type == TOKEN_GTEQ) {
+                // Check if both operands are strings
+                bool left_is_string = (expr->binary.left->type == EXPR_STRING) ||
+                                     (expr->binary.left->expr_type && expr->binary.left->expr_type->kind == TYPE_STRING);
+                bool right_is_string = (expr->binary.right->type == EXPR_STRING) ||
+                                      (expr->binary.right->expr_type && expr->binary.right->expr_type->kind == TYPE_STRING);
+                
+                if (left_is_string && right_is_string) {
+                    // Use strcmp for string comparison
+                    emit("(strcmp(");
                     codegen_expr(expr->binary.left);
                     emit(", ");
                     codegen_expr(expr->binary.right);
+                    emit(")");
+                    
+                    // Map operator to strcmp result comparison
+                    if (expr->binary.op.type == TOKEN_EQEQ) {
+                        emit(" == 0");
+                    } else if (expr->binary.op.type == TOKEN_BANGEQ) {
+                        emit(" != 0");
+                    } else if (expr->binary.op.type == TOKEN_LT) {
+                        emit(" < 0");
+                    } else if (expr->binary.op.type == TOKEN_GT) {
+                        emit(" > 0");
+                    } else if (expr->binary.op.type == TOKEN_LTEQ) {
+                        emit(" <= 0");
+                    } else if (expr->binary.op.type == TOKEN_GTEQ) {
+                        emit(" >= 0");
+                    }
                     emit(")");
                     break;
                 }
@@ -1056,6 +1114,31 @@ void codegen_expr(Expr* expr) {
             
             // Type-aware method dispatch (Phase 4)
             Type* object_type = expr->method_call.object->expr_type;
+            
+            // Special handling for array.get() - use type-specific accessor
+            if (object_type && object_type->kind == TYPE_ARRAY) {
+                Token method = expr->method_call.method;
+                if (method.length == 3 && memcmp(method.start, "get", 3) == 0) {
+                    // Determine element type and use appropriate accessor
+                    Type* elem_type = object_type->array_type.element_type;
+                    if (elem_type) {
+                        if (elem_type->kind == TYPE_STRING) {
+                            emit("array_get_str(");
+                        } else {
+                            // Default to int accessor
+                            emit("array_get_int(");
+                        }
+                    } else {
+                        // No element type info, default to int
+                        emit("array_get_int(");
+                    }
+                    codegen_expr(expr->method_call.object);
+                    emit(", ");
+                    codegen_expr(expr->method_call.args[0]);
+                    emit(")");
+                    break;
+                }
+            }
             
             const char* receiver_type = get_receiver_type_string(object_type);
             
@@ -2458,23 +2541,6 @@ void codegen_c_header() {
     emit("    free(copy);\n");
     emit("    return arr;\n");
     emit("}\n\n");
-    
-    // HashSet wrapper functions (Task 3.4)
-    emit("void set_insert(WynHashSet* set, int value) {\n");
-    emit("    wyn_hashset_insert(set, &value);\n");
-    emit("}\n");
-    emit("bool set_contains(WynHashSet* set, int value) {\n");
-    emit("    return wyn_hashset_contains(set, &value);\n");
-    emit("}\n");
-    emit("void set_remove(WynHashSet* set, int value) {\n");
-    emit("    wyn_hashset_remove(set, &value);\n");
-    emit("}\n");
-    emit("int set_len(WynHashSet* set) {\n");
-    emit("    return (int)wyn_hashset_len(set);\n");
-    emit("}\n");
-    emit("bool set_is_empty(WynHashSet* set) {\n");
-    emit("    return wyn_hashset_is_empty(set);\n");
-    emit("}\n");
     emit("void set_clear(WynHashSet* set) {\n");
     emit("    wyn_hashset_clear(set);\n");
     emit("}\n");
@@ -3177,6 +3243,35 @@ void codegen_c_header() {
     emit("}\n");
     emit("int File_exists(const char* path) { FILE* f = fopen(path, \"r\"); if(f) { fclose(f); return 1; } return 0; }\n");
     emit("int File_delete(const char* path) { return remove(path) == 0; }\n");
+    
+    // File::copy - copy file from src to dst
+    emit("int File_copy(const char* src, const char* dst) {\n");
+    emit("    FILE* fsrc = fopen(src, \"rb\");\n");
+    emit("    if(!fsrc) return 0;\n");
+    emit("    FILE* fdst = fopen(dst, \"wb\");\n");
+    emit("    if(!fdst) { fclose(fsrc); return 0; }\n");
+    emit("    char buf[8192];\n");
+    emit("    size_t n;\n");
+    emit("    while((n = fread(buf, 1, sizeof(buf), fsrc)) > 0) {\n");
+    emit("        if(fwrite(buf, 1, n, fdst) != n) { fclose(fsrc); fclose(fdst); return 0; }\n");
+    emit("    }\n");
+    emit("    fclose(fsrc); fclose(fdst);\n");
+    emit("    return 1;\n");
+    emit("}\n");
+    
+    // File::move - move/rename file
+    emit("int File_move(const char* src, const char* dst) { return rename(src, dst) == 0; }\n");
+    
+    // File::size - get file size
+    emit("int File_size(const char* path) {\n");
+    emit("    FILE* f = fopen(path, \"rb\");\n");
+    emit("    if(!f) return -1;\n");
+    emit("    fseek(f, 0, SEEK_END);\n");
+    emit("    long sz = ftell(f);\n");
+    emit("    fclose(f);\n");
+    emit("    return (int)sz;\n");
+    emit("}\n");
+    
     emit("int file_size(const char* path) {\n");
     emit("    last_error[0] = 0;\n");
     emit("    FILE* f = fopen(path, \"r\");\n");
@@ -3213,6 +3308,64 @@ void codegen_c_header() {
     emit("    fclose(d);\n");
     emit("    return 1;\n");
     emit("}\n");
+    
+    // File::modified_time - get file modification timestamp
+    emit("long File_modified_time(const char* path) {\n");
+    emit("    struct stat st;\n");
+    emit("    if (stat(path, &st) != 0) return -1;\n");
+    emit("    return (long)st.st_mtime;\n");
+    emit("}\n\n");
+    
+    // File::create_dir_all - recursive mkdir (like mkdir -p)
+    emit("int File_create_dir_all(const char* path) {\n");
+    emit("    if (!path || !*path) return 0;\n");
+    emit("    char tmp[1024];\n");
+    emit("    char *p = NULL;\n");
+    emit("    size_t len = strlen(path);\n");
+    emit("    if (len >= sizeof(tmp)) return 0;\n");
+    emit("    snprintf(tmp, sizeof(tmp), \"%%s\", path);\n");
+    emit("    if (tmp[len - 1] == '/') tmp[len - 1] = 0;\n");
+    emit("    for (p = tmp + 1; *p; p++) {\n");
+    emit("        if (*p == '/') {\n");
+    emit("            *p = 0;\n");
+    emit("            #ifdef _WIN32\n");
+    emit("            mkdir(tmp);\n");
+    emit("            #else\n");
+    emit("            mkdir(tmp, 0755);\n");
+    emit("            #endif\n");
+    emit("            *p = '/';\n");
+    emit("        }\n");
+    emit("    }\n");
+    emit("    #ifdef _WIN32\n");
+    emit("    return mkdir(tmp) == 0 || errno == EEXIST;\n");
+    emit("    #else\n");
+    emit("    return mkdir(tmp, 0755) == 0 || errno == EEXIST;\n");
+    emit("    #endif\n");
+    emit("}\n\n");
+    
+    // File::remove_dir_all - recursive rmdir (like rm -rf)
+    emit("int File_remove_dir_all(const char* path) {\n");
+    emit("    if (!path || !*path) return 0;\n");
+    emit("    DIR *d = opendir(path);\n");
+    emit("    if (!d) return remove(path) == 0;\n");
+    emit("    struct dirent *p;\n");
+    emit("    int r = 0;\n");
+    emit("    while (!r && (p = readdir(d))) {\n");
+    emit("        if (!strcmp(p->d_name, \".\") || !strcmp(p->d_name, \"..\")) continue;\n");
+    emit("        char buf[1024];\n");
+    emit("        snprintf(buf, sizeof(buf), \"%%s/%%s\", path, p->d_name);\n");
+    emit("        struct stat st;\n");
+    emit("        if (stat(buf, &st) == 0) {\n");
+    emit("            if (S_ISDIR(st.st_mode)) {\n");
+    emit("                r = !File_remove_dir_all(buf);\n");
+    emit("            } else {\n");
+    emit("                r = remove(buf) != 0;\n");
+    emit("            }\n");
+    emit("        }\n");
+    emit("    }\n");
+    emit("    closedir(d);\n");
+    emit("    return !r && rmdir(path) == 0;\n");
+    emit("}\n\n");
     
     // System execution
     emit("char* System_exec(const char* cmd) {\n");
@@ -3265,6 +3418,121 @@ void codegen_c_header() {
     emit("        arr.data[i].data.string_val = __wyn_argv[i];\n");
     emit("    }\n");
     emit("    return arr;\n");
+    emit("}\n\n");
+    
+    // Env module functions
+    emit("char* Env_get(const char* name) {\n");
+    emit("    if (!name) return \"\";\n");
+    emit("    char* value = getenv(name);\n");
+    emit("    return value ? value : \"\";\n");
+    emit("}\n");
+    
+    emit("int Env_set(const char* name, const char* value) {\n");
+    emit("    if (!name || !value) return 0;\n");
+    emit("#ifdef _WIN32\n");
+    emit("    return _putenv_s(name, value) == 0;\n");
+    emit("#else\n");
+    emit("    return setenv(name, value, 1) == 0;\n");
+    emit("#endif\n");
+    emit("}\n");
+    
+    emit("WynArray Env_all() {\n");
+    emit("    extern char **environ;\n");
+    emit("    WynArray arr;\n");
+    emit("    int count = 0;\n");
+    emit("    for (char** env = environ; *env; env++) count++;\n");
+    emit("    arr.data = malloc(count * sizeof(WynValue));\n");
+    emit("    arr.count = count;\n");
+    emit("    arr.capacity = count;\n");
+    emit("    for (int i = 0; i < count; i++) {\n");
+    emit("        arr.data[i].type = WYN_TYPE_STRING;\n");
+    emit("        arr.data[i].data.string_val = environ[i];\n");
+    emit("    }\n");
+    emit("    return arr;\n");
+    emit("}\n\n");
+    
+    // Queue module - FIFO (First In, First Out)
+    emit("typedef struct { WynArray arr; } Queue;\n\n");
+    
+    emit("Queue* Queue_new() {\n");
+    emit("    Queue* q = malloc(sizeof(Queue));\n");
+    emit("    q->arr.data = NULL;\n");
+    emit("    q->arr.count = 0;\n");
+    emit("    q->arr.capacity = 0;\n");
+    emit("    return q;\n");
+    emit("}\n\n");
+    
+    emit("void Queue_push(Queue* q, int value) {\n");
+    emit("    if (q->arr.count >= q->arr.capacity) {\n");
+    emit("        q->arr.capacity = q->arr.capacity == 0 ? 4 : q->arr.capacity * 2;\n");
+    emit("        q->arr.data = realloc(q->arr.data, sizeof(WynValue) * q->arr.capacity);\n");
+    emit("    }\n");
+    emit("    q->arr.data[q->arr.count].type = WYN_TYPE_INT;\n");
+    emit("    q->arr.data[q->arr.count].data.int_val = value;\n");
+    emit("    q->arr.count++;\n");
+    emit("}\n\n");
+    
+    emit("int Queue_pop(Queue* q) {\n");
+    emit("    if (q->arr.count == 0) return 0;\n");
+    emit("    int value = q->arr.data[0].data.int_val;\n");
+    emit("    for (int i = 1; i < q->arr.count; i++) {\n");
+    emit("        q->arr.data[i-1] = q->arr.data[i];\n");
+    emit("    }\n");
+    emit("    q->arr.count--;\n");
+    emit("    return value;\n");
+    emit("}\n\n");
+    
+    emit("int Queue_peek(Queue* q) {\n");
+    emit("    if (q->arr.count == 0) return 0;\n");
+    emit("    return q->arr.data[0].data.int_val;\n");
+    emit("}\n\n");
+    
+    emit("int Queue_len(Queue* q) {\n");
+    emit("    return q->arr.count;\n");
+    emit("}\n\n");
+    
+    emit("int Queue_is_empty(Queue* q) {\n");
+    emit("    return q->arr.count == 0;\n");
+    emit("}\n\n");
+    
+    // Stack module - LIFO (Last In, First Out)
+    emit("typedef struct { WynArray arr; } Stack;\n\n");
+    
+    emit("Stack* Stack_new() {\n");
+    emit("    Stack* s = malloc(sizeof(Stack));\n");
+    emit("    s->arr.data = NULL;\n");
+    emit("    s->arr.count = 0;\n");
+    emit("    s->arr.capacity = 0;\n");
+    emit("    return s;\n");
+    emit("}\n\n");
+    
+    emit("void Stack_push(Stack* s, int value) {\n");
+    emit("    if (s->arr.count >= s->arr.capacity) {\n");
+    emit("        s->arr.capacity = s->arr.capacity == 0 ? 4 : s->arr.capacity * 2;\n");
+    emit("        s->arr.data = realloc(s->arr.data, sizeof(WynValue) * s->arr.capacity);\n");
+    emit("    }\n");
+    emit("    s->arr.data[s->arr.count].type = WYN_TYPE_INT;\n");
+    emit("    s->arr.data[s->arr.count].data.int_val = value;\n");
+    emit("    s->arr.count++;\n");
+    emit("}\n\n");
+    
+    emit("int Stack_pop(Stack* s) {\n");
+    emit("    if (s->arr.count == 0) return 0;\n");
+    emit("    s->arr.count--;\n");
+    emit("    return s->arr.data[s->arr.count].data.int_val;\n");
+    emit("}\n\n");
+    
+    emit("int Stack_peek(Stack* s) {\n");
+    emit("    if (s->arr.count == 0) return 0;\n");
+    emit("    return s->arr.data[s->arr.count - 1].data.int_val;\n");
+    emit("}\n\n");
+    
+    emit("int Stack_len(Stack* s) {\n");
+    emit("    return s->arr.count;\n");
+    emit("}\n\n");
+    
+    emit("int Stack_is_empty(Stack* s) {\n");
+    emit("    return s->arr.count == 0;\n");
     emit("}\n\n");
     
     // Math module functions
@@ -3621,77 +3889,105 @@ void codegen_stmt(Stmt* stmt) {
                     needs_arc_management = true;
                 } else if (stmt->var.init->type == EXPR_METHOD_CALL) {
                     // Phase 1 Task 1.3: Infer type from method call
-                    // Determine receiver type from expr_type (populated by checker)
-                    const char* receiver_type = "int";  // default
-                    
-                    Expr* obj = stmt->var.init->method_call.object;
-                    if (obj->expr_type) {
-                        // Use type information from checker
-                        switch (obj->expr_type->kind) {
+                    // First check if the expression has a type from the checker
+                    if (stmt->var.init->expr_type) {
+                        switch (stmt->var.init->expr_type->kind) {
                             case TYPE_STRING:
-                                receiver_type = "string";
+                                c_type = "const char*";
+                                is_already_const = true;
                                 break;
                             case TYPE_INT:
-                                receiver_type = "int";
+                                c_type = "int";
                                 break;
                             case TYPE_FLOAT:
-                                receiver_type = "float";
+                                c_type = "double";
                                 break;
                             case TYPE_BOOL:
-                                receiver_type = "bool";
+                                c_type = "bool";
                                 break;
                             case TYPE_ARRAY:
-                                receiver_type = "array";
+                                c_type = "WynArray";
                                 break;
                             case TYPE_MAP:
-                                receiver_type = "map";
+                                c_type = "WynMap";
+                                needs_arc_management = true;
                                 break;
                             default:
-                                receiver_type = "int";
+                                c_type = "int";
                         }
                     } else {
-                        // Fallback: infer from expression type
-                        if (obj->type == EXPR_STRING) {
-                            receiver_type = "string";
-                        } else if (obj->type == EXPR_FLOAT) {
-                            receiver_type = "float";
-                        } else if (obj->type == EXPR_INT) {
-                            receiver_type = "int";
-                        } else if (obj->type == EXPR_BOOL) {
-                            receiver_type = "bool";
-                        } else if (obj->type == EXPR_ARRAY) {
-                            receiver_type = "array";
-                        } else if (obj->type == EXPR_MAP) {
-                            receiver_type = "map";
-                        } else if (obj->type == EXPR_METHOD_CALL) {
-                            // Nested method call (chaining) - assume string for now
-                            receiver_type = "string";
+                        // Fallback: Determine receiver type from expr_type (populated by checker)
+                        const char* receiver_type = "int";  // default
+                        
+                        Expr* obj = stmt->var.init->method_call.object;
+                        if (obj->expr_type) {
+                            // Use type information from checker
+                            switch (obj->expr_type->kind) {
+                                case TYPE_STRING:
+                                    receiver_type = "string";
+                                    break;
+                                case TYPE_INT:
+                                    receiver_type = "int";
+                                    break;
+                                case TYPE_FLOAT:
+                                    receiver_type = "float";
+                                    break;
+                                case TYPE_BOOL:
+                                    receiver_type = "bool";
+                                    break;
+                                case TYPE_ARRAY:
+                                    receiver_type = "array";
+                                    break;
+                                case TYPE_MAP:
+                                    receiver_type = "map";
+                                    break;
+                                default:
+                                    receiver_type = "int";
+                            }
+                        } else {
+                            // Fallback: infer from expression type
+                            if (obj->type == EXPR_STRING) {
+                                receiver_type = "string";
+                            } else if (obj->type == EXPR_FLOAT) {
+                                receiver_type = "float";
+                            } else if (obj->type == EXPR_INT) {
+                                receiver_type = "int";
+                            } else if (obj->type == EXPR_BOOL) {
+                                receiver_type = "bool";
+                            } else if (obj->type == EXPR_ARRAY) {
+                                receiver_type = "array";
+                            } else if (obj->type == EXPR_MAP) {
+                                receiver_type = "map";
+                            } else if (obj->type == EXPR_METHOD_CALL) {
+                                // Nested method call (chaining) - assume string for now
+                                receiver_type = "string";
+                            }
                         }
-                    }
-                    
-                    // Look up method return type
-                    Token method = stmt->var.init->method_call.method;
-                    char method_name[64];
-                    snprintf(method_name, sizeof(method_name), "%.*s", method.length, method.start);
-                    
-                    const char* return_type = lookup_method_return_type(receiver_type, method_name);
-                    if (return_type) {
-                        if (strcmp(return_type, "string") == 0) {
-                            c_type = "char*";
-                            needs_arc_management = false;  // Disable ARC for now (Phase 1 focus)
-                        } else if (strcmp(return_type, "int") == 0) {
-                            c_type = "int";
-                        } else if (strcmp(return_type, "float") == 0) {
-                            c_type = "double";
-                        } else if (strcmp(return_type, "bool") == 0) {
-                            c_type = "bool";
-                        } else if (strcmp(return_type, "array") == 0) {
-                            c_type = "WynArray";
-                        } else if (strcmp(return_type, "optional") == 0) {
-                            c_type = "WynOptional*";
-                            needs_arc_management = true;
-                        } else if (strcmp(return_type, "void") == 0) {
-                            c_type = "void";
+                        
+                        // Look up method return type
+                        Token method = stmt->var.init->method_call.method;
+                        char method_name[64];
+                        snprintf(method_name, sizeof(method_name), "%.*s", method.length, method.start);
+                        
+                        const char* return_type = lookup_method_return_type(receiver_type, method_name);
+                        if (return_type) {
+                            if (strcmp(return_type, "string") == 0) {
+                                c_type = "char*";
+                                needs_arc_management = false;  // Disable ARC for now (Phase 1 focus)
+                            } else if (strcmp(return_type, "int") == 0) {
+                                c_type = "int";
+                            } else if (strcmp(return_type, "float") == 0) {
+                                c_type = "double";
+                            } else if (strcmp(return_type, "bool") == 0) {
+                                c_type = "bool";
+                            } else if (strcmp(return_type, "array") == 0) {
+                                c_type = "WynArray";
+                            } else if (strcmp(return_type, "optional") == 0) {
+                                c_type = "WynOptional*";
+                                needs_arc_management = true;
+                            } else if (strcmp(return_type, "void") == 0) {
+                                c_type = "void";
+                            }
                         }
                     }
                 } else if (stmt->var.init->type == EXPR_STRUCT_INIT) {
@@ -3932,7 +4228,10 @@ void codegen_stmt(Stmt* stmt) {
             bool is_async = stmt->fn.is_async;
             
             if (stmt->fn.return_type) {
-                if (stmt->fn.return_type->type == EXPR_IDENT) {
+                if (stmt->fn.return_type->type == EXPR_ARRAY) {
+                    // Array type like [int] or [string]
+                    return_type = "WynArray";
+                } else if (stmt->fn.return_type->type == EXPR_IDENT) {
                     Token type_name = stmt->fn.return_type->token;
                     if (type_name.length == 3 && memcmp(type_name.start, "int", 3) == 0) {
                         return_type = "int";
@@ -5297,7 +5596,10 @@ void codegen_program(Program* prog) {
             bool is_async = fn->is_async;
             
             if (fn->return_type) {
-                if (fn->return_type->type == EXPR_IDENT) {
+                if (fn->return_type->type == EXPR_ARRAY) {
+                    // Array type like [int] or [string]
+                    return_type = "WynArray";
+                } else if (fn->return_type->type == EXPR_IDENT) {
                     Token type_name = fn->return_type->token;
                     if (type_name.length == 3 && memcmp(type_name.start, "int", 3) == 0) {
                         return_type = "int";

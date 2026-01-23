@@ -1,0 +1,49 @@
+// std/io - Standard I/O module for Wyn
+// Provides console and file I/O operations
+
+// Console output
+pub fn println(msg: string) -> int {
+    print(msg);
+    print("\n");
+    return 0;
+}
+
+pub fn print_str(msg: string) -> int {
+    print(msg);
+    return 0;
+}
+
+pub fn print_int(n: int) -> int {
+    print(n);
+    return 0;
+}
+
+// File operations
+pub fn read_file(path: string) -> string {
+    return File::read(path);
+}
+
+pub fn write_file(path: string, content: string) -> int {
+    return File::write(path, content);
+}
+
+pub fn file_exists(path: string) -> int {
+    return File::exists(path);
+}
+
+pub fn delete_file(path: string) -> int {
+    return File::delete(path);
+}
+
+// Directory operations
+pub fn list_dir(path: string) -> [string] {
+    return File::list_dir(path);
+}
+
+pub fn create_dir(path: string) -> int {
+    return File::create_dir(path);
+}
+
+pub fn get_cwd() -> string {
+    return File::get_cwd();
+}

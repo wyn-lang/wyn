@@ -67,7 +67,7 @@ const immutable = 20;  // Immutable
 - **Generics:** `Option<T>`, `Result<T, E>`
 - **Async/await:** Future-based concurrency
 - **Memory safety:** Automatic Reference Counting (ARC)
-- **150+ methods:** Across all primitive and collection types
+- **100+ methods:** Comprehensive standard library
 
 ---
 
@@ -116,7 +116,7 @@ See [docs/modules.md](docs/modules.md) for complete module guide.
 ## Documentation
 
 - **User Guide:** See `docs/` directory
-- **Examples:** See `examples/` directory (21 examples)
+- **Examples:** See `examples/` directory (30 examples)
 - **Changelog:** See [CHANGELOG.md](CHANGELOG.md)
 
 ---
@@ -173,7 +173,7 @@ for f in *.wyn; do ../wyn "$f" && ./"${f}.out"; done
 ```
 wyn/
 ├── src/           # Compiler source code
-├── examples/      # 21 example programs
+├── examples/      # 30 example programs
 ├── tests/         # Test suite
 ├── docs/          # User documentation
 ├── README.md      # This file

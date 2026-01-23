@@ -83,6 +83,10 @@ typedef struct {
 } MapType;
 
 typedef struct {
+    Type* element_type;  // The type of array elements (T in [T])
+} ArrayType;
+
+typedef struct {
     Type* inner_type;  // The type that is optional (T in T?)
 } OptionalType;
 
@@ -108,6 +112,7 @@ struct Type {
         StructType struct_type;
         FunctionType fn_type;
         MapType map_type;
+        ArrayType array_type;        // Array type with element tracking
         OptionalType optional_type;  // T2.5.1: Optional Type Implementation
         UnionType union_type;        // T2.5.2: Union Type Support
         ResultType result_type;      // TASK-026: Result<T,E> Type Implementation

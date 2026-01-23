@@ -798,10 +798,19 @@ Type* check_expr(Expr* expr, SymbolTable* scope) {
             }
             
             // Allow string concatenation with + operator
-            if (expr->binary.op.type == TOKEN_PLUS && 
-                left->kind == TYPE_STRING && right->kind == TYPE_STRING) {
-                expr->expr_type = builtin_string;
-                return builtin_string;
+            if (expr->binary.op.type == TOKEN_PLUS) {
+                // Allow string + string, string + int, int + string
+                bool left_is_string = (left->kind == TYPE_STRING);
+                bool right_is_string = (right->kind == TYPE_STRING);
+                bool left_is_int = (left->kind == TYPE_INT);
+                bool right_is_int = (right->kind == TYPE_INT);
+                
+                if ((left_is_string && right_is_string) ||
+                    (left_is_string && right_is_int) ||
+                    (left_is_int && right_is_string)) {
+                    expr->expr_type = builtin_string;
+                    return builtin_string;
+                }
             }
             
             if (left->kind != right->kind) {
@@ -991,6 +1000,18 @@ Type* check_expr(Expr* expr, SymbolTable* scope) {
                 check_expr(expr->method_call.args[i], scope);
             }
             
+            // Special handling for array.get() - return element type
+            if (object_type && object_type->kind == TYPE_ARRAY) {
+                Token method = expr->method_call.method;
+                if (method.length == 3 && memcmp(method.start, "get", 3) == 0) {
+                    // Return the element type if known
+                    if (object_type->array_type.element_type) {
+                        expr->expr_type = object_type->array_type.element_type;
+                        return object_type->array_type.element_type;
+                    }
+                }
+            }
+            
             // Use method signature table for type inference (Phase 1)
             const char* receiver_type = get_receiver_type_string(object_type);
             if (receiver_type) {
@@ -1041,8 +1062,11 @@ Type* check_expr(Expr* expr, SymbolTable* scope) {
                     }
                 }
                 
-                expr->expr_type = builtin_array;
-                return builtin_array;
+                // Create array type with element type tracking
+                Type* array_type = make_type(TYPE_ARRAY);
+                array_type->array_type.element_type = element_type;
+                expr->expr_type = array_type;
+                return array_type;
             }
             
             expr->expr_type = builtin_array;
@@ -2225,7 +2249,10 @@ void check_program(Program* prog) {
         file_list_dir_type->fn_type.param_count = 1;
         file_list_dir_type->fn_type.param_types = malloc(sizeof(Type*) * 1);
         file_list_dir_type->fn_type.param_types[0] = builtin_string;
-        file_list_dir_type->fn_type.return_type = builtin_array;
+        // Return type is array of strings
+        Type* string_array_list = make_type(TYPE_ARRAY);
+        string_array_list->array_type.element_type = builtin_string;
+        file_list_dir_type->fn_type.return_type = string_array_list;
         add_symbol(global_scope, file_list_dir_tok, file_list_dir_type, false);
         
         Token file_is_file_tok = {TOKEN_IDENT, "File::is_file", 13, 0};
@@ -2329,7 +2356,10 @@ void check_program(Program* prog) {
         Type* sys_args_type = make_type(TYPE_FUNCTION);
         sys_args_type->fn_type.param_count = 0;
         sys_args_type->fn_type.param_types = NULL;
-        sys_args_type->fn_type.return_type = builtin_array;
+        // Return type is array of strings
+        Type* string_array = make_type(TYPE_ARRAY);
+        string_array->array_type.element_type = builtin_string;
+        sys_args_type->fn_type.return_type = string_array;
         add_symbol(global_scope, sys_args_tok, sys_args_type, false);
         
         Token sys_env_tok = {TOKEN_IDENT, "System::env", 11, 0};
@@ -2555,23 +2585,44 @@ void check_program(Program* prog) {
             
             // Determine return type from function signature or infer from body
             fn_type->fn_type.return_type = builtin_int; // default
-            if (fn->return_type && fn->return_type->type == EXPR_IDENT) {
-                Token type_name = fn->return_type->token;
-                if (type_name.length == 3 && memcmp(type_name.start, "int", 3) == 0) {
-                    fn_type->fn_type.return_type = builtin_int;
-                } else if (type_name.length == 6 && memcmp(type_name.start, "string", 6) == 0) {
-                    fn_type->fn_type.return_type = builtin_string;
-                } else if (type_name.length == 5 && memcmp(type_name.start, "float", 5) == 0) {
-                    fn_type->fn_type.return_type = builtin_float;
-                } else if (type_name.length == 4 && memcmp(type_name.start, "bool", 4) == 0) {
-                    fn_type->fn_type.return_type = builtin_bool;
-                } else if (type_name.length == 5 && memcmp(type_name.start, "array", 5) == 0) {
-                    fn_type->fn_type.return_type = builtin_array;
-                } else {
-                    // Check if it's a user-defined type (struct or enum)
-                    Symbol* type_symbol = find_symbol(global_scope, type_name);
-                    if (type_symbol && type_symbol->type) {
-                        fn_type->fn_type.return_type = type_symbol->type;
+            if (fn->return_type) {
+                if (fn->return_type->type == EXPR_ARRAY) {
+                    // Array type like [int] or [string]
+                    Type* array_type = make_type(TYPE_ARRAY);
+                    if (fn->return_type->array.count > 0 && fn->return_type->array.elements[0]) {
+                        Expr* elem_type_expr = fn->return_type->array.elements[0];
+                        if (elem_type_expr->type == EXPR_IDENT) {
+                            Token elem_type_name = elem_type_expr->token;
+                            if (elem_type_name.length == 3 && memcmp(elem_type_name.start, "int", 3) == 0) {
+                                array_type->array_type.element_type = builtin_int;
+                            } else if (elem_type_name.length == 6 && memcmp(elem_type_name.start, "string", 6) == 0) {
+                                array_type->array_type.element_type = builtin_string;
+                            } else if (elem_type_name.length == 5 && memcmp(elem_type_name.start, "float", 5) == 0) {
+                                array_type->array_type.element_type = builtin_float;
+                            } else if (elem_type_name.length == 4 && memcmp(elem_type_name.start, "bool", 4) == 0) {
+                                array_type->array_type.element_type = builtin_bool;
+                            }
+                        }
+                    }
+                    fn_type->fn_type.return_type = array_type;
+                } else if (fn->return_type->type == EXPR_IDENT) {
+                    Token type_name = fn->return_type->token;
+                    if (type_name.length == 3 && memcmp(type_name.start, "int", 3) == 0) {
+                        fn_type->fn_type.return_type = builtin_int;
+                    } else if (type_name.length == 6 && memcmp(type_name.start, "string", 6) == 0) {
+                        fn_type->fn_type.return_type = builtin_string;
+                    } else if (type_name.length == 5 && memcmp(type_name.start, "float", 5) == 0) {
+                        fn_type->fn_type.return_type = builtin_float;
+                    } else if (type_name.length == 4 && memcmp(type_name.start, "bool", 4) == 0) {
+                        fn_type->fn_type.return_type = builtin_bool;
+                    } else if (type_name.length == 5 && memcmp(type_name.start, "array", 5) == 0) {
+                        fn_type->fn_type.return_type = builtin_array;
+                    } else {
+                        // Check if it's a user-defined type (struct or enum)
+                        Symbol* type_symbol = find_symbol(global_scope, type_name);
+                        if (type_symbol && type_symbol->type) {
+                            fn_type->fn_type.return_type = type_symbol->type;
+                        }
                     }
                 }
             }
@@ -2691,23 +2742,45 @@ void check_program(Program* prog) {
             
             // Set current function return type for return statement validation
             current_function_return_type = builtin_int; // default
-            if (fn->return_type && fn->return_type->type == EXPR_IDENT) {
-                Token type_name = fn->return_type->token;
-                if (type_name.length == 3 && memcmp(type_name.start, "int", 3) == 0) {
-                    current_function_return_type = builtin_int;
-                } else if (type_name.length == 6 && memcmp(type_name.start, "string", 6) == 0) {
-                    current_function_return_type = builtin_string;
-                } else if (type_name.length == 5 && memcmp(type_name.start, "float", 5) == 0) {
-                    current_function_return_type = builtin_float;
-                } else if (type_name.length == 4 && memcmp(type_name.start, "bool", 4) == 0) {
-                    current_function_return_type = builtin_bool;
-                } else if (type_name.length == 5 && memcmp(type_name.start, "array", 5) == 0) {
-                    current_function_return_type = builtin_array;
-                } else {
-                    // Check if it's a user-defined type (struct or enum)
-                    Symbol* type_symbol = find_symbol(global_scope, type_name);
-                    if (type_symbol && type_symbol->type) {
-                        current_function_return_type = type_symbol->type;
+            if (fn->return_type) {
+                if (fn->return_type->type == EXPR_ARRAY) {
+                    // Array type like [int] or [string]
+                    Type* array_type = make_type(TYPE_ARRAY);
+                    if (fn->return_type->array.count > 0 && fn->return_type->array.elements[0]) {
+                        // Get element type
+                        Expr* elem_type_expr = fn->return_type->array.elements[0];
+                        if (elem_type_expr->type == EXPR_IDENT) {
+                            Token elem_type_name = elem_type_expr->token;
+                            if (elem_type_name.length == 3 && memcmp(elem_type_name.start, "int", 3) == 0) {
+                                array_type->array_type.element_type = builtin_int;
+                            } else if (elem_type_name.length == 6 && memcmp(elem_type_name.start, "string", 6) == 0) {
+                                array_type->array_type.element_type = builtin_string;
+                            } else if (elem_type_name.length == 5 && memcmp(elem_type_name.start, "float", 5) == 0) {
+                                array_type->array_type.element_type = builtin_float;
+                            } else if (elem_type_name.length == 4 && memcmp(elem_type_name.start, "bool", 4) == 0) {
+                                array_type->array_type.element_type = builtin_bool;
+                            }
+                        }
+                    }
+                    current_function_return_type = array_type;
+                } else if (fn->return_type->type == EXPR_IDENT) {
+                    Token type_name = fn->return_type->token;
+                    if (type_name.length == 3 && memcmp(type_name.start, "int", 3) == 0) {
+                        current_function_return_type = builtin_int;
+                    } else if (type_name.length == 6 && memcmp(type_name.start, "string", 6) == 0) {
+                        current_function_return_type = builtin_string;
+                    } else if (type_name.length == 5 && memcmp(type_name.start, "float", 5) == 0) {
+                        current_function_return_type = builtin_float;
+                    } else if (type_name.length == 4 && memcmp(type_name.start, "bool", 4) == 0) {
+                        current_function_return_type = builtin_bool;
+                    } else if (type_name.length == 5 && memcmp(type_name.start, "array", 5) == 0) {
+                        current_function_return_type = builtin_array;
+                    } else {
+                        // Check if it's a user-defined type (struct or enum)
+                        Symbol* type_symbol = find_symbol(global_scope, type_name);
+                        if (type_symbol && type_symbol->type) {
+                            current_function_return_type = type_symbol->type;
+                        }
                     }
                 }
             }
@@ -2716,7 +2789,26 @@ void check_program(Program* prog) {
                 // Determine parameter type from type annotation
                 Type* param_type = builtin_int; // default
                 if (fn->param_types[j]) {
-                    if (fn->param_types[j]->type == EXPR_IDENT) {
+                    if (fn->param_types[j]->type == EXPR_ARRAY) {
+                        // Array type like [int] or [string]
+                        Type* array_type = make_type(TYPE_ARRAY);
+                        if (fn->param_types[j]->array.count > 0 && fn->param_types[j]->array.elements[0]) {
+                            Expr* elem_type_expr = fn->param_types[j]->array.elements[0];
+                            if (elem_type_expr->type == EXPR_IDENT) {
+                                Token elem_type_name = elem_type_expr->token;
+                                if (elem_type_name.length == 3 && memcmp(elem_type_name.start, "int", 3) == 0) {
+                                    array_type->array_type.element_type = builtin_int;
+                                } else if (elem_type_name.length == 6 && memcmp(elem_type_name.start, "string", 6) == 0) {
+                                    array_type->array_type.element_type = builtin_string;
+                                } else if (elem_type_name.length == 5 && memcmp(elem_type_name.start, "float", 5) == 0) {
+                                    array_type->array_type.element_type = builtin_float;
+                                } else if (elem_type_name.length == 4 && memcmp(elem_type_name.start, "bool", 4) == 0) {
+                                    array_type->array_type.element_type = builtin_bool;
+                                }
+                            }
+                        }
+                        param_type = array_type;
+                    } else if (fn->param_types[j]->type == EXPR_IDENT) {
                         Token type_name = fn->param_types[j]->token;
                         if (type_name.length == 3 && memcmp(type_name.start, "int", 3) == 0) {
                             param_type = builtin_int;
