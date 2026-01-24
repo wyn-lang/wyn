@@ -1,6 +1,15 @@
+#ifndef _WIN32
 #define _POSIX_C_SOURCE 200809L
+#define _DEFAULT_SOURCE
+#endif
 #include <stdlib.h>
+#include <string.h>
+#ifndef _WIN32
 #include <unistd.h>
+#else
+#include <windows.h>
+#define usleep(us) Sleep((us) / 1000)
+#endif
 #include "async_runtime.h"
 
 WynFuture* wyn_future_new(void) {

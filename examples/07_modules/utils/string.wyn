@@ -1,0 +1,14 @@
+// Nested module: utils/string.wyn
+// String utility functions
+
+pub fn uppercase(s: string) -> string {
+    return s.upper();
+}
+
+pub fn lowercase(s: string) -> string {
+    return s.lower();
+}
+
+pub fn length(s: string) -> int {
+    return s.len();
+}

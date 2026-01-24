@@ -11,9 +11,9 @@ fn main() -> int {
     var sum = add(5, 3);
     var product = multiply(4, 7);
     
-    print_str("Sum: ");
+    print("Sum: ");
     print(sum);
-    print_str("Product: ");
+    print("Product: ");
     print(product);
     
     return 0;

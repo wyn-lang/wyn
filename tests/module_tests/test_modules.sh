@@ -71,7 +71,7 @@ fn main() -> int {
 }
 EOF
 
-../../wyn /tmp/test_struct.wyn 2>&1
+../../wyn /tmp/test_struct.wyn 2>&1 >/dev/null
 if [ -f /tmp/test_struct.wyn.out ]; then
     /tmp/test_struct.wyn.out 2>/dev/null
     exit_code=$?

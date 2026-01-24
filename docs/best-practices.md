@@ -733,7 +733,7 @@ impl User {
 }
 
 // services/user_service.wyn
-use crate::models::User
+use root::models::User
 
 pub struct UserService {
     database: Database

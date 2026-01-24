@@ -14,9 +14,9 @@ fn main() -> int {
     var num = identity(42);
     var larger = max(10, 20);
     
-    print_str("Identity: ");
+    print("Identity: ");
     print(num);
-    print_str("Max: ");
+    print("Max: ");
     print(larger);
     
     return 0;

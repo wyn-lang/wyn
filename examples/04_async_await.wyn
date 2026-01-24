@@ -14,7 +14,7 @@ fn main() -> int {
     var future2 = process_data(data);
     var result = await future2;
     
-    print_str("Result: ");
+    print("Result: ");
     print(result);
     
     return 0;

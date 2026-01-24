@@ -1,0 +1,29 @@
+// Test existing File and System functions
+
+fn main() -> int {
+    // Test File::list_dir
+    var files = File::list_dir(".");
+    if files.len() == 0 {
+        return 1;
+    }
+    
+    // Test File::is_file
+    var is_f = File::is_file("Makefile");
+    if is_f == 0 {
+        return 2;
+    }
+    
+    // Test File::is_dir
+    var is_d = File::is_dir("src");
+    if is_d == 0 {
+        return 3;
+    }
+    
+    // Test System::args
+    var args = System::args();
+    if args.len() == 0 {
+        return 4;
+    }
+    
+    return 0;
+}

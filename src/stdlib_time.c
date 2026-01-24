@@ -1,7 +1,45 @@
+#ifndef _WIN32
 #define _POSIX_C_SOURCE 200809L
+#define _DEFAULT_SOURCE
+#endif
 #include <time.h>
+#include <string.h>
+#ifndef _WIN32
 #include <sys/time.h>
 #include <unistd.h>
+#else
+#include <windows.h>
+#define usleep(us) Sleep((us) / 1000)
+#define sleep(s) Sleep((s) * 1000)
+
+// Windows timeval struct (check if not already defined)
+#ifndef _TIMEVAL_DEFINED
+#define _TIMEVAL_DEFINED
+struct timeval {
+    long tv_sec;
+    long tv_usec;
+};
+#endif
+
+// Windows gettimeofday implementation
+static int gettimeofday(struct timeval *tv, void *tz) {
+    (void)tz;
+    FILETIME ft;
+    unsigned long long tmpres = 0;
+    
+    GetSystemTimeAsFileTime(&ft);
+    tmpres |= ft.dwHighDateTime;
+    tmpres <<= 32;
+    tmpres |= ft.dwLowDateTime;
+    
+    tmpres /= 10;  // Convert to microseconds
+    tmpres -= 11644473600000000ULL;  // Convert from Windows epoch to Unix epoch
+    
+    tv->tv_sec = (long)(tmpres / 1000000UL);
+    tv->tv_usec = (long)(tmpres % 1000000UL);
+    return 0;
+}
+#endif
 #include <stdio.h>
 #include <string.h>
 

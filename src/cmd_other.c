@@ -1,11 +1,18 @@
+#define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #ifndef _WIN32
 #include <sys/wait.h>  // For WEXITSTATUS
+#include <unistd.h>    // For sleep, readlink
+#ifdef __APPLE__
+#include <mach-o/dyld.h>  // For _NSGetExecutablePath
+#endif
 #else
 #define WEXITSTATUS(x) (x)
+#include <windows.h>   // For Sleep, GetModuleFileNameA
+#include <direct.h>    // For _mkdir
 #endif
 
 // Forward declarations
@@ -452,13 +459,155 @@ int cmd_debug(const char* program, int argc, char** argv) {
 }
 
 int cmd_init(const char* name, int argc, char** argv) {
+    (void)argc; (void)argv;  // Unused
+    
     if (!name) {
         fprintf(stderr, "Usage: wyn init <project-name>\n");
         return 1;
     }
+    
+    // Create project directory
+    #ifdef _WIN32
+    if (_mkdir(name) != 0) {
+    #else
+    if (mkdir(name, 0755) != 0) {
+    #endif
+        fprintf(stderr, "Error: Could not create directory '%s'\n", name);
+        return 1;
+    }
+    
     printf("Initializing project '%s'...\n", name);
-    printf("Created wyn.toml\n");
-    printf("Created src/main.wyn\n");
+    
+    // Create wyn.toml
+    char toml_path[512];
+    snprintf(toml_path, sizeof(toml_path), "%s/wyn.toml", name);
+    FILE* toml = fopen(toml_path, "w");
+    if (!toml) {
+        fprintf(stderr, "Error: Could not create wyn.toml\n");
+        return 1;
+    }
+    fprintf(toml, "[project]\n");
+    fprintf(toml, "name = \"%s\"\n", name);
+    fprintf(toml, "version = \"0.1.0\"\n");
+    fprintf(toml, "entry = \"main.wyn\"\n");
+    fprintf(toml, "\n[dependencies]\n");
+    fprintf(toml, "# Add dependencies here\n");
+    fclose(toml);
+    printf("  Created wyn.toml\n");
+    
+    // Create main.wyn
+    char main_path[512];
+    snprintf(main_path, sizeof(main_path), "%s/main.wyn", name);
+    FILE* main_file = fopen(main_path, "w");
+    if (!main_file) {
+        fprintf(stderr, "Error: Could not create main.wyn\n");
+        return 1;
+    }
+    fprintf(main_file, "// %s - A Wyn project\n\n", name);
+    fprintf(main_file, "fn main() {\n");
+    fprintf(main_file, "    print(\"Hello from %s!\");\n", name);
+    fprintf(main_file, "}\n");
+    fclose(main_file);
+    printf("  Created main.wyn\n");
+    
+    // Create README.md
+    char readme_path[512];
+    snprintf(readme_path, sizeof(readme_path), "%s/README.md", name);
+    FILE* readme = fopen(readme_path, "w");
+    if (readme) {
+        fprintf(readme, "# %s\n\n", name);
+        fprintf(readme, "A Wyn project.\n\n");
+        fprintf(readme, "## Build\n\n");
+        fprintf(readme, "```bash\n");
+        fprintf(readme, "wyn run main.wyn\n");
+        fprintf(readme, "```\n");
+        fclose(readme);
+        printf("  Created README.md\n");
+    }
+    
+    printf("\n✓ Project '%s' initialized successfully!\n", name);
+    printf("\nNext steps:\n");
+    printf("  cd %s\n", name);
+    printf("  wyn run main.wyn\n");
+    
+    return 0;
+}
+
+int cmd_watch(const char* file, int argc, char** argv) {
+    (void)argc; (void)argv;  // Unused
+    
+    if (!file) {
+        fprintf(stderr, "Usage: wyn watch <file.wyn>\n");
+        return 1;
+    }
+    
+    // Get current executable path
+    char exe_path[2048];
+    #ifdef __APPLE__
+    uint32_t size = sizeof(exe_path);
+    if (_NSGetExecutablePath(exe_path, &size) != 0) {
+        fprintf(stderr, "Error: Could not determine executable path\n");
+        return 1;
+    }
+    #elif defined(__linux__)
+    ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
+    if (len == -1) {
+        fprintf(stderr, "Error: Could not determine executable path\n");
+        return 1;
+    }
+    exe_path[len] = '\0';
+    #elif defined(_WIN32)
+    if (GetModuleFileNameA(NULL, exe_path, sizeof(exe_path)) == 0) {
+        fprintf(stderr, "Error: Could not determine executable path\n");
+        return 1;
+    }
+    #else
+    strcpy(exe_path, "wyn");  // Fallback
+    #endif
+    
+    printf("Watching %s for changes (Ctrl+C to stop)...\n", file);
+    
+    // Initial build
+    printf("\n[%s] Building...\n", file);
+    char cmd[4096];
+    snprintf(cmd, sizeof(cmd), "%s run %s 2>&1", exe_path, file);
+    int result = system(cmd);
+    if (result == 0) {
+        printf("[%s] ✓ Build successful\n", file);
+    } else {
+        printf("[%s] ✗ Build failed\n", file);
+    }
+    
+    // Watch for changes
+    struct stat last_stat;
+    if (stat(file, &last_stat) != 0) {
+        fprintf(stderr, "Error: Could not stat file '%s'\n", file);
+        return 1;
+    }
+    
+    while (1) {
+        // Sleep for 1 second
+        #ifdef _WIN32
+        Sleep(1000);
+        #else
+        sleep(1);
+        #endif
+        
+        struct stat current_stat;
+        if (stat(file, &current_stat) != 0) continue;
+        
+        if (current_stat.st_mtime > last_stat.st_mtime) {
+            last_stat = current_stat;
+            printf("\n[%s] File changed, rebuilding...\n", file);
+            result = system(cmd);
+            if (result == 0) {
+                printf("[%s] ✓ Build successful\n", file);
+            } else {
+                printf("[%s] ✗ Build failed\n", file);
+            }
+        }
+    }
+    
     return 0;
 }
 

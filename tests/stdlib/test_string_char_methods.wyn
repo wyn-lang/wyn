@@ -1,0 +1,52 @@
+// Test string character classification methods
+
+fn main() -> int {
+    // Test is_alpha
+    var alpha = "hello";
+    var not_alpha = "hello123";
+    if alpha.is_alpha() == 0 {
+        return 1;
+    }
+    if not_alpha.is_alpha() == 1 {
+        return 2;
+    }
+    
+    // Test is_digit
+    var digit = "12345";
+    var not_digit = "123a";
+    if digit.is_digit() == 0 {
+        return 3;
+    }
+    if not_digit.is_digit() == 1 {
+        return 4;
+    }
+    
+    // Test is_alnum
+    var alnum = "hello123";
+    var not_alnum = "hello 123";
+    if alnum.is_alnum() == 0 {
+        return 5;
+    }
+    if not_alnum.is_alnum() == 1 {
+        return 6;
+    }
+    
+    // Test is_whitespace
+    var ws = "   ";
+    var not_ws = " a ";
+    if ws.is_whitespace() == 0 {
+        return 7;
+    }
+    if not_ws.is_whitespace() == 1 {
+        return 8;
+    }
+    
+    // Test char_at
+    var str = "hello";
+    var ch = str.char_at(1);
+    if ch.len() != 1 {
+        return 9;
+    }
+    
+    return 0;
+}

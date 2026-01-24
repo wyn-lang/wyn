@@ -39,7 +39,7 @@ fn main() -> int {
 42.abs()              // Methods on integers
 "hello".upper()       // Methods on strings
 [1,2,3].len()         // Methods on arrays
-{"a": 1}.get("a")     // Methods on hashmaps
+{"a": 1}["a"]         // HashMap indexing
 ```
 
 ### Clean Collection Syntax
@@ -59,14 +59,15 @@ const immutable = 20;  // Immutable
 
 ### Core Features
 
+- **Module system:** Nested modules with visibility control
 - **Type aliases:** `type UserId = int`
 - **Extension methods:** `impl Point { fn sum(self) -> int }`
-- **String interpolation:** `"Hello {name}!"`
+- **String interpolation:** `"Hello ${name}!"`
 - **Pattern matching:** Exhaustive enum matching
 - **Generics:** `Option<T>`, `Result<T, E>`
 - **Async/await:** Future-based concurrency
 - **Memory safety:** Automatic Reference Counting (ARC)
-- **150+ methods:** Across all primitive and collection types
+- **100+ methods:** Comprehensive standard library
 
 ---
 
@@ -82,7 +83,7 @@ fn main() -> int {
     // Everything is an object - use method syntax
     var len = numbers.len();
     var has_three = numbers.contains(3);
-    var alice_score = scores.get("alice");
+    var alice_score = scores["alice"];
     
     print(alice_score);  // 95
     
@@ -90,12 +91,32 @@ fn main() -> int {
 }
 ```
 
+### Module System
+
+```wyn
+// utils/math.wyn
+pub fn add(a: int, b: int) -> int {
+    return a + b;
+}
+
+// main.wyn
+import utils.math
+
+fn main() -> int {
+    var sum = math::add(1, 2);  // Short name
+    print(sum);
+    return 0;
+}
+```
+
+See [docs/modules.md](docs/modules.md) for complete module guide.
+
 ---
 
 ## Documentation
 
 - **User Guide:** See `docs/` directory
-- **Examples:** See `examples/` directory (21 examples)
+- **Examples:** See `examples/` directory (30 examples)
 - **Changelog:** See [CHANGELOG.md](CHANGELOG.md)
 
 ---
@@ -104,7 +125,16 @@ fn main() -> int {
 
 See [CHANGELOG.md](CHANGELOG.md) for version history and release notes.
 
-### Latest Features
+### Latest Features (v1.4.0)
+
+- **Module system** - Nested modules, visibility control, relative imports
+- **Polymorphic print()** - Single print function for all types
+- **HashMap indexing** - `map["key"]` syntax for get/set
+- **HashMap Methods:** `.has()`, `.remove()`, `.len()` and `map["key"]` indexing
+- **HashSet methods** - `.add()`, `.contains()`, `.remove()`, `.len()`
+- **Consistent OO syntax** - All examples and docs use method-first approach
+
+### Previous Features
 
 - HashMap multi-type support (int, float, string, bool)
 - HashSet initialization syntax: `{:"item1", "item2"}`
@@ -138,12 +168,51 @@ for f in *.wyn; do ../wyn "$f" && ./"${f}.out"; done
 
 ---
 
+## Developer Tools (v1.4.0)
+
+### Project Management
+
+```bash
+# Create new project
+wyn init my-app
+
+# Auto-rebuild on changes
+wyn watch main.wyn
+
+# Install dependencies
+wyn install
+
+# Package management
+wyn pkg list
+```
+
+### Project Configuration (wyn.toml)
+
+```toml
+[project]
+name = "my-app"
+version = "1.0.0"
+entry = "main.wyn"
+
+[dependencies]
+# Add package dependencies here
+```
+
+### Language Server
+
+```bash
+# Start LSP server for IDE integration
+wyn lsp
+```
+
+---
+
 ## Project Structure
 
 ```
 wyn/
 ├── src/           # Compiler source code
-├── examples/      # 21 example programs
+├── examples/      # 30 example programs
 ├── tests/         # Test suite
 ├── docs/          # User documentation
 ├── README.md      # This file

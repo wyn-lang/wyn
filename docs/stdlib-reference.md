@@ -1,736 +1,850 @@
-# Wyn Standard Library Reference
+# Wyn Standard Library Reference v1.4.0
 
-![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)
-**Latest: v1.2.2**
+**Version:** 1.4.0  
+**Date:** 2026-01-21
 
-Complete reference for all standard library functions and methods available in Wyn.
+Complete reference for Wyn's standard library with object-oriented API.
+
+---
+
+## Philosophy
+
+**Everything is an object.** All operations use method syntax (`.method()`) or module functions (`Module::function()`).
+
+---
 
 ## Table of Contents
 
 1. [I/O Functions](#io-functions)
-2. [String Functions](#string-functions)
-3. [Math Functions](#math-functions)
-4. [Collections](#collections)
-5. [File Operations](#file-operations)
-6. [JSON](#json)
-7. [Concurrency](#concurrency)
-8. [Async](#async)
-9. [Utility Functions](#utility-functions)
-
-## I/O Functions
-
-### Console Output
-
-#### `print(value: int)`
-Prints an integer followed by newline.
-```wyn
-print(42);  // Output: 42
-```
-
-#### `print_str(text: string)`
-Prints a string followed by newline.
-```wyn
-print_str("Hello");  // Output: Hello
-```
-
-#### `print_float(value: float)`
-Prints a floating point number followed by newline.
-```wyn
-print_float(3.14);  // Output: 3.14
-```
-
-#### `print_bool(value: bool)`
-Prints a boolean value.
-```wyn
-print_bool(true);   // Output: true
-print_bool(false);  // Output: false
-```
-
-### Console Input
-
-#### `input() -> int`
-Reads an integer from standard input.
-```wyn
-print_str("Enter a number: ");
-let num = input();
-print(num);
-```
-
-#### `input_str() -> string`
-Reads a string from standard input.
-```wyn
-print_str("Enter your name: ");
-let name = input_str();
-print_str(name);
-```
-
-## String Functions
-
-### Basic String Operations
-
-#### `str_len(s: string) -> int`
-Returns the length of a string.
-```wyn
-let len = str_len("hello");  // Returns 5
-```
-
-#### `str_concat(a: string, b: string) -> string`
-Concatenates two strings.
-```wyn
-let result = str_concat("Hello", " World");  // "Hello World"
-```
-
-#### `str_eq(a: string, b: string) -> bool`
-Compares two strings for equality.
-```wyn
-if str_eq(name, "Alice") {
-    print_str("Found Alice");
-}
-```
-
-### String Manipulation
-
-#### `str_upper(s: string) -> string`
-Converts string to uppercase.
-```wyn
-let upper = str_upper("hello");  // "HELLO"
-```
-
-#### `str_lower(s: string) -> string`
-Converts string to lowercase.
-```wyn
-let lower = str_lower("HELLO");  // "hello"
-```
-
-#### `str_trim(s: string) -> string`
-Removes whitespace from both ends.
-```wyn
-let trimmed = str_trim("  hello  ");  // "hello"
-```
-
-#### `str_split(s: string, delimiter: string) -> array<string>`
-Splits string by delimiter.
-```wyn
-let parts = str_split("a,b,c", ",");  // ["a", "b", "c"]
-```
-
-#### `str_substring(s: string, start: int, length: int) -> string`
-Extracts substring.
-```wyn
-let sub = str_substring("hello", 1, 3);  // "ell"
-```
-
-### String Queries
-
-#### `str_contains(s: string, substring: string) -> bool`
-Checks if string contains substring.
-```wyn
-if str_contains("hello world", "world") {
-    print_str("Found 'world'");
-}
-```
-
-#### `str_starts_with(s: string, prefix: string) -> bool`
-Checks if string starts with prefix.
-```wyn
-if str_starts_with("hello", "he") {
-    print_str("Starts with 'he'");
-}
-```
-
-#### `str_ends_with(s: string, suffix: string) -> bool`
-Checks if string ends with suffix.
-```wyn
-if str_ends_with("hello", "lo") {
-    print_str("Ends with 'lo'");
-}
-```
-
-## Math Functions
-
-### Basic Math
-
-#### `abs_val(x: int) -> int`
-Returns absolute value of integer.
-```wyn
-let result = abs_val(-5);  // Returns 5
-```
-
-#### `abs_float(x: float) -> float`
-Returns absolute value of float.
-```wyn
-let result = abs_float(-3.14);  // Returns 3.14
-```
-
-#### `min(a: int, b: int) -> int`
-Returns minimum of two integers.
-```wyn
-let smaller = min(10, 20);  // Returns 10
-```
-
-#### `max(a: int, b: int) -> int`
-Returns maximum of two integers.
-```wyn
-let larger = max(10, 20);  // Returns 20
-```
-
-### Power and Roots
-
-#### `pow_int(base: int, exp: int) -> int`
-Raises integer base to integer power.
-```wyn
-let result = pow_int(2, 3);  // Returns 8
-```
-
-#### `pow_float(base: float, exp: float) -> float`
-Raises float base to float power.
-```wyn
-let result = pow_float(2.0, 3.0);  // Returns 8.0
-```
-
-#### `sqrt(x: float) -> float`
-Returns square root.
-```wyn
-let result = sqrt(16.0);  // Returns 4.0
-```
-
-### Trigonometry
-
-#### `sin(x: float) -> float`
-Returns sine of x (in radians).
-```wyn
-let result = sin(3.14159 / 2);  // Returns ~1.0
-```
-
-#### `cos(x: float) -> float`
-Returns cosine of x (in radians).
-```wyn
-let result = cos(0.0);  // Returns 1.0
-```
-
-#### `tan(x: float) -> float`
-Returns tangent of x (in radians).
-```wyn
-let result = tan(0.0);  // Returns 0.0
-```
-
-## Collections
-
-### HashMap
-
-Hash maps provide key-value storage with string keys.
-
-#### `hashmap_new() -> WynHashMap*`
-Creates a new hash map.
-```wyn
-let map = hashmap_new();
-```
-
-#### `hashmap_insert(map: WynHashMap*, key: string, value: int)`
-Inserts a key-value pair.
-```wyn
-hashmap_insert(map, "age", 25);
-hashmap_insert(map, "score", 100);
-```
-
-#### `hashmap_get(map: WynHashMap*, key: string) -> int`
-Gets a value by key. Returns -1 if not found.
-```wyn
-let age = hashmap_get(map, "age");
-if age != -1 {
-    print(age);
-}
-```
-
-#### `hashmap_has(map: WynHashMap*, key: string) -> bool`
-Checks if key exists in map.
-```wyn
-if hashmap_has(map, "age") {
-    print_str("Age is set");
-}
-```
-
-#### `hashmap_remove(map: WynHashMap*, key: string)`
-Removes a key-value pair.
-```wyn
-hashmap_remove(map, "age");
-```
-
-#### `hashmap_size(map: WynHashMap*) -> int`
-Returns number of key-value pairs.
-```wyn
-let count = hashmap_size(map);
-print(count);
-```
-
-#### `hashmap_free(map: WynHashMap*)`
-Frees the hash map memory.
-```wyn
-hashmap_free(map);
-```
-
-### HashSet
-
-Hash sets provide unique string storage.
-
-#### `hashset_new() -> WynHashSet*`
-Creates a new hash set.
-```wyn
-let set = hashset_new();
-```
-
-#### `hashset_add(set: WynHashSet*, key: string)`
-Adds an element to the set.
-```wyn
-hashset_add(set, "apple");
-hashset_add(set, "banana");
-```
-
-#### `hashset_contains(set: WynHashSet*, key: string) -> int`
-Checks if element exists. Returns 1 if found, 0 otherwise.
-```wyn
-if hashset_contains(set, "apple") == 1 {
-    print_str("Found apple");
-}
-```
-
-#### `hashset_remove(set: WynHashSet*, key: string)`
-Removes an element from the set.
-```wyn
-hashset_remove(set, "apple");
-```
-
-#### `hashset_size(set: WynHashSet*) -> int`
-Returns number of elements in set.
-```wyn
-let count = hashset_size(set);
-print(count);
-```
-
-#### `hashset_free(set: WynHashSet*)`
-Frees the hash set memory.
-```wyn
-hashset_free(set);
-```
-
-### Arrays
-
-#### `array_len(arr: array<T>) -> int`
-Returns array length.
-```wyn
-let numbers = [1, 2, 3, 4, 5];
-let len = array_len(numbers);  // Returns 5
-```
-
-#### `array_get(arr: array<T>, index: int) -> T`
-Gets element at index.
-```wyn
-let first = array_get(numbers, 0);  // Returns 1
-```
-
-#### `array_set(arr: array<T>, index: int, value: T)`
-Sets element at index.
-```wyn
-array_set(numbers, 0, 10);  // numbers[0] = 10
-```
-
-## File Operations
-
-### File I/O
-
-#### `file_read(path: string) -> string`
-Reads entire file contents as string.
-```wyn
-let content = file_read("/tmp/data.txt");
-if str_len(content) > 0 {
-    print_str("File loaded successfully");
-}
-```
-
-#### `file_write(path: string, content: string) -> int`
-Writes content to file. Returns 1 on success, 0 on failure.
-```wyn
-let success = file_write("/tmp/output.txt", "Hello World");
-if success == 1 {
-    print_str("File written successfully");
-}
-```
-
-#### `file_append(path: string, content: string) -> int`
-Appends content to file. Returns 1 on success, 0 on failure.
-```wyn
-file_append("/tmp/log.txt", "New entry\n");
-```
-
-### File System
-
-#### `file_exists(path: string) -> int`
-Checks if file exists. Returns 1 if exists, 0 otherwise.
-```wyn
-if file_exists("/tmp/config.txt") == 1 {
-    let config = file_read("/tmp/config.txt");
-    // Process config...
-}
-```
-
-#### `file_size(path: string) -> int`
-Returns file size in bytes. Returns -1 if file doesn't exist.
-```wyn
-let size = file_size("/tmp/data.txt");
-if size > 0 {
-    print(size);
-}
-```
-
-#### `file_delete(path: string) -> int`
-Deletes file. Returns 1 on success, 0 on failure.
-```wyn
-let deleted = file_delete("/tmp/temp.txt");
-if deleted == 1 {
-    print_str("File deleted");
-}
-```
-
-## JSON
-
-### JSON Parsing
-
-#### `json_parse(text: string) -> WynJson*`
-Parses JSON string into object.
-```wyn
-let json_text = "{\"name\":\"Alice\",\"age\":30}";
-let json = json_parse(json_text);
-```
-
-#### `json_get_string(json: WynJson*, key: string) -> string`
-Gets string value from JSON object.
-```wyn
-let name = json_get_string(json, "name");  // "Alice"
-```
-
-#### `json_get_int(json: WynJson*, key: string) -> int`
-Gets integer value from JSON object.
-```wyn
-let age = json_get_int(json, "age");  // 30
-```
-
-#### `json_get_float(json: WynJson*, key: string) -> float`
-Gets float value from JSON object.
-```wyn
-let score = json_get_float(json, "score");
-```
-
-#### `json_get_bool(json: WynJson*, key: string) -> bool`
-Gets boolean value from JSON object.
-```wyn
-let active = json_get_bool(json, "active");
-```
-
-#### `json_has_key(json: WynJson*, key: string) -> bool`
-Checks if JSON object has key.
-```wyn
-if json_has_key(json, "email") {
-    let email = json_get_string(json, "email");
-}
-```
-
-#### `json_free(json: WynJson*)`
-Frees JSON object memory.
-```wyn
-json_free(json);
-```
-
-## Concurrency
-
-### Threading
-
-#### `spawn(fn: function) -> thread`
-Spawns a new thread to execute function.
-```wyn
-fn worker() -> int {
-    print_str("Worker thread running");
-    return 42;
-}
-
-let thread = spawn(worker);
-```
-
-#### `thread_join(thread: thread) -> int`
-Waits for thread to complete and returns result.
-```wyn
-let result = thread_join(thread);
-print(result);  // 42
-```
-
-### Channels
-
-#### `channel_new() -> Channel`
-Creates a new channel for thread communication.
-```wyn
-let ch = channel_new();
-```
-
-#### `channel_send(ch: Channel, value: int)`
-Sends value through channel.
-```wyn
-channel_send(ch, 42);
-```
-
-#### `channel_recv(ch: Channel) -> int`
-Receives value from channel (blocks until available).
-```wyn
-let value = channel_recv(ch);
-print(value);
-```
-
-## Async
-
-### Async Functions
-
-#### `async fn`
-Declares an asynchronous function that returns a Future.
-```wyn
-async fn fetch_data() -> int {
-    // Simulate async work
-    return 42;
-}
-```
-
-#### `await`
-Waits for async operation to complete and returns result.
-```wyn
-fn main() -> int {
-    let future = fetch_data();
-    let result = await future;
-    return result;
-}
-```
-
-### Future Combinators
-
-#### `future_map<T, U>(future: Future<T>, fn: T -> U) -> Future<U>`
-Transforms future result.
-```wyn
-let future = fetch_data();
-let mapped = future_map(future, |x| x * 2);
-let result = await mapped;  // 84
-```
-
-#### `future_then<T, U>(future: Future<T>, fn: T -> Future<U>) -> Future<U>`
-Chains futures together.
-```wyn
-let future1 = fetch_data();
-let future2 = future_then(future1, |x| fetch_more_data(x));
-let result = await future2;
-```
-
-## Utility Functions
-
-### Assertions and Testing
-
-#### `assert_eq(a: int, b: int)`
-Asserts two integers are equal. Panics if not.
-```wyn
-let result = add(2, 3);
-assert_eq(result, 5);  // Passes
-```
-
-#### `assert_eq_str(a: string, b: string)`
-Asserts two strings are equal.
-```wyn
-let result = str_upper("hello");
-assert_eq_str(result, "HELLO");
-```
-
-#### `assert_true(condition: bool)`
-Asserts condition is true.
-```wyn
-assert_true(5 > 3);  // Passes
-```
-
-#### `assert_false(condition: bool)`
-Asserts condition is false.
-```wyn
-assert_false(3 > 5);  // Passes
-```
-
-### Program Control
-
-#### `panic(message: string)`
-Terminates program with error message.
-```wyn
-if critical_error {
-    panic("Critical error occurred");
-}
-```
-
-#### `exit_program(code: int)`
-Exits program with status code.
-```wyn
-if success {
-    exit_program(0);  // Success
-} else {
-    exit_program(1);  // Error
-}
-```
-
-### Memory and Performance
-
-#### `gc_collect()`
-Forces garbage collection (for debugging).
-```wyn
-// Create lots of objects...
-gc_collect();  // Clean up
-```
-
-#### `memory_usage() -> int`
-Returns current memory usage in bytes.
-```wyn
-let usage = memory_usage();
-print(usage);
-```
-
-#### `benchmark_start() -> int`
-Starts timing benchmark.
-```wyn
-let start = benchmark_start();
-// ... code to benchmark ...
-let elapsed = benchmark_end(start);
-```
-
-#### `benchmark_end(start: int) -> int`
-Ends timing benchmark and returns elapsed microseconds.
-```wyn
-print(elapsed);  // Microseconds elapsed
-```
-
-## Type Conversion
-
-### String Conversions
-
-#### `int_to_string(x: int) -> string`
-Converts integer to string.
-```wyn
-let text = int_to_string(42);  // "42"
-```
-
-#### `float_to_string(x: float) -> string`
-Converts float to string.
-```wyn
-let text = float_to_string(3.14);  // "3.14"
-```
-
-#### `bool_to_string(x: bool) -> string`
-Converts boolean to string.
-```wyn
-let text = bool_to_string(true);  // "true"
-```
-
-### Numeric Conversions
-
-#### `string_to_int(s: string) -> int`
-Converts string to integer. Returns 0 if invalid.
-```wyn
-let num = string_to_int("42");  // 42
-```
-
-#### `string_to_float(s: string) -> float`
-Converts string to float. Returns 0.0 if invalid.
-```wyn
-let num = string_to_float("3.14");  // 3.14
-```
-
-#### `int_to_float(x: int) -> float`
-Converts integer to float.
-```wyn
-let f = int_to_float(42);  // 42.0
-```
-
-#### `float_to_int(x: float) -> int`
-Converts float to integer (truncates).
-```wyn
-let i = float_to_int(3.14);  // 3
-```
-
-## Error Handling
-
-### Result Type
-
-#### `Ok<T>(value: T) -> Result<T, E>`
-Creates successful result.
-```wyn
-fn divide(a: int, b: int) -> Result<int, string> {
-    if b == 0 {
-        return Err("Division by zero");
-    }
-    return Ok(a / b);
-}
-```
-
-#### `Err<E>(error: E) -> Result<T, E>`
-Creates error result.
-```wyn
-return Err("Something went wrong");
-```
-
-#### `result_is_ok<T, E>(result: Result<T, E>) -> bool`
-Checks if result is Ok.
-```wyn
-let result = divide(10, 2);
-if result_is_ok(result) {
-    let value = result_unwrap(result);
-    print(value);
-}
-```
-
-#### `result_unwrap<T, E>(result: Result<T, E>) -> T`
-Extracts value from Ok result. Panics if Err.
-```wyn
-let value = result_unwrap(result);
-```
-
-### Optional Type
-
-#### `Some<T>(value: T) -> Optional<T>`
-Creates optional with value.
-```wyn
-fn find_user(id: int) -> Optional<string> {
-    if id == 1 {
-        return Some("Alice");
-    }
-    return None();
-}
-```
-
-#### `None<T>() -> Optional<T>`
-Creates empty optional.
-```wyn
-return None();
-```
-
-#### `option_is_some<T>(opt: Optional<T>) -> bool`
-Checks if optional has value.
-```wyn
-let user = find_user(1);
-if option_is_some(user) {
-    let name = option_unwrap(user);
-    print_str(name);
-}
-```
-
-#### `option_unwrap<T>(opt: Optional<T>) -> T`
-Extracts value from Some. Panics if None.
-```wyn
-let name = option_unwrap(user);
-```
-
-## See Also
-
-- [**Language Guide**](language-guide.md) - Complete language syntax reference
-- [**Getting Started**](getting-started.md) - Installation and first steps
-- [**Examples**](examples.md) - Code examples and tutorials
-- [**FAQ**](faq.md) - Common questions and troubleshooting
+2. [String Methods](#string-methods)
+3. [Array Methods](#array-methods)
+4. [Number Methods](#number-methods)
+5. [HashMap Operations](#hashmap-operations)
+6. [HashSet Operations](#hashset-operations)
+7. [File Module](#file-module)
+8. [System Module](#system-module)
+9. [Time Module](#time-module)
 
 ---
 
-*This reference covers Wyn v1.2.2. For the latest updates, see the [GitHub repository](https://github.com/wyn-lang/wyn).*
+## I/O Functions
+
+### `print(value: any)`
+Polymorphic print function that prints any value followed by newline.
+
+```wyn
+print(42);              // 42
+print(3.14);            // 3.14
+print("Hello");         // Hello
+print(true);            // true
+print([1, 2, 3]);       // [1, 2, 3]
+```
+
+**String Interpolation:**
+```wyn
+var name = "Alice";
+var age = 25;
+print("${name} is ${age} years old");
+// Output: Alice is 25 years old
+```
+
+### `println()`
+Prints a blank line (no arguments).
+
+```wyn
+println();  // Prints: \n
+```
+
+### `input() -> int`
+Reads an integer from standard input.
+
+```wyn
+var num = input();
+```
+
+---
+
+## String Methods
+
+All string operations use method syntax on string values.
+
+### Length & Checks
+
+#### `.len() -> int`
+Returns string length.
+```wyn
+var len = "hello".len();  // 5
+```
+
+#### `.is_empty() -> bool`
+Checks if string is empty.
+```wyn
+if text.is_empty() { }
+```
+
+### Case Conversion
+
+#### `.upper() -> string`
+Converts to uppercase.
+```wyn
+var upper = "hello".upper();  // "HELLO"
+```
+
+#### `.lower() -> string`
+Converts to lowercase.
+```wyn
+var lower = "HELLO".lower();  // "hello"
+```
+
+#### `.capitalize() -> string`
+Capitalizes first letter.
+```wyn
+var cap = "john".capitalize();  // "John"
+```
+
+### Trimming
+
+#### `.trim() -> string`
+Removes leading/trailing whitespace.
+```wyn
+var clean = "  hello  ".trim();  // "hello"
+```
+
+#### `.trim_left() -> string`
+Removes leading whitespace.
+
+#### `.trim_right() -> string`
+Removes trailing whitespace.
+
+### Searching
+
+#### `.contains(substr: string) -> bool`
+Checks if string contains substring.
+```wyn
+if email.contains("@") { }
+```
+
+#### `.starts_with(prefix: string) -> bool`
+Checks if string starts with prefix.
+```wyn
+if filename.starts_with("test") { }
+```
+
+#### `.ends_with(suffix: string) -> bool`
+Checks if string ends with suffix.
+```wyn
+if filename.ends_with(".wyn") { }
+```
+
+#### `.index_of(substr: string) -> int`
+Returns index of first occurrence (-1 if not found).
+```wyn
+var pos = text.index_of("hello");
+```
+
+#### `.last_index_of(substr: string) -> int`
+Returns index of last occurrence.
+
+### Manipulation
+
+#### `.concat(other: string) -> string`
+Concatenates strings.
+```wyn
+var result = "Hello".concat(" World");  // "Hello World"
+```
+
+#### `.replace(old: string, new: string) -> string`
+Replaces first occurrence.
+```wyn
+var fixed = text.replace("foo", "bar");
+```
+
+#### `.replace_all(old: string, new: string) -> string`
+Replaces all occurrences.
+```wyn
+var fixed = text.replace_all("foo", "bar");
+```
+
+#### `.repeat(count: int) -> string`
+Repeats string n times.
+```wyn
+var stars = "*".repeat(5);  // "*****"
+```
+
+#### `.reverse() -> string`
+Reverses string.
+```wyn
+var rev = "hello".reverse();  // "olleh"
+```
+
+### Extraction
+
+#### `.slice(start: int, end: int) -> string`
+Extracts substring.
+```wyn
+var sub = "hello".slice(0, 3);  // "hel"
+```
+
+#### `.substring(start: int, end: int) -> string`
+Alias for slice.
+
+#### `.split(delimiter: string) -> array<string>`
+Splits string into array.
+```wyn
+var parts = "a,b,c".split(",");  // ["a", "b", "c"]
+```
+
+#### `.chars() -> array<string>`
+Splits into character array.
+
+#### `.lines() -> array<string>`
+Splits into lines.
+
+#### `.words() -> array<string>`
+Splits into words.
+
+### Character Checks
+
+#### `.is_alpha() -> bool`
+Checks if all characters are alphabetic.
+
+#### `.is_digit() -> bool`
+Checks if all characters are digits.
+
+#### `.is_alnum() -> bool`
+Checks if all characters are alphanumeric.
+
+#### `.is_whitespace() -> bool`
+Checks if all characters are whitespace.
+
+#### `.char_at(index: int) -> string`
+Returns character at index as a string.
+```wyn
+var ch = "hello".char_at(1);  // "e"
+```
+
+#### `.equals(other: string) -> bool`
+Compares two strings for equality.
+```wyn
+if name.equals("Alice") == 1 {
+    print("Hello Alice!");
+}
+```
+
+#### `.count(substring: string) -> int`
+Counts occurrences of substring.
+```wyn
+var text = "hello world hello";
+var count = text.count("hello");  // 2
+```
+
+#### `.is_numeric() -> bool`
+Checks if string is a valid number (int or float).
+```wyn
+"123".is_numeric()    // 1 (true)
+"12.34".is_numeric()  // 1 (true)
+"abc".is_numeric()    // 0 (false)
+```
+
+### Conversion
+
+#### `.parse_int() -> int`
+Parses string to integer.
+```wyn
+var num = "42".parse_int();  // 42
+```
+
+#### `.parse_float() -> float`
+Parses string to float.
+```wyn
+var num = "3.14".parse_float();  // 3.14
+```
+
+#### `.to_int() -> int`
+Alias for parse_int.
+
+#### `.to_float() -> float`
+Alias for parse_float.
+
+---
+
+## Array Methods
+
+All array operations use method syntax.
+
+### Basic Operations
+
+#### `.len() -> int`
+Returns array length.
+```wyn
+var len = [1, 2, 3].len();  // 3
+```
+
+#### `.push(item: T)`
+Adds element to end.
+```wyn
+arr.push(4);
+```
+
+#### `.pop() -> T`
+Removes and returns last element.
+```wyn
+var last = arr.pop();
+```
+
+### Searching
+
+#### `.contains(item: T) -> bool`
+Checks if array contains element.
+```wyn
+if numbers.contains(5) { }
+```
+
+#### `.count(item: T) -> int`
+Counts occurrences of element.
+```wyn
+var arr = [1, 2, 3, 2, 4, 2];
+var count = arr.count(2);  // 3
+```
+
+#### `.index_of(item: T) -> int`
+Returns index of element (-1 if not found).
+```wyn
+var pos = arr.index_of(42);
+```
+
+### Modification
+
+#### `.sort()`
+Sorts array in place.
+```wyn
+numbers.sort();
+```
+
+#### `.reverse()`
+Reverses array in place.
+```wyn
+arr.reverse();
+```
+
+### Extraction
+
+#### `.slice(start: int, end: int) -> array<T>`
+Extracts subarray.
+```wyn
+var sub = arr.slice(1, 3);
+```
+
+#### `.first() -> T`
+Returns first element.
+```wyn
+var first = arr.first();
+```
+
+#### `.last() -> T`
+Returns last element.
+```wyn
+var last = arr.last();
+```
+
+### Aggregation
+
+#### `.min() -> int`
+Returns minimum value.
+```wyn
+var min = numbers.min();
+```
+
+#### `.max() -> int`
+Returns maximum value.
+```wyn
+var max = numbers.max();
+```
+
+#### `.sum() -> int`
+Returns sum of all elements.
+```wyn
+var total = numbers.sum();
+```
+
+#### `.average() -> int`
+Returns average value.
+```wyn
+var avg = numbers.average();
+```
+
+### Combination
+
+#### `.join(separator: string) -> string`
+Joins array elements into string.
+```wyn
+var text = words.join(" ");
+```
+
+#### `.concat(other: array<T>) -> array<T>`
+Concatenates arrays.
+```wyn
+var combined = arr1.concat(arr2);
+```
+
+---
+
+## Number Methods
+
+### Integer Methods
+
+#### `.to_string() -> string`
+Converts to string.
+```wyn
+var str = 42.to_string();  // "42"
+```
+
+#### `.abs() -> int`
+Returns absolute value.
+```wyn
+var abs = (-42).abs();  // 42
+```
+
+#### `.to_float() -> float`
+Converts to float.
+```wyn
+var f = 42.to_float();  // 42.0
+```
+
+#### `.to_binary() -> string`
+Converts to binary string.
+```wyn
+var bin = 5.to_binary();  // "101"
+```
+
+#### `.to_hex() -> string`
+Converts to hexadecimal string.
+```wyn
+var hex = 255.to_hex();  // "ff"
+```
+
+#### `.is_even() -> bool`
+Checks if even.
+```wyn
+if num.is_even() == 1 { }
+```
+
+#### `.is_odd() -> bool`
+Checks if odd.
+```wyn
+if num.is_odd() == 1 { }
+```
+
+### Float Methods
+
+#### `.to_string() -> string`
+Converts to string.
+```wyn
+var str = 3.14.to_string();  // "3.14"
+```
+
+#### `.to_int() -> int`
+Converts to integer (truncates).
+```wyn
+var i = 3.14.to_int();  // 3
+```
+
+---
+
+## HashMap Operations
+
+HashMaps use indexing syntax for get/set and methods for other operations.
+
+### Indexing
+
+#### `map[key]` (get)
+Gets value by key.
+```wyn
+var scores = {"alice": 95, "bob": 87};
+var alice_score = scores["alice"];  // 95
+```
+
+#### `map[key] = value` (set)
+Sets value by key.
+```wyn
+scores["charlie"] = 92;
+```
+
+### Methods
+
+#### `.has(key: string) -> bool`
+Checks if key exists.
+```wyn
+if scores.has("alice") { }
+```
+
+#### `.remove(key: string)`
+Removes key-value pair.
+```wyn
+scores.remove("bob");
+```
+
+#### `.len() -> int`
+Returns number of entries.
+```wyn
+var count = scores.len();
+```
+
+---
+
+## HashSet Operations
+
+HashSets use method syntax for all operations.
+
+### Methods
+
+#### `.add(item: string)`
+Adds element to set.
+```wyn
+tags.add("urgent");
+```
+
+#### `.contains(item: string) -> bool`
+Checks if element exists.
+```wyn
+if tags.contains("urgent") { }
+```
+
+#### `.remove(item: string)`
+Removes element.
+```wyn
+tags.remove("urgent");
+```
+
+#### `.len() -> int`
+Returns number of elements.
+```wyn
+var count = tags.len();
+```
+
+---
+
+## File Module
+
+All file operations use `File::` prefix.
+
+### Reading & Writing
+
+#### `File::read(path: string) -> string`
+Reads entire file as string.
+```wyn
+var content = File::read("/tmp/file.txt");
+```
+
+#### `File::write(path: string, data: string) -> bool`
+Writes string to file.
+```wyn
+File::write("/tmp/file.txt", "Hello");
+```
+
+### Checking
+
+#### `File::exists(path: string) -> bool`
+Checks if file/directory exists.
+```wyn
+if File::exists("/tmp/file.txt") { }
+```
+
+#### `File::is_file(path: string) -> bool`
+Checks if path is a file.
+```wyn
+if File::is_file(path) { }
+```
+
+#### `File::is_dir(path: string) -> bool`
+Checks if path is a directory.
+```wyn
+if File::is_dir(path) { }
+```
+
+### Directory Operations
+
+#### `File::list_dir(path: string) -> array<string>`
+Lists directory contents.
+```wyn
+var entries = File::list_dir(".");
+```
+
+#### `File::create_dir(path: string) -> bool`
+Creates directory.
+```wyn
+File::create_dir("/tmp/mydir");
+```
+
+#### `File::get_cwd() -> string`
+Gets current working directory.
+```wyn
+var cwd = File::get_cwd();
+```
+
+### File Operations
+
+#### `File::delete(path: string) -> bool`
+Deletes file.
+```wyn
+File::delete("/tmp/file.txt");
+```
+
+#### `File::file_size(path: string) -> int`
+Gets file size in bytes.
+```wyn
+var size = File::file_size(path);
+```
+
+### Path Operations
+
+#### `File::path_join(a: string, b: string) -> string`
+Joins path components safely.
+```wyn
+var path = File::path_join(dir, filename);
+```
+
+#### `File::basename(path: string) -> string`
+Extracts filename from path.
+```wyn
+var name = File::basename("/tmp/file.txt");  // "file.txt"
+```
+
+#### `File::dirname(path: string) -> string`
+Extracts directory from path.
+```wyn
+var dir = File::dirname("/tmp/file.txt");  // "/tmp"
+```
+
+#### `File::extension(path: string) -> string`
+Extracts file extension.
+```wyn
+var ext = File::extension("file.txt");  // "txt"
+```
+
+---
+
+## System Module
+
+All system operations use `System::` prefix.
+
+#### `System::exec(command: string) -> string`
+Executes shell command and returns output.
+```wyn
+var output = System::exec("ls -la");
+```
+
+#### `System::exec_code(command: string) -> int`
+Executes command and returns exit code.
+```wyn
+var code = System::exec_code("make test");
+if code == 0 {
+    print("Success!");
+}
+```
+
+#### `System::exit(code: int)`
+Exits program with status code.
+```wyn
+System::exit(0);
+```
+
+#### `System::args() -> array<string>`
+Gets command-line arguments.
+```wyn
+var args = System::args();
+if args.len() > 1 {
+    var first_arg = args[1];
+}
+```
+
+#### `System::env(key: string) -> string`
+Gets environment variable.
+```wyn
+var home = System::env("HOME");
+```
+
+#### `System::set_env(key: string, value: string) -> bool`
+Sets environment variable.
+```wyn
+System::set_env("MY_VAR", "value");
+```
+
+#### `System::args() -> array<string>`
+Gets command line arguments.
+```wyn
+var args = System::args();
+```
+
+---
+
+## Time Module
+
+All time operations use `Time::` prefix.
+
+#### `Time::now() -> int`
+Gets current Unix timestamp.
+```wyn
+var timestamp = Time::now();
+```
+
+#### `Time::sleep(milliseconds: int)`
+Sleeps for specified milliseconds.
+```wyn
+Time::sleep(1000);  // Sleep 1 second
+```
+
+#### `Time::format(timestamp: int) -> string`
+Formats timestamp as human-readable string.
+```wyn
+var now = Time::now();
+var formatted = Time::format(now);  // "2026-01-22 14:30:45"
+```
+
+---
+
+## Net Module
+
+Basic TCP networking operations.
+
+#### `Net::listen(port: int) -> int`
+Creates TCP server socket. Returns socket descriptor or -1 on error.
+```wyn
+var server = Net::listen(8080);
+if server == -1 {
+    print("Error: Could not start server\n");
+}
+```
+
+#### `Net::connect(host: string, port: int) -> int`
+Connects to TCP server. Returns socket descriptor or -1 on error.
+```wyn
+var client = Net::connect("127.0.0.1", 8080);
+if client == -1 {
+    print("Error: Could not connect\n");
+}
+```
+
+#### `Net::send(socket: int, data: string) -> int`
+Sends data through socket. Returns bytes sent or -1 on error.
+```wyn
+var sent = Net::send(socket, "Hello\n");
+```
+
+#### `Net::recv(socket: int) -> string`
+Receives data from socket. Returns data or empty string on error.
+```wyn
+var data = Net::recv(socket);
+if data.len() > 0 {
+    print(data);
+}
+```
+
+#### `Net::close(socket: int) -> int`
+Closes socket. Returns 1 on success, 0 on error.
+```wyn
+Net::close(socket);
+```
+
+---
+
+## Error Handling
+
+Wyn uses return codes for error handling. Functions return special values to indicate errors.
+
+### Error Patterns
+
+#### Return -1 for Errors
+```wyn
+fn divide(a: int, b: int) -> int {
+    if b == 0 {
+        return -1;  // Error indicator
+    }
+    return a / b;
+}
+
+// Check for errors
+var result = divide(10, 0);
+if result == -1 {
+    print("Error: division by zero\n");
+}
+```
+
+#### Return Empty String for Errors
+```wyn
+fn read_file(path: string) -> string {
+    if !File::exists(path) {
+        return "";  // Error indicator
+    }
+    return File::read(path);
+}
+
+// Check for errors
+var content = read_file("missing.txt");
+if content.len() == 0 {
+    print("Error: could not read file\n");
+}
+```
+
+#### Use Exit Codes
+```wyn
+fn main() -> int {
+    if some_error {
+        return 1;  // Non-zero indicates error
+    }
+    return 0;  // Success
+}
+```
+
+---
+
+## Examples
+
+### String Processing
+```wyn
+var email = "  USER@EXAMPLE.COM  ";
+var cleaned = email.trim().lower();
+if cleaned.contains("@") && cleaned.ends_with(".com") {
+    print("Valid email: ${cleaned}");
+}
+```
+
+### Array Processing
+```wyn
+var numbers = [5, 2, 8, 1, 9];
+numbers.sort();
+var min = numbers.min();
+var max = numbers.max();
+var avg = numbers.average();
+print("Min: ${min}, Max: ${max}, Avg: ${avg}");
+```
+
+### File Operations
+```wyn
+var entries = File::list_dir(".");
+for i in 0..entries.len() {
+    var name = entries[i];
+    if File::is_file(name) && name.ends_with(".wyn") {
+        var size = File::file_size(name);
+        print("${name}: ${size} bytes");
+    }
+}
+```
+
+### HashMap Usage
+```wyn
+var scores = {"alice": 95, "bob": 87};
+if scores.has("alice") {
+    var score = scores["alice"];
+    print("Alice: ${score}");
+}
+scores["charlie"] = 92;
+```
+
+---
+
+## See Also
+
+- [Examples](../examples/)
+- [CHANGELOG](../CHANGELOG.md)
+- [GitHub Repository](https://github.com/wyn-lang/wyn)

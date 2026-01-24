@@ -1,23 +1,35 @@
 // HashMap - Using hash maps for key-value storage
 fn main() -> int {
-    // Create hash maps with different value types using literal syntax
+    // Create hash maps with literal syntax
     var ages = {"alice": 25, "bob": 30, "charlie": 35};
-    var names = {"first": "Alice", "last": "Smith"};
     
-    print("HashMap example with multi-type support\n\n");
+    print("=== HashMap Example ===\n");
     
-    // Integer HashMap
-    print("Ages (int values):\n");
-    print("  alice: 25\n");
-    print("  bob: 30\n");
-    print("  charlie: 35\n\n");
+    // Access with indexing syntax (v1.4.0)
+    print("Alice's age: ");
+    print(ages["alice"]);
+    print("\n");
     
-    // String HashMap
-    print("Names (string values):\n");
-    print("  first: Alice\n");
-    print("  last: Smith\n\n");
+    // Add new entry
+    ages["diana"] = 28;
+    print("Added Diana\n");
     
-    print("HashMap literals work with multiple types!\n");
+    // Check if key exists with method
+    if (ages.has("bob")) {
+        print("Bob is in the map\n");
+    }
+    
+    // Get map size
+    print("Total entries: ");
+    print(ages.len());
+    print("\n");
+    
+    // Remove entry
+    ages.remove("charlie");
+    print("Removed Charlie\n");
+    print("New size: ");
+    print(ages.len());
+    print("\n");
     
     return 0;
 }

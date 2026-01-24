@@ -29,6 +29,31 @@ Program* get_module(const char* name) {
             return global_module_registry.modules[i]->ast;
         }
     }
+    
+    // Try converting _ to / and search again (network_http -> network/http)
+    if (strchr(name, '_')) {
+        char alt_name[256];
+        strncpy(alt_name, name, sizeof(alt_name) - 1);
+        alt_name[sizeof(alt_name) - 1] = '\0';
+        for (char* p = alt_name; *p; p++) {
+            if (*p == '_') *p = '/';
+        }
+        for (int i = 0; i < global_module_registry.count; i++) {
+            if (strcmp(global_module_registry.modules[i]->name, alt_name) == 0) {
+                return global_module_registry.modules[i]->ast;
+            }
+        }
+    }
+    
+    return NULL;
+}
+
+const char* get_module_name_by_ast(Program* ast) {
+    for (int i = 0; i < global_module_registry.count; i++) {
+        if (global_module_registry.modules[i]->ast == ast) {
+            return global_module_registry.modules[i]->name;
+        }
+    }
     return NULL;
 }
 
@@ -48,4 +73,15 @@ int get_all_modules(ModuleEntry** out_modules, int max_count) {
 // For C compatibility
 int get_all_modules_raw(void** out_modules, int max_count) {
     return get_all_modules((ModuleEntry**)out_modules, max_count);
+}
+
+int get_module_count(void) {
+    return global_module_registry.count;
+}
+
+Program* get_module_at(int index) {
+    if (index < 0 || index >= global_module_registry.count) {
+        return NULL;
+    }
+    return global_module_registry.modules[index]->ast;
 }

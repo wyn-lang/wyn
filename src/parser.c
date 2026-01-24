@@ -847,7 +847,12 @@ static Expr* call() {
                 expr = tuple_index_expr;
             } else {
                 Token field_or_method = parser.current;
-                expect(TOKEN_IDENT, "Expected field or method name after '.'");
+                // Allow keywords as method names (e.g., .map())
+                if (parser.current.type != TOKEN_EOF && parser.current.type != TOKEN_LPAREN) {
+                    advance();
+                } else {
+                    expect(TOKEN_IDENT, "Expected field or method name after '.'");
+                }
             
             // Check for module.Type { ... } struct initialization
             if (check(TOKEN_LBRACE) && field_or_method.start[0] >= 'A' && field_or_method.start[0] <= 'Z') {
@@ -855,7 +860,26 @@ static Expr* call() {
                 
                 Expr* struct_expr = alloc_expr();
                 struct_expr->type = EXPR_STRUCT_INIT;
-                struct_expr->struct_init.type_name = field_or_method;
+                
+                // Store the full module.Type name by creating a combined token
+                // expr is the module identifier, field_or_method is the Type
+                static char combined_name[256];
+                int module_len = 0;
+                if (expr->type == EXPR_IDENT) {
+                    module_len = expr->token.length;
+                    snprintf(combined_name, 256, "%.*s.%.*s", 
+                             expr->token.length, expr->token.start,
+                             field_or_method.length, field_or_method.start);
+                } else {
+                    snprintf(combined_name, 256, "%.*s", 
+                             field_or_method.length, field_or_method.start);
+                }
+                
+                Token combined_token = field_or_method;
+                combined_token.start = combined_name;
+                combined_token.length = strlen(combined_name);
+                
+                struct_expr->struct_init.type_name = combined_token;
                 struct_expr->struct_init.field_names = malloc(sizeof(Token) * 16);
                 struct_expr->struct_init.field_values = malloc(sizeof(Expr*) * 16);
                 struct_expr->struct_init.field_count = 0;
@@ -1311,24 +1335,43 @@ Stmt* statement() {
     
     if (match(TOKEN_VAR) || match(TOKEN_CONST)) {
         Stmt* stmt = alloc_stmt();
-        stmt->type = STMT_VAR;
         WynTokenType decl_type = parser.previous.type;
         
-        // var = mutable, const = immutable
-        stmt->var.is_const = (decl_type == TOKEN_CONST);
-        stmt->var.is_mutable = (decl_type == TOKEN_VAR);
-        stmt->var.name = parser.current;
+        if (decl_type == TOKEN_CONST) {
+            stmt->type = STMT_CONST;
+            stmt->const_stmt.is_const = true;
+            stmt->const_stmt.is_mutable = false;
+            stmt->const_stmt.name = parser.current;
+        } else {
+            stmt->type = STMT_VAR;
+            stmt->var.is_const = false;
+            stmt->var.is_mutable = true;
+            stmt->var.name = parser.current;
+        }
+        
         expect(TOKEN_IDENT, "Expected variable name");
         
         // Check for type annotation: var name: type = value
         if (match(TOKEN_COLON)) {
-            stmt->var.type = parse_type();
+            if (decl_type == TOKEN_CONST) {
+                stmt->const_stmt.type = parse_type();
+            } else {
+                stmt->var.type = parse_type();
+            }
         } else {
-            stmt->var.type = NULL;
+            if (decl_type == TOKEN_CONST) {
+                stmt->const_stmt.type = NULL;
+            } else {
+                stmt->var.type = NULL;
+            }
         }
         
         expect(TOKEN_EQ, "Expected '=' after variable name");
-        stmt->var.init = expression();
+        if (decl_type == TOKEN_CONST) {
+            stmt->const_stmt.init = expression();
+        } else {
+            stmt->var.init = expression();
+        }
         return stmt;
     }
     
@@ -1390,9 +1433,93 @@ Stmt* statement() {
         Stmt* stmt = alloc_stmt();
         stmt->type = STMT_IMPORT;
         
-        // Parse: import name [as alias] [from "path"]
+        // Check for selective import: import { a, b } from module
+        if (match(TOKEN_LBRACE)) {
+            stmt->import.items = malloc(sizeof(Token) * 32);
+            stmt->import.item_count = 0;
+            
+            do {
+                expect(TOKEN_IDENT, "Expected identifier in import list");
+                stmt->import.items[stmt->import.item_count++] = parser.previous;
+            } while (match(TOKEN_COMMA) && stmt->import.item_count < 32);
+            
+            expect(TOKEN_RBRACE, "Expected '}' after import list");
+            expect(TOKEN_FROM, "Expected 'from' after import list");
+            expect(TOKEN_IDENT, "Expected module name after 'from'");
+            
+            // Build module path
+            char* module_path = malloc(256);
+            int len = 0;
+            memcpy(module_path, parser.previous.start, parser.previous.length);
+            len = parser.previous.length;
+            
+            while (match(TOKEN_DOT)) {
+                module_path[len++] = '/';
+                expect(TOKEN_IDENT, "Expected identifier after '.'");
+                memcpy(module_path + len, parser.previous.start, parser.previous.length);
+                len += parser.previous.length;
+            }
+            module_path[len] = '\0';
+            
+            stmt->import.module.start = module_path;
+            stmt->import.module.length = len;
+            stmt->import.module.type = TOKEN_IDENT;
+            stmt->import.module.line = parser.previous.line;
+            stmt->import.alias.start = NULL;
+            stmt->import.alias.length = 0;
+            stmt->import.path.start = NULL;
+            stmt->import.path.length = 0;
+            
+            return stmt;
+        }
+        
+        // Check for relative imports: root::, self::
+        bool is_relative = false;
+        char relative_prefix[32] = "";
+        
+        if (match(TOKEN_ROOT)) {
+            strcpy(relative_prefix, "crate");
+            is_relative = true;
+            expect(TOKEN_COLONCOLON, "Expected '::' after 'root'");
+        } else if (match(TOKEN_SELF)) {
+            strcpy(relative_prefix, "self");
+            is_relative = true;
+            expect(TOKEN_COLONCOLON, "Expected '::' after 'self'");
+        }
+        
+        // Parse: import name [.name]* [as alias]
         expect(TOKEN_IDENT, "Expected module name after 'import'");
-        stmt->import.module = parser.previous;
+        
+        // Build module path with . support (like Java)
+        char* module_path = malloc(256);
+        int len = 0;
+        
+        // Add relative prefix if present
+        if (is_relative) {
+            len = snprintf(module_path, 256, "%s/", relative_prefix);
+        }
+        
+        // Copy first identifier
+        memcpy(module_path + len, parser.previous.start, parser.previous.length);
+        len += parser.previous.length;
+        
+        // Handle . for nested modules (convert to / for filesystem)
+        while (match(TOKEN_DOT)) {
+            module_path[len++] = '/';
+            expect(TOKEN_IDENT, "Expected identifier after '.'");
+            memcpy(module_path + len, parser.previous.start, parser.previous.length);
+            len += parser.previous.length;
+        }
+        module_path[len] = '\0';
+        
+        stmt->import.module.start = module_path;
+        stmt->import.module.length = len;
+        stmt->import.module.type = TOKEN_IDENT;
+        stmt->import.module.line = parser.previous.line;
+        
+        // Initialize items for non-selective imports
+        stmt->import.items = NULL;
+        stmt->import.item_count = 0;
         
         // Optional: as alias
         if (match(TOKEN_AS)) {
@@ -1400,12 +1527,10 @@ Stmt* statement() {
             stmt->import.alias = parser.previous;
             
             // Register alias globally
-            char module_name[256], alias_name[256];
-            snprintf(module_name, sizeof(module_name), "%.*s",
-                    stmt->import.module.length, stmt->import.module.start);
+            char alias_name[256];
             snprintf(alias_name, sizeof(alias_name), "%.*s",
                     stmt->import.alias.length, stmt->import.alias.start);
-            register_parser_module_alias(alias_name, module_name);
+            register_parser_module_alias(alias_name, module_path);
         } else {
             stmt->import.alias.start = NULL;
             stmt->import.alias.length = 0;
@@ -1416,7 +1541,6 @@ Stmt* statement() {
             expect(TOKEN_STRING, "Expected string path after 'from'");
             stmt->import.path = parser.previous;
         } else {
-            // No path specified - use default
             stmt->import.path.start = NULL;
             stmt->import.path.length = 0;
         }
@@ -2235,6 +2359,7 @@ Stmt* enum_decl() {
     Stmt* stmt = alloc_stmt();
     stmt->type = STMT_ENUM;
     stmt->enum_decl.name = parser.current;
+    stmt->enum_decl.is_public = false;  // Initialize to false
     expect(TOKEN_IDENT, "Expected enum name");
     expect(TOKEN_LBRACE, "Expected '{' after enum name");
     
@@ -2299,8 +2424,93 @@ Program* parse_program() {
         if (match(TOKEN_IMPORT)) {
             Stmt* stmt = safe_malloc(sizeof(Stmt));
             stmt->type = STMT_IMPORT;
+            
+            // Check for selective import: import { a, b } from module
+            if (match(TOKEN_LBRACE)) {
+                stmt->import.items = malloc(sizeof(Token) * 32);
+                stmt->import.item_count = 0;
+                
+                do {
+                    expect(TOKEN_IDENT, "Expected identifier in import list");
+                    stmt->import.items[stmt->import.item_count++] = parser.previous;
+                } while (match(TOKEN_COMMA) && stmt->import.item_count < 32);
+                
+                expect(TOKEN_RBRACE, "Expected '}' after import list");
+                expect(TOKEN_FROM, "Expected 'from' after import list");
+                expect(TOKEN_IDENT, "Expected module name after 'from'");
+                
+                // Build module path
+                char* module_path = malloc(256);
+                int len = 0;
+                memcpy(module_path, parser.previous.start, parser.previous.length);
+                len = parser.previous.length;
+                
+                while (match(TOKEN_DOT)) {
+                    module_path[len++] = '/';
+                    expect(TOKEN_IDENT, "Expected identifier after '.'");
+                    memcpy(module_path + len, parser.previous.start, parser.previous.length);
+                    len += parser.previous.length;
+                }
+                module_path[len] = '\0';
+                
+                stmt->import.module.start = module_path;
+                stmt->import.module.length = len;
+                stmt->import.module.type = TOKEN_IDENT;
+                stmt->import.module.line = parser.previous.line;
+                stmt->import.alias.start = NULL;
+                stmt->import.alias.length = 0;
+                stmt->import.path.start = NULL;
+                stmt->import.path.length = 0;
+                
+                prog->stmts[prog->count++] = stmt;
+                continue;
+            }
+            
+            // Check for relative imports: super::, crate::, self::
+            bool is_relative = false;
+            char relative_prefix[32] = "";
+            
+            if (match(TOKEN_ROOT)) {
+                strcpy(relative_prefix, "crate");
+                is_relative = true;
+                expect(TOKEN_COLONCOLON, "Expected '::' after 'root'");
+            } else if (match(TOKEN_SELF)) {
+                strcpy(relative_prefix, "self");
+                is_relative = true;
+                expect(TOKEN_COLONCOLON, "Expected '::' after 'self'");
+            }
+            
             expect(TOKEN_IDENT, "Expected module name");
-            stmt->import.module = parser.previous;
+            
+            // Build module path with . support (like Java)
+            char* module_path = malloc(256);
+            int len = 0;
+            
+            // Add relative prefix if present
+            if (is_relative) {
+                len = snprintf(module_path, 256, "%s/", relative_prefix);
+            }
+            
+            memcpy(module_path + len, parser.previous.start, parser.previous.length);
+            len += parser.previous.length;
+            
+            // Handle . for nested modules (convert to / for filesystem)
+            while (match(TOKEN_DOT)) {
+                module_path[len++] = '/';
+                expect(TOKEN_IDENT, "Expected identifier after '.'");
+                memcpy(module_path + len, parser.previous.start, parser.previous.length);
+                len += parser.previous.length;
+            }
+            module_path[len] = '\0';
+            
+            stmt->import.module.start = module_path;
+            stmt->import.module.length = len;
+            stmt->import.module.type = TOKEN_IDENT;
+            stmt->import.module.line = parser.previous.line;
+            
+            // Initialize items for non-selective imports
+            stmt->import.items = NULL;
+            stmt->import.item_count = 0;
             
             // Optional: as alias
             if (match(TOKEN_AS)) {
@@ -2448,6 +2658,11 @@ Program* parse_program() {
                 // It's pub struct
                 Stmt* stmt = struct_decl();
                 stmt->struct_decl.is_public = true;
+                prog->stmts[prog->count++] = stmt;
+            } else if (check(TOKEN_ENUM)) {
+                // It's pub enum
+                Stmt* stmt = enum_decl();
+                stmt->enum_decl.is_public = true;
                 prog->stmts[prog->count++] = stmt;
             } else {
                 // It's pub fn or pub async - function() will handle it
@@ -2670,6 +2885,30 @@ static Stmt* parse_match_statement() {
 // T2.5.2: Union Type Support - Type System Agent addition
 static Expr* parse_type() {
     Expr* base_type;
+    
+    // Handle function types: fn(T1, T2) -> R
+    if (match(TOKEN_FN)) {
+        expect(TOKEN_LPAREN, "Expected '(' after 'fn'");
+        
+        base_type = alloc_expr();
+        base_type->type = EXPR_FN_TYPE;
+        base_type->fn_type.param_types = malloc(sizeof(Expr*) * 8);
+        base_type->fn_type.param_count = 0;
+        
+        // Parse parameter types
+        if (!check(TOKEN_RPAREN)) {
+            do {
+                base_type->fn_type.param_types[base_type->fn_type.param_count++] = parse_type();
+            } while (match(TOKEN_COMMA));
+        }
+        
+        expect(TOKEN_RPAREN, "Expected ')' after function parameter types");
+        expect(TOKEN_ARROW, "Expected '->' after function parameters");
+        
+        base_type->fn_type.return_type = parse_type();
+        
+        return base_type;
+    }
     
     // Handle array types [type]
     if (match(TOKEN_LBRACKET)) {

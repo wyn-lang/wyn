@@ -35,6 +35,14 @@ static const MethodSignature method_signatures[] = {
     {"string", "concat", "string", 1},
     {"string", "replace_all", "string", 2},  // replace_all(old, new)
     {"string", "last_index_of", "int", 1},   // Returns -1 if not found
+    {"string", "is_alpha", "bool", 0},       // Check if all alphabetic
+    {"string", "is_digit", "bool", 0},       // Check if all numeric
+    {"string", "is_alnum", "bool", 0},       // Check if alphanumeric
+    {"string", "is_whitespace", "bool", 0},  // Check if all whitespace
+    {"string", "char_at", "string", 1},      // Get char at index
+    {"string", "equals", "bool", 1},         // String equality
+    {"string", "count", "int", 1},           // Count occurrences
+    {"string", "is_numeric", "bool", 0},     // Check if numeric (int or float)
     
     // Int methods
     {"int", "to_string", "string", 0},
@@ -50,6 +58,8 @@ static const MethodSignature method_signatures[] = {
     {"int", "is_negative", "bool", 0},
     {"int", "is_zero", "bool", 0},
     {"int", "sign", "int", 0},  // Returns -1, 0, or 1
+    {"int", "to_binary", "string", 0},
+    {"int", "to_hex", "string", 0},
     
     // Float methods
     {"float", "to_string", "string", 0},
@@ -95,11 +105,14 @@ static const MethodSignature method_signatures[] = {
     {"array", "index_of", "int", 1},
     {"array", "reverse", "void", 0},   // Mutates in place
     {"array", "sort", "void", 0},      // Mutates in place
-    {"array", "first", "optional", 0},   // Returns Option<T>
-    {"array", "last", "optional", 0},    // Returns Option<T>
+    {"array", "first", "int", 0},      // Returns first element
+    {"array", "last", "int", 0},       // Returns last element
+    {"array", "count", "int", 1},      // Count occurrences of value
+    {"array", "is_empty", "bool", 0},  // Check if empty
     {"array", "take", "array", 1},     // Returns new array with first n elements
     {"array", "skip", "array", 1},     // Returns new array skipping first n elements
     {"array", "slice", "array", 2},    // Returns new array from start to end
+    {"array", "join", "string", 1},    // Join elements with separator
     {"array", "concat", "array", 1},   // Returns new array concatenated with other
     {"array", "map", "array", 1},       // Higher-order: map(fn) -> array
     {"array", "filter", "array", 1},    // Higher-order: filter(fn) -> array
@@ -286,6 +299,9 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
         if (strcmp(method_name, "slice") == 0 && arg_count == 2) {
             out->c_function = "string_slice"; return true;
         }
+        if (strcmp(method_name, "substring") == 0 && arg_count == 2) {
+            out->c_function = "string_substring"; return true;
+        }
         if (strcmp(method_name, "repeat") == 0 && arg_count == 1) {
             out->c_function = "string_repeat"; return true;
         }
@@ -300,6 +316,45 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
         }
         if (strcmp(method_name, "last_index_of") == 0 && arg_count == 1) {
             out->c_function = "string_last_index_of"; return true;
+        }
+        if (strcmp(method_name, "concat") == 0 && arg_count == 1) {
+            out->c_function = "string_concat"; return true;
+        }
+        if (strcmp(method_name, "is_alpha") == 0 && arg_count == 0) {
+            out->c_function = "string_is_alpha"; return true;
+        }
+        if (strcmp(method_name, "is_digit") == 0 && arg_count == 0) {
+            out->c_function = "string_is_digit"; return true;
+        }
+        if (strcmp(method_name, "is_alnum") == 0 && arg_count == 0) {
+            out->c_function = "string_is_alnum"; return true;
+        }
+        if (strcmp(method_name, "is_whitespace") == 0 && arg_count == 0) {
+            out->c_function = "string_is_whitespace"; return true;
+        }
+        if (strcmp(method_name, "char_at") == 0 && arg_count == 1) {
+            out->c_function = "string_char_at"; return true;
+        }
+        if (strcmp(method_name, "equals") == 0 && arg_count == 1) {
+            out->c_function = "string_equals"; return true;
+        }
+        if (strcmp(method_name, "count") == 0 && arg_count == 1) {
+            out->c_function = "string_count"; return true;
+        }
+        if (strcmp(method_name, "is_numeric") == 0 && arg_count == 0) {
+            out->c_function = "string_is_numeric"; return true;
+        }
+        if (strcmp(method_name, "parse_int") == 0 && arg_count == 0) {
+            out->c_function = "str_parse_int"; return true;
+        }
+        if (strcmp(method_name, "parse_float") == 0 && arg_count == 0) {
+            out->c_function = "str_parse_float"; return true;
+        }
+        if (strcmp(method_name, "to_int") == 0 && arg_count == 0) {
+            out->c_function = "str_parse_int"; return true;
+        }
+        if (strcmp(method_name, "to_float") == 0 && arg_count == 0) {
+            out->c_function = "str_parse_float"; return true;
         }
         return false;
     }
@@ -341,6 +396,12 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
         }
         if (strcmp(method_name, "is_zero") == 0 && arg_count == 0) {
             out->c_function = "int_is_zero"; return true;
+        }
+        if (strcmp(method_name, "to_binary") == 0 && arg_count == 0) {
+            out->c_function = "int_to_binary"; return true;
+        }
+        if (strcmp(method_name, "to_hex") == 0 && arg_count == 0) {
+            out->c_function = "int_to_hex"; return true;
         }
         return false;
     }
@@ -421,6 +482,9 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
         if (strcmp(method_name, "is_empty") == 0 && arg_count == 0) {
             out->c_function = "array_is_empty"; return true;
         }
+        if (strcmp(method_name, "count") == 0 && arg_count == 1) {
+            out->c_function = "array_count"; return true;
+        }
         if (strcmp(method_name, "contains") == 0 && arg_count == 1) {
             out->c_function = "array_contains"; return true;
         }
@@ -465,8 +529,38 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
         if (strcmp(method_name, "slice") == 0 && arg_count == 2) {
             out->c_function = "array_slice"; return true;
         }
+        if (strcmp(method_name, "join") == 0 && arg_count == 1) {
+            out->c_function = "array_join"; return true;
+        }
         if (strcmp(method_name, "concat") == 0 && arg_count == 1) {
             out->c_function = "array_concat"; return true;
+        }
+        if (strcmp(method_name, "clear") == 0 && arg_count == 0) {
+            out->c_function = "array_clear";
+            out->pass_by_ref = true;
+            return true;
+        }
+        if (strcmp(method_name, "min") == 0 && arg_count == 0) {
+            out->c_function = "array_min"; return true;
+        }
+        if (strcmp(method_name, "max") == 0 && arg_count == 0) {
+            out->c_function = "array_max"; return true;
+        }
+        if (strcmp(method_name, "sum") == 0 && arg_count == 0) {
+            out->c_function = "array_sum"; return true;
+        }
+        if (strcmp(method_name, "average") == 0 && arg_count == 0) {
+            out->c_function = "array_average"; return true;
+        }
+        if (strcmp(method_name, "remove") == 0 && arg_count == 1) {
+            out->c_function = "array_remove_value";
+            out->pass_by_ref = true;
+            return true;
+        }
+        if (strcmp(method_name, "insert") == 0 && arg_count == 2) {
+            out->c_function = "array_insert";
+            out->pass_by_ref = true;
+            return true;
         }
         if (strcmp(method_name, "map") == 0 && arg_count == 1) {
             out->c_function = "wyn_array_map"; return true;
@@ -481,65 +575,50 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
     }
     
     if (strcmp(receiver_type, "map") == 0) {
-        // Map methods
-        if (strcmp(method_name, "insert") == 0 && arg_count == 2) {
-            out->c_function = "map_set";
-            return true;
+        // HashMap methods
+        if (strcmp(method_name, "has") == 0 && arg_count == 1) {
+            out->c_function = "hashmap_has"; return true;
         }
         if (strcmp(method_name, "get") == 0 && arg_count == 1) {
-            out->c_function = "map_get"; return true;
+            out->c_function = "hashmap_get_int"; return true;
         }
         if (strcmp(method_name, "remove") == 0 && arg_count == 1) {
-            out->c_function = "map_remove";
-            return true;
-        }
-        if (strcmp(method_name, "contains") == 0 && arg_count == 1) {
-            out->c_function = "map_has"; return true;
+            out->c_function = "hashmap_remove"; return true;
         }
         if (strcmp(method_name, "len") == 0 && arg_count == 0) {
-            out->c_function = "map_len"; return true;
+            out->c_function = "hashmap_len"; return true;
         }
         if (strcmp(method_name, "is_empty") == 0 && arg_count == 0) {
-            out->c_function = "map_is_empty"; return true;
+            out->c_function = "wyn_hashmap_is_empty"; return true;
         }
         if (strcmp(method_name, "clear") == 0 && arg_count == 0) {
-            out->c_function = "map_clear";
-            return true;
-        }
-        if (strcmp(method_name, "get_or_default") == 0 && arg_count == 2) {
-            out->c_function = "map_get_or_default"; return true;
-        }
-        if (strcmp(method_name, "merge") == 0 && arg_count == 1) {
-            out->c_function = "map_merge";
-            return true;
+            out->c_function = "wyn_hashmap_clear"; return true;
         }
         return false;
     }
     
     if (strcmp(receiver_type, "set") == 0) {
         // HashSet methods
+        if (strcmp(method_name, "add") == 0 && arg_count == 1) {
+            out->c_function = "hashset_add"; return true;
+        }
         if (strcmp(method_name, "insert") == 0 && arg_count == 1) {
-            out->c_function = "hashset_add";
-            
-            return true;
+            out->c_function = "hashset_add"; return true;
         }
         if (strcmp(method_name, "contains") == 0 && arg_count == 1) {
             out->c_function = "hashset_contains"; return true;
         }
         if (strcmp(method_name, "remove") == 0 && arg_count == 1) {
-            out->c_function = "hashset_remove";
-            
-            return true;
+            out->c_function = "hashset_remove"; return true;
         }
         if (strcmp(method_name, "len") == 0 && arg_count == 0) {
-            out->c_function = "set_len"; return true;
+            out->c_function = "wyn_hashset_len"; return true;
         }
         if (strcmp(method_name, "is_empty") == 0 && arg_count == 0) {
-            out->c_function = "set_is_empty"; return true;
+            out->c_function = "wyn_hashset_is_empty"; return true;
         }
         if (strcmp(method_name, "clear") == 0 && arg_count == 0) {
-            out->c_function = "set_clear";
-            return true;
+            out->c_function = "wyn_hashset_clear"; return true;
         }
         if (strcmp(method_name, "union") == 0 && arg_count == 1) {
             out->c_function = "set_union"; return true;

@@ -1,0 +1,23 @@
+// Test array map with inline operations
+
+fn main() -> int {
+    var numbers = [1, 2, 3, 4, 5];
+    
+    // Test map_double - doubles each element
+    var doubled = numbers.map_double();
+    if doubled[0] != 2 {
+        return 1;
+    }
+    if doubled[2] != 6 {
+        return 2;
+    }
+    
+    // Test filter_positive - keeps positive numbers
+    var mixed = [-1, 2, -3, 4, 5];
+    var positive = mixed.filter_positive();
+    if positive.len() != 3 {
+        return 3;
+    }
+    
+    return 0;
+}

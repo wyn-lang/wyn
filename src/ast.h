@@ -50,6 +50,7 @@ typedef enum {
     EXPR_UNION_TYPE,     // T2.5.2: Union Type Support
     EXPR_RESULT_TYPE,    // TASK-026: Result<T,E> Type Implementation
     EXPR_PATTERN,        // T3.3.1: Pattern expressions for destructuring
+    EXPR_FN_TYPE,        // Function type: fn(T1, T2) -> R
 } ExprType;
 
 // T3.3.1: Pattern types for destructuring
@@ -277,6 +278,12 @@ typedef struct {
 } ResultTypeExpr;
 
 typedef struct {
+    Expr** param_types;  // Parameter types
+    int param_count;     // Number of parameters
+    Expr* return_type;   // Return type
+} FnTypeExpr;
+
+typedef struct {
     Expr* value;       // Expression that might fail (for ? operator)
 } TryExpr;
 
@@ -312,12 +319,14 @@ struct Expr {
         UnionTypeExpr union_type;        // T2.5.2: Union Type Support
         ResultTypeExpr result_type;      // TASK-026: Result<T,E> Type Implementation
         TryExpr try_expr;                // TASK-026: ? operator for error propagation
+        FnTypeExpr fn_type;              // Function type: fn(T1, T2) -> R
     };
 };
 
 typedef enum {
     STMT_EXPR,
     STMT_VAR,
+    STMT_CONST,
     STMT_RETURN,
     STMT_BLOCK,
     STMT_UNSAFE,
@@ -453,6 +462,7 @@ typedef struct {
     Token name;
     Token* variants;
     int variant_count;
+    bool is_public;
 } EnumStmt;
 
 typedef struct {
@@ -531,6 +541,7 @@ struct Stmt {
     union {
         Expr* expr;
         VarStmt var;
+        VarStmt const_stmt;  // Reuse VarStmt structure for constants
         ReturnStmt ret;
         BlockStmt block;
         FnStmt fn;

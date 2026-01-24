@@ -9,6 +9,8 @@
 #include "platform.h"
 #include "llvm_codegen.h"
 #include "optimize.h"
+#include "module.h"
+#include "commands.h"
 
 void init_lexer(const char* source);
 void init_parser();
@@ -158,6 +160,44 @@ int main(int argc, char** argv) {
         return create_new_project(project_name);
     }
     
+    if (strcmp(command, "watch") == 0) {
+        if (argc < 3) {
+            fprintf(stderr, "Usage: wyn watch <file.wyn>\n");
+            return 1;
+        }
+        return cmd_watch(argv[2], argc - 3, argv + 3);
+    }
+    
+    if (strcmp(command, "install") == 0) {
+        // wyn install - install packages from wyn.toml
+        extern int package_install(const char*);
+        return package_install(".");
+    }
+    
+    if (strcmp(command, "lsp") == 0) {
+        // wyn lsp - start LSP server
+        extern int lsp_server_start();
+        return lsp_server_start();
+    }
+    
+    if (strcmp(command, "pkg") == 0) {
+        if (argc < 3) {
+            fprintf(stderr, "Usage: wyn pkg <list|install>\n");
+            return 1;
+        }
+        extern int package_install(const char*);
+        extern int package_list();
+        
+        if (strcmp(argv[2], "list") == 0) {
+            return package_list();
+        } else if (strcmp(argv[2], "install") == 0) {
+            return package_install(".");
+        } else {
+            fprintf(stderr, "Unknown pkg command: %s\n", argv[2]);
+            return 1;
+        }
+    }
+    
     if (strcmp(command, "build") == 0) {
         if (argc < 3) {
             fprintf(stderr, "Usage: wyn build <directory>\n");
@@ -262,6 +302,7 @@ int main(int argc, char** argv) {
         init_parser();
         set_parser_filename("temp/combined.wyn");  // Set filename for better error messages
         init_checker();
+        check_all_modules();  // Type check loaded modules
         
         Program* prog = parse_program();
         if (!prog) {
@@ -285,17 +326,27 @@ int main(int argc, char** argv) {
         codegen_program(prog);
         fclose(out);
         
-        // Get WYN_ROOT or use current directory
+        // Get WYN_ROOT or auto-detect
         char wyn_root[1024] = ".";
         char* root_env = getenv("WYN_ROOT");
         if (root_env) {
             snprintf(wyn_root, sizeof(wyn_root), "%s", root_env);
+        } else {
+            // Auto-detect: check if src/wyn_wrapper.c exists, if not try ./wyn
+            FILE* test = fopen("./src/wyn_wrapper.c", "r");
+            if (!test) {
+                test = fopen("./wyn/src/wyn_wrapper.c", "r");
+                if (test) {
+                    snprintf(wyn_root, sizeof(wyn_root), "./wyn");
+                }
+            }
+            if (test) fclose(test);
         }
         
         char compile_cmd[4096];
         snprintf(compile_cmd, sizeof(compile_cmd), 
-                 "gcc -std=c11 -I %s/src -o %s/main %s/main.c %s/src/wyn_wrapper.c %s/src/wyn_interface.c %s/src/io.c %s/src/optional.c %s/src/result.c %s/src/arc_runtime.c %s/src/concurrency.c %s/src/async_runtime.c %s/src/safe_memory.c %s/src/error.c %s/src/string_runtime.c %s/src/hashmap.c %s/src/hashset.c %s/src/json.c %s/src/stdlib_string.c %s/src/stdlib_array.c %s/src/stdlib_time.c %s/src/stdlib_crypto.c -lm", 
-                 wyn_root, dir, dir, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root);
+                 "gcc -std=c11 -I %s/src -o %s/main %s/main.c %s/src/wyn_wrapper.c %s/src/wyn_interface.c %s/src/io.c %s/src/optional.c %s/src/result.c %s/src/arc_runtime.c %s/src/concurrency.c %s/src/async_runtime.c %s/src/safe_memory.c %s/src/error.c %s/src/string_runtime.c %s/src/hashmap.c %s/src/hashset.c %s/src/json.c %s/src/stdlib_string.c %s/src/stdlib_array.c %s/src/stdlib_time.c %s/src/stdlib_crypto.c %s/src/spawn.c -lm", 
+                 wyn_root, dir, dir, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root);
         int result = system(compile_cmd);
         
         if (result == 0) {
@@ -356,6 +407,7 @@ int main(int argc, char** argv) {
         init_parser();
         set_parser_filename(file);  // Set filename for better error messages
         init_checker();
+        check_all_modules();  // Type check loaded modules
         
         Program* prog = parse_program();
         if (!prog) {
@@ -466,6 +518,7 @@ int main(int argc, char** argv) {
         init_lexer(source);
         init_parser();
         init_checker();
+        check_all_modules();  // Type check loaded modules
         
         Program* prog = parse_program();
         if (!prog) {
@@ -525,6 +578,7 @@ int main(int argc, char** argv) {
         init_parser();
         set_parser_filename(file);  // Set filename for better error messages
         init_checker();
+        check_all_modules();  // Type check loaded modules
         
         Program* prog = parse_program();
         if (!prog) {
@@ -550,17 +604,27 @@ int main(int argc, char** argv) {
         codegen_program(prog);
         fclose(out);
         
-        // Get WYN_ROOT or use current directory
+        // Get WYN_ROOT or auto-detect
         char wyn_root[1024] = ".";
         char* root_env = getenv("WYN_ROOT");
         if (root_env) {
             snprintf(wyn_root, sizeof(wyn_root), "%s", root_env);
+        } else {
+            // Auto-detect: check if src/wyn_wrapper.c exists, if not try ./wyn
+            FILE* test = fopen("./src/wyn_wrapper.c", "r");
+            if (!test) {
+                test = fopen("./wyn/src/wyn_wrapper.c", "r");
+                if (test) {
+                    snprintf(wyn_root, sizeof(wyn_root), "./wyn");
+                }
+            }
+            if (test) fclose(test);
         }
         
         char compile_cmd[4096];
         snprintf(compile_cmd, sizeof(compile_cmd), 
-                 "gcc -std=c11 -O2 -I %s/src -o %s.out %s.c %s/src/wyn_wrapper.c %s/src/wyn_interface.c %s/src/io.c %s/src/optional.c %s/src/result.c %s/src/arc_runtime.c %s/src/concurrency.c %s/src/async_runtime.c %s/src/safe_memory.c %s/src/error.c %s/src/string_runtime.c %s/src/hashmap.c %s/src/hashset.c %s/src/json.c %s/src/stdlib_string.c %s/src/stdlib_array.c %s/src/stdlib_time.c %s/src/stdlib_crypto.c -lm", 
-                 wyn_root, file, file, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root);
+                 "gcc -std=c11 -O2 -I %s/src -o %s.out %s.c %s/src/wyn_wrapper.c %s/src/wyn_interface.c %s/src/io.c %s/src/optional.c %s/src/result.c %s/src/arc_runtime.c %s/src/concurrency.c %s/src/async_runtime.c %s/src/safe_memory.c %s/src/error.c %s/src/string_runtime.c %s/src/hashmap.c %s/src/hashset.c %s/src/json.c %s/src/stdlib_string.c %s/src/stdlib_array.c %s/src/stdlib_time.c %s/src/stdlib_crypto.c %s/src/spawn.c -lm", 
+                 wyn_root, file, file, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root);
         int result = system(compile_cmd);
         
         if (result != 0) {
@@ -621,6 +685,7 @@ int main(int argc, char** argv) {
     init_parser();
     set_parser_filename(argv[file_arg_index]);  // Set filename for better error messages
     init_checker();
+    check_all_modules();  // Type check loaded modules
     
     Program* prog = parse_program();
     if (!prog) {
@@ -664,11 +729,21 @@ int main(int argc, char** argv) {
     // Free AST
     free_program(prog);
     
-    // Get WYN_ROOT or use current directory
+    // Get WYN_ROOT or auto-detect
     char wyn_root[1024] = ".";
     char* root_env = getenv("WYN_ROOT");
     if (root_env) {
         snprintf(wyn_root, sizeof(wyn_root), "%s", root_env);
+    } else {
+        // Auto-detect: check if src/wyn_wrapper.c exists, if not try ./wyn
+        FILE* test = fopen("./src/wyn_wrapper.c", "r");
+        if (!test) {
+            test = fopen("./wyn/src/wyn_wrapper.c", "r");
+            if (test) {
+                snprintf(wyn_root, sizeof(wyn_root), "./wyn");
+            }
+        }
+        if (test) fclose(test);
     }
     
     char compile_cmd[2048];
@@ -680,8 +755,8 @@ int main(int argc, char** argv) {
         snprintf(output_bin, 256, "%s.out", argv[file_arg_index]);
     }
     snprintf(compile_cmd, sizeof(compile_cmd), 
-             "gcc %s -std=c11 -I %s/src -o %s %s.c %s/src/wyn_wrapper.c %s/src/wyn_interface.c %s/src/io.c %s/src/optional.c %s/src/result.c %s/src/arc_runtime.c %s/src/concurrency.c %s/src/async_runtime.c %s/src/safe_memory.c %s/src/error.c %s/src/string_runtime.c %s/src/hashmap.c %s/src/hashset.c %s/src/json.c %s/src/stdlib_string.c %s/src/stdlib_array.c %s/src/stdlib_time.c %s/src/stdlib_crypto.c -lm", 
-             opt_flag, wyn_root, output_bin, argv[file_arg_index], wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root);
+             "gcc %s -std=c11 -I %s/src -o %s %s.c %s/src/wyn_wrapper.c %s/src/wyn_interface.c %s/src/io.c %s/src/optional.c %s/src/result.c %s/src/arc_runtime.c %s/src/concurrency.c %s/src/async_runtime.c %s/src/safe_memory.c %s/src/error.c %s/src/string_runtime.c %s/src/hashmap.c %s/src/hashset.c %s/src/json.c %s/src/stdlib_string.c %s/src/stdlib_array.c %s/src/stdlib_time.c %s/src/stdlib_crypto.c %s/src/spawn.c -lm", 
+             opt_flag, wyn_root, output_bin, argv[file_arg_index], wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root, wyn_root);
     int result = system(compile_cmd);
     
     // Check if output file was actually created
@@ -715,6 +790,21 @@ int create_new_project(const char* project_name) {
         return 1;
     }
     
+    // Create wyn.toml
+    snprintf(path, sizeof(path), "%s/wyn.toml", project_name);
+    FILE* toml_file = fopen(path, "w");
+    if (!toml_file) {
+        fprintf(stderr, "Error: Failed to create wyn.toml\n");
+        return 1;
+    }
+    fprintf(toml_file, "[project]\n");
+    fprintf(toml_file, "name = \"%s\"\n", project_name);
+    fprintf(toml_file, "version = \"0.1.0\"\n");
+    fprintf(toml_file, "entry = \"src/main.wyn\"\n");
+    fprintf(toml_file, "\n[dependencies]\n");
+    fprintf(toml_file, "# Add dependencies here\n");
+    fclose(toml_file);
+    
     // Create main.wyn
     snprintf(path, sizeof(path), "%s/src/main.wyn", project_name);
     FILE* main_file = fopen(path, "w");
@@ -744,6 +834,7 @@ int create_new_project(const char* project_name) {
     }
     
     printf("Created new Wyn project: %s\n", project_name);
+    printf("  %s/wyn.toml\n", project_name);
     printf("  %s/src/main.wyn\n", project_name);
     printf("  %s/tests/test_main.wyn\n", project_name);
     printf("  %s/README.md\n", project_name);

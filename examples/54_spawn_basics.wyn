@@ -1,0 +1,21 @@
+// Example 54: Spawn Basics
+// Demonstrates lightweight spawn (not OS threads)
+
+fn worker(id: int) {
+    var x = id * 2;
+}
+
+fn main() {
+    print("Spawning 1000 lightweight tasks...\n");
+    
+    var i = 0;
+    while (i < 1000) {
+        spawn worker(i);
+        i = i + 1;
+    }
+    
+    print("All spawns created!\n");
+    print("Memory efficient: ~4-8 KB per spawn\n");
+    
+    return 0;
+}

@@ -1,0 +1,29 @@
+// Example 55: Million Spawns
+// Stress test: spawn 1 million lightweight tasks
+
+fn worker() {
+    var x = 42;
+}
+
+fn main() {
+    print("Spawning 1,000,000 lightweight tasks...\n");
+    print("This would require 8TB with OS threads!\n");
+    print("With spawns: only ~4-8 GB\n\n");
+    
+    var i = 0;
+    while (i < 1000000) {
+        spawn worker();
+        i = i + 1;
+        
+        if (i % 100000 == 0) {
+            print("Spawned ");
+            print(i);
+            print(" tasks\n");
+        }
+    }
+    
+    print("\nAll 1 million spawns created!\n");
+    print("Work-stealing scheduler handles load balancing\n");
+    
+    return 0;
+}

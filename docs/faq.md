@@ -1,7 +1,7 @@
 # Frequently Asked Questions
 
-![Version](https://img.shields.io/badge/version-1.2.2-blue.svg)
-**Latest: v1.2.2**
+![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)
+**Latest: v1.4.0**
 
 Common questions and answers about the Wyn programming language.
 
@@ -22,7 +22,7 @@ Wyn is a modern systems programming language with an "everything is an object" p
 
 ### Is Wyn production ready?
 
-Yes! Wyn v1.2.2 is production ready with:
+Yes! Wyn v1.4.0 is production ready with:
 - ✅ Complete language implementation
 - ✅ 150+ built-in methods
 - ✅ Comprehensive standard library
@@ -203,12 +203,12 @@ fn main() -> int {
 **1. Use print statements:**
 ```wyn
 fn debug_function(x: int) -> int {
-    print_str("Input:");
+    print("Input:");
     print(x);
     
     let result = x * 2;
     
-    print_str("Output:");
+    print("Output:");
     print(result);
     
     return result;
@@ -219,7 +219,7 @@ fn debug_function(x: int) -> int {
 ```wyn
 let result = some_function();
 if result == -1 {
-    print_str("Function failed");
+    print("Function failed");
     return 1;
 }
 ```
@@ -449,4 +449,4 @@ If you can't find the answer here:
    - Code examples if relevant
    - What you've already tried
 
-*This FAQ covers Wyn v1.2.2. For the latest updates, see the [GitHub repository](https://github.com/wyn-lang/wyn).*
+*This FAQ covers Wyn v1.4.0. For the latest updates, see the [GitHub repository](https://github.com/wyn-lang/wyn).*
