@@ -317,6 +317,15 @@ void init_checker() {
     builtin_void = make_type(TYPE_VOID);
     builtin_array = make_type(TYPE_ARRAY);
     
+    // Register collection types
+    Type* builtin_map = make_type(TYPE_MAP);
+    Token map_tok = {TOKEN_IDENT, "HashMap", 7, 0};
+    add_symbol(global_scope, map_tok, builtin_map, false);
+    
+    Type* builtin_set = make_type(TYPE_SET);
+    Token set_tok = {TOKEN_IDENT, "HashSet", 7, 0};
+    add_symbol(global_scope, set_tok, builtin_set, false);
+    
     // Add built-in functions
     const char* stdlib_funcs[] = {
         "print", "print_float", "print_str", "print_bool", "print_hex", "print_bin", "println", "print_debug", "input", "input_float", "input_line", "printf_wyn", "sin_approx", "cos_approx", "pi_const", "e_const",
@@ -340,6 +349,7 @@ void init_checker() {
         "hashmap_new", "hashmap_insert", "hashmap_get", "hashmap_has", "hashmap_remove", "hashmap_free",
         "hashmap_insert_int", "hashmap_insert_float", "hashmap_insert_string", "hashmap_insert_bool",
         "hashmap_get_int", "hashmap_get_float", "hashmap_get_string", "hashmap_get_bool",
+        "wyn_hashmap_new", "wyn_hashmap_insert_int", "wyn_hashmap_get_int", "wyn_hashmap_has", "wyn_hashmap_len", "wyn_hashmap_free",
         "hashset_new", "hashset_add", "hashset_contains", "hashset_remove", "hashset_free",
         "set_len", "set_is_empty", "set_clear", "set_union", "set_intersection", "set_difference", "set_is_subset", "set_is_superset",
         "json_parse", "json_get_string", "json_get_int", "json_free",
@@ -646,6 +656,35 @@ static bool can_convert_type(Type* from, Type* to) {
 
 Type* check_expr(Expr* expr, SymbolTable* scope) {
     if (!expr) return NULL;
+    
+    // Handle generic type instantiation: HashMap<K,V>, Option<T>, etc.
+    // Parser represents this as EXPR_CALL with type arguments
+    if (expr->type == EXPR_CALL && expr->call.callee->type == EXPR_IDENT) {
+        Token type_name = expr->call.callee->token;
+        
+        // Check if this is a known generic type
+        if ((type_name.length == 7 && memcmp(type_name.start, "HashMap", 7) == 0) ||
+            (type_name.length == 7 && memcmp(type_name.start, "HashSet", 7) == 0) ||
+            (type_name.length == 6 && memcmp(type_name.start, "Option", 6) == 0) ||
+            (type_name.length == 6 && memcmp(type_name.start, "Result", 6) == 0)) {
+            
+            // For now, treat all generic instantiations as their base type
+            // HashMap<K,V> -> TYPE_MAP, Option<T> -> TYPE_OPTIONAL, etc.
+            Type* base_type = NULL;
+            if (type_name.length == 7 && memcmp(type_name.start, "HashMap", 7) == 0) {
+                base_type = make_type(TYPE_MAP);
+            } else if (type_name.length == 7 && memcmp(type_name.start, "HashSet", 7) == 0) {
+                base_type = make_type(TYPE_SET);
+            } else if (type_name.length == 6 && memcmp(type_name.start, "Option", 6) == 0) {
+                base_type = make_type(TYPE_OPTIONAL);
+            } else if (type_name.length == 6 && memcmp(type_name.start, "Result", 6) == 0) {
+                base_type = make_type(TYPE_RESULT);
+            }
+            
+            expr->expr_type = base_type;
+            return base_type;
+        }
+    }
     
     switch (expr->type) {
         case EXPR_INT:
@@ -1095,7 +1134,8 @@ Type* check_expr(Expr* expr, SymbolTable* scope) {
                     fprintf(stderr, "Error: Map index must be string\n");
                     return NULL;
                 }
-                return builtin_int; // Map value type (simplified)
+                expr->expr_type = builtin_int; // Map value type (simplified)
+                return builtin_int;
             } else {
                 // Array indexing - require int indices
                 if (idx_type && idx_type->kind != TYPE_INT) {
@@ -1109,10 +1149,13 @@ Type* check_expr(Expr* expr, SymbolTable* scope) {
                     Token callee = expr->index.array->call.callee->token;
                     // System::args returns string array
                     if (callee.length == 12 && memcmp(callee.start, "System::args", 12) == 0) {
+                        expr->expr_type = builtin_string;
+                        expr->expr_type = builtin_string;
                         return builtin_string;
                     }
                     // File::list_dir returns string array
                     if (callee.length == 14 && memcmp(callee.start, "File::list_dir", 14) == 0) {
+                        expr->expr_type = builtin_string;
                         return builtin_string;
                     }
                 }
@@ -1126,6 +1169,7 @@ Type* check_expr(Expr* expr, SymbolTable* scope) {
                         (var_name.length == 5 && memcmp(var_name.start, "names", 5) == 0) ||
                         (var_name.length == 5 && memcmp(var_name.start, "parts", 5) == 0) ||
                         (var_name.length == 7 && memcmp(var_name.start, "entries", 7) == 0)) {
+                        expr->expr_type = builtin_string;
                         return builtin_string;
                     }
                 }
@@ -1137,6 +1181,7 @@ Type* check_expr(Expr* expr, SymbolTable* scope) {
                         (method.length == 5 && memcmp(method.start, "chars", 5) == 0) ||
                         (method.length == 5 && memcmp(method.start, "words", 5) == 0) ||
                         (method.length == 5 && memcmp(method.start, "lines", 5) == 0)) {
+                        expr->expr_type = builtin_string;
                         return builtin_string;
                     }
                 }
@@ -1146,12 +1191,14 @@ Type* check_expr(Expr* expr, SymbolTable* scope) {
                     if (expr->index.array->array.count > 0) {
                         Type* first_type = check_expr(expr->index.array->array.elements[0], scope);
                         if (first_type && first_type->kind == TYPE_STRING) {
+                            expr->expr_type = builtin_string;
                             return builtin_string;
                         }
                     }
                 }
                 
                 // Default to int for unknown arrays
+                expr->expr_type = builtin_int;
                 return builtin_int;
             }
         }
@@ -2463,6 +2510,119 @@ void check_program(Program* prog) {
         net_close_type->fn_type.param_types[0] = builtin_int;
         net_close_type->fn_type.return_type = builtin_int;
         add_symbol(global_scope, net_close_tok, net_close_type, false);
+        
+        // HashMap module
+        Token hashmap_new_tok = {TOKEN_IDENT, "HashMap::new", 12, 0};
+        Type* hashmap_new_type = make_type(TYPE_FUNCTION);
+        hashmap_new_type->fn_type.param_count = 0;
+        hashmap_new_type->fn_type.param_types = NULL;
+        hashmap_new_type->fn_type.return_type = builtin_int;
+        add_symbol(global_scope, hashmap_new_tok, hashmap_new_type, false);
+        
+        Token hashmap_insert_tok = {TOKEN_IDENT, "HashMap::insert", 15, 0};
+        Type* hashmap_insert_type = make_type(TYPE_FUNCTION);
+        hashmap_insert_type->fn_type.param_count = 3;
+        hashmap_insert_type->fn_type.param_types = malloc(sizeof(Type*) * 3);
+        hashmap_insert_type->fn_type.param_types[0] = builtin_int;
+        hashmap_insert_type->fn_type.param_types[1] = builtin_string;
+        hashmap_insert_type->fn_type.param_types[2] = builtin_int;
+        hashmap_insert_type->fn_type.return_type = builtin_int;
+        add_symbol(global_scope, hashmap_insert_tok, hashmap_insert_type, false);
+        
+        Token hashmap_get_tok = {TOKEN_IDENT, "HashMap::get", 12, 0};
+        Type* hashmap_get_type = make_type(TYPE_FUNCTION);
+        hashmap_get_type->fn_type.param_count = 2;
+        hashmap_get_type->fn_type.param_types = malloc(sizeof(Type*) * 2);
+        hashmap_get_type->fn_type.param_types[0] = builtin_int;
+        hashmap_get_type->fn_type.param_types[1] = builtin_string;
+        hashmap_get_type->fn_type.return_type = builtin_int;
+        add_symbol(global_scope, hashmap_get_tok, hashmap_get_type, false);
+        
+        Token hashmap_contains_tok = {TOKEN_IDENT, "HashMap::contains", 17, 0};
+        Type* hashmap_contains_type = make_type(TYPE_FUNCTION);
+        hashmap_contains_type->fn_type.param_count = 2;
+        hashmap_contains_type->fn_type.param_types = malloc(sizeof(Type*) * 2);
+        hashmap_contains_type->fn_type.param_types[0] = builtin_int;
+        hashmap_contains_type->fn_type.param_types[1] = builtin_string;
+        hashmap_contains_type->fn_type.return_type = builtin_int;
+        add_symbol(global_scope, hashmap_contains_tok, hashmap_contains_type, false);
+        
+        Token hashmap_len_tok = {TOKEN_IDENT, "HashMap::len", 12, 0};
+        Type* hashmap_len_type = make_type(TYPE_FUNCTION);
+        hashmap_len_type->fn_type.param_count = 1;
+        hashmap_len_type->fn_type.param_types = malloc(sizeof(Type*) * 1);
+        hashmap_len_type->fn_type.param_types[0] = builtin_int;
+        hashmap_len_type->fn_type.return_type = builtin_int;
+        add_symbol(global_scope, hashmap_len_tok, hashmap_len_type, false);
+        
+        Token hashmap_remove_tok = {TOKEN_IDENT, "HashMap::remove", 15, 0};
+        Type* hashmap_remove_type = make_type(TYPE_FUNCTION);
+        hashmap_remove_type->fn_type.param_count = 2;
+        hashmap_remove_type->fn_type.param_types = malloc(sizeof(Type*) * 2);
+        hashmap_remove_type->fn_type.param_types[0] = builtin_int;
+        hashmap_remove_type->fn_type.param_types[1] = builtin_string;
+        hashmap_remove_type->fn_type.return_type = builtin_int;
+        add_symbol(global_scope, hashmap_remove_tok, hashmap_remove_type, false);
+        
+        Token hashmap_free_tok = {TOKEN_IDENT, "HashMap::free", 13, 0};
+        Type* hashmap_free_type = make_type(TYPE_FUNCTION);
+        hashmap_free_type->fn_type.param_count = 1;
+        hashmap_free_type->fn_type.param_types = malloc(sizeof(Type*) * 1);
+        hashmap_free_type->fn_type.param_types[0] = builtin_int;
+        hashmap_free_type->fn_type.return_type = builtin_void;
+        add_symbol(global_scope, hashmap_free_tok, hashmap_free_type, false);
+        
+        // Lowercase hashmap functions (for compatibility)
+        Token hashmap_new_lc_tok = {TOKEN_IDENT, "wyn_hashmap_new", 15, 0};
+        Type* hashmap_new_lc_type = make_type(TYPE_FUNCTION);
+        hashmap_new_lc_type->fn_type.param_count = 0;
+        hashmap_new_lc_type->fn_type.param_types = NULL;
+        hashmap_new_lc_type->fn_type.return_type = builtin_int;
+        add_symbol(global_scope, hashmap_new_lc_tok, hashmap_new_lc_type, false);
+        
+        Token hashmap_insert_int_lc_tok = {TOKEN_IDENT, "wyn_hashmap_insert_int", 22, 0};
+        Type* hashmap_insert_int_lc_type = make_type(TYPE_FUNCTION);
+        hashmap_insert_int_lc_type->fn_type.param_count = 3;
+        hashmap_insert_int_lc_type->fn_type.param_types = malloc(sizeof(Type*) * 3);
+        hashmap_insert_int_lc_type->fn_type.param_types[0] = builtin_int;
+        hashmap_insert_int_lc_type->fn_type.param_types[1] = builtin_string;
+        hashmap_insert_int_lc_type->fn_type.param_types[2] = builtin_int;
+        hashmap_insert_int_lc_type->fn_type.return_type = builtin_void;
+        add_symbol(global_scope, hashmap_insert_int_lc_tok, hashmap_insert_int_lc_type, false);
+        
+        Token hashmap_get_int_lc_tok = {TOKEN_IDENT, "wyn_hashmap_get_int", 19, 0};
+        Type* hashmap_get_int_lc_type = make_type(TYPE_FUNCTION);
+        hashmap_get_int_lc_type->fn_type.param_count = 2;
+        hashmap_get_int_lc_type->fn_type.param_types = malloc(sizeof(Type*) * 2);
+        hashmap_get_int_lc_type->fn_type.param_types[0] = builtin_int;
+        hashmap_get_int_lc_type->fn_type.param_types[1] = builtin_string;
+        hashmap_get_int_lc_type->fn_type.return_type = builtin_int;
+        add_symbol(global_scope, hashmap_get_int_lc_tok, hashmap_get_int_lc_type, false);
+        
+        Token hashmap_has_lc_tok = {TOKEN_IDENT, "wyn_hashmap_has", 15, 0};
+        Type* hashmap_has_lc_type = make_type(TYPE_FUNCTION);
+        hashmap_has_lc_type->fn_type.param_count = 2;
+        hashmap_has_lc_type->fn_type.param_types = malloc(sizeof(Type*) * 2);
+        hashmap_has_lc_type->fn_type.param_types[0] = builtin_int;
+        hashmap_has_lc_type->fn_type.param_types[1] = builtin_string;
+        hashmap_has_lc_type->fn_type.return_type = builtin_int;
+        add_symbol(global_scope, hashmap_has_lc_tok, hashmap_has_lc_type, false);
+        
+        Token hashmap_len_lc_tok = {TOKEN_IDENT, "wyn_hashmap_len", 15, 0};
+        Type* hashmap_len_lc_type = make_type(TYPE_FUNCTION);
+        hashmap_len_lc_type->fn_type.param_count = 1;
+        hashmap_len_lc_type->fn_type.param_types = malloc(sizeof(Type*) * 1);
+        hashmap_len_lc_type->fn_type.param_types[0] = builtin_int;
+        hashmap_len_lc_type->fn_type.return_type = builtin_int;
+        add_symbol(global_scope, hashmap_len_lc_tok, hashmap_len_lc_type, false);
+        
+        Token hashmap_free_lc_tok = {TOKEN_IDENT, "wyn_hashmap_free", 16, 0};
+        Type* hashmap_free_lc_type = make_type(TYPE_FUNCTION);
+        hashmap_free_lc_type->fn_type.param_count = 1;
+        hashmap_free_lc_type->fn_type.param_types = malloc(sizeof(Type*) * 1);
+        hashmap_free_lc_type->fn_type.param_types[0] = builtin_int;
+        hashmap_free_lc_type->fn_type.return_type = builtin_void;
+        add_symbol(global_scope, hashmap_free_lc_tok, hashmap_free_lc_type, false);
     }
     
     // First pass: process imports and register functions with their signatures

@@ -141,7 +141,8 @@ static WynTokenType keyword_type(const char* start, int length) {
         case 'm':
             if (length == 5 && memcmp(start, "match", 5) == 0) return TOKEN_MATCH;
             if (length == 3 && memcmp(start, "mut", 3) == 0) return TOKEN_MUT;
-            if (length == 3 && memcmp(start, "map", 3) == 0) return TOKEN_MAP;
+            // "map" is not a keyword - use {} for hashmaps
+            // if (length == 3 && memcmp(start, "map", 3) == 0) return TOKEN_MAP;
             if (length == 6 && memcmp(start, "module", 6) == 0) return TOKEN_MODULE;
             if (length == 5 && memcmp(start, "macro", 5) == 0) return TOKEN_MACRO;
             break;

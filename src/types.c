@@ -406,6 +406,17 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
         return false;
     }
     
+    if (strcmp(receiver_type, "bool") == 0) {
+        // Bool methods
+        if (strcmp(method_name, "to_string") == 0 && arg_count == 0) {
+            out->c_function = "bool_to_string"; return true;
+        }
+        if (strcmp(method_name, "to_int") == 0 && arg_count == 0) {
+            out->c_function = "bool_to_int"; return true;
+        }
+        return false;
+    }
+    
     if (strcmp(receiver_type, "float") == 0) {
         // Float methods
         if (strcmp(method_name, "to_string") == 0 && arg_count == 0) {
@@ -576,7 +587,13 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
     
     if (strcmp(receiver_type, "map") == 0) {
         // HashMap methods
+        if (strcmp(method_name, "insert") == 0 && arg_count == 2) {
+            out->c_function = "hashmap_insert_int"; return true;
+        }
         if (strcmp(method_name, "has") == 0 && arg_count == 1) {
+            out->c_function = "hashmap_has"; return true;
+        }
+        if (strcmp(method_name, "contains") == 0 && arg_count == 1) {
             out->c_function = "hashmap_has"; return true;
         }
         if (strcmp(method_name, "get") == 0 && arg_count == 1) {
@@ -594,6 +611,9 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
         if (strcmp(method_name, "clear") == 0 && arg_count == 0) {
             out->c_function = "wyn_hashmap_clear"; return true;
         }
+        if (strcmp(method_name, "free") == 0 && arg_count == 0) {
+            out->c_function = "hashmap_free"; return true;
+        }
         return false;
     }
     
@@ -605,8 +625,14 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
         if (strcmp(method_name, "insert") == 0 && arg_count == 1) {
             out->c_function = "hashset_add"; return true;
         }
+        if (strcmp(method_name, "add_int") == 0 && arg_count == 1) {
+            out->c_function = "wyn_hashset_add_int"; return true;
+        }
         if (strcmp(method_name, "contains") == 0 && arg_count == 1) {
             out->c_function = "hashset_contains"; return true;
+        }
+        if (strcmp(method_name, "contains_int") == 0 && arg_count == 1) {
+            out->c_function = "wyn_hashset_contains_int"; return true;
         }
         if (strcmp(method_name, "remove") == 0 && arg_count == 1) {
             out->c_function = "hashset_remove"; return true;

@@ -19,6 +19,19 @@ else
     echo "✅ Installed to /usr/local/bin/wyn"
 fi
 
+# Install runtime files to /usr/local/share/wyn
+INSTALL_DIR="/usr/local/share/wyn"
+if [ -w /usr/local/share ]; then
+    mkdir -p "$INSTALL_DIR/src"
+    cp -r src/*.c src/*.h "$INSTALL_DIR/src/"
+    echo "✅ Installed runtime files to $INSTALL_DIR"
+else
+    echo "⚠️  Need sudo to install runtime files"
+    sudo mkdir -p "$INSTALL_DIR/src"
+    sudo cp -r src/*.c src/*.h "$INSTALL_DIR/src/"
+    echo "✅ Installed runtime files to $INSTALL_DIR"
+fi
+
 # Verify installation
 if command -v wyn &> /dev/null; then
     echo "✅ Wyn compiler installed successfully"

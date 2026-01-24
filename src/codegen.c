@@ -588,8 +588,8 @@ void codegen_expr(Expr* expr) {
             if (expr->call.callee->type == EXPR_IDENT) {
                 Token func_name = expr->call.callee->token;
                 
-                // Handle map function: map(array, lambda)
-                if (func_name.length == 3 && memcmp(func_name.start, "map", 3) == 0) {
+                // Handle map function: map(array, lambda) - only if 2 args
+                if (func_name.length == 3 && memcmp(func_name.start, "map", 3) == 0 && expr->call.arg_count == 2) {
                     emit("array_map(");
                     codegen_expr(expr->call.args[0]); // array
                     emit(", ");
@@ -598,8 +598,8 @@ void codegen_expr(Expr* expr) {
                     break;
                 }
                 
-                // Handle filter function: filter(array, predicate)
-                if (func_name.length == 6 && memcmp(func_name.start, "filter", 6) == 0) {
+                // Handle filter function: filter(array, predicate) - only if 2 args
+                if (func_name.length == 6 && memcmp(func_name.start, "filter", 6) == 0 && expr->call.arg_count == 2) {
                     emit("array_filter(");
                     codegen_expr(expr->call.args[0]); // array
                     emit(", ");
@@ -1276,9 +1276,16 @@ void codegen_expr(Expr* expr) {
             break;
         }
         case EXPR_INDEX: {
-            // Check if this is map indexing by looking at the expression type
-            // For HashMap indexing, use hashmap_get_int
-            if (expr->index.index->type == EXPR_STRING) {
+            // Check if this is map indexing by looking at the array type
+            bool is_map_index = false;
+            if (expr->index.array->expr_type && expr->index.array->expr_type->kind == TYPE_MAP) {
+                is_map_index = true;
+            } else if (expr->index.index->type == EXPR_STRING || 
+                      (expr->index.index->expr_type && expr->index.index->expr_type->kind == TYPE_STRING)) {
+                is_map_index = true;
+            }
+            
+            if (is_map_index) {
                 // Map indexing: map["key"] -> hashmap_get_int(map, "key")
                 emit("hashmap_get_int(");
                 codegen_expr(expr->index.array);
@@ -1862,6 +1869,54 @@ void codegen_c_header() {
     // String runtime functions
     emit("const char* wyn_string_concat_safe(const char* left, const char* right);\n\n");
     
+    // Testing framework
+    emit("// Test module\n");
+    emit("void Test_init(const char* suite_name);\n");
+    emit("void Test_assert(int condition, const char* message);\n");
+    emit("void Test_assert_eq_int(int actual, int expected, const char* message);\n");
+    emit("void Test_assert_eq_str(const char* actual, const char* expected, const char* message);\n");
+    emit("void Test_assert_ne_int(int actual, int expected, const char* message);\n");
+    emit("void Test_assert_gt(int actual, int threshold, const char* message);\n");
+    emit("void Test_assert_lt(int actual, int threshold, const char* message);\n");
+    emit("void Test_assert_gte(int actual, int threshold, const char* message);\n");
+    emit("void Test_assert_lte(int actual, int threshold, const char* message);\n");
+    emit("void Test_assert_contains(const char* haystack, const char* needle, const char* message);\n");
+    emit("void Test_assert_null(void* ptr, const char* message);\n");
+    emit("void Test_assert_not_null(void* ptr, const char* message);\n");
+    emit("void Test_describe(const char* description);\n");
+    emit("void Test_skip(const char* reason);\n");
+    emit("int Test_summary();\n\n");
+    
+    // HTTP client
+    emit("// Http module\n");
+    emit("typedef struct HttpResponse HttpResponse;\n");
+    emit("HttpResponse* Http_get(const char* url);\n");
+    emit("HttpResponse* Http_post(const char* url, const char* body, const char* content_type);\n");
+    emit("int Http_status(HttpResponse* resp);\n");
+    emit("const char* Http_body(HttpResponse* resp);\n");
+    emit("const char* Http_header(HttpResponse* resp, const char* name);\n");
+    emit("void Http_free(HttpResponse* resp);\n\n");
+    
+    // TCP server
+    emit("// TcpServer module\n");
+    emit("typedef struct TcpServer TcpServer;\n");
+    emit("TcpServer* TcpServer_new(int port);\n");
+    emit("int TcpServer_listen(TcpServer* server);\n");
+    emit("int TcpServer_accept(TcpServer* server);\n");
+    emit("void TcpServer_close(TcpServer* server);\n\n");
+    
+    // Socket utilities
+    emit("// Socket module\n");
+    emit("int Socket_set_timeout(int sock, int seconds);\n");
+    emit("int Socket_set_nonblocking(int sock);\n");
+    emit("int Socket_poll_read(int sock, int timeout_ms);\n");
+    emit("char* Socket_read_line(int sock);\n\n");
+    
+    // URL utilities
+    emit("// Url module\n");
+    emit("char* Url_encode(const char* str);\n");
+    emit("char* Url_decode(const char* str);\n\n");
+    
     // Standard library function declarations
     emit("// String module\n");
     emit("int wyn_string_len(const char* str);\n");
@@ -1879,6 +1934,38 @@ void codegen_c_header() {
     emit("int wyn_string_last_index_of(const char* str, const char* substr);\n");
     emit("char* wyn_string_repeat(const char* str, int n);\n");
     emit("char* wyn_string_reverse(const char* str);\n\n");
+    
+    emit("// Json module\n");
+    emit("typedef struct WynJson WynJson;\n");
+    emit("WynJson* Json_parse(const char* text);\n");
+    emit("char* Json_get_string(WynJson* json, const char* key);\n");
+    emit("int Json_get_int(WynJson* json, const char* key);\n");
+    emit("void Json_free(WynJson* json);\n\n");
+    
+    emit("// Time module wrappers\n");
+    emit("long Time_now();\n");
+    emit("long long Time_now_millis();\n");
+    emit("void Time_sleep(int seconds);\n\n");
+    
+    emit("// Crypto module wrappers\n");
+    emit("unsigned int Crypto_hash32(const char* data);\n");
+    emit("unsigned long long Crypto_hash64(const char* data);\n\n");
+    
+    emit("// HashMap module\n");
+    emit("int HashMap_new();\n");
+    emit("void HashMap_insert(int map, const char* key, int value);\n");
+    emit("int HashMap_get(int map, const char* key);\n");
+    emit("int HashMap_contains(int map, const char* key);\n");
+    emit("int HashMap_len(int map);\n");
+    emit("int HashMap_remove(int map, const char* key);\n");
+    emit("void HashMap_clear(int map);\n");
+    emit("void HashMap_free(int map);\n");
+    emit("int wyn_hashmap_new();\n");
+    emit("void wyn_hashmap_insert_int(int map, const char* key, int value);\n");
+    emit("int wyn_hashmap_get_int(int map, const char* key);\n");
+    emit("int wyn_hashmap_has(int map, const char* key);\n");
+    emit("int wyn_hashmap_len(int map);\n");
+    emit("void wyn_hashmap_free(int map);\n\n");
     
     emit("// Array module\n");
     emit("int wyn_array_find(int* arr, int len, int (*pred)(int), int* found);\n");
@@ -3105,6 +3192,7 @@ void codegen_c_header() {
     emit("char* int_to_string(int x) { char* r = malloc(32); sprintf(r, \"%%d\", x); return r; }\n");
     emit("char* float_to_string(double x) { char* r = malloc(32); sprintf(r, \"%%g\", x); return r; }\n");
     emit("char* bool_to_string(bool x) { char* r = malloc(8); strcpy(r, x ? \"true\" : \"false\"); return r; }\n");
+    emit("int bool_to_int(bool x) { return x ? 1 : 0; }\n");
     emit("char* str_to_string(const char* x) { return (char*)x; }\n");
     
     emit("#define to_string(x) _Generic((x), \\\n");
@@ -3612,14 +3700,7 @@ void codegen_c_header() {
     emit("    return close(sockfd) == 0 ? 1 : 0;\n");
     emit("}\n\n");
     
-    // Time module functions
-    emit("int Time_now() { return (int)time(NULL); }\n");
-    emit("void Time_sleep(int milliseconds) {\n");
-    emit("    struct timespec ts;\n");
-    emit("    ts.tv_sec = milliseconds / 1000;\n");
-    emit("    ts.tv_nsec = (milliseconds %% 1000) * 1000000;\n");
-    emit("    nanosleep(&ts, NULL);\n");
-    emit("}\n");
+    // Time and Crypto functions are in stdlib_runtime.c
     
     emit("char* Time_format(int timestamp) {\n");
     emit("    time_t t = (time_t)timestamp;\n");
@@ -3770,6 +3851,10 @@ static void emit_function_with_prefix(Stmt* fn_stmt, const char* prefix) {
                 return_type = "bool";
             } else if (rt.length == 3 && memcmp(rt.start, "int", 3) == 0) {
                 return_type = "int";
+            } else if (rt.length == 7 && memcmp(rt.start, "HashMap", 7) == 0) {
+                return_type = "WynHashMap*";
+            } else if (rt.length == 7 && memcmp(rt.start, "HashSet", 7) == 0) {
+                return_type = "WynHashSet*";
             } else {
                 // Custom struct type - add module prefix if in module context
                 if (current_module_prefix) {
@@ -3806,8 +3891,10 @@ static void emit_function_with_prefix(Stmt* fn_stmt, const char* prefix) {
                     c_type = "WynArray";
                 } else if (type_token.length == 3 && memcmp(type_token.start, "int", 3) == 0) {
                     c_type = "int";
-                } else if (type_token.length == 3 && memcmp(type_token.start, "int", 3) == 0) {
-                    c_type = "int";
+                } else if (type_token.length == 7 && memcmp(type_token.start, "HashMap", 7) == 0) {
+                    c_type = "WynHashMap*";
+                } else if (type_token.length == 7 && memcmp(type_token.start, "HashSet", 7) == 0) {
+                    c_type = "WynHashSet*";
                 } else {
                     // Custom struct type - add module prefix if in module context
                     if (current_module_prefix) {
@@ -3869,6 +3956,22 @@ void codegen_stmt(Stmt* stmt) {
                     // Handle optional type annotation like int?
                     c_type = "WynOptional*";
                     needs_arc_management = true;
+                } else if (stmt->var.type->type == EXPR_CALL) {
+                    // Handle generic type instantiation: HashMap<K,V>, Option<T>, etc.
+                    if (stmt->var.type->call.callee->type == EXPR_IDENT) {
+                        Token type_name = stmt->var.type->call.callee->token;
+                        if (type_name.length == 7 && memcmp(type_name.start, "HashMap", 7) == 0) {
+                            c_type = "WynHashMap*";
+                        } else if (type_name.length == 7 && memcmp(type_name.start, "HashSet", 7) == 0) {
+                            c_type = "WynHashSet*";
+                        } else if (type_name.length == 6 && memcmp(type_name.start, "Option", 6) == 0) {
+                            c_type = "WynOptional*";
+                            needs_arc_management = true;
+                        } else if (type_name.length == 6 && memcmp(type_name.start, "Result", 6) == 0) {
+                            c_type = "WynResult*";
+                            needs_arc_management = true;
+                        }
+                    }
                 } else if (stmt->var.type->type == EXPR_IDENT) {
                     Token type_name = stmt->var.type->token;
                     if (type_name.length == 3 && memcmp(type_name.start, "int", 3) == 0) {
@@ -4266,6 +4369,10 @@ void codegen_stmt(Stmt* stmt) {
                         return_type = "bool";
                     } else if (type_name.length == 5 && memcmp(type_name.start, "array", 5) == 0) {
                         return_type = "WynArray";
+                    } else if (type_name.length == 7 && memcmp(type_name.start, "HashMap", 7) == 0) {
+                        return_type = "WynHashMap*";
+                    } else if (type_name.length == 7 && memcmp(type_name.start, "HashSet", 7) == 0) {
+                        return_type = "WynHashSet*";
                     } else {
                         // Assume it's a custom struct type
                         snprintf(return_type_buf, sizeof(return_type_buf), "%.*s", 
@@ -4359,6 +4466,10 @@ void codegen_stmt(Stmt* stmt) {
                             param_type = "bool";
                         } else if (type_name.length == 5 && memcmp(type_name.start, "array", 5) == 0) {
                             param_type = "WynArray";
+                        } else if (type_name.length == 7 && memcmp(type_name.start, "HashMap", 7) == 0) {
+                            param_type = "WynHashMap*";
+                        } else if (type_name.length == 7 && memcmp(type_name.start, "HashSet", 7) == 0) {
+                            param_type = "WynHashSet*";
                         } else {
                             // Assume it's a custom struct type
                             snprintf(custom_type_buf, sizeof(custom_type_buf), "%.*s", 
@@ -4962,6 +5073,10 @@ void codegen_stmt(Stmt* stmt) {
                                             return_type = "bool";
                                         } else if (rt.length == 3 && memcmp(rt.start, "int", 3) == 0) {
                                             return_type = "int";
+                                        } else if (rt.length == 7 && memcmp(rt.start, "HashMap", 7) == 0) {
+                                            return_type = "WynHashMap*";
+                                        } else if (rt.length == 7 && memcmp(rt.start, "HashSet", 7) == 0) {
+                                            return_type = "WynHashSet*";
                                         } else {
                                             // Custom struct type - add module prefix
                                             snprintf(custom_ret_type, 128, "%s_%.*s", c_mod_name, rt.length, rt.start);
@@ -5634,6 +5749,10 @@ void codegen_program(Program* prog) {
                         return_type = "bool";
                     } else if (type_name.length == 5 && memcmp(type_name.start, "array", 5) == 0) {
                         return_type = "WynArray";
+                    } else if (type_name.length == 7 && memcmp(type_name.start, "HashMap", 7) == 0) {
+                        return_type = "WynHashMap*";
+                    } else if (type_name.length == 7 && memcmp(type_name.start, "HashSet", 7) == 0) {
+                        return_type = "WynHashSet*";
                     } else {
                         // Assume it's a custom struct type
                         snprintf(return_type_buf, sizeof(return_type_buf), "%.*s", 
@@ -5720,6 +5839,10 @@ void codegen_program(Program* prog) {
                             param_type = "bool";
                         } else if (type_name.length == 5 && memcmp(type_name.start, "array", 5) == 0) {
                             param_type = "WynArray";
+                        } else if (type_name.length == 7 && memcmp(type_name.start, "HashMap", 7) == 0) {
+                            param_type = "WynHashMap*";
+                        } else if (type_name.length == 7 && memcmp(type_name.start, "HashSet", 7) == 0) {
+                            param_type = "WynHashSet*";
                         } else {
                             // Assume it's a struct type
                             snprintf(struct_type_name, sizeof(struct_type_name), "%.*s", 
