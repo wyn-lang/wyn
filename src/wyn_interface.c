@@ -11,9 +11,9 @@
 #include <time.h>
 #include <sys/stat.h>
 #ifdef _WIN32
-#include <direct.h>
-#include <windows.h>
 #include <winsock2.h>
+#include <windows.h>
+#include <direct.h>
 #define getcwd _getcwd
 #else
 #include <unistd.h>
@@ -260,7 +260,7 @@ int _listen(int sockfd, int backlog) {
     #endif
 }
 
-void _sleep(int seconds) {
+void wyn_sleep(int seconds) {
     #ifdef _WIN32
     Sleep(seconds * 1000);
     #else

@@ -54,7 +54,7 @@ const char* _format(long timestamp);
 WynArray _args(void);
 int _exec_code(const char* cmd);
 int _listen(int sockfd, int backlog);
-void _sleep(int seconds);
+void wyn_sleep(int seconds);
 int _close(int fd);
 
 #endif // WYN_INTERFACE_H
