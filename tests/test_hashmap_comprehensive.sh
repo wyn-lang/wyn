@@ -155,6 +155,31 @@ ENDTEST
 
 run_test "Length tracking" test_len.wyn
 
+# Test 6: Type inference through function returns
+cat > test_type_inference.wyn << 'ENDTEST'
+fn create_map() -> HashMap<string, int> {
+    var m: HashMap<string, int> = {}
+    m.insert("initial", 42)
+    return m
+}
+
+fn main() -> int {
+    var my_map = create_map()
+    my_map.insert("key", 100)
+    var val = my_map.get("key")
+    
+    if val == 100 {
+        print("✓ Type inference works")
+        return 0
+    }
+    
+    print("✗ Type inference failed")
+    return 1
+}
+ENDTEST
+
+run_test "Type inference" test_type_inference.wyn
+
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "RESULTS"
@@ -172,3 +197,28 @@ else
     echo "❌ SOME TESTS FAILED"
     exit 1
 fi
+
+# Test 6: Type inference through function returns
+cat > test_type_inference.wyn << 'ENDTEST'
+fn create_map() -> HashMap<string, int> {
+    var m: HashMap<string, int> = {}
+    m.insert("initial", 42)
+    return m
+}
+
+fn main() -> int {
+    var my_map = create_map()
+    my_map.insert("key", 100)
+    var val = my_map.get("key")
+    
+    if val == 100 {
+        print("✓ Type inference works")
+        return 0
+    }
+    
+    print("✗ Type inference failed")
+    return 1
+}
+ENDTEST
+
+run_test "Type inference" test_type_inference.wyn
