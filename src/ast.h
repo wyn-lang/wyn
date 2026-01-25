@@ -463,6 +463,12 @@ typedef struct {
     Token* variants;
     int variant_count;
     bool is_public;
+    // For enum variants with data
+    Expr*** variant_types;      // Array of arrays of type expressions
+    int* variant_type_counts;   // Count of types for each variant
+    // For generic enums: enum Result<T, E>
+    Token* type_params;
+    int type_param_count;
 } EnumStmt;
 
 typedef struct {

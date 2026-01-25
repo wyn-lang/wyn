@@ -2359,16 +2359,53 @@ Stmt* enum_decl() {
     Stmt* stmt = alloc_stmt();
     stmt->type = STMT_ENUM;
     stmt->enum_decl.name = parser.current;
-    stmt->enum_decl.is_public = false;  // Initialize to false
+    stmt->enum_decl.is_public = false;
     expect(TOKEN_IDENT, "Expected enum name");
+    
+    // Check for generic type parameters: enum Result<T, E>
+    if (match(TOKEN_LT)) {
+        stmt->enum_decl.type_param_count = 0;
+        stmt->enum_decl.type_params = malloc(sizeof(Token) * 8);
+        do {
+            stmt->enum_decl.type_params[stmt->enum_decl.type_param_count++] = parser.current;
+            expect(TOKEN_IDENT, "Expected type parameter");
+        } while (match(TOKEN_COMMA));
+        expect(TOKEN_GT, "Expected '>' after type parameters");
+    } else {
+        stmt->enum_decl.type_param_count = 0;
+        stmt->enum_decl.type_params = NULL;
+    }
+    
     expect(TOKEN_LBRACE, "Expected '{' after enum name");
     
     stmt->enum_decl.variant_count = 0;
     stmt->enum_decl.variants = malloc(sizeof(Token) * 32);
+    stmt->enum_decl.variant_types = malloc(sizeof(Expr**) * 32);
+    stmt->enum_decl.variant_type_counts = malloc(sizeof(int) * 32);
     
     while (!check(TOKEN_RBRACE) && !check(TOKEN_EOF)) {
         stmt->enum_decl.variants[stmt->enum_decl.variant_count] = parser.current;
         expect(TOKEN_IDENT, "Expected variant name");
+        
+        // Check for associated data: Ok(int) or Err(string)
+        if (match(TOKEN_LPAREN)) {
+            int type_count = 0;
+            Expr** types = malloc(sizeof(Expr*) * 8);
+            
+            if (!check(TOKEN_RPAREN)) {
+                do {
+                    types[type_count++] = parse_type();
+                } while (match(TOKEN_COMMA));
+            }
+            
+            expect(TOKEN_RPAREN, "Expected ')' after variant types");
+            stmt->enum_decl.variant_types[stmt->enum_decl.variant_count] = types;
+            stmt->enum_decl.variant_type_counts[stmt->enum_decl.variant_count] = type_count;
+        } else {
+            stmt->enum_decl.variant_types[stmt->enum_decl.variant_count] = NULL;
+            stmt->enum_decl.variant_type_counts[stmt->enum_decl.variant_count] = 0;
+        }
+        
         stmt->enum_decl.variant_count++;
         if (!check(TOKEN_RBRACE)) {
             match(TOKEN_COMMA);
