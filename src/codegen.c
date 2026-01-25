@@ -1750,8 +1750,16 @@ void codegen_expr(Expr* expr) {
             break;
         }
         case EXPR_INDEX_ASSIGN: {
-            // Handle ARC-managed array assignment
-            if (expr->index_assign.index->type == EXPR_STRING) {
+            // Check if this is map assignment
+            bool is_map_assign = false;
+            if (expr->index_assign.object->expr_type && expr->index_assign.object->expr_type->kind == TYPE_MAP) {
+                is_map_assign = true;
+            } else if (expr->index_assign.index->type == EXPR_STRING || 
+                      (expr->index_assign.index->expr_type && expr->index_assign.index->expr_type->kind == TYPE_STRING)) {
+                is_map_assign = true;
+            }
+            
+            if (is_map_assign) {
                 // Map assignment: map["key"] = value -> hashmap_insert_int(map, "key", value)
                 emit("hashmap_insert_int(");
                 codegen_expr(expr->index_assign.object);
