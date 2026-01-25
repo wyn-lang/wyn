@@ -74,6 +74,42 @@ fn is_whitespace(ch: string) -> int {
     return 0
 }
 
+fn check_keyword(input: string, start: int, len: int) {
+    // Returns TokenType for keyword, or TokenType_Ident if not a keyword
+    
+    // Check "fn" (length 2)
+    if len == 2 {
+        if input[start] == "f" {
+            if input[start + 1] == "n" {
+                return TokenType_Fn
+            }
+        }
+    }
+    
+    // Check "if" (length 2)
+    if len == 2 {
+        if input[start] == "i" {
+            if input[start + 1] == "f" {
+                return TokenType_If
+            }
+        }
+    }
+    
+    // Check "var" (length 3)
+    if len == 3 {
+        if input[start] == "v" {
+            if input[start + 1] == "a" {
+                if input[start + 2] == "r" {
+                    return TokenType_Var
+                }
+            }
+        }
+    }
+    
+    // Not a keyword
+    return TokenType_Ident
+}
+
 fn lex(input: string) -> [int] {
     var pos = 0
     var tokens = []
@@ -93,7 +129,7 @@ fn lex(input: string) -> [int] {
                 }
             }
         } else if is_alpha(ch) {
-            tokens.push(TokenType_Ident)
+            var ident_start = pos
             while pos < input.len() {
                 var c = input[pos]
                 if is_alpha(c) {
@@ -102,6 +138,9 @@ fn lex(input: string) -> [int] {
                     break
                 }
             }
+            var ident_len = pos - ident_start
+            var token_type = check_keyword(input, ident_start, ident_len)
+            tokens.push(token_type)
         } else if ch == "+" {
             tokens.push(TokenType_Plus)
             pos = pos + 1
