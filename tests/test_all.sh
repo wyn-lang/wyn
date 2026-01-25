@@ -3,6 +3,8 @@
 
 set -e
 
+cd "$(dirname "$0")"  # Change to tests directory
+
 echo "╔══════════════════════════════════════════════════════════════════════════╗"
 echo "║                                                                          ║"
 echo "║                     WYN COMPREHENSIVE TEST SUITE                         ║"
@@ -25,6 +27,10 @@ run_suite() {
         # Extract pass/fail counts
         local passed=$(grep "^Passed:" /tmp/suite_output.txt | awk '{print $2}')
         local failed=$(grep "^Failed:" /tmp/suite_output.txt | awk '{print $2}')
+        
+        # Default to 0 if empty
+        passed=${passed:-0}
+        failed=${failed:-0}
         
         TOTAL_PASSED=$((TOTAL_PASSED + passed))
         TOTAL_FAILED=$((TOTAL_FAILED + failed))

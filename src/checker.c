@@ -1127,6 +1127,16 @@ Type* check_expr(Expr* expr, SymbolTable* scope) {
             Type* array_type = check_expr(expr->index.array, scope);
             Type* idx_type = check_expr(expr->index.index, scope);
             
+            // Check if this is string indexing
+            if (array_type && array_type->kind == TYPE_STRING) {
+                if (idx_type && idx_type->kind != TYPE_INT) {
+                    fprintf(stderr, "Error: String index must be int\n");
+                    return NULL;
+                }
+                expr->expr_type = builtin_string; // Return single-char string
+                return builtin_string;
+            }
+            
             // Allow string indices for maps, int indices for arrays
             if (array_type && array_type->kind == TYPE_MAP) {
                 // Map indexing - allow string keys
