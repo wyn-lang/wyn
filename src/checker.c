@@ -2043,7 +2043,44 @@ void check_stmt(Stmt* stmt, SymbolTable* scope) {
                     
                     Token qualified_token_underscore = {TOKEN_IDENT, strdup(qualified_member_underscore), (int)strlen(qualified_member_underscore), 0};
                     add_symbol(global_scope, qualified_token_underscore, enum_type, false);
+                    
+                    // Register constructor function for variants with data
+                    if (stmt->enum_decl.variant_type_counts[i] > 0) {
+                        // Register EnumName_VariantName as a function
+                        char constructor_name[128];
+                        snprintf(constructor_name, 128, "%.*s_%.*s",
+                                stmt->enum_decl.name.length, stmt->enum_decl.name.start,
+                                stmt->enum_decl.variants[i].length, stmt->enum_decl.variants[i].start);
+                        
+                        Token constructor_token = {TOKEN_IDENT, strdup(constructor_name), (int)strlen(constructor_name), 0};
+                        
+                        Type* constructor_type = make_type(TYPE_FUNCTION);
+                        constructor_type->fn_type.param_count = stmt->enum_decl.variant_type_counts[i];
+                        constructor_type->fn_type.param_types = malloc(sizeof(Type*) * constructor_type->fn_type.param_count);
+                        
+                        // For now, just set all params to int (simplified)
+                        for (int j = 0; j < constructor_type->fn_type.param_count; j++) {
+                            constructor_type->fn_type.param_types[j] = builtin_int;
+                        }
+                        
+                        constructor_type->fn_type.return_type = enum_type;
+                        add_symbol(global_scope, constructor_token, constructor_type, false);
+                    }
                 }
+                
+                // Register toString function: EnumName_toString
+                char tostring_name[128];
+                snprintf(tostring_name, 128, "%.*s_toString",
+                        stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+                
+                Token tostring_token = {TOKEN_IDENT, strdup(tostring_name), (int)strlen(tostring_name), 0};
+                
+                Type* tostring_type = make_type(TYPE_FUNCTION);
+                tostring_type->fn_type.param_count = 1;
+                tostring_type->fn_type.param_types = malloc(sizeof(Type*) * 1);
+                tostring_type->fn_type.param_types[0] = enum_type;
+                tostring_type->fn_type.return_type = builtin_string;
+                add_symbol(global_scope, tostring_token, tostring_type, false);
             }
             break;
         case STMT_TYPE_ALIAS:
@@ -2197,7 +2234,63 @@ void check_program(Program* prog) {
                         enum_decl->variants[j].length, enum_decl->variants[j].start);
                 Token qualified_token = {TOKEN_IDENT, strdup(qualified), (int)strlen(qualified), 0};
                 add_symbol(global_scope, qualified_token, enum_type, false);
+                
+                // Register constructor function for variants with data
+                if (enum_decl->variant_type_counts && enum_decl->variant_type_counts[j] > 0) {
+                    char constructor_name[128];
+                    snprintf(constructor_name, 128, "%.*s_%.*s",
+                            enum_decl->name.length, enum_decl->name.start,
+                            enum_decl->variants[j].length, enum_decl->variants[j].start);
+                    
+                    Token constructor_token = {TOKEN_IDENT, strdup(constructor_name), (int)strlen(constructor_name), 0};
+                    
+                    Type* constructor_type = make_type(TYPE_FUNCTION);
+                    constructor_type->fn_type.param_count = enum_decl->variant_type_counts[j];
+                    constructor_type->fn_type.param_types = malloc(sizeof(Type*) * constructor_type->fn_type.param_count);
+                    
+                    // Parse parameter types from variant_types
+                    for (int k = 0; k < constructor_type->fn_type.param_count; k++) {
+                        if (enum_decl->variant_types && enum_decl->variant_types[j] && enum_decl->variant_types[j][k]) {
+                            Expr* type_expr = enum_decl->variant_types[j][k];
+                            if (type_expr->type == EXPR_IDENT) {
+                                Token type_name = type_expr->token;
+                                if (type_name.length == 3 && memcmp(type_name.start, "int", 3) == 0) {
+                                    constructor_type->fn_type.param_types[k] = builtin_int;
+                                } else if (type_name.length == 6 && memcmp(type_name.start, "string", 6) == 0) {
+                                    constructor_type->fn_type.param_types[k] = builtin_string;
+                                } else if (type_name.length == 4 && memcmp(type_name.start, "bool", 4) == 0) {
+                                    constructor_type->fn_type.param_types[k] = builtin_bool;
+                                } else if (type_name.length == 5 && memcmp(type_name.start, "float", 5) == 0) {
+                                    constructor_type->fn_type.param_types[k] = builtin_float;
+                                } else {
+                                    constructor_type->fn_type.param_types[k] = builtin_int; // fallback
+                                }
+                            } else {
+                                constructor_type->fn_type.param_types[k] = builtin_int; // fallback
+                            }
+                        } else {
+                            constructor_type->fn_type.param_types[k] = builtin_int; // fallback
+                        }
+                    }
+                    
+                    constructor_type->fn_type.return_type = enum_type;
+                    add_symbol(global_scope, constructor_token, constructor_type, false);
+                }
             }
+            
+            // Register toString function
+            char tostring_name[128];
+            snprintf(tostring_name, 128, "%.*s_toString",
+                    enum_decl->name.length, enum_decl->name.start);
+            
+            Token tostring_token = {TOKEN_IDENT, strdup(tostring_name), (int)strlen(tostring_name), 0};
+            
+            Type* tostring_type = make_type(TYPE_FUNCTION);
+            tostring_type->fn_type.param_count = 1;
+            tostring_type->fn_type.param_types = malloc(sizeof(Type*) * 1);
+            tostring_type->fn_type.param_types[0] = enum_type;
+            tostring_type->fn_type.return_type = builtin_string;
+            add_symbol(global_scope, tostring_token, tostring_type, false);
         } else if (prog->stmts[i]->type == STMT_EXTERN) {
             // Register extern function
             ExternStmt* ext = &prog->stmts[i]->extern_fn;

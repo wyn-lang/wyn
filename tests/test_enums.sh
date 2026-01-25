@@ -79,6 +79,40 @@ ENDTEST
 
 run_test "Multiple variants" test_enum_multiple.wyn
 
+# Test 4: Enum constructors
+cat > test_enum_constructors.wyn << 'ENDTEST'
+enum Result {
+    Ok(int),
+    Err(string)
+}
+
+fn main() -> int {
+    var success = Result_Ok(42)
+    var failure = Result_Err("failed")
+    print("Constructors work")
+    return 0
+}
+ENDTEST
+
+run_test "Enum constructors" test_enum_constructors.wyn
+
+# Test 5: Enum toString
+cat > test_enum_tostring.wyn << 'ENDTEST'
+enum Status {
+    Active,
+    Inactive
+}
+
+fn main() -> int {
+    var s = Active
+    var str = Status_toString(s)
+    print("toString works")
+    return 0
+}
+ENDTEST
+
+run_test "Enum toString" test_enum_tostring.wyn
+
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "RESULTS"
