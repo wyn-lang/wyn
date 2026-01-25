@@ -821,10 +821,13 @@ Type* check_expr(Expr* expr, SymbolTable* scope) {
                 expr->binary.op.type == TOKEN_LT || expr->binary.op.type == TOKEN_GT ||
                 expr->binary.op.type == TOKEN_LTEQ || expr->binary.op.type == TOKEN_GTEQ) {
                 // Allow comparing compatible types
-                // Int and bool are compatible for comparison
+                // Int, bool, and enum are all compatible for comparison
                 bool types_compatible = (left->kind == right->kind) ||
                                        (left->kind == TYPE_INT && right->kind == TYPE_BOOL) ||
-                                       (left->kind == TYPE_BOOL && right->kind == TYPE_INT);
+                                       (left->kind == TYPE_BOOL && right->kind == TYPE_INT) ||
+                                       (left->kind == TYPE_ENUM && right->kind == TYPE_INT) ||
+                                       (left->kind == TYPE_INT && right->kind == TYPE_ENUM) ||
+                                       (left->kind == TYPE_ENUM && right->kind == TYPE_ENUM);
                 
                 if (!types_compatible) {
                     fprintf(stderr, "Error at line %d: Cannot compare different types\n", 
@@ -1205,6 +1208,12 @@ Type* check_expr(Expr* expr, SymbolTable* scope) {
                             return builtin_string;
                         }
                     }
+                }
+                
+                // Check if array has tracked element type from type annotation
+                if (array_type && array_type->kind == TYPE_ARRAY && array_type->array_type.element_type) {
+                    expr->expr_type = array_type->array_type.element_type;
+                    return array_type->array_type.element_type;
                 }
                 
                 // Default to int for unknown arrays
