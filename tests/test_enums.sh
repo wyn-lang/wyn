@@ -321,6 +321,53 @@ ENDTEST
 
 run_test "Enum destructuring in match" test_enum_match.wyn
 
+# Test 14: Comprehensive enum destructuring (Option + Result)
+cat > test_enum_match_comprehensive.wyn << 'ENDTEST'
+enum Option {
+    Some(int),
+    None
+}
+
+enum Result {
+    Ok(int),
+    Err(string)
+}
+
+fn main() -> int {
+    var some = Option_Some(42)
+    var ok = Result_Ok(100)
+    var err = Result_Err("error")
+    
+    var opt_val = match some {
+        Option_Some(x) => x,
+        Option_None => 0
+    }
+    
+    var ok_val = match ok {
+        Result_Ok(x) => x,
+        Result_Err(e) => 0
+    }
+    
+    var err_val = match err {
+        Result_Ok(x) => x,
+        Result_Err(e) => -1
+    }
+    
+    if opt_val == 42 {
+        if ok_val == 100 {
+            if err_val == -1 {
+                print("✓ Option and Result destructuring work")
+                return 0
+            }
+        }
+    }
+    
+    return 1
+}
+ENDTEST
+
+run_test "Option and Result destructuring" test_enum_match_comprehensive.wyn
+
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "RESULTS"

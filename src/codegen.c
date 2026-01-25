@@ -1574,9 +1574,18 @@ void codegen_expr(Expr* expr) {
             
             emit("({ ");
             
+            // Get the type of the match value
+            Type* match_type = expr->match.value->expr_type;
+            const char* type_name = "int";  // Default fallback
+            int type_name_len = 3;
+            
+            if (match_type && match_type->kind == TYPE_ENUM && match_type->name.length > 0) {
+                type_name = match_type->name.start;
+                type_name_len = match_type->name.length;
+            }
+            
             // Store match value in temp variable
-            // TODO: Get actual type from type checker
-            emit("Option __match_val_%d = ", match_id);
+            emit("%.*s __match_val_%d = ", type_name_len, type_name, match_id);
             codegen_expr(expr->match.value);
             emit("; ");
             
@@ -1600,7 +1609,8 @@ void codegen_expr(Expr* expr) {
                          pat->literal.value.start);
                 } else if (pat->type == PATTERN_IDENT) {
                     // Variable binding - always matches, bind variable
-                    emit("{ Option %.*s = __match_val_%d; ",
+                    emit("{ %.*s %.*s = __match_val_%d; ",
+                         type_name_len, type_name,
                          pat->ident.name.length,
                          pat->ident.name.start,
                          match_id);
@@ -1626,10 +1636,25 @@ void codegen_expr(Expr* expr) {
                             }
                         }
                         
+                        // Determine value type (heuristic: Err variants use const char*)
+                        const char* value_type = "int";
+                        int value_type_len = 3;
+                        if (underscore) {
+                            int short_variant_len = variant_len - (underscore - variant_start + 1);
+                            const char* short_variant = underscore + 1;
+                            // Check if variant name contains "Err"
+                            if (short_variant_len >= 3 && 
+                                memcmp(short_variant, "Err", 3) == 0) {
+                                value_type = "const char*";
+                                value_type_len = 11;
+                            }
+                        }
+                        
                         if (underscore) {
                             // Use the part after the last underscore
                             int short_variant_len = variant_len - (underscore - variant_start + 1);
-                            emit("int %.*s = __match_val_%d.data.%.*s_value; ",
+                            emit("%.*s %.*s = __match_val_%d.data.%.*s_value; ",
+                                 value_type_len, value_type,
                                  pat->option.inner->ident.name.length,
                                  pat->option.inner->ident.name.start,
                                  match_id,
@@ -1637,7 +1662,8 @@ void codegen_expr(Expr* expr) {
                                  underscore + 1);
                         } else {
                             // No underscore, use full name
-                            emit("int %.*s = __match_val_%d.data.%.*s_value; ",
+                            emit("%.*s %.*s = __match_val_%d.data.%.*s_value; ",
+                                 value_type_len, value_type,
                                  pat->option.inner->ident.name.length,
                                  pat->option.inner->ident.name.start,
                                  match_id,
