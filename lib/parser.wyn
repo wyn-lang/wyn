@@ -1,0 +1,109 @@
+// Parser for Wyn written in Wyn
+// Minimal recursive descent parser
+
+enum TokenType {
+    EndOfFile,
+    Ident,
+    Int,
+    String,
+    Fn,
+    Var,
+    If,
+    Else,
+    While,
+    Return,
+    Plus,
+    Minus,
+    Star,
+    Slash,
+    Equal,
+    EqualEqual,
+    Less,
+    Greater,
+    Arrow,
+    Dot,
+    Colon,
+    LParen,
+    RParen,
+    LBrace,
+    RBrace,
+    Comma,
+    Semicolon,
+    Unknown
+}
+
+enum NodeType {
+    Expr_Int,
+    Expr_Ident,
+    Expr_Binary,
+    Expr_Call
+}
+
+// Parser state (global)
+var g_tokens = []
+var g_pos = 0
+
+fn peek() -> TokenType {
+    if g_pos < g_tokens.len() {
+        return g_tokens[g_pos]
+    }
+    return TokenType_EndOfFile
+}
+
+fn advance() -> TokenType {
+    var tok = peek()
+    g_pos = g_pos + 1
+    return tok
+}
+
+fn parse_primary() -> NodeType {
+    var tok = peek()
+    
+    if tok == TokenType_Int {
+        advance()
+        return NodeType_Expr_Int
+    }
+    
+    if tok == TokenType_Ident {
+        advance()
+        return NodeType_Expr_Ident
+    }
+    
+    return NodeType_Expr_Int
+}
+
+fn parse_expr() -> NodeType {
+    var left = parse_primary()
+    
+    var tok = peek()
+    if tok == TokenType_Plus {
+        advance()
+        var right = parse_primary()
+        return NodeType_Expr_Binary
+    }
+    
+    return left
+}
+
+fn parse(token_array: [int]) -> NodeType {
+    g_tokens = token_array
+    g_pos = 0
+    return parse_expr()
+}
+
+fn main() -> int {
+    var test_tokens = []
+    test_tokens.push(TokenType_Int)
+    test_tokens.push(TokenType_Plus)
+    test_tokens.push(TokenType_Int)
+    test_tokens.push(TokenType_EndOfFile)
+    
+    var ast = parse(test_tokens)
+    
+    if ast == NodeType_Expr_Binary {
+        print("✓ Parser works!")
+        return 0
+    }
+    
+    return 1
+}
