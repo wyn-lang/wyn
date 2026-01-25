@@ -4932,6 +4932,17 @@ void codegen_stmt(Stmt* stmt) {
                         emit("    return val.tag == %.*s_None_TAG;\n",
                              stmt->enum_decl.name.length, stmt->enum_decl.name.start);
                         emit("}\n\n");
+                        
+                        // Generate unwrap_or function
+                        emit("int %.*s_unwrap_or(%.*s val, int default_val) {\n",
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start,
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+                        emit("    if (val.tag == %.*s_Some_TAG) {\n",
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+                        emit("        return val.data.Some_value;\n");
+                        emit("    }\n");
+                        emit("    return default_val;\n");
+                        emit("}\n\n");
                         break;
                     }
                 }
@@ -4970,6 +4981,17 @@ void codegen_stmt(Stmt* stmt) {
                              stmt->enum_decl.name.length, stmt->enum_decl.name.start);
                         emit("    return val.tag == %.*s_Err_TAG;\n",
                              stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+                        emit("}\n\n");
+                        
+                        // Generate unwrap_or function
+                        emit("int %.*s_unwrap_or(%.*s val, int default_val) {\n",
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start,
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+                        emit("    if (val.tag == %.*s_Ok_TAG) {\n",
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+                        emit("        return val.data.Ok_value;\n");
+                        emit("    }\n");
+                        emit("    return default_val;\n");
                         emit("}\n\n");
                         break;
                     }

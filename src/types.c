@@ -706,7 +706,7 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
             out->c_function = "Option_unwrap"; return true;
         }
         if (strcmp(method_name, "unwrap_or") == 0 && arg_count == 1) {
-            out->c_function = "wyn_optional_unwrap_or"; return true;
+            out->c_function = "Option_unwrap_or"; return true;
         }
         if (strcmp(method_name, "expect") == 0 && arg_count == 1) {
             out->c_function = "wyn_optional_expect"; return true;
