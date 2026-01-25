@@ -2394,7 +2394,17 @@ Stmt* enum_decl() {
             
             if (!check(TOKEN_RPAREN)) {
                 do {
-                    types[type_count++] = parse_type();
+                    // Simple type parsing - just grab the identifier
+                    if (check(TOKEN_IDENT)) {
+                        Expr* type_expr = alloc_expr();
+                        type_expr->type = EXPR_IDENT;
+                        type_expr->token = parser.current;
+                        types[type_count++] = type_expr;
+                        advance();
+                    } else {
+                        fprintf(stderr, "Error: Expected type name in variant\n");
+                        break;
+                    }
                 } while (match(TOKEN_COMMA));
             }
             
@@ -2407,8 +2417,18 @@ Stmt* enum_decl() {
         }
         
         stmt->enum_decl.variant_count++;
-        if (!check(TOKEN_RBRACE)) {
-            match(TOKEN_COMMA);
+        
+        // After each variant, we expect either ',' or '}'
+        if (match(TOKEN_COMMA)) {
+            // Continue to next variant
+            continue;
+        } else if (check(TOKEN_RBRACE)) {
+            // End of enum
+            break;
+        } else {
+            // Unexpected token
+            fprintf(stderr, "Error: Expected ',' or '}' after enum variant, got type=%d\n", parser.current.type);
+            break;
         }
     }
     
