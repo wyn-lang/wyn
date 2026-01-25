@@ -4921,6 +4921,29 @@ void codegen_stmt(Stmt* stmt) {
                 }
             }
             
+            // Generate unwrap function for Result enum
+            if (stmt->enum_decl.name.length == 6 && memcmp(stmt->enum_decl.name.start, "Result", 6) == 0) {
+                // Find the Ok variant and its type
+                for (int i = 0; i < stmt->enum_decl.variant_count; i++) {
+                    if (stmt->enum_decl.variants[i].length == 2 && 
+                        memcmp(stmt->enum_decl.variants[i].start, "Ok", 2) == 0 &&
+                        stmt->enum_decl.variant_type_counts[i] == 1) {
+                        // Generate unwrap function
+                        emit("int %.*s_unwrap(%.*s val) {\n",
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start,
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+                        emit("    if (val.tag == %.*s_Ok_TAG) {\n",
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+                        emit("        return val.data.Ok_value;\n");
+                        emit("    }\n");
+                        emit("    fprintf(stderr, \"Error: unwrap() called on Err\\n\");\n");
+                        emit("    exit(1);\n");
+                        emit("}\n\n");
+                        break;
+                    }
+                }
+            }
+            
             break;
         case STMT_TYPE_ALIAS:
             // typedef target_type alias_name;

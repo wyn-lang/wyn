@@ -163,6 +163,28 @@ ENDTEST
 
 run_test "Option.unwrap()" test_option_unwrap.wyn
 
+# Test 8: Result.unwrap()
+cat > test_result_unwrap.wyn << 'ENDTEST'
+enum Result {
+    Ok(int),
+    Err(string)
+}
+
+fn main() -> int {
+    var ok = Result_Ok(42)
+    var val = ok.unwrap()
+    
+    if val == 42 {
+        print("✓ Result.unwrap() works")
+        return 0
+    }
+    
+    return 1
+}
+ENDTEST
+
+run_test "Result.unwrap()" test_result_unwrap.wyn
+
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "RESULTS"

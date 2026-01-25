@@ -735,10 +735,10 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
             out->c_function = "wyn_result_is_err"; return true;
         }
         if (strcmp(method_name, "unwrap") == 0 && arg_count == 0) {
-            out->c_function = "wyn_result_unwrap"; return true;
+            out->c_function = "Result_unwrap"; return true;
         }
         if (strcmp(method_name, "unwrap_or") == 0 && arg_count == 1) {
-            out->c_function = "wyn_result_unwrap_or"; return true;
+            out->c_function = "Result_unwrap_or"; return true;
         }
         if (strcmp(method_name, "expect") == 0 && arg_count == 1) {
             out->c_function = "wyn_result_expect"; return true;
