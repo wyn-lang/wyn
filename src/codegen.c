@@ -4138,6 +4138,10 @@ void codegen_stmt(Stmt* stmt) {
                     // Handle optional type annotation like int?
                     c_type = "WynOptional*";
                     needs_arc_management = true;
+                } else if (stmt->var.type->type == EXPR_ARRAY) {
+                    // Handle typed array annotation like [TokenType]
+                    c_type = "WynArray";
+                    needs_arc_management = false;
                 } else if (stmt->var.type->type == EXPR_CALL) {
                     // Handle generic type instantiation: HashMap<K,V>, Option<T>, etc.
                     if (stmt->var.type->call.callee->type == EXPR_IDENT) {
