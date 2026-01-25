@@ -120,6 +120,27 @@ ENDTEST
 
 run_test "String charAt" test_charat.wyn
 
+# Test 5: String indexing (s[i])
+cat > test_string_index.wyn << 'ENDTEST'
+fn main() -> int {
+    var s = "hello"
+    var first = s[0]
+    var last = s[4]
+    
+    if first == "h" {
+        if last == "o" {
+            print("✓ String indexing works")
+            return 0
+        }
+    }
+    
+    print("✗ String indexing failed")
+    return 1
+}
+ENDTEST
+
+run_test "String indexing" test_string_index.wyn
+
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "RESULTS"

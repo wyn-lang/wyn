@@ -1297,6 +1297,17 @@ void codegen_expr(Expr* expr) {
             break;
         }
         case EXPR_INDEX: {
+            // Check if this is string indexing
+            if (expr->index.array->expr_type && expr->index.array->expr_type->kind == TYPE_STRING) {
+                // String indexing: s[i] -> wyn_string_charat(s, i)
+                emit("wyn_string_charat(");
+                codegen_expr(expr->index.array);
+                emit(", ");
+                codegen_expr(expr->index.index);
+                emit(")");
+                break;
+            }
+            
             // Check if this is map indexing by looking at the array type
             bool is_map_index = false;
             if (expr->index.array->expr_type && expr->index.array->expr_type->kind == TYPE_MAP) {
@@ -4201,38 +4212,59 @@ void codegen_stmt(Stmt* stmt) {
                     c_type = "WynHashSet*";
                     needs_arc_management = false;
                 } else if (stmt->var.init->type == EXPR_INDEX) {
-                    // Array/map indexing - infer from source
-                    if (stmt->var.init->index.array->type == EXPR_CALL) {
-                        Token callee = stmt->var.init->index.array->call.callee->token;
-                        if ((callee.length == 12 && memcmp(callee.start, "System::args", 12) == 0) ||
-                            (callee.length == 14 && memcmp(callee.start, "File::list_dir", 14) == 0)) {
-                            c_type = "const char*";
-                            is_already_const = true;
-                        }
-                    } else if (stmt->var.init->index.array->type == EXPR_METHOD_CALL) {
-                        Token method = stmt->var.init->index.array->method_call.method;
-                        if ((method.length == 5 && memcmp(method.start, "split", 5) == 0) ||
-                            (method.length == 5 && memcmp(method.start, "chars", 5) == 0) ||
-                            (method.length == 5 && memcmp(method.start, "words", 5) == 0) ||
-                            (method.length == 5 && memcmp(method.start, "lines", 5) == 0)) {
-                            c_type = "const char*";
-                            is_already_const = true;
-                        }
-                    } else if (stmt->var.init->index.array->type == EXPR_IDENT) {
-                        Token var_name = stmt->var.init->index.array->token;
-                        if ((var_name.length == 4 && memcmp(var_name.start, "args", 4) == 0) ||
-                            (var_name.length == 5 && memcmp(var_name.start, "files", 5) == 0) ||
-                            (var_name.length == 5 && memcmp(var_name.start, "names", 5) == 0) ||
-                            (var_name.length == 5 && memcmp(var_name.start, "parts", 5) == 0) ||
-                            (var_name.length == 7 && memcmp(var_name.start, "entries", 7) == 0)) {
-                            c_type = "const char*";
-                            is_already_const = true;
-                        }
-                    } else if (stmt->var.init->index.array->type == EXPR_ARRAY) {
-                        if (stmt->var.init->index.array->array.count > 0) {
-                            if (stmt->var.init->index.array->array.elements[0]->type == EXPR_STRING) {
+                    // Array/map/string indexing - check expr_type from checker
+                    if (stmt->var.init->expr_type) {
+                        switch (stmt->var.init->expr_type->kind) {
+                            case TYPE_STRING:
                                 c_type = "const char*";
                                 is_already_const = true;
+                                break;
+                            case TYPE_INT:
+                                c_type = "int";
+                                break;
+                            case TYPE_FLOAT:
+                                c_type = "double";
+                                break;
+                            case TYPE_BOOL:
+                                c_type = "bool";
+                                break;
+                            default:
+                                c_type = "int";
+                        }
+                    } else {
+                        // Fallback to heuristics
+                        if (stmt->var.init->index.array->type == EXPR_CALL) {
+                            Token callee = stmt->var.init->index.array->call.callee->token;
+                            if ((callee.length == 12 && memcmp(callee.start, "System::args", 12) == 0) ||
+                                (callee.length == 14 && memcmp(callee.start, "File::list_dir", 14) == 0)) {
+                                c_type = "const char*";
+                                is_already_const = true;
+                            }
+                        } else if (stmt->var.init->index.array->type == EXPR_METHOD_CALL) {
+                            Token method = stmt->var.init->index.array->method_call.method;
+                            if ((method.length == 5 && memcmp(method.start, "split", 5) == 0) ||
+                                (method.length == 5 && memcmp(method.start, "chars", 5) == 0) ||
+                                (method.length == 5 && memcmp(method.start, "words", 5) == 0) ||
+                                (method.length == 5 && memcmp(method.start, "lines", 5) == 0)) {
+                                c_type = "const char*";
+                                is_already_const = true;
+                            }
+                        } else if (stmt->var.init->index.array->type == EXPR_IDENT) {
+                            Token var_name = stmt->var.init->index.array->token;
+                            if ((var_name.length == 4 && memcmp(var_name.start, "args", 4) == 0) ||
+                                (var_name.length == 5 && memcmp(var_name.start, "files", 5) == 0) ||
+                                (var_name.length == 5 && memcmp(var_name.start, "names", 5) == 0) ||
+                                (var_name.length == 5 && memcmp(var_name.start, "parts", 5) == 0) ||
+                                (var_name.length == 7 && memcmp(var_name.start, "entries", 7) == 0)) {
+                                c_type = "const char*";
+                                is_already_const = true;
+                            }
+                        } else if (stmt->var.init->index.array->type == EXPR_ARRAY) {
+                            if (stmt->var.init->index.array->array.count > 0) {
+                                if (stmt->var.init->index.array->array.elements[0]->type == EXPR_STRING) {
+                                    c_type = "const char*";
+                                    is_already_const = true;
+                                }
                             }
                         }
                     }
