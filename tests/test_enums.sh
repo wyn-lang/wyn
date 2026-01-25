@@ -141,6 +141,28 @@ ENDTEST
 
 run_test "Mixed enum variants" test_mixed_enum.wyn
 
+# Test 7: Option.unwrap()
+cat > test_option_unwrap.wyn << 'ENDTEST'
+enum Option {
+    Some(int),
+    None
+}
+
+fn main() -> int {
+    var some = Option_Some(42)
+    var val = some.unwrap()
+    
+    if val == 42 {
+        print("✓ Option.unwrap() works")
+        return 0
+    }
+    
+    return 1
+}
+ENDTEST
+
+run_test "Option.unwrap()" test_option_unwrap.wyn
+
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "RESULTS"

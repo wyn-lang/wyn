@@ -4897,16 +4897,30 @@ void codegen_stmt(Stmt* stmt) {
             }
             emit("    return \"Unknown\";\n");
             emit("}\n\n");
-            break;
-            emit("    switch(val) {\n");
-            for (int i = 0; i < stmt->enum_decl.variant_count; i++) {
-                emit("        case %.*s: return \"%.*s\";\n",
-                     stmt->enum_decl.variants[i].length, stmt->enum_decl.variants[i].start,
-                     stmt->enum_decl.variants[i].length, stmt->enum_decl.variants[i].start);
+            
+            // Generate unwrap function for Option enum
+            if (stmt->enum_decl.name.length == 6 && memcmp(stmt->enum_decl.name.start, "Option", 6) == 0) {
+                // Find the Some variant and its type
+                for (int i = 0; i < stmt->enum_decl.variant_count; i++) {
+                    if (stmt->enum_decl.variants[i].length == 4 && 
+                        memcmp(stmt->enum_decl.variants[i].start, "Some", 4) == 0 &&
+                        stmt->enum_decl.variant_type_counts[i] == 1) {
+                        // Generate unwrap function
+                        emit("int %.*s_unwrap(%.*s val) {\n",
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start,
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+                        emit("    if (val.tag == %.*s_Some_TAG) {\n",
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+                        emit("        return val.data.Some_value;\n");
+                        emit("    }\n");
+                        emit("    fprintf(stderr, \"Error: unwrap() called on None\\n\");\n");
+                        emit("    exit(1);\n");
+                        emit("}\n\n");
+                        break;
+                    }
+                }
             }
-            emit("    }\n");
-            emit("    return \"Unknown\";\n");
-            emit("}\n\n");
+            
             break;
         case STMT_TYPE_ALIAS:
             // typedef target_type alias_name;

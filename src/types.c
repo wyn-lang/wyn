@@ -221,6 +221,15 @@ const char* get_receiver_type_string(const Type* type) {
         case TYPE_SET: return "set";
         case TYPE_OPTIONAL: return "option";
         case TYPE_RESULT: return "result";
+        case TYPE_ENUM:
+            // Map enum names to method receiver types
+            if (type->name.length == 6 && memcmp(type->name.start, "Option", 6) == 0) {
+                return "option";
+            }
+            if (type->name.length == 6 && memcmp(type->name.start, "Result", 6) == 0) {
+                return "result";
+            }
+            return NULL;
         default: return NULL;
     }
 }
@@ -694,7 +703,7 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
             out->c_function = "wyn_optional_is_none"; return true;
         }
         if (strcmp(method_name, "unwrap") == 0 && arg_count == 0) {
-            out->c_function = "wyn_optional_unwrap"; return true;
+            out->c_function = "Option_unwrap"; return true;
         }
         if (strcmp(method_name, "unwrap_or") == 0 && arg_count == 1) {
             out->c_function = "wyn_optional_unwrap_or"; return true;
