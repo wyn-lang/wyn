@@ -4354,7 +4354,21 @@ void codegen_stmt(Stmt* stmt) {
             bool is_async = stmt->fn.is_async;
             
             if (stmt->fn.return_type) {
-                if (stmt->fn.return_type->type == EXPR_ARRAY) {
+                if (stmt->fn.return_type->type == EXPR_CALL) {
+                    // Generic type instantiation: HashMap<K,V>, Option<T>, etc.
+                    if (stmt->fn.return_type->call.callee->type == EXPR_IDENT) {
+                        Token type_name = stmt->fn.return_type->call.callee->token;
+                        if (type_name.length == 7 && memcmp(type_name.start, "HashMap", 7) == 0) {
+                            return_type = "WynHashMap*";
+                        } else if (type_name.length == 7 && memcmp(type_name.start, "HashSet", 7) == 0) {
+                            return_type = "WynHashSet*";
+                        } else if (type_name.length == 6 && memcmp(type_name.start, "Option", 6) == 0) {
+                            return_type = "WynOptional*";
+                        } else if (type_name.length == 6 && memcmp(type_name.start, "Result", 6) == 0) {
+                            return_type = "WynResult*";
+                        }
+                    }
+                } else if (stmt->fn.return_type->type == EXPR_ARRAY) {
                     // Array type like [int] or [string]
                     return_type = "WynArray";
                 } else if (stmt->fn.return_type->type == EXPR_IDENT) {
@@ -5734,7 +5748,21 @@ void codegen_program(Program* prog) {
             bool is_async = fn->is_async;
             
             if (fn->return_type) {
-                if (fn->return_type->type == EXPR_ARRAY) {
+                if (fn->return_type->type == EXPR_CALL) {
+                    // Generic type instantiation: HashMap<K,V>, Option<T>, etc.
+                    if (fn->return_type->call.callee->type == EXPR_IDENT) {
+                        Token type_name = fn->return_type->call.callee->token;
+                        if (type_name.length == 7 && memcmp(type_name.start, "HashMap", 7) == 0) {
+                            return_type = "WynHashMap*";
+                        } else if (type_name.length == 7 && memcmp(type_name.start, "HashSet", 7) == 0) {
+                            return_type = "WynHashSet*";
+                        } else if (type_name.length == 6 && memcmp(type_name.start, "Option", 6) == 0) {
+                            return_type = "WynOptional*";
+                        } else if (type_name.length == 6 && memcmp(type_name.start, "Result", 6) == 0) {
+                            return_type = "WynResult*";
+                        }
+                    }
+                } else if (fn->return_type->type == EXPR_ARRAY) {
                     // Array type like [int] or [string]
                     return_type = "WynArray";
                 } else if (fn->return_type->type == EXPR_IDENT) {
