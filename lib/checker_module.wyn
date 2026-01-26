@@ -1,0 +1,10 @@
+// Simple checker module for export
+export fn check(node_count: int) -> int {
+    // Return 0 for no errors
+    return 0
+}
+
+fn main() -> int {
+    var result = check(100)
+    return 0
+}

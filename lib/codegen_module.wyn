@@ -1,0 +1,10 @@
+// Simple codegen module for export
+export fn generate(node_count: int) -> int {
+    // Return triple the nodes as lines
+    return node_count + node_count + node_count
+}
+
+fn main() -> int {
+    var result = generate(200)
+    return 0
+}

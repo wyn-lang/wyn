@@ -1,0 +1,39 @@
+// Wyn Self-Hosting Compiler - Modular Version
+// Uses import system to combine lexer, parser, checker, codegen
+
+import lexer_module
+import parser_module
+import checker_module
+import codegen_module
+
+fn compile(source: string) -> int {
+    // Step 1: Lexical analysis
+    var token_count = lexer_module_tokenize(source)
+    
+    // Step 2: Parsing
+    var node_count = parser_module_parse(token_count)
+    
+    // Step 3: Type checking
+    var errors = checker_module_check(node_count)
+    
+    if errors > 0 {
+        return 1
+    }
+    
+    // Step 4: Code generation
+    var lines = codegen_module_generate(node_count)
+    
+    return lines
+}
+
+fn main() -> int {
+    // Test with simple program
+    var test_source = "fn add(a: int, b: int) -> int { return a + b }"
+    
+    var result = compile(test_source)
+    
+    print("Compilation result:")
+    print(result)
+    
+    return 0
+}

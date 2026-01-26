@@ -28,6 +28,9 @@ extern bool is_builtin_module(const char* name);  // Module system
 
 static FILE* out = NULL;
 
+// Module emission tracking (reset per compilation)
+static bool modules_emitted_this_compilation = false;
+
 // Current module being emitted (for prefixing internal calls)
 static const char* current_module_prefix = NULL;
 
@@ -5434,10 +5437,9 @@ void codegen_stmt(Stmt* stmt) {
             // Priority: User modules > Built-ins
             // This allows community to override/extend built-in modules
             if (is_module_loaded(lookup_name)) {
-                // User module exists - emit all loaded modules once
-                static bool user_modules_emitted = false;
-                if (!user_modules_emitted) {
-                    user_modules_emitted = true;
+                // User module exists - emit all loaded modules once per compilation
+                if (!modules_emitted_this_compilation) {
+                    modules_emitted_this_compilation = true;
                     
                     extern int get_all_modules_raw(void** out_modules, int max_count);
                     void* all_modules_raw[64];
@@ -5479,6 +5481,12 @@ void codegen_stmt(Stmt* stmt) {
                         // Second: emit forward declarations for all functions
                         for (int i = 0; i < mod->ast->count; i++) {
                             Stmt* s = mod->ast->stmts[i];
+                            
+                            // Unwrap export statements
+                            if (s->type == STMT_EXPORT && s->export.stmt) {
+                                s = s->export.stmt;
+                            }
+                            
                             if (s->type == STMT_FN) {
                                 // Private functions are static
                                 if (!s->fn.is_public) {
@@ -5595,6 +5603,12 @@ void codegen_stmt(Stmt* stmt) {
                         // Third: emit functions
                         for (int i = 0; i < mod->ast->count; i++) {
                             Stmt* s = mod->ast->stmts[i];
+                            
+                            // Unwrap export statements
+                            if (s->type == STMT_EXPORT && s->export.stmt) {
+                                s = s->export.stmt;
+                            }
+                            
                             if (s->type == STMT_FN) {
                                 emit_function_with_prefix(s, mod->name);
                             }
@@ -5959,6 +5973,9 @@ static void scan_for_lambdas(Stmt* body) {
 void codegen_program(Program* prog) {
     bool has_main = false;
     bool has_math_import = false;
+    
+    // Reset module emission flag for this compilation
+    modules_emitted_this_compilation = false;
     
     // Reset lambda collection
     lambda_count = 0;

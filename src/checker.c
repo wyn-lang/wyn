@@ -17,6 +17,7 @@ void analyze_lambda_captures(LambdaExpr* lambda, Expr* body, SymbolTable* scope)
 void analyze_expr_captures(Expr* expr, LambdaExpr* lambda, SymbolTable* scope);
 
 static SymbolTable* global_scope = NULL;
+static Program* current_program = NULL;  // For looking up struct definitions
 static Type* builtin_int = NULL;
 static Type* builtin_float = NULL;
 static Type* builtin_string = NULL;
@@ -197,6 +198,104 @@ typedef enum {
     VALIDATION_NULL_FUNCTION,
     VALIDATION_NULL_ARGS
 } ValidationResult;
+
+// Helper function to find struct definition by name
+static StructStmt* find_struct_definition(Token struct_name) {
+    if (!current_program) return NULL;
+    
+    for (int i = 0; i < current_program->count; i++) {
+        Stmt* stmt = current_program->stmts[i];
+        if (stmt->type == STMT_STRUCT) {
+            Token name = stmt->struct_decl.name;
+            if (name.length == struct_name.length &&
+                memcmp(name.start, struct_name.start, name.length) == 0) {
+                return &stmt->struct_decl;
+            }
+        }
+    }
+    return NULL;
+}
+
+static EnumStmt* find_enum_definition(Token enum_name) {
+    if (!current_program) return NULL;
+    
+    for (int i = 0; i < current_program->count; i++) {
+        Stmt* stmt = current_program->stmts[i];
+        if (stmt->type == STMT_ENUM) {
+            Token name = stmt->enum_decl.name;
+            if (name.length == enum_name.length &&
+                memcmp(name.start, enum_name.start, name.length) == 0) {
+                return &stmt->enum_decl;
+            }
+        }
+    }
+    return NULL;
+}
+
+// Helper function to get field type from struct definition
+static Type* get_struct_field_type(StructStmt* struct_def, Token field_name) {
+    if (!struct_def) return NULL;
+    
+    for (int i = 0; i < struct_def->field_count; i++) {
+        Token fname = struct_def->fields[i];
+        if (fname.length == field_name.length &&
+            memcmp(fname.start, field_name.start, fname.length) == 0) {
+            // Found the field, now get its type
+            Expr* field_type_expr = struct_def->field_types[i];
+            
+            // Convert the type expression to a Type*
+            // For now, handle basic cases
+            if (field_type_expr->type == EXPR_IDENT) {
+                Token type_name = field_type_expr->token;
+                
+                // Check for built-in types
+                if (type_name.length == 3 && memcmp(type_name.start, "int", 3) == 0) {
+                    return builtin_int;
+                } else if (type_name.length == 6 && memcmp(type_name.start, "string", 6) == 0) {
+                    return builtin_string;
+                } else if (type_name.length == 4 && memcmp(type_name.start, "bool", 4) == 0) {
+                    return builtin_bool;
+                } else if (type_name.length == 5 && memcmp(type_name.start, "float", 5) == 0) {
+                    return builtin_float;
+                } else {
+                    // Check if it's an enum type
+                    Symbol* type_symbol = find_symbol(global_scope, type_name);
+                    if (type_symbol && type_symbol->type && type_symbol->type->kind == TYPE_ENUM) {
+                        return type_symbol->type;
+                    }
+                    // User-defined type (struct)
+                    Type* struct_type = make_type(TYPE_STRUCT);
+                    struct_type->struct_type.name = type_name;
+                    return struct_type;
+                }
+            } else if (field_type_expr->type == EXPR_ARRAY) {
+                // Array type [ElementType]
+                Type* array_type = make_type(TYPE_ARRAY);
+                if (field_type_expr->array.count > 0) {
+                    Expr* elem_type_expr = field_type_expr->array.elements[0];
+                    if (elem_type_expr->type == EXPR_IDENT) {
+                        Token elem_type_name = elem_type_expr->token;
+                        if (elem_type_name.length == 3 && memcmp(elem_type_name.start, "int", 3) == 0) {
+                            array_type->array_type.element_type = builtin_int;
+                        } else if (elem_type_name.length == 6 && memcmp(elem_type_name.start, "string", 6) == 0) {
+                            array_type->array_type.element_type = builtin_string;
+                        } else {
+                            // User-defined element type
+                            Type* elem_struct_type = make_type(TYPE_STRUCT);
+                            elem_struct_type->struct_type.name = elem_type_name;
+                            array_type->array_type.element_type = elem_struct_type;
+                        }
+                    }
+                }
+                return array_type;
+            }
+            
+            return NULL;
+        }
+    }
+    return NULL;
+}
+
 
 static bool wyn_is_type_compatible(Type* expected, Type* actual) {
     if (!expected || !actual) {
@@ -1335,7 +1434,7 @@ Type* check_expr(Expr* expr, SymbolTable* scope) {
         }
         case EXPR_FIELD_ACCESS: {
             // Handle enum member access and module.function access
-            (void)check_expr(expr->field_access.object, scope);  // Validate object
+            Type* object_type = check_expr(expr->field_access.object, scope);  // Validate object and get type
             
             // Check if this is enum member access (EnumName.MEMBER)
             if (expr->field_access.object->type == EXPR_IDENT) {
@@ -1355,6 +1454,24 @@ Type* check_expr(Expr* expr, SymbolTable* scope) {
                     // This is a valid enum member access
                     expr->field_access.is_enum_access = true;
                     return builtin_int; // Enum values are integers
+                }
+            }
+            
+            // Check if this is struct field access (struct_var.field)
+            if (object_type && object_type->kind == TYPE_STRUCT) {
+                Token struct_name = object_type->struct_type.name;
+                Token field_name = expr->field_access.field;
+                
+                // Find the struct definition
+                StructStmt* struct_def = find_struct_definition(struct_name);
+                if (struct_def) {
+                    // Get the field type
+                    Type* field_type = get_struct_field_type(struct_def, field_name);
+                    if (field_type) {
+                        // Set the expr_type so codegen can use it
+                        expr->expr_type = field_type;
+                        return field_type;
+                    }
                 }
             }
             
@@ -1674,7 +1791,54 @@ void check_stmt(Stmt* stmt, SymbolTable* scope) {
             // Enhanced type inference for T2.5.4
             if (stmt->var.type) {
                 // Explicit type annotation provided - convert Expr* to Type*
-                init_type = check_expr(stmt->var.type, scope);
+                if (stmt->var.type->type == EXPR_ARRAY) {
+                    // Handle typed array annotation like [ASTNode], [Token], etc.
+                    Type* array_type = make_type(TYPE_ARRAY);
+                    if (stmt->var.type->array.count > 0) {
+                        // Get element type from array type annotation
+                        Expr* elem_type_expr = stmt->var.type->array.elements[0];
+                        if (elem_type_expr->type == EXPR_IDENT) {
+                            Token elem_type_name = elem_type_expr->token;
+                            // Look up the struct type
+                            StructStmt* struct_def = find_struct_definition(elem_type_name);
+                            if (struct_def) {
+                                Type* elem_type = make_type(TYPE_STRUCT);
+                                elem_type->struct_type.name = elem_type_name;
+                                array_type->array_type.element_type = elem_type;
+                            } else {
+                                // Try enum types
+                                EnumStmt* enum_def = find_enum_definition(elem_type_name);
+                                if (enum_def) {
+                                    Type* elem_type = make_type(TYPE_ENUM);
+                                    elem_type->name = elem_type_name;
+                                    elem_type->enum_type.variants = enum_def->variants;
+                                    elem_type->enum_type.variant_count = enum_def->variant_count;
+                                    array_type->array_type.element_type = elem_type;
+                                } else {
+                                    // Try built-in types
+                                    if (elem_type_name.length == 3 && memcmp(elem_type_name.start, "int", 3) == 0) {
+                                        array_type->array_type.element_type = builtin_int;
+                                    } else if (elem_type_name.length == 6 && memcmp(elem_type_name.start, "string", 6) == 0) {
+                                        array_type->array_type.element_type = builtin_string;
+                                    } else if (elem_type_name.length == 5 && memcmp(elem_type_name.start, "float", 5) == 0) {
+                                        array_type->array_type.element_type = builtin_float;
+                                    } else if (elem_type_name.length == 4 && memcmp(elem_type_name.start, "bool", 4) == 0) {
+                                        array_type->array_type.element_type = builtin_bool;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    init_type = array_type;
+                } else {
+                    init_type = check_expr(stmt->var.type, scope);
+                }
+                
+                // IMPORTANT: Still check the init expression to resolve method calls
+                // and propagate type information, even though we have an explicit type
+                if (stmt->var.init) {
+                    check_expr(stmt->var.init, scope);
+                }
             } else if (stmt->var.init) {
                 // Always check the expression to populate expr_type
                 Type* checked_type = check_expr(stmt->var.init, scope);
@@ -1782,7 +1946,36 @@ void check_stmt(Stmt* stmt, SymbolTable* scope) {
                 Type* param_type = builtin_int; // default
                 
                 if (fn->param_types[j]) {
-                    if (fn->param_types[j]->type == EXPR_IDENT) {
+                    if (fn->param_types[j]->type == EXPR_ARRAY) {
+                        // Handle typed array parameters like [Token], [ASTNode]
+                        Type* array_type = make_type(TYPE_ARRAY);
+                        if (fn->param_types[j]->array.count > 0) {
+                            // Get element type from array type annotation
+                            Expr* elem_type_expr = fn->param_types[j]->array.elements[0];
+                            if (elem_type_expr->type == EXPR_IDENT) {
+                                Token elem_type_name = elem_type_expr->token;
+                                // Look up the struct type
+                                StructStmt* struct_def = find_struct_definition(elem_type_name);
+                                if (struct_def) {
+                                    Type* elem_type = make_type(TYPE_STRUCT);
+                                    elem_type->struct_type.name = elem_type_name;
+                                    array_type->array_type.element_type = elem_type;
+                                } else {
+                                    // Try built-in types
+                                    if (elem_type_name.length == 3 && memcmp(elem_type_name.start, "int", 3) == 0) {
+                                        array_type->array_type.element_type = builtin_int;
+                                    } else if (elem_type_name.length == 6 && memcmp(elem_type_name.start, "string", 6) == 0) {
+                                        array_type->array_type.element_type = builtin_string;
+                                    } else if (elem_type_name.length == 5 && memcmp(elem_type_name.start, "float", 5) == 0) {
+                                        array_type->array_type.element_type = builtin_float;
+                                    } else if (elem_type_name.length == 4 && memcmp(elem_type_name.start, "bool", 4) == 0) {
+                                        array_type->array_type.element_type = builtin_bool;
+                                    }
+                                }
+                            }
+                        }
+                        param_type = array_type;
+                    } else if (fn->param_types[j]->type == EXPR_IDENT) {
                         Token type_name = fn->param_types[j]->token;
                         if (type_name.length == 3 && memcmp(type_name.start, "int", 3) == 0) {
                             param_type = builtin_int;
@@ -2258,6 +2451,9 @@ void check_stmt(Stmt* stmt, SymbolTable* scope) {
 }
 
 void check_program(Program* prog) {
+    // Set global pointer for struct field type lookup
+    current_program = prog;
+    
     // Pass 0: Register all struct types, enums, and constants first (so functions can reference them)
     for (int i = 0; i < prog->count; i++) {
         if (prog->stmts[i]->type == STMT_STRUCT) {
@@ -2853,6 +3049,91 @@ void check_program(Program* prog) {
                 add_symbol(global_scope, math_max, math_fn_type, false);
                 add_symbol(global_scope, math_pi, builtin_float, false);
                 add_symbol(global_scope, math_e, builtin_float, false);
+            } else {
+                // Load user module and register its exported functions
+                extern Program* load_module(const char* module_name);
+                
+                char module_name[256];
+                snprintf(module_name, 256, "%.*s", import->module.length, import->module.start);
+                
+                Program* module_prog = load_module(module_name);
+                if (module_prog) {
+                    // Register the module itself as a namespace
+                    add_symbol(global_scope, import->module, builtin_int, false);
+                    
+                    // Register all exported functions from the module
+                    for (int j = 0; j < module_prog->count; j++) {
+                        Stmt* module_stmt = module_prog->stmts[j];
+                        
+                        // Unwrap export statements
+                        if (module_stmt->type == STMT_EXPORT && module_stmt->export.stmt) {
+                            module_stmt = module_stmt->export.stmt;
+                        }
+                        
+                        if (module_stmt->type == STMT_FN) {
+                            FnStmt* fn = &module_stmt->fn;
+                            
+                            // Create prefixed function name: module_functionname
+                            char prefixed_name[512];
+                            snprintf(prefixed_name, 512, "%s_%.*s", 
+                                    module_name, fn->name.length, fn->name.start);
+                            
+                            Token prefixed_token = {
+                                .type = TOKEN_IDENT,
+                                .start = strdup(prefixed_name),
+                                .length = strlen(prefixed_name),
+                                .line = fn->name.line
+                            };
+                            
+                            // Create function type
+                            Type* fn_type = make_type(TYPE_FUNCTION);
+                            fn_type->fn_type.param_count = fn->param_count;
+                            fn_type->fn_type.param_types = malloc(sizeof(Type*) * fn->param_count);
+                            
+                            for (int k = 0; k < fn->param_count; k++) {
+                                // Parse parameter type from type annotation
+                                Type* param_type = builtin_int; // default
+                                
+                                if (fn->param_types[k] && fn->param_types[k]->type == EXPR_IDENT) {
+                                    Token type_name = fn->param_types[k]->token;
+                                    if (type_name.length == 3 && memcmp(type_name.start, "int", 3) == 0) {
+                                        param_type = builtin_int;
+                                    } else if ((type_name.length == 6 && memcmp(type_name.start, "string", 6) == 0) ||
+                                               (type_name.length == 3 && memcmp(type_name.start, "str", 3) == 0)) {
+                                        param_type = builtin_string;
+                                    } else if (type_name.length == 5 && memcmp(type_name.start, "float", 5) == 0) {
+                                        param_type = builtin_float;
+                                    } else if (type_name.length == 4 && memcmp(type_name.start, "bool", 4) == 0) {
+                                        param_type = builtin_bool;
+                                    }
+                                }
+                                
+                                fn_type->fn_type.param_types[k] = param_type;
+                            }
+                            
+                            // Parse return type
+                            Type* return_type = builtin_int; // default
+                            if (fn->return_type && fn->return_type->type == EXPR_IDENT) {
+                                Token type_name = fn->return_type->token;
+                                if (type_name.length == 3 && memcmp(type_name.start, "int", 3) == 0) {
+                                    return_type = builtin_int;
+                                } else if ((type_name.length == 6 && memcmp(type_name.start, "string", 6) == 0) ||
+                                           (type_name.length == 3 && memcmp(type_name.start, "str", 3) == 0)) {
+                                    return_type = builtin_string;
+                                } else if (type_name.length == 5 && memcmp(type_name.start, "float", 5) == 0) {
+                                    return_type = builtin_float;
+                                } else if (type_name.length == 4 && memcmp(type_name.start, "bool", 4) == 0) {
+                                    return_type = builtin_bool;
+                                }
+                            }
+                            
+                            fn_type->fn_type.return_type = return_type;
+                            
+                            // Register the prefixed function
+                            add_symbol(global_scope, prefixed_token, fn_type, false);
+                        }
+                    }
+                }
             }
         } else if (prog->stmts[i]->type == STMT_FN) {
             FnStmt* fn = &prog->stmts[i]->fn;
@@ -3057,21 +3338,9 @@ void check_program(Program* prog) {
                 add_symbol(global_scope, exported->var.name, init_type, !exported->var.is_const);
             }
         } else if (prog->stmts[i]->type == STMT_ENUM) {
-            EnumStmt* enum_decl = &prog->stmts[i]->enum_decl;
-            
-            // Register enum type
-            add_symbol(global_scope, enum_decl->name, builtin_int, false);
-            
-            // Register each enum member with qualified name (EnumName.MEMBER)
-            for (int j = 0; j < enum_decl->variant_count; j++) {
-                char qualified_member[128];
-                snprintf(qualified_member, 128, "%.*s.%.*s",
-                        enum_decl->name.length, enum_decl->name.start,
-                        enum_decl->variants[j].length, enum_decl->variants[j].start);
-                
-                Token qualified_token = {TOKEN_IDENT, strdup(qualified_member), (int)strlen(qualified_member), 0};
-                add_symbol(global_scope, qualified_token, builtin_int, false);
-            }
+            // Enum types are already registered in Pass 0 with proper TYPE_ENUM
+            // No need to re-register here (would overwrite with builtin_int)
+            // The enum type and variants are already in global_scope
         }
     }
     

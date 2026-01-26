@@ -15,6 +15,7 @@ typedef struct {
     Token previous;
     bool had_error;
     const char* filename;  // For better error messages
+    bool allow_struct_init;  // Control whether struct init is allowed in expressions
 } Parser;
 
 static Parser parser;
@@ -135,14 +136,17 @@ static Stmt* alloc_stmt() {
 // Helper to check if we're looking at a struct initialization pattern
 // Returns true if pattern looks like: { } or { ident : ...
 static bool is_struct_init_pattern() {
+    // Check if struct init is allowed in current context
+    if (!parser.allow_struct_init) {
+        return false;
+    }
+    
     // Check if next token is {
     if (!check(TOKEN_LBRACE)) return false;
     
-    // For a more robust check, we'd need to peek ahead
-    // For now, assume it's a struct init if we see uppercase + {
-    // The comparison operator should have already consumed its operands
-    // so if we're here with uppercase + {, it's likely a struct init
-    return true;
+    // If on same line, likely a struct init
+    // If on different lines, not a struct init
+    return parser.previous.line == parser.current.line;
 }
 
 static Expr* primary() {
@@ -1457,12 +1461,22 @@ Stmt* statement() {
     if (match(TOKEN_IF) || match(TOKEN_ELSEIF)) {
         Stmt* stmt = alloc_stmt();
         stmt->type = STMT_IF;
+        
+        // Disable struct init in condition to prevent: if x == TypeName { ... }
+        // from being parsed as: if x == (TypeName { ... })
+        bool saved_allow_struct_init = parser.allow_struct_init;
+        parser.allow_struct_init = false;
+        
         if (match(TOKEN_LPAREN)) {
             stmt->if_stmt.condition = expression();
             expect(TOKEN_RPAREN, "Expected ')' after if condition");
         } else {
             stmt->if_stmt.condition = expression();
         }
+        
+        // Restore struct init flag
+        parser.allow_struct_init = saved_allow_struct_init;
+        
         expect(TOKEN_LBRACE, "Expected '{' after if condition");
         stmt->if_stmt.then_branch = alloc_stmt();
         stmt->if_stmt.then_branch->type = STMT_BLOCK;
@@ -1627,12 +1641,21 @@ Stmt* statement() {
     if (match(TOKEN_WHILE)) {
         Stmt* stmt = alloc_stmt();
         stmt->type = STMT_WHILE;
+        
+        // Disable struct init in condition
+        bool saved_allow_struct_init = parser.allow_struct_init;
+        parser.allow_struct_init = false;
+        
         if (match(TOKEN_LPAREN)) {
             stmt->while_stmt.condition = expression();
             expect(TOKEN_RPAREN, "Expected ')' after while condition");
         } else {
             stmt->while_stmt.condition = expression();
         }
+        
+        // Restore struct init flag
+        parser.allow_struct_init = saved_allow_struct_init;
+        
         expect(TOKEN_LBRACE, "Expected '{' after while condition");
         stmt->while_stmt.body = alloc_stmt();
         stmt->while_stmt.body->type = STMT_BLOCK;
@@ -2539,7 +2562,7 @@ Program* parse_program() {
             size_t new_size = sizeof(Stmt*) * new_capacity;
             
             // Check for reasonable size limit
-            if (new_size > 1024 * 1024) { // 1MB limit for statement array
+            if (new_size > 10 * 1024 * 1024) { // 10MB limit for statement array (increased from 1MB)
                 // Handle too many statements
                 safe_free(prog->stmts);
                 safe_free(prog);
@@ -2835,6 +2858,9 @@ Program* parse_program() {
         } else if (check(TOKEN_MATCH)) {
             // T1.4.3: Control Flow Agent addition
             prog->stmts[prog->count++] = parse_match_statement();
+        } else if (check(TOKEN_VAR) || check(TOKEN_CONST)) {
+            // Global variable/constant declarations
+            prog->stmts[prog->count++] = statement();
         } else {
             prog->stmts[prog->count++] = statement();
         }
@@ -2874,6 +2900,7 @@ static Stmt* parse_test_statement() {
 
 void init_parser() {
     parser.had_error = false;
+    parser.allow_struct_init = true;  // Allow by default
     advance();
 }
 
@@ -3009,9 +3036,13 @@ static Stmt* parse_match_statement() {
                     
                     expect(TOKEN_RPAREN, "Expected ')' after destructuring pattern");
                 } else {
-                    // Just a simple enum variant without destructuring
-                    pattern->type = PATTERN_IDENT;
-                    pattern->ident.name = variant_name;
+                    // Simple enum variant without destructuring: Color::Red
+                    // Store as PATTERN_OPTION with enum_name and variant_name
+                    pattern->type = PATTERN_OPTION;
+                    pattern->option.is_some = false;  // No data to destructure
+                    pattern->option.variant_name = variant_name;
+                    pattern->option.enum_name = first_token;
+                    pattern->option.inner = NULL;
                 }
             } else {
                 // Just a simple identifier pattern

@@ -124,6 +124,11 @@ int main(int argc, char** argv) {
         printf("  wyn clean                Clean artifacts\n");
         printf("  wyn cross <os> <file>    Cross-compile\n");
         printf("  wyn llvm <file.wyn>      Compile with LLVM backend\n");
+        printf("  wyn search <query>       Search package registry\n");
+        printf("  wyn info <package>       Show package information\n");
+        printf("  wyn versions <package>   List package versions\n");
+        printf("  wyn install <package>    Install package from registry\n");
+        printf("  wyn publish              Publish package to registry\n");
         printf("  wyn version              Show version\n");
         printf("  wyn help                 Show this help\n");
         printf("\nOptimization flags:\n");
@@ -170,15 +175,57 @@ int main(int argc, char** argv) {
     }
     
     if (strcmp(command, "install") == 0) {
-        // wyn install - install packages from wyn.toml
-        extern int package_install(const char*);
-        return package_install(".");
+        if (argc < 3) {
+            // wyn install - install packages from wyn.toml
+            extern int package_install(const char*);
+            return package_install(".");
+        } else {
+            // wyn install <package> - install from registry
+            extern int registry_install(const char*);
+            return registry_install(argv[2]);
+        }
     }
     
     if (strcmp(command, "lsp") == 0) {
         // wyn lsp - start LSP server
         extern int lsp_server_start();
         return lsp_server_start();
+    }
+    
+    if (strcmp(command, "search") == 0) {
+        if (argc < 3) {
+            fprintf(stderr, "Usage: wyn search <query>\n");
+            return 1;
+        }
+        extern int registry_search(const char*);
+        return registry_search(argv[2]);
+    }
+    
+    if (strcmp(command, "info") == 0) {
+        if (argc < 3) {
+            fprintf(stderr, "Usage: wyn info <package>\n");
+            return 1;
+        }
+        extern int registry_info(const char*);
+        return registry_info(argv[2]);
+    }
+    
+    if (strcmp(command, "versions") == 0) {
+        if (argc < 3) {
+            fprintf(stderr, "Usage: wyn versions <package>\n");
+            return 1;
+        }
+        extern int registry_versions(const char*);
+        return registry_versions(argv[2]);
+    }
+    
+    if (strcmp(command, "publish") == 0) {
+        int dry_run = 0;
+        if (argc >= 3 && strcmp(argv[2], "--dry-run") == 0) {
+            dry_run = 1;
+        }
+        extern int registry_publish(int);
+        return registry_publish(dry_run);
     }
     
     if (strcmp(command, "pkg") == 0) {
