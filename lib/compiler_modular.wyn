@@ -1,5 +1,5 @@
 // Wyn Self-Hosting Compiler - Modular Version
-// Uses import system to combine lexer, parser, checker, codegen
+// Combines lexer, parser, checker, codegen modules
 
 import lexer_module
 import parser_module
