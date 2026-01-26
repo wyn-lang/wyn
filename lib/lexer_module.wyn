@@ -1,36 +1,36 @@
 // Lexer module for Wyn - Exportable tokenization
 // Extracted from lexer.wyn for modular compiler
+// Uses int constants instead of enums to avoid codegen issues
 
-enum TokenType {
-    EndOfFile,
-    Ident,
-    Int,
-    String,
-    Fn,
-    Var,
-    If,
-    Else,
-    While,
-    Return,
-    Plus,
-    Minus,
-    Star,
-    Slash,
-    Equal,
-    EqualEqual,
-    Less,
-    Greater,
-    Arrow,
-    Dot,
-    Colon,
-    LParen,
-    RParen,
-    LBrace,
-    RBrace,
-    Comma,
-    Semicolon,
-    Unknown
-}
+// Token type constants
+const TokenType_EndOfFile = 0
+const TokenType_Ident = 1
+const TokenType_Int = 2
+const TokenType_String = 3
+const TokenType_Fn = 4
+const TokenType_Var = 5
+const TokenType_If = 6
+const TokenType_Else = 7
+const TokenType_While = 8
+const TokenType_Return = 9
+const TokenType_Plus = 10
+const TokenType_Minus = 11
+const TokenType_Star = 12
+const TokenType_Slash = 13
+const TokenType_Equal = 14
+const TokenType_EqualEqual = 15
+const TokenType_Less = 16
+const TokenType_Greater = 17
+const TokenType_Arrow = 18
+const TokenType_Dot = 19
+const TokenType_Colon = 20
+const TokenType_LParen = 21
+const TokenType_RParen = 22
+const TokenType_LBrace = 23
+const TokenType_RBrace = 24
+const TokenType_Comma = 25
+const TokenType_Semicolon = 26
+const TokenType_Unknown = 27
 
 fn is_digit(ch: string) -> int {
     if ch == "0" { return 1 }
@@ -83,7 +83,7 @@ fn is_whitespace(ch: string) -> int {
     return 0
 }
 
-fn check_keyword(input: string, start: int, len: int) -> TokenType {
+fn check_keyword(input: string, start: int, len: int) -> int {
     if len == 2 {
         if input[start] == "f" {
             if input[start + 1] == "n" {
