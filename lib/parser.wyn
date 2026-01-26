@@ -40,7 +40,7 @@ enum NodeType {
 }
 
 // Parser state (global)
-var g_tokens = []
+var g_tokens: [TokenType] = []
 var g_pos = 0
 
 fn peek() -> TokenType {
