@@ -8,6 +8,7 @@
     #pragma comment(lib, "ws2_32.lib")
     #define close closesocket
 #else
+    #define _POSIX_C_SOURCE 200809L
     #include <sys/socket.h>
     #include <netinet/in.h>
     #include <netdb.h>
@@ -15,6 +16,7 @@
     #include <arpa/inet.h>
 #endif
 
+#include <sys/stat.h>
 #include "registry.h"
 #include "toml.h"
 #include "semver.h"
@@ -75,7 +77,7 @@ static int http_get(const char *host, const char *path, char **response_body) {
     // Setup server address
     memset(&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
-    memcpy(&serv_addr.sin_addr.s_addr, server->h_addr, server->h_length);
+    memcpy(&serv_addr.sin_addr.s_addr, server->h_addr_list[0], server->h_length);
     serv_addr.sin_port = htons(80);  // Use HTTP for now (HTTPS requires SSL/TLS)
     
     // Connect
