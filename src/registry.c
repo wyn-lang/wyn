@@ -5,6 +5,9 @@
 #ifdef _WIN32
     #include <winsock2.h>
     #include <ws2tcpip.h>
+    #include <io.h>
+    #define access _access
+    #define F_OK 0
     #pragma comment(lib, "ws2_32.lib")
     #define close closesocket
 #else
