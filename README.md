@@ -1,53 +1,90 @@
 # Wyn Programming Language
 
-**Status:** Production Ready ✓  
-**Type:** A modern systems programming language where everything is an object  
-**Version:** See [VERSION](VERSION) file
+**A modern systems programming language where everything is an object**
+
+[![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)](VERSION)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Examples](https://img.shields.io/badge/examples-62%2F63%20passing-brightgreen.svg)](examples/)
 
 ---
 
-## Quick Start
+## ✨ What Makes Wyn Special
 
-### Build
+- **Everything is an Object** - Even integers and strings have methods
+- **Modern Syntax** - Clean, intuitive, and expressive
+- **Systems Programming** - Compiles to C for maximum performance
+- **Module System** - Built-in import/export for code organization
+- **Rich Standard Library** - Strings, arrays, file I/O, networking, JSON, and more
+- **IDE Support** - LSP, VS Code extension, Neovim plugin
+- **Package Manager** - Built-in package management (registry coming in v1.5.1)
+
+---
+
+## 🚀 Quick Start
+
+### Installation
 
 ```bash
 cd wyn
 make
+./wyn --version  # Should show "Wyn v1.5.0"
 ```
 
 ### Hello World
 
 ```wyn
 fn main() -> int {
-    print("Hello, World!\n");
-    return 0;
+    print("Hello, World!")
+    return 0
 }
 ```
 
 ```bash
 ./wyn hello.wyn
 ./hello.wyn.out
+# Output: Hello, World!
 ```
 
 ---
 
-## Features
+## 💡 Features
 
 ### Everything is an Object
 
 ```wyn
-42.abs()              // Methods on integers
-"hello".upper()       // Methods on strings
-[1,2,3].len()         // Methods on arrays
-{"a": 1}["a"]         // HashMap indexing
+// Methods on integers
+42.abs()
+(-5).abs()  // Returns 5
+
+// Methods on strings
+"hello".upper()      // "HELLO"
+"hello".len()        // 5
+"hello".contains("ell")  // true
+
+// Methods on arrays
+[1, 2, 3].len()      // 3
+[1, 2, 3].map(fn(x) -> x * 2)  // [2, 4, 6]
+[1, 2, 3].filter(fn(x) -> x > 1)  // [2, 3]
 ```
 
 ### Clean Collection Syntax
 
 ```wyn
-var arr = [1, 2, 3];                    // Array
-var hmap = {"key": 10, "key2": 20};     // HashMap
-var hset = {:"item1", "item2"};         // HashSet
+// Arrays
+var numbers = [1, 2, 3, 4, 5]
+numbers.push(6)
+var first = numbers[0]
+
+// HashMaps
+var scores = {"Alice": 95, "Bob": 87}
+scores["Charlie"] = 92
+var alice_score = scores["Alice"]
+
+// HashSets
+var tags = {:"rust", "systems", "programming"}
+tags.insert("wyn")
+var has_rust = tags.contains("rust")
+```
 ```
 
 ### Simple Variable Declaration

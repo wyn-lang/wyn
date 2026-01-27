@@ -125,6 +125,6 @@ MIT License - see LICENSE file for details
 
 ## Links
 
-- [Wyn Language](https://wyn-lang.org)
-- [Documentation](https://docs.wyn-lang.org)
+- [Wyn Language](https://wynlang.com)
+- [Documentation](https://docs.wynlang.com)
 - [GitHub](https://github.com/wyn-lang/wyn)

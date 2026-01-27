@@ -261,6 +261,7 @@ const char* array_get_str(WynArray arr, int index) {
     if (arr.data[index].type == WYN_TYPE_STRING) return arr.data[index].data.string_val;
     return "";
 }
+#define array_get_struct(arr, idx, T) (*(T*)arr.data[idx].data.struct_val)
 WynValue array_get(WynArray arr, int index) {
     WynValue val = {0};
     if (index >= 0 && index < arr.count) val = arr.data[index];

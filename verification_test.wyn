@@ -1,8 +1,0 @@
-fn square(n: int) -> int {
-    return n + n
-}
-
-fn main() -> int {
-    var result = square(4)
-    return result
-}

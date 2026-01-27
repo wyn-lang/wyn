@@ -8,7 +8,7 @@
 #include "toml.h"
 #include "semver.h"
 
-#define REGISTRY_URL "https://packages.wyn-lang.org"
+#define REGISTRY_URL "https://pkg.wynlang.com"
 
 struct MemoryStruct {
     char *memory;

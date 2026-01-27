@@ -2,6 +2,12 @@
 // Extracted from lexer.wyn for modular compiler
 // Uses int constants instead of enums to avoid codegen issues
 
+// Token structure
+struct Token {
+    tok_type: int,
+    value: string
+}
+
 // Token type constants
 const TokenType_EndOfFile = 0
 const TokenType_Ident = 1
@@ -152,9 +158,9 @@ fn check_keyword(input: string, start: int, len: int) -> int {
     return TokenType_Ident
 }
 
-export fn tokenize(input: string) -> int {
+export fn tokenize(input: string) -> [Token] {
+    var tokens: [Token] = []
     var pos = 0
-    var count = 0
     
     while pos < input.len() {
         var ch = input[pos]
@@ -162,102 +168,85 @@ export fn tokenize(input: string) -> int {
         if is_whitespace(ch) {
             pos = pos + 1
         } else if is_digit(ch) {
-            while pos < input.len() {
-                if is_digit(input[pos]) {
-                    pos = pos + 1
-                } else {
-                    break
-                }
+            var start = pos
+            while pos < input.len() && is_digit(input[pos]) {
+                pos = pos + 1
             }
-            count = count + 1
+            tokens.push(Token { tok_type: TokenType_Int, value: input.substring(start, pos) })
         } else if is_alpha(ch) {
             var start = pos
-            while pos < input.len() {
-                if is_alpha(input[pos]) {
-                    pos = pos + 1
-                } else {
-                    break
-                }
+            while pos < input.len() && is_alpha(input[pos]) {
+                pos = pos + 1
             }
-            count = count + 1
+            var len = pos - start
+            var tok_type = check_keyword(input, start, len)
+            tokens.push(Token { tok_type: tok_type, value: input.substring(start, pos) })
         } else if ch == "+" {
-            count = count + 1
+            tokens.push(Token { tok_type: TokenType_Plus, value: "+" })
             pos = pos + 1
         } else if ch == "-" {
-            if pos + 1 < input.len() {
-                if input[pos + 1] == ">" {
-                    count = count + 1
-                    pos = pos + 2
-                } else {
-                    count = count + 1
-                    pos = pos + 1
-                }
+            if pos + 1 < input.len() && input[pos + 1] == ">" {
+                tokens.push(Token { tok_type: TokenType_Arrow, value: "->" })
+                pos = pos + 2
             } else {
-                count = count + 1
+                tokens.push(Token { tok_type: TokenType_Minus, value: "-" })
                 pos = pos + 1
             }
         } else if ch == "*" {
-            count = count + 1
+            tokens.push(Token { tok_type: TokenType_Star, value: "*" })
             pos = pos + 1
         } else if ch == "/" {
-            count = count + 1
+            tokens.push(Token { tok_type: TokenType_Slash, value: "/" })
             pos = pos + 1
         } else if ch == "=" {
-            if pos + 1 < input.len() {
-                if input[pos + 1] == "=" {
-                    count = count + 1
-                    pos = pos + 2
-                } else {
-                    count = count + 1
-                    pos = pos + 1
-                }
+            if pos + 1 < input.len() && input[pos + 1] == "=" {
+                tokens.push(Token { tok_type: TokenType_EqualEqual, value: "==" })
+                pos = pos + 2
             } else {
-                count = count + 1
+                tokens.push(Token { tok_type: TokenType_Equal, value: "=" })
                 pos = pos + 1
             }
         } else if ch == "<" {
-            count = count + 1
+            tokens.push(Token { tok_type: TokenType_Less, value: "<" })
             pos = pos + 1
         } else if ch == ">" {
-            count = count + 1
+            tokens.push(Token { tok_type: TokenType_Greater, value: ">" })
             pos = pos + 1
         } else if ch == "." {
-            count = count + 1
+            tokens.push(Token { tok_type: TokenType_Dot, value: "." })
             pos = pos + 1
         } else if ch == ":" {
-            count = count + 1
+            tokens.push(Token { tok_type: TokenType_Colon, value: ":" })
             pos = pos + 1
         } else if ch == "(" {
-            count = count + 1
+            tokens.push(Token { tok_type: TokenType_LParen, value: "(" })
             pos = pos + 1
         } else if ch == ")" {
-            count = count + 1
+            tokens.push(Token { tok_type: TokenType_RParen, value: ")" })
             pos = pos + 1
         } else if ch == "{" {
-            count = count + 1
+            tokens.push(Token { tok_type: TokenType_LBrace, value: "{" })
             pos = pos + 1
         } else if ch == "}" {
-            count = count + 1
+            tokens.push(Token { tok_type: TokenType_RBrace, value: "}" })
             pos = pos + 1
         } else if ch == "," {
-            count = count + 1
+            tokens.push(Token { tok_type: TokenType_Comma, value: "," })
             pos = pos + 1
         } else if ch == ";" {
-            count = count + 1
+            tokens.push(Token { tok_type: TokenType_Semicolon, value: ";" })
             pos = pos + 1
         } else {
-            count = count + 1
             pos = pos + 1
         }
     }
     
-    count = count + 1
-    return count
+    tokens.push(Token { tok_type: 0, value: "" })
+    return tokens
 }
 
 fn main() -> int {
-    var result = tokenize("var x = 42")
-    print("Token count: ")
-    print(result)
+    var tokens = tokenize("var x = 42")
+    print("Lexer module test complete")
     return 0
 }
