@@ -6,10 +6,10 @@
     #include <winsock2.h>
     #include <ws2tcpip.h>
     #include <io.h>
-    #include <unistd.h>
-    #define access _access
-    #define F_OK 0
     #define close closesocket
+    #ifndef F_OK
+        #define F_OK 0
+    #endif
 #else
     #define _POSIX_C_SOURCE 200809L
     #include <sys/socket.h>

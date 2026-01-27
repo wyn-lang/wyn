@@ -1,17 +1,20 @@
 // Complete package manager implementation for Wyn
 // Supports local registry, version resolution, and dependency management
 
-#define _POSIX_C_SOURCE 200809L
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <dirent.h>
 #include <errno.h>
 #include <stdbool.h>
+
 #ifdef _WIN32
-#include <direct.h>
-#define mkdir(path, mode) _mkdir(path)
+    #include <direct.h>
+    #include <io.h>
+    #define mkdir(path, mode) _mkdir(path)
+#else
+    #define _POSIX_C_SOURCE 200809L
+    #include <dirent.h>
 #endif
 
 #include "package.h"
