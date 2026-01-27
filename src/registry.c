@@ -6,6 +6,7 @@
     #include <winsock2.h>
     #include <ws2tcpip.h>
     #include <io.h>
+    #include <unistd.h>
     #define access _access
     #define F_OK 0
     #define close closesocket
