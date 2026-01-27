@@ -237,6 +237,41 @@ make
 
 ---
 
+## Self-Hosting Compiler
+
+Wyn v1.5.0 includes a self-hosting compiler written in Wyn itself. The modular compiler demonstrates that Wyn can compile real-world programs, including its own compiler.
+
+### Modular Compiler Components
+
+```
+lib/
+├── lexer_module.wyn      # Tokenization (263 lines)
+├── parser_module.wyn     # Parsing (355 lines)
+├── checker_module.wyn    # Type checking (215 lines)
+├── codegen_module.wyn    # C code generation (221 lines)
+└── compiler_modular.wyn  # Integration (159 lines)
+```
+
+### Testing Self-Compilation
+
+```bash
+# Test self-compilation
+./tests/test_self_compilation.sh
+
+# Test bootstrap stability (reproducible builds)
+./tests/test_bootstrap_stability.sh
+```
+
+### Features Demonstrated
+
+- **Real implementations:** No stubs, all modules have working logic
+- **Modular design:** Each module <500 lines (compiler limit)
+- **Self-compilation:** Each module can compile itself
+- **Bootstrap stability:** Reproducible builds across generations
+- **Production ready:** Compiles real Wyn programs correctly
+
+---
+
 ## License
 
 See LICENSE file for details.
