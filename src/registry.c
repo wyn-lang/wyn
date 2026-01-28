@@ -5,7 +5,7 @@
 #ifdef _WIN32
     #include <winsock2.h>
     #include <ws2tcpip.h>
-    #include <io.h>
+    #include <windows.h>
     #define close closesocket
 #else
     #define _POSIX_C_SOURCE 200809L
@@ -279,7 +279,8 @@ int registry_resolve_version(const char *package, const char *constraint, char *
 int registry_publish(int dry_run) {
     // Validate wyn.toml exists
 #ifdef _WIN32
-    if (_access("wyn.toml", 0) != 0) {
+    DWORD attrs = GetFileAttributesA("wyn.toml");
+    if (attrs == INVALID_FILE_ATTRIBUTES) {
 #else
     if (access("wyn.toml", F_OK) != 0) {
 #endif
