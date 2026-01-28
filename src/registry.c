@@ -7,9 +7,6 @@
     #include <ws2tcpip.h>
     #include <io.h>
     #define close closesocket
-    #ifndef F_OK
-        #define F_OK 0
-    #endif
 #else
     #define _POSIX_C_SOURCE 200809L
     #include <sys/socket.h>
@@ -281,7 +278,11 @@ int registry_resolve_version(const char *package, const char *constraint, char *
 
 int registry_publish(int dry_run) {
     // Validate wyn.toml exists
+#ifdef _WIN32
+    if (_access("wyn.toml", 0) != 0) {
+#else
     if (access("wyn.toml", F_OK) != 0) {
+#endif
         fprintf(stderr, "Error: wyn.toml not found. Run 'wyn init' first.\n");
         return 1;
     }
