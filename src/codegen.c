@@ -21,11 +21,15 @@
 
 // Forward declarations
 void codegen_stmt(Stmt* stmt);
+
 void codegen_match_statement(Stmt* stmt); // T1.4.4: Control Flow Agent addition
 Type* make_type(TypeKind kind); // Forward declaration for type creation
 extern bool is_builtin_module(const char* name);  // Module system
 
 static FILE* out = NULL;
+
+// Module emission tracking (reset per compilation)
+static bool modules_emitted_this_compilation = false;
 
 // Current module being emitted (for prefixing internal calls)
 static const char* current_module_prefix = NULL;
@@ -81,6 +85,10 @@ static const char* resolve_short_module_name(const char* short_name) {
 static char* current_function_params[64];
 static int current_param_count = 0;
 
+// Local variable tracking for current function
+static char* current_function_locals[256];
+static int current_local_count = 0;
+
 static void register_module_function(const char* name) {
     if (module_function_count < 256) {
         module_functions[module_function_count++] = strdup(name);
@@ -123,6 +131,28 @@ static void clear_parameters() {
         free(current_function_params[i]);
     }
     current_param_count = 0;
+}
+
+static void register_local_variable(const char* name) {
+    if (current_local_count < 256) {
+        current_function_locals[current_local_count++] = strdup(name);
+    }
+}
+
+static bool is_local_variable(const char* name) {
+    for (int i = 0; i < current_local_count; i++) {
+        if (strcmp(current_function_locals[i], name) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void clear_local_variables() {
+    for (int i = 0; i < current_local_count; i++) {
+        free(current_function_locals[i]);
+    }
+    current_local_count = 0;
 }
 
 // Module alias tracking
@@ -286,6 +316,26 @@ void wyn_emit(const char* fmt, ...) {
     va_end(args);
 }
 
+// Helper to emit C type from type expression
+static void emit_type_from_expr(Expr* type_expr) {
+    if (type_expr->type == EXPR_IDENT) {
+        Token type_name = type_expr->token;
+        if (type_name.length == 3 && memcmp(type_name.start, "int", 3) == 0) {
+            emit("int");
+        } else if (type_name.length == 6 && memcmp(type_name.start, "string", 6) == 0) {
+            emit("const char*");
+        } else if (type_name.length == 4 && memcmp(type_name.start, "bool", 4) == 0) {
+            emit("int");
+        } else if (type_name.length == 5 && memcmp(type_name.start, "float", 5) == 0) {
+            emit("double");
+        } else {
+            emit("%.*s", type_name.length, type_name.start);
+        }
+    } else {
+        emit("int"); // fallback
+    }
+}
+
 void codegen_expr(Expr* expr) {
     if (!expr) return;
     
@@ -369,6 +419,14 @@ void codegen_expr(Expr* expr) {
                 // Check if this is a parameter - never prefix parameters
                 if (is_parameter(temp_ident)) {
                     // This is a parameter, emit as-is
+                    emit("%s", temp_ident);
+                    free(ident);
+                    break;
+                }
+                
+                // Check if this is a local variable - never prefix local variables
+                if (is_local_variable(temp_ident)) {
+                    // This is a local variable, emit as-is
                     emit("%s", temp_ident);
                     free(ident);
                     break;
@@ -588,8 +646,8 @@ void codegen_expr(Expr* expr) {
             if (expr->call.callee->type == EXPR_IDENT) {
                 Token func_name = expr->call.callee->token;
                 
-                // Handle map function: map(array, lambda)
-                if (func_name.length == 3 && memcmp(func_name.start, "map", 3) == 0) {
+                // Handle map function: map(array, lambda) - only if 2 args
+                if (func_name.length == 3 && memcmp(func_name.start, "map", 3) == 0 && expr->call.arg_count == 2) {
                     emit("array_map(");
                     codegen_expr(expr->call.args[0]); // array
                     emit(", ");
@@ -598,8 +656,8 @@ void codegen_expr(Expr* expr) {
                     break;
                 }
                 
-                // Handle filter function: filter(array, predicate)
-                if (func_name.length == 6 && memcmp(func_name.start, "filter", 6) == 0) {
+                // Handle filter function: filter(array, predicate) - only if 2 args
+                if (func_name.length == 6 && memcmp(func_name.start, "filter", 6) == 0 && expr->call.arg_count == 2) {
                     emit("array_filter(");
                     codegen_expr(expr->call.args[0]); // array
                     emit(", ");
@@ -1116,6 +1174,49 @@ void codegen_expr(Expr* expr) {
             // Type-aware method dispatch (Phase 4)
             Type* object_type = expr->method_call.object->expr_type;
             
+            // Special handling for array.push() with struct elements
+            if (object_type && object_type->kind == TYPE_ARRAY) {
+                Token method = expr->method_call.method;
+                if (method.length == 4 && memcmp(method.start, "push", 4) == 0) {
+                    Type* elem_type = object_type->array_type.element_type;
+                    if (elem_type && elem_type->kind == TYPE_STRUCT) {
+                        // Use macro for struct push
+                        emit("array_push_struct(&(");
+                        codegen_expr(expr->method_call.object);
+                        emit("), ");
+                        
+                        // Emit the struct initializer
+                        codegen_expr(expr->method_call.args[0]);
+                        emit(", ");
+                        
+                        // Emit the type name for the macro's third argument
+                        // This must match the type used in the struct initializer
+                        Expr* init_expr = expr->method_call.args[0];
+                        if (init_expr->type == EXPR_STRUCT_INIT) {
+                            Token type_name = init_expr->struct_init.type_name;
+                            
+                            // The struct initializer codegen adds current_module_prefix
+                            // We need to do the same here to match
+                            if (current_module_prefix) {
+                                emit("%s_%.*s", current_module_prefix, type_name.length, type_name.start);
+                            } else {
+                                emit("%.*s", type_name.length, type_name.start);
+                            }
+                        } else {
+                            // Fallback
+                            Token type_name = elem_type->struct_type.name;
+                            if (current_module_prefix) {
+                                emit("%s_%.*s", current_module_prefix, type_name.length, type_name.start);
+                            } else {
+                                emit("%.*s", type_name.length, type_name.start);
+                            }
+                        }
+                        emit(")");
+                        break;
+                    }
+                }
+            }
+            
             // Special handling for array.get() - use type-specific accessor
             if (object_type && object_type->kind == TYPE_ARRAY) {
                 Token method = expr->method_call.method;
@@ -1125,6 +1226,9 @@ void codegen_expr(Expr* expr) {
                     if (elem_type) {
                         if (elem_type->kind == TYPE_STRING) {
                             emit("array_get_str(");
+                        } else if (elem_type->kind == TYPE_STRUCT) {
+                            // Use struct accessor
+                            emit("array_get_struct(");
                         } else {
                             // Default to int accessor
                             emit("array_get_int(");
@@ -1136,6 +1240,11 @@ void codegen_expr(Expr* expr) {
                     codegen_expr(expr->method_call.object);
                     emit(", ");
                     codegen_expr(expr->method_call.args[0]);
+                    if (elem_type && elem_type->kind == TYPE_STRUCT) {
+                        emit(", ");
+                        Token type_name = elem_type->struct_type.name;
+                        emit("%.*s", type_name.length, type_name.start);
+                    }
                     emit(")");
                     break;
                 }
@@ -1276,9 +1385,27 @@ void codegen_expr(Expr* expr) {
             break;
         }
         case EXPR_INDEX: {
-            // Check if this is map indexing by looking at the expression type
-            // For HashMap indexing, use hashmap_get_int
-            if (expr->index.index->type == EXPR_STRING) {
+            // Check if this is string indexing
+            if (expr->index.array->expr_type && expr->index.array->expr_type->kind == TYPE_STRING) {
+                // String indexing: s[i] -> wyn_string_charat(s, i)
+                emit("wyn_string_charat(");
+                codegen_expr(expr->index.array);
+                emit(", ");
+                codegen_expr(expr->index.index);
+                emit(")");
+                break;
+            }
+            
+            // Check if this is map indexing by looking at the array type
+            bool is_map_index = false;
+            if (expr->index.array->expr_type && expr->index.array->expr_type->kind == TYPE_MAP) {
+                is_map_index = true;
+            } else if (expr->index.index->type == EXPR_STRING || 
+                      (expr->index.index->expr_type && expr->index.index->expr_type->kind == TYPE_STRING)) {
+                is_map_index = true;
+            }
+            
+            if (is_map_index) {
                 // Map indexing: map["key"] -> hashmap_get_int(map, "key")
                 emit("hashmap_get_int(");
                 codegen_expr(expr->index.array);
@@ -1367,9 +1494,27 @@ void codegen_expr(Expr* expr) {
                     }
                 } else {
                     // Single indexing: arr[i]
-                    // Always use array_get_str for known string arrays
-                    // For unknown types, check if we're in a string context
-                    if (is_string_array) {
+                    // Check if this is a struct array
+                    bool is_struct_array = false;
+                    Type* elem_type = NULL;
+                    if (expr->index.array->expr_type && 
+                        expr->index.array->expr_type->kind == TYPE_ARRAY) {
+                        elem_type = expr->index.array->expr_type->array_type.element_type;
+                        if (elem_type && elem_type->kind == TYPE_STRUCT) {
+                            is_struct_array = true;
+                        }
+                    }
+                    
+                    if (is_struct_array) {
+                        emit("array_get_struct(");
+                        codegen_expr(expr->index.array);
+                        emit(", ");
+                        codegen_expr(expr->index.index);
+                        emit(", ");
+                        Token type_name = elem_type->struct_type.name;
+                        emit("%.*s", type_name.length, type_name.start);
+                        emit(")");
+                    } else if (is_string_array) {
                         emit("array_get_str(");
                         codegen_expr(expr->index.array);
                         emit(", ");
@@ -1394,6 +1539,20 @@ void codegen_expr(Expr* expr) {
             target_name[expr->assign.name.length] = '\0';
             
             if (current_module_prefix && !strchr(target_name, ':') && !strchr(target_name, '.')) {
+                // Check if this is a parameter - never prefix parameters
+                if (is_parameter(target_name)) {
+                    emit("%.*s = ", expr->assign.name.length, expr->assign.name.start);
+                    codegen_expr(expr->assign.value);
+                    break;
+                }
+                
+                // Check if this is a local variable - never prefix local variables
+                if (is_local_variable(target_name)) {
+                    emit("%.*s = ", expr->assign.name.length, expr->assign.name.start);
+                    codegen_expr(expr->assign.value);
+                    break;
+                }
+                
                 // Check if this looks like a module-level variable
                 // Don't prefix common local variable names or single-letter variables
                 bool is_single_letter = (strlen(target_name) == 1);
@@ -1529,26 +1688,152 @@ void codegen_expr(Expr* expr) {
             break;
         }
         case EXPR_MATCH: {
-            static int match_temp_counter = 0;
-            int temp_id = match_temp_counter++;
-            emit("({ int _match_result_%d; switch (", temp_id);
-            codegen_expr(expr->match.value);
-            emit(") {\n");
-            for (int i = 0; i < expr->match.arm_count; i++) {
-                if (expr->match.arms[i].pattern.length == 1 && 
-                    expr->match.arms[i].pattern.start[0] == '_') {
-                    emit("        default: _match_result_%d = ", temp_id);
-                } else {
-                    emit("        case %.*s: _match_result_%d = ", 
-                         expr->match.arms[i].pattern.length,
-                         expr->match.arms[i].pattern.start, temp_id);
-                }
-                codegen_expr(expr->match.arms[i].result);
-                emit("; break;\n");
+            // Generate match expression using if-else chain
+            static int match_counter = 0;
+            int match_id = match_counter++;
+            
+            emit("({ ");
+            
+            // Get the type of the match value
+            Type* match_type = expr->match.value->expr_type;
+            const char* type_name = "int";  // Default fallback
+            int type_name_len = 3;
+            
+            if (match_type && match_type->kind == TYPE_ENUM && match_type->name.length > 0) {
+                type_name = match_type->name.start;
+                type_name_len = match_type->name.length;
             }
-            emit("    } _match_result_%d; })", temp_id);
+            
+            // Store match value in temp variable
+            emit("%.*s __match_val_%d = ", type_name_len, type_name, match_id);
+            codegen_expr(expr->match.value);
+            emit("; ");
+            
+            // Generate result variable
+            emit("int __match_result_%d; ", match_id);
+            
+            // Generate if-else chain for each arm
+            for (int i = 0; i < expr->match.arm_count; i++) {
+                Pattern* pat = expr->match.arms[i].pattern;
+                
+                if (i > 0) emit("else ");
+                
+                // Check pattern type
+                if (pat->type == PATTERN_WILDCARD) {
+                    // Wildcard always matches
+                    emit("{ ");
+                } else if (pat->type == PATTERN_LITERAL) {
+                    emit("if (__match_val_%d == %.*s) { ",
+                         match_id,
+                         pat->literal.value.length,
+                         pat->literal.value.start);
+                } else if (pat->type == PATTERN_IDENT) {
+                    // Check if this looks like an enum variant (contains underscore)
+                    bool is_enum_variant = false;
+                    for (int j = 0; j < pat->ident.name.length; j++) {
+                        if (pat->ident.name.start[j] == '_') {
+                            is_enum_variant = true;
+                            break;
+                        }
+                    }
+                    
+                    if (is_enum_variant) {
+                        // Enum variant - generate comparison
+                        emit("if (__match_val_%d == %.*s) { ",
+                             match_id,
+                             pat->ident.name.length,
+                             pat->ident.name.start);
+                    } else {
+                        // Variable binding - always matches, bind variable
+                        emit("{ %.*s %.*s = __match_val_%d; ",
+                             type_name_len, type_name,
+                             pat->ident.name.length,
+                             pat->ident.name.start,
+                             match_id);
+                    }
+                } else if (pat->type == PATTERN_OPTION && pat->option.is_some) {
+                    // Enum variant with data: Some(x), Ok(x), etc.
+                    // Check tag matches variant
+                    emit("if (__match_val_%d.tag == %.*s_TAG) { ",
+                         match_id,
+                         pat->option.variant_name.length,
+                         pat->option.variant_name.start);
+                    
+                    // Bind inner variable if present
+                    if (pat->option.inner && pat->option.inner->type == PATTERN_IDENT) {
+                        // Extract variant name (e.g., "Some" from "Option_Some")
+                        const char* variant_start = pat->option.variant_name.start;
+                        int variant_len = pat->option.variant_name.length;
+                        
+                        // Find the last underscore to get the variant name
+                        const char* underscore = NULL;
+                        for (int j = 0; j < variant_len; j++) {
+                            if (variant_start[j] == '_') {
+                                underscore = variant_start + j;
+                            }
+                        }
+                        
+                        // Determine value type (heuristic: Err variants use const char*)
+                        const char* value_type = "int";
+                        int value_type_len = 3;
+                        if (underscore) {
+                            int short_variant_len = variant_len - (underscore - variant_start + 1);
+                            const char* short_variant = underscore + 1;
+                            // Check if variant name contains "Err"
+                            if (short_variant_len >= 3 && 
+                                memcmp(short_variant, "Err", 3) == 0) {
+                                value_type = "const char*";
+                                value_type_len = 11;
+                            }
+                        }
+                        
+                        if (underscore) {
+                            // Use the part after the last underscore
+                            int short_variant_len = variant_len - (underscore - variant_start + 1);
+                            emit("%.*s %.*s = __match_val_%d.data.%.*s_value; ",
+                                 value_type_len, value_type,
+                                 pat->option.inner->ident.name.length,
+                                 pat->option.inner->ident.name.start,
+                                 match_id,
+                                 short_variant_len,
+                                 underscore + 1);
+                        } else {
+                            // No underscore, use full name
+                            emit("%.*s %.*s = __match_val_%d.data.%.*s_value; ",
+                                 value_type_len, value_type,
+                                 pat->option.inner->ident.name.length,
+                                 pat->option.inner->ident.name.start,
+                                 match_id,
+                                 variant_len,
+                                 variant_start);
+                        }
+                    }
+                } else {
+                    // Unsupported pattern - treat as wildcard
+                    emit("{ ");
+                }
+                
+                // Generate result
+                emit("__match_result_%d = ", match_id);
+                codegen_expr(expr->match.arms[i].result);
+                emit("; } ");
+            }
+            
+            emit("__match_result_%d; })", match_id);
             break;
         };
+        case EXPR_BLOCK: {
+            // Generate block expression as compound statement
+            emit("({ ");
+            for (int i = 0; i < expr->block.stmt_count; i++) {
+                codegen_stmt(expr->block.stmts[i]);
+            }
+            if (expr->block.result) {
+                codegen_expr(expr->block.result);
+            }
+            emit("; })");
+            break;
+        }
         case EXPR_SOME: {
             // Generate Some constructor using generic some() function
             if (expr->option.value) {
@@ -1743,8 +2028,16 @@ void codegen_expr(Expr* expr) {
             break;
         }
         case EXPR_INDEX_ASSIGN: {
-            // Handle ARC-managed array assignment
-            if (expr->index_assign.index->type == EXPR_STRING) {
+            // Check if this is map assignment
+            bool is_map_assign = false;
+            if (expr->index_assign.object->expr_type && expr->index_assign.object->expr_type->kind == TYPE_MAP) {
+                is_map_assign = true;
+            } else if (expr->index_assign.index->type == EXPR_STRING || 
+                      (expr->index_assign.index->expr_type && expr->index_assign.index->expr_type->kind == TYPE_STRING)) {
+                is_map_assign = true;
+            }
+            
+            if (is_map_assign) {
                 // Map assignment: map["key"] = value -> hashmap_insert_int(map, "key", value)
                 emit("hashmap_insert_int(");
                 codegen_expr(expr->index_assign.object);
@@ -1862,6 +2155,54 @@ void codegen_c_header() {
     // String runtime functions
     emit("const char* wyn_string_concat_safe(const char* left, const char* right);\n\n");
     
+    // Testing framework
+    emit("// Test module\n");
+    emit("void Test_init(const char* suite_name);\n");
+    emit("void Test_assert(int condition, const char* message);\n");
+    emit("void Test_assert_eq_int(int actual, int expected, const char* message);\n");
+    emit("void Test_assert_eq_str(const char* actual, const char* expected, const char* message);\n");
+    emit("void Test_assert_ne_int(int actual, int expected, const char* message);\n");
+    emit("void Test_assert_gt(int actual, int threshold, const char* message);\n");
+    emit("void Test_assert_lt(int actual, int threshold, const char* message);\n");
+    emit("void Test_assert_gte(int actual, int threshold, const char* message);\n");
+    emit("void Test_assert_lte(int actual, int threshold, const char* message);\n");
+    emit("void Test_assert_contains(const char* haystack, const char* needle, const char* message);\n");
+    emit("void Test_assert_null(void* ptr, const char* message);\n");
+    emit("void Test_assert_not_null(void* ptr, const char* message);\n");
+    emit("void Test_describe(const char* description);\n");
+    emit("void Test_skip(const char* reason);\n");
+    emit("int Test_summary();\n\n");
+    
+    // HTTP client
+    emit("// Http module\n");
+    emit("typedef struct HttpResponse HttpResponse;\n");
+    emit("HttpResponse* Http_get(const char* url);\n");
+    emit("HttpResponse* Http_post(const char* url, const char* body, const char* content_type);\n");
+    emit("int Http_status(HttpResponse* resp);\n");
+    emit("const char* Http_body(HttpResponse* resp);\n");
+    emit("const char* Http_header(HttpResponse* resp, const char* name);\n");
+    emit("void Http_free(HttpResponse* resp);\n\n");
+    
+    // TCP server
+    emit("// TcpServer module\n");
+    emit("typedef struct TcpServer TcpServer;\n");
+    emit("TcpServer* TcpServer_new(int port);\n");
+    emit("int TcpServer_listen(TcpServer* server);\n");
+    emit("int TcpServer_accept(TcpServer* server);\n");
+    emit("void TcpServer_close(TcpServer* server);\n\n");
+    
+    // Socket utilities
+    emit("// Socket module\n");
+    emit("int Socket_set_timeout(int sock, int seconds);\n");
+    emit("int Socket_set_nonblocking(int sock);\n");
+    emit("int Socket_poll_read(int sock, int timeout_ms);\n");
+    emit("char* Socket_read_line(int sock);\n\n");
+    
+    // URL utilities
+    emit("// Url module\n");
+    emit("char* Url_encode(const char* str);\n");
+    emit("char* Url_decode(const char* str);\n\n");
+    
     // Standard library function declarations
     emit("// String module\n");
     emit("int wyn_string_len(const char* str);\n");
@@ -1879,6 +2220,45 @@ void codegen_c_header() {
     emit("int wyn_string_last_index_of(const char* str, const char* substr);\n");
     emit("char* wyn_string_repeat(const char* str, int n);\n");
     emit("char* wyn_string_reverse(const char* str);\n\n");
+    
+    emit("// Json module\n");
+    emit("typedef struct WynJson WynJson;\n");
+    emit("WynJson* Json_parse(const char* text);\n");
+    emit("char* Json_get_string(WynJson* json, const char* key);\n");
+    emit("int Json_get_int(WynJson* json, const char* key);\n");
+    emit("void Json_free(WynJson* json);\n\n");
+    
+    emit("// Time module wrappers\n");
+    emit("long Time_now();\n");
+    emit("long long Time_now_millis();\n");
+    emit("void Time_sleep(int seconds);\n\n");
+    
+    emit("// Crypto module wrappers\n");
+    emit("unsigned int Crypto_hash32(const char* data);\n");
+    emit("unsigned long long Crypto_hash64(const char* data);\n\n");
+    
+    emit("// HashMap module\n");
+    emit("int HashMap_new();\n");
+    emit("void HashMap_insert(int map, const char* key, int value);\n");
+    emit("int HashMap_get(int map, const char* key);\n");
+    emit("int HashMap_contains(int map, const char* key);\n");
+    emit("int HashMap_len(int map);\n");
+    emit("int HashMap_remove(int map, const char* key);\n");
+    emit("void HashMap_clear(int map);\n");
+    emit("void HashMap_free(int map);\n");
+    emit("int wyn_hashmap_new();\n");
+    emit("void wyn_hashmap_insert_int(int map, const char* key, int value);\n");
+    emit("int wyn_hashmap_get_int(int map, const char* key);\n");
+    emit("int wyn_hashmap_has(int map, const char* key);\n");
+    emit("int wyn_hashmap_len(int map);\n");
+    emit("void wyn_hashmap_free(int map);\n\n");
+    
+    emit("// Arena module\n");
+    emit("typedef struct WynArena WynArena;\n");
+    emit("WynArena* wyn_arena_new();\n");
+    emit("int* wyn_arena_alloc_int(WynArena* arena, int value);\n");
+    emit("void wyn_arena_clear(WynArena* arena);\n");
+    emit("void wyn_arena_free(WynArena* arena);\n\n");
     
     emit("// Array module\n");
     emit("int wyn_array_find(int* arr, int len, int (*pred)(int), int* found);\n");
@@ -1943,6 +2323,7 @@ void codegen_c_header() {
     emit("        double float_val;\n");
     emit("        const char* string_val;\n");
     emit("        struct WynArray* array_val;\n");
+    emit("        void* struct_val;\n");
     emit("    } data;\n");
     emit("} WynValue;\n\n");
     
@@ -1991,6 +2372,7 @@ void codegen_c_header() {
     emit("    if (arr.data[index].type == WYN_TYPE_STRING) return arr.data[index].data.string_val;\n");
     emit("    return \"\";\n");
     emit("}\n");
+    emit("#define array_get_struct(arr, idx, T) (*(T*)arr.data[idx].data.struct_val)\n");
     emit("WynValue array_get(WynArray arr, int index) {\n");
     emit("    WynValue val = {0};\n");
     emit("    if (index >= 0 && index < arr.count) val = arr.data[index];\n");
@@ -2034,6 +2416,17 @@ void codegen_c_header() {
     emit("    arr->data[arr->count].data.int_val = value;\n");
     emit("    arr->count++;\n");
     emit("}\n");
+    emit("#define array_push_struct(arr, value, StructType) do { \\\n");
+    emit("    StructType __temp_val = (value); \\\n");
+    emit("    if ((arr)->count >= (arr)->capacity) { \\\n");
+    emit("        (arr)->capacity = (arr)->capacity == 0 ? 4 : (arr)->capacity * 2; \\\n");
+    emit("        (arr)->data = realloc((arr)->data, sizeof(WynValue) * (arr)->capacity); \\\n");
+    emit("    } \\\n");
+    emit("    (arr)->data[(arr)->count].type = WYN_TYPE_STRUCT; \\\n");
+    emit("    (arr)->data[(arr)->count].data.struct_val = malloc(sizeof(StructType)); \\\n");
+    emit("    memcpy((arr)->data[(arr)->count].data.struct_val, &__temp_val, sizeof(StructType)); \\\n");
+    emit("    (arr)->count++; \\\n");
+    emit("} while(0)\n");
     emit("int array_pop(WynArray* arr) {\n");
     emit("    if (arr->count == 0) return 0;\n");
     emit("    arr->count--;\n");
@@ -2490,6 +2883,15 @@ void codegen_c_header() {
     emit("    }\n");
     emit("    free(copy);\n");
     emit("    return arr;\n");
+    emit("}\n");
+    
+    emit("const char* wyn_string_charat(const char* str, int index) {\n");
+    emit("    int len = strlen(str);\n");
+    emit("    if (index < 0 || index >= len) return \"\";\n");
+    emit("    char* result = malloc(2);\n");
+    emit("    result[0] = str[index];\n");
+    emit("    result[1] = '\\0';\n");
+    emit("    return result;\n");
     emit("}\n");
     
     emit("WynArray string_chars(const char* str) {\n");
@@ -3105,6 +3507,7 @@ void codegen_c_header() {
     emit("char* int_to_string(int x) { char* r = malloc(32); sprintf(r, \"%%d\", x); return r; }\n");
     emit("char* float_to_string(double x) { char* r = malloc(32); sprintf(r, \"%%g\", x); return r; }\n");
     emit("char* bool_to_string(bool x) { char* r = malloc(8); strcpy(r, x ? \"true\" : \"false\"); return r; }\n");
+    emit("int bool_to_int(bool x) { return x ? 1 : 0; }\n");
     emit("char* str_to_string(const char* x) { return (char*)x; }\n");
     
     emit("#define to_string(x) _Generic((x), \\\n");
@@ -3612,14 +4015,7 @@ void codegen_c_header() {
     emit("    return close(sockfd) == 0 ? 1 : 0;\n");
     emit("}\n\n");
     
-    // Time module functions
-    emit("int Time_now() { return (int)time(NULL); }\n");
-    emit("void Time_sleep(int milliseconds) {\n");
-    emit("    struct timespec ts;\n");
-    emit("    ts.tv_sec = milliseconds / 1000;\n");
-    emit("    ts.tv_nsec = (milliseconds %% 1000) * 1000000;\n");
-    emit("    nanosleep(&ts, NULL);\n");
-    emit("}\n");
+    // Time and Crypto functions are in stdlib_runtime.c
     
     emit("char* Time_format(int timestamp) {\n");
     emit("    time_t t = (time_t)timestamp;\n");
@@ -3744,6 +4140,7 @@ static void emit_function_with_prefix(Stmt* fn_stmt, const char* prefix) {
     
     // Register function parameters for scope tracking
     clear_parameters();
+    clear_local_variables();
     for (int i = 0; i < fn_stmt->fn.param_count; i++) {
         char param_name[256];
         snprintf(param_name, 256, "%.*s", fn_stmt->fn.params[i].length, fn_stmt->fn.params[i].start);
@@ -3770,6 +4167,10 @@ static void emit_function_with_prefix(Stmt* fn_stmt, const char* prefix) {
                 return_type = "bool";
             } else if (rt.length == 3 && memcmp(rt.start, "int", 3) == 0) {
                 return_type = "int";
+            } else if (rt.length == 7 && memcmp(rt.start, "HashMap", 7) == 0) {
+                return_type = "WynHashMap*";
+            } else if (rt.length == 7 && memcmp(rt.start, "HashSet", 7) == 0) {
+                return_type = "WynHashSet*";
             } else {
                 // Custom struct type - add module prefix if in module context
                 if (current_module_prefix) {
@@ -3806,8 +4207,10 @@ static void emit_function_with_prefix(Stmt* fn_stmt, const char* prefix) {
                     c_type = "WynArray";
                 } else if (type_token.length == 3 && memcmp(type_token.start, "int", 3) == 0) {
                     c_type = "int";
-                } else if (type_token.length == 3 && memcmp(type_token.start, "int", 3) == 0) {
-                    c_type = "int";
+                } else if (type_token.length == 7 && memcmp(type_token.start, "HashMap", 7) == 0) {
+                    c_type = "WynHashMap*";
+                } else if (type_token.length == 7 && memcmp(type_token.start, "HashSet", 7) == 0) {
+                    c_type = "WynHashSet*";
                 } else {
                     // Custom struct type - add module prefix if in module context
                     if (current_module_prefix) {
@@ -3869,6 +4272,26 @@ void codegen_stmt(Stmt* stmt) {
                     // Handle optional type annotation like int?
                     c_type = "WynOptional*";
                     needs_arc_management = true;
+                } else if (stmt->var.type->type == EXPR_ARRAY) {
+                    // Handle typed array annotation like [TokenType]
+                    c_type = "WynArray";
+                    needs_arc_management = false;
+                } else if (stmt->var.type->type == EXPR_CALL) {
+                    // Handle generic type instantiation: HashMap<K,V>, Option<T>, etc.
+                    if (stmt->var.type->call.callee->type == EXPR_IDENT) {
+                        Token type_name = stmt->var.type->call.callee->token;
+                        if (type_name.length == 7 && memcmp(type_name.start, "HashMap", 7) == 0) {
+                            c_type = "WynHashMap*";
+                        } else if (type_name.length == 7 && memcmp(type_name.start, "HashSet", 7) == 0) {
+                            c_type = "WynHashSet*";
+                        } else if (type_name.length == 6 && memcmp(type_name.start, "Option", 6) == 0) {
+                            c_type = "WynOptional*";
+                            needs_arc_management = true;
+                        } else if (type_name.length == 6 && memcmp(type_name.start, "Result", 6) == 0) {
+                            c_type = "WynResult*";
+                            needs_arc_management = true;
+                        }
+                    }
                 } else if (stmt->var.type->type == EXPR_IDENT) {
                     Token type_name = stmt->var.type->token;
                     if (type_name.length == 3 && memcmp(type_name.start, "int", 3) == 0) {
@@ -3880,6 +4303,13 @@ void codegen_stmt(Stmt* stmt) {
                         c_type = "double";
                     } else if (type_name.length == 4 && memcmp(type_name.start, "bool", 4) == 0) {
                         c_type = "bool";
+                    } else {
+                        // Custom struct/enum type - use the type name as-is
+                        static char custom_type_buf[256];
+                        int len = type_name.length < 255 ? type_name.length : 255;
+                        memcpy(custom_type_buf, type_name.start, len);
+                        custom_type_buf[len] = '\0';
+                        c_type = custom_type_buf;
                     }
                 }
             } else if (stmt->var.init) {
@@ -4053,38 +4483,59 @@ void codegen_stmt(Stmt* stmt) {
                     c_type = "WynHashSet*";
                     needs_arc_management = false;
                 } else if (stmt->var.init->type == EXPR_INDEX) {
-                    // Array/map indexing - infer from source
-                    if (stmt->var.init->index.array->type == EXPR_CALL) {
-                        Token callee = stmt->var.init->index.array->call.callee->token;
-                        if ((callee.length == 12 && memcmp(callee.start, "System::args", 12) == 0) ||
-                            (callee.length == 14 && memcmp(callee.start, "File::list_dir", 14) == 0)) {
-                            c_type = "const char*";
-                            is_already_const = true;
-                        }
-                    } else if (stmt->var.init->index.array->type == EXPR_METHOD_CALL) {
-                        Token method = stmt->var.init->index.array->method_call.method;
-                        if ((method.length == 5 && memcmp(method.start, "split", 5) == 0) ||
-                            (method.length == 5 && memcmp(method.start, "chars", 5) == 0) ||
-                            (method.length == 5 && memcmp(method.start, "words", 5) == 0) ||
-                            (method.length == 5 && memcmp(method.start, "lines", 5) == 0)) {
-                            c_type = "const char*";
-                            is_already_const = true;
-                        }
-                    } else if (stmt->var.init->index.array->type == EXPR_IDENT) {
-                        Token var_name = stmt->var.init->index.array->token;
-                        if ((var_name.length == 4 && memcmp(var_name.start, "args", 4) == 0) ||
-                            (var_name.length == 5 && memcmp(var_name.start, "files", 5) == 0) ||
-                            (var_name.length == 5 && memcmp(var_name.start, "names", 5) == 0) ||
-                            (var_name.length == 5 && memcmp(var_name.start, "parts", 5) == 0) ||
-                            (var_name.length == 7 && memcmp(var_name.start, "entries", 7) == 0)) {
-                            c_type = "const char*";
-                            is_already_const = true;
-                        }
-                    } else if (stmt->var.init->index.array->type == EXPR_ARRAY) {
-                        if (stmt->var.init->index.array->array.count > 0) {
-                            if (stmt->var.init->index.array->array.elements[0]->type == EXPR_STRING) {
+                    // Array/map/string indexing - check expr_type from checker
+                    if (stmt->var.init->expr_type) {
+                        switch (stmt->var.init->expr_type->kind) {
+                            case TYPE_STRING:
                                 c_type = "const char*";
                                 is_already_const = true;
+                                break;
+                            case TYPE_INT:
+                                c_type = "int";
+                                break;
+                            case TYPE_FLOAT:
+                                c_type = "double";
+                                break;
+                            case TYPE_BOOL:
+                                c_type = "bool";
+                                break;
+                            default:
+                                c_type = "int";
+                        }
+                    } else {
+                        // Fallback to heuristics
+                        if (stmt->var.init->index.array->type == EXPR_CALL) {
+                            Token callee = stmt->var.init->index.array->call.callee->token;
+                            if ((callee.length == 12 && memcmp(callee.start, "System::args", 12) == 0) ||
+                                (callee.length == 14 && memcmp(callee.start, "File::list_dir", 14) == 0)) {
+                                c_type = "const char*";
+                                is_already_const = true;
+                            }
+                        } else if (stmt->var.init->index.array->type == EXPR_METHOD_CALL) {
+                            Token method = stmt->var.init->index.array->method_call.method;
+                            if ((method.length == 5 && memcmp(method.start, "split", 5) == 0) ||
+                                (method.length == 5 && memcmp(method.start, "chars", 5) == 0) ||
+                                (method.length == 5 && memcmp(method.start, "words", 5) == 0) ||
+                                (method.length == 5 && memcmp(method.start, "lines", 5) == 0)) {
+                                c_type = "const char*";
+                                is_already_const = true;
+                            }
+                        } else if (stmt->var.init->index.array->type == EXPR_IDENT) {
+                            Token var_name = stmt->var.init->index.array->token;
+                            if ((var_name.length == 4 && memcmp(var_name.start, "args", 4) == 0) ||
+                                (var_name.length == 5 && memcmp(var_name.start, "files", 5) == 0) ||
+                                (var_name.length == 5 && memcmp(var_name.start, "names", 5) == 0) ||
+                                (var_name.length == 5 && memcmp(var_name.start, "parts", 5) == 0) ||
+                                (var_name.length == 7 && memcmp(var_name.start, "entries", 7) == 0)) {
+                                c_type = "const char*";
+                                is_already_const = true;
+                            }
+                        } else if (stmt->var.init->index.array->type == EXPR_ARRAY) {
+                            if (stmt->var.init->index.array->array.count > 0) {
+                                if (stmt->var.init->index.array->array.elements[0]->type == EXPR_STRING) {
+                                    c_type = "const char*";
+                                    is_already_const = true;
+                                }
                             }
                         }
                     }
@@ -4171,6 +4622,13 @@ void codegen_stmt(Stmt* stmt) {
                 emit("%s %.*s = ", c_type, stmt->var.name.length, stmt->var.name.start);
             }
             
+            // Register local variable for scope tracking (if inside a function)
+            if (current_module_prefix) {
+                char var_name[256];
+                snprintf(var_name, 256, "%.*s", stmt->var.name.length, stmt->var.name.start);
+                register_local_variable(var_name);
+            }
+            
             if (needs_arc_management) {
                 emit("({ ");
                 codegen_expr(stmt->var.init);
@@ -4251,7 +4709,21 @@ void codegen_stmt(Stmt* stmt) {
             bool is_async = stmt->fn.is_async;
             
             if (stmt->fn.return_type) {
-                if (stmt->fn.return_type->type == EXPR_ARRAY) {
+                if (stmt->fn.return_type->type == EXPR_CALL) {
+                    // Generic type instantiation: HashMap<K,V>, Option<T>, etc.
+                    if (stmt->fn.return_type->call.callee->type == EXPR_IDENT) {
+                        Token type_name = stmt->fn.return_type->call.callee->token;
+                        if (type_name.length == 7 && memcmp(type_name.start, "HashMap", 7) == 0) {
+                            return_type = "WynHashMap*";
+                        } else if (type_name.length == 7 && memcmp(type_name.start, "HashSet", 7) == 0) {
+                            return_type = "WynHashSet*";
+                        } else if (type_name.length == 6 && memcmp(type_name.start, "Option", 6) == 0) {
+                            return_type = "WynOptional*";
+                        } else if (type_name.length == 6 && memcmp(type_name.start, "Result", 6) == 0) {
+                            return_type = "WynResult*";
+                        }
+                    }
+                } else if (stmt->fn.return_type->type == EXPR_ARRAY) {
                     // Array type like [int] or [string]
                     return_type = "WynArray";
                 } else if (stmt->fn.return_type->type == EXPR_IDENT) {
@@ -4266,6 +4738,10 @@ void codegen_stmt(Stmt* stmt) {
                         return_type = "bool";
                     } else if (type_name.length == 5 && memcmp(type_name.start, "array", 5) == 0) {
                         return_type = "WynArray";
+                    } else if (type_name.length == 7 && memcmp(type_name.start, "HashMap", 7) == 0) {
+                        return_type = "WynHashMap*";
+                    } else if (type_name.length == 7 && memcmp(type_name.start, "HashSet", 7) == 0) {
+                        return_type = "WynHashSet*";
                     } else {
                         // Assume it's a custom struct type
                         snprintf(return_type_buf, sizeof(return_type_buf), "%.*s", 
@@ -4359,6 +4835,10 @@ void codegen_stmt(Stmt* stmt) {
                             param_type = "bool";
                         } else if (type_name.length == 5 && memcmp(type_name.start, "array", 5) == 0) {
                             param_type = "WynArray";
+                        } else if (type_name.length == 7 && memcmp(type_name.start, "HashMap", 7) == 0) {
+                            param_type = "WynHashMap*";
+                        } else if (type_name.length == 7 && memcmp(type_name.start, "HashSet", 7) == 0) {
+                            param_type = "WynHashSet*";
                         } else {
                             // Assume it's a custom struct type
                             snprintf(custom_type_buf, sizeof(custom_type_buf), "%.*s", 
@@ -4601,37 +5081,63 @@ void codegen_stmt(Stmt* stmt) {
             
             break;
         case STMT_ENUM:
-            emit("typedef enum {\n");
+            // Check if any variant has data
+            bool has_data = false;
             for (int i = 0; i < stmt->enum_decl.variant_count; i++) {
-                emit("    %.*s", 
-                     stmt->enum_decl.variants[i].length,
-                     stmt->enum_decl.variants[i].start);
-                if (i < stmt->enum_decl.variant_count - 1) {
-                    emit(",");
+                if (stmt->enum_decl.variant_type_counts[i] > 0) {
+                    has_data = true;
+                    break;
                 }
-                emit("\n");
             }
-            // Emit enum name with module prefix if in module context
-            if (current_module_prefix) {
-                emit("} %s_%.*s;\n\n", 
-                     current_module_prefix,
+            
+            if (has_data) {
+                // Generate tagged union for enum with data
+                emit("typedef struct {\n");
+                emit("    enum { ");
+                for (int i = 0; i < stmt->enum_decl.variant_count; i++) {
+                    emit("%.*s_%.*s_TAG",
+                         stmt->enum_decl.name.length, stmt->enum_decl.name.start,
+                         stmt->enum_decl.variants[i].length, stmt->enum_decl.variants[i].start);
+                    if (i < stmt->enum_decl.variant_count - 1) emit(", ");
+                }
+                emit(" } tag;\n");
+                emit("    union {\n");
+                for (int i = 0; i < stmt->enum_decl.variant_count; i++) {
+                    if (stmt->enum_decl.variant_type_counts[i] > 0) {
+                        emit("        ");
+                        // For now, only handle single-field variants
+                        if (stmt->enum_decl.variant_type_counts[i] == 1) {
+                            Expr* type_expr = stmt->enum_decl.variant_types[i][0];
+                            emit_type_from_expr(type_expr);
+                            emit(" %.*s_value;\n",
+                                 stmt->enum_decl.variants[i].length,
+                                 stmt->enum_decl.variants[i].start);
+                        }
+                    }
+                }
+                emit("    } data;\n");
+                emit("} %.*s;\n\n",
                      stmt->enum_decl.name.length,
                      stmt->enum_decl.name.start);
-                
-                // Generate qualified constants for EnumName.MEMBER access
-                for (int i = 0; i < stmt->enum_decl.variant_count; i++) {
-                    emit("#define %s_%.*s_%.*s %d\n",
-                         current_module_prefix,
-                         stmt->enum_decl.name.length, stmt->enum_decl.name.start,
-                         stmt->enum_decl.variants[i].length, stmt->enum_decl.variants[i].start,
-                         i);
-                }
             } else {
+                // Simple enum without data
+                emit("typedef enum {\n");
+                for (int i = 0; i < stmt->enum_decl.variant_count; i++) {
+                    emit("    %.*s", 
+                         stmt->enum_decl.variants[i].length,
+                         stmt->enum_decl.variants[i].start);
+                    if (i < stmt->enum_decl.variant_count - 1) {
+                        emit(",");
+                    }
+                    emit("\n");
+                }
                 emit("} %.*s;\n\n", 
                      stmt->enum_decl.name.length,
                      stmt->enum_decl.name.start);
-                
-                // Generate qualified constants for EnumName.MEMBER access
+            }
+            
+            // Generate qualified constants for EnumName.MEMBER access (only for simple enums)
+            if (!has_data) {
                 for (int i = 0; i < stmt->enum_decl.variant_count; i++) {
                     emit("#define %.*s_%.*s %d\n",
                          stmt->enum_decl.name.length, stmt->enum_decl.name.start,
@@ -4641,27 +5147,167 @@ void codegen_stmt(Stmt* stmt) {
             }
             emit("\n");
             
-            // Generate toString function for enum with module prefix
-            if (current_module_prefix) {
-                emit("const char* %s_%.*s_toString(%s_%.*s val) {\n",
-                     current_module_prefix,
-                     stmt->enum_decl.name.length, stmt->enum_decl.name.start,
-                     current_module_prefix,
-                     stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+            // Generate constructor functions for enums with data
+            if (has_data) {
+                for (int i = 0; i < stmt->enum_decl.variant_count; i++) {
+                    // Constructor function for all variants (with or without data)
+                    emit("%.*s %.*s_%.*s(",
+                         stmt->enum_decl.name.length, stmt->enum_decl.name.start,
+                         stmt->enum_decl.name.length, stmt->enum_decl.name.start,
+                         stmt->enum_decl.variants[i].length, stmt->enum_decl.variants[i].start);
+                    
+                    if (stmt->enum_decl.variant_type_counts[i] > 0) {
+                        // Only handle single-field variants for now
+                        if (stmt->enum_decl.variant_type_counts[i] == 1) {
+                            Expr* type_expr = stmt->enum_decl.variant_types[i][0];
+                            emit_type_from_expr(type_expr);
+                            emit(" value");
+                        }
+                    }
+                    // else: zero-argument constructor
+                    
+                    emit(") {\n");
+                    emit("    %.*s result;\n",
+                         stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+                    emit("    result.tag = %.*s_%.*s_TAG;\n",
+                         stmt->enum_decl.name.length, stmt->enum_decl.name.start,
+                         stmt->enum_decl.variants[i].length, stmt->enum_decl.variants[i].start);
+                    
+                    if (stmt->enum_decl.variant_type_counts[i] == 1) {
+                        emit("    result.data.%.*s_value = value;\n",
+                             stmt->enum_decl.variants[i].length, stmt->enum_decl.variants[i].start);
+                    }
+                    
+                    emit("    return result;\n");
+                    emit("}\n\n");
+                }
+            }
+            
+            // Generate toString function
+            emit("const char* %.*s_toString(%.*s val) {\n",
+                 stmt->enum_decl.name.length, stmt->enum_decl.name.start,
+                 stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+            if (has_data) {
+                emit("    switch(val.tag) {\n");
+                for (int i = 0; i < stmt->enum_decl.variant_count; i++) {
+                    emit("        case %.*s_%.*s_TAG: return \"%.*s\";\n",
+                         stmt->enum_decl.name.length, stmt->enum_decl.name.start,
+                         stmt->enum_decl.variants[i].length, stmt->enum_decl.variants[i].start,
+                         stmt->enum_decl.variants[i].length, stmt->enum_decl.variants[i].start);
+                }
+                emit("    }\n");
             } else {
-                emit("const char* %.*s_toString(%.*s val) {\n",
-                     stmt->enum_decl.name.length, stmt->enum_decl.name.start,
-                     stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+                emit("    switch(val) {\n");
+                for (int i = 0; i < stmt->enum_decl.variant_count; i++) {
+                    emit("        case %.*s: return \"%.*s\";\n",
+                         stmt->enum_decl.variants[i].length, stmt->enum_decl.variants[i].start,
+                         stmt->enum_decl.variants[i].length, stmt->enum_decl.variants[i].start);
+                }
+                emit("    }\n");
             }
-            emit("    switch(val) {\n");
-            for (int i = 0; i < stmt->enum_decl.variant_count; i++) {
-                emit("        case %.*s: return \"%.*s\";\n",
-                     stmt->enum_decl.variants[i].length, stmt->enum_decl.variants[i].start,
-                     stmt->enum_decl.variants[i].length, stmt->enum_decl.variants[i].start);
-            }
-            emit("    }\n");
             emit("    return \"Unknown\";\n");
             emit("}\n\n");
+            
+            // Generate unwrap function for Option enum
+            if (stmt->enum_decl.name.length == 6 && memcmp(stmt->enum_decl.name.start, "Option", 6) == 0) {
+                // Find the Some variant and its type
+                for (int i = 0; i < stmt->enum_decl.variant_count; i++) {
+                    if (stmt->enum_decl.variants[i].length == 4 && 
+                        memcmp(stmt->enum_decl.variants[i].start, "Some", 4) == 0 &&
+                        stmt->enum_decl.variant_type_counts[i] == 1) {
+                        // Generate unwrap function
+                        emit("int %.*s_unwrap(%.*s val) {\n",
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start,
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+                        emit("    if (val.tag == %.*s_Some_TAG) {\n",
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+                        emit("        return val.data.Some_value;\n");
+                        emit("    }\n");
+                        emit("    fprintf(stderr, \"Error: unwrap() called on None\\n\");\n");
+                        emit("    exit(1);\n");
+                        emit("}\n\n");
+                        
+                        // Generate is_some function
+                        emit("bool %.*s_is_some(%.*s val) {\n",
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start,
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+                        emit("    return val.tag == %.*s_Some_TAG;\n",
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+                        emit("}\n\n");
+                        
+                        // Generate is_none function
+                        emit("bool %.*s_is_none(%.*s val) {\n",
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start,
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+                        emit("    return val.tag == %.*s_None_TAG;\n",
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+                        emit("}\n\n");
+                        
+                        // Generate unwrap_or function
+                        emit("int %.*s_unwrap_or(%.*s val, int default_val) {\n",
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start,
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+                        emit("    if (val.tag == %.*s_Some_TAG) {\n",
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+                        emit("        return val.data.Some_value;\n");
+                        emit("    }\n");
+                        emit("    return default_val;\n");
+                        emit("}\n\n");
+                        break;
+                    }
+                }
+            }
+            
+            // Generate unwrap function for Result enum
+            if (stmt->enum_decl.name.length == 6 && memcmp(stmt->enum_decl.name.start, "Result", 6) == 0) {
+                // Find the Ok variant and its type
+                for (int i = 0; i < stmt->enum_decl.variant_count; i++) {
+                    if (stmt->enum_decl.variants[i].length == 2 && 
+                        memcmp(stmt->enum_decl.variants[i].start, "Ok", 2) == 0 &&
+                        stmt->enum_decl.variant_type_counts[i] == 1) {
+                        // Generate unwrap function
+                        emit("int %.*s_unwrap(%.*s val) {\n",
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start,
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+                        emit("    if (val.tag == %.*s_Ok_TAG) {\n",
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+                        emit("        return val.data.Ok_value;\n");
+                        emit("    }\n");
+                        emit("    fprintf(stderr, \"Error: unwrap() called on Err\\n\");\n");
+                        emit("    exit(1);\n");
+                        emit("}\n\n");
+                        
+                        // Generate is_ok function
+                        emit("bool %.*s_is_ok(%.*s val) {\n",
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start,
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+                        emit("    return val.tag == %.*s_Ok_TAG;\n",
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+                        emit("}\n\n");
+                        
+                        // Generate is_err function
+                        emit("bool %.*s_is_err(%.*s val) {\n",
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start,
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+                        emit("    return val.tag == %.*s_Err_TAG;\n",
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+                        emit("}\n\n");
+                        
+                        // Generate unwrap_or function
+                        emit("int %.*s_unwrap_or(%.*s val, int default_val) {\n",
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start,
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+                        emit("    if (val.tag == %.*s_Ok_TAG) {\n",
+                             stmt->enum_decl.name.length, stmt->enum_decl.name.start);
+                        emit("        return val.data.Ok_value;\n");
+                        emit("    }\n");
+                        emit("    return default_val;\n");
+                        emit("}\n\n");
+                        break;
+                    }
+                }
+            }
+            
             break;
         case STMT_TYPE_ALIAS:
             // typedef target_type alias_name;
@@ -4897,10 +5543,9 @@ void codegen_stmt(Stmt* stmt) {
             // Priority: User modules > Built-ins
             // This allows community to override/extend built-in modules
             if (is_module_loaded(lookup_name)) {
-                // User module exists - emit all loaded modules once
-                static bool user_modules_emitted = false;
-                if (!user_modules_emitted) {
-                    user_modules_emitted = true;
+                // User module exists - emit all loaded modules once per compilation
+                if (!modules_emitted_this_compilation) {
+                    modules_emitted_this_compilation = true;
                     
                     extern int get_all_modules_raw(void** out_modules, int max_count);
                     void* all_modules_raw[64];
@@ -4917,6 +5562,10 @@ void codegen_stmt(Stmt* stmt) {
                         clear_module_functions();
                         for (int i = 0; i < mod->ast->count; i++) {
                             Stmt* s = mod->ast->stmts[i];
+                            // Unwrap export statements
+                            if (s->type == STMT_EXPORT && s->export.stmt) {
+                                s = s->export.stmt;
+                            }
                             if (s->type == STMT_FN) {
                                 char func_name[256];
                                 snprintf(func_name, 256, "%.*s", s->fn.name.length, s->fn.name.start);
@@ -4942,6 +5591,12 @@ void codegen_stmt(Stmt* stmt) {
                         // Second: emit forward declarations for all functions
                         for (int i = 0; i < mod->ast->count; i++) {
                             Stmt* s = mod->ast->stmts[i];
+                            
+                            // Unwrap export statements
+                            if (s->type == STMT_EXPORT && s->export.stmt) {
+                                s = s->export.stmt;
+                            }
+                            
                             if (s->type == STMT_FN) {
                                 // Private functions are static
                                 if (!s->fn.is_public) {
@@ -4962,6 +5617,10 @@ void codegen_stmt(Stmt* stmt) {
                                             return_type = "bool";
                                         } else if (rt.length == 3 && memcmp(rt.start, "int", 3) == 0) {
                                             return_type = "int";
+                                        } else if (rt.length == 7 && memcmp(rt.start, "HashMap", 7) == 0) {
+                                            return_type = "WynHashMap*";
+                                        } else if (rt.length == 7 && memcmp(rt.start, "HashSet", 7) == 0) {
+                                            return_type = "WynHashSet*";
                                         } else {
                                             // Custom struct type - add module prefix
                                             snprintf(custom_ret_type, 128, "%s_%.*s", c_mod_name, rt.length, rt.start);
@@ -5054,6 +5713,12 @@ void codegen_stmt(Stmt* stmt) {
                         // Third: emit functions
                         for (int i = 0; i < mod->ast->count; i++) {
                             Stmt* s = mod->ast->stmts[i];
+                            
+                            // Unwrap export statements
+                            if (s->type == STMT_EXPORT && s->export.stmt) {
+                                s = s->export.stmt;
+                            }
+                            
                             if (s->type == STMT_FN) {
                                 emit_function_with_prefix(s, mod->name);
                             }
@@ -5419,6 +6084,9 @@ void codegen_program(Program* prog) {
     bool has_main = false;
     bool has_math_import = false;
     
+    // Reset module emission flag for this compilation
+    modules_emitted_this_compilation = false;
+    
     // Reset lambda collection
     lambda_count = 0;
     lambda_id_counter = 0;
@@ -5619,7 +6287,21 @@ void codegen_program(Program* prog) {
             bool is_async = fn->is_async;
             
             if (fn->return_type) {
-                if (fn->return_type->type == EXPR_ARRAY) {
+                if (fn->return_type->type == EXPR_CALL) {
+                    // Generic type instantiation: HashMap<K,V>, Option<T>, etc.
+                    if (fn->return_type->call.callee->type == EXPR_IDENT) {
+                        Token type_name = fn->return_type->call.callee->token;
+                        if (type_name.length == 7 && memcmp(type_name.start, "HashMap", 7) == 0) {
+                            return_type = "WynHashMap*";
+                        } else if (type_name.length == 7 && memcmp(type_name.start, "HashSet", 7) == 0) {
+                            return_type = "WynHashSet*";
+                        } else if (type_name.length == 6 && memcmp(type_name.start, "Option", 6) == 0) {
+                            return_type = "WynOptional*";
+                        } else if (type_name.length == 6 && memcmp(type_name.start, "Result", 6) == 0) {
+                            return_type = "WynResult*";
+                        }
+                    }
+                } else if (fn->return_type->type == EXPR_ARRAY) {
                     // Array type like [int] or [string]
                     return_type = "WynArray";
                 } else if (fn->return_type->type == EXPR_IDENT) {
@@ -5634,6 +6316,10 @@ void codegen_program(Program* prog) {
                         return_type = "bool";
                     } else if (type_name.length == 5 && memcmp(type_name.start, "array", 5) == 0) {
                         return_type = "WynArray";
+                    } else if (type_name.length == 7 && memcmp(type_name.start, "HashMap", 7) == 0) {
+                        return_type = "WynHashMap*";
+                    } else if (type_name.length == 7 && memcmp(type_name.start, "HashSet", 7) == 0) {
+                        return_type = "WynHashSet*";
                     } else {
                         // Assume it's a custom struct type
                         snprintf(return_type_buf, sizeof(return_type_buf), "%.*s", 
@@ -5720,6 +6406,10 @@ void codegen_program(Program* prog) {
                             param_type = "bool";
                         } else if (type_name.length == 5 && memcmp(type_name.start, "array", 5) == 0) {
                             param_type = "WynArray";
+                        } else if (type_name.length == 7 && memcmp(type_name.start, "HashMap", 7) == 0) {
+                            param_type = "WynHashMap*";
+                        } else if (type_name.length == 7 && memcmp(type_name.start, "HashSet", 7) == 0) {
+                            param_type = "WynHashSet*";
                         } else {
                             // Assume it's a struct type
                             snprintf(struct_type_name, sizeof(struct_type_name), "%.*s", 
@@ -5933,7 +6623,24 @@ void codegen_match_statement(Stmt* stmt) {
     } else {
         // Generate if-else chain for complex patterns
         emit("{\n");
-        emit("    int __match_val = ");
+        
+        // Determine the type of the match value
+        bool is_enum_match = false;
+        for (int i = 0; i < stmt->match_stmt.case_count; i++) {
+            MatchCase* match_case = &stmt->match_stmt.cases[i];
+            if (match_case->pattern->type == PATTERN_OPTION && 
+                match_case->pattern->option.variant_name.length > 0) {
+                is_enum_match = true;
+                break;
+            }
+        }
+        
+        if (is_enum_match) {
+            // For enum matches, store the whole enum value
+            emit("    __auto_type __match_val = ");
+        } else {
+            emit("    int __match_val = ");
+        }
         codegen_expr(stmt->match_stmt.value);
         emit(";\n");
         
@@ -5954,7 +6661,22 @@ void codegen_match_statement(Stmt* stmt) {
             } else if (match_case->pattern->type == PATTERN_WILDCARD) {
                 emit("1"); // Always true for wildcard
             } else if (match_case->pattern->type == PATTERN_OPTION) {
-                if (match_case->pattern->option.is_some) {
+                if (match_case->pattern->option.variant_name.length > 0) {
+                    // Enum variant match: check tag
+                    if (match_case->pattern->option.enum_name.length > 0) {
+                        // Full enum name available: Result::Ok
+                        emit("__match_val.tag == %.*s_%.*s_TAG",
+                             match_case->pattern->option.enum_name.length,
+                             match_case->pattern->option.enum_name.start,
+                             match_case->pattern->option.variant_name.length,
+                             match_case->pattern->option.variant_name.start);
+                    } else {
+                        // Only variant name: Ok
+                        emit("__match_val.tag == %.*s_TAG",
+                             match_case->pattern->option.variant_name.length,
+                             match_case->pattern->option.variant_name.start);
+                    }
+                } else if (match_case->pattern->option.is_some) {
                     emit("wyn_optional_is_some(__match_val)");
                 } else {
                     emit("wyn_optional_is_none(__match_val)");
@@ -5979,13 +6701,21 @@ void codegen_match_statement(Stmt* stmt) {
                 Token var_name = match_case->pattern->ident.name;
                 emit("        int %.*s = __match_val;\n", var_name.length, var_name.start);
             } else if (match_case->pattern->type == PATTERN_OPTION && 
-                       match_case->pattern->option.is_some &&
                        match_case->pattern->option.inner &&
                        match_case->pattern->option.inner->type == PATTERN_IDENT) {
                 
                 Token var_name = match_case->pattern->option.inner->ident.name;
-                emit("        int %.*s = wyn_optional_unwrap(__match_val);\n", 
-                     var_name.length, var_name.start);
+                
+                if (match_case->pattern->option.variant_name.length > 0) {
+                    // Enum variant destructuring: extract from data union
+                    emit("        __auto_type %.*s = __match_val.data.%.*s_value;\n", 
+                         var_name.length, var_name.start,
+                         match_case->pattern->option.variant_name.length,
+                         match_case->pattern->option.variant_name.start);
+                } else if (match_case->pattern->option.is_some) {
+                    emit("        int %.*s = wyn_optional_unwrap(__match_val);\n", 
+                         var_name.length, var_name.start);
+                }
             }
             
             // Generate case body

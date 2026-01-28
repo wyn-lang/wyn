@@ -1,5 +1,39 @@
 # Changelog
 
+## [1.5.0] - 2026-01-24
+
+### Enhanced - Build Tools
+
+**Project Initialization:**
+- `wyn init <name>` - Create new project with standard structure
+- Generates wyn.toml, src/main.wyn, tests/test_main.wyn, README.md
+- Creates organized project layout (src/, tests/ directories)
+- Interactive mode when name not provided
+
+**Auto-Rebuild:**
+- `wyn watch <file.wyn>` - Watch file and auto-rebuild on changes
+- Polls file every 1 second for modifications
+- Shows build status (✓ success / ✗ failed)
+- Cross-platform support (macOS, Linux, Windows)
+
+**Runtime File Detection:**
+- Improved auto-detection of Wyn runtime files
+- Searches multiple common locations
+- Supports WYN_ROOT environment variable
+- Installation to /usr/local/share/wyn/src/
+
+**Installation:**
+- Updated install.sh to copy runtime files
+- System-wide installation support
+- Better integration with package managers
+
+### Fixed
+- Help output now includes `wyn watch` command
+- Runtime file paths work from any directory
+- Project templates use correct Wyn syntax
+
+---
+
 ## [1.4.0] - 2026-01-23
 
 ### Added - Developer Tools

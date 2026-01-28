@@ -12,6 +12,7 @@ static const MethodSignature method_signatures[] = {
     {"string", "trim_left", "string", 0},
     {"string", "trim_right", "string", 0},
     {"string", "split", "array", 1},     // Returns array of strings
+    {"string", "charAt", "string", 1},   // Returns single char as string
     {"string", "capitalize", "string", 0},
     {"string", "title", "string", 0},
     {"string", "reverse", "string", 0},
@@ -220,6 +221,15 @@ const char* get_receiver_type_string(const Type* type) {
         case TYPE_SET: return "set";
         case TYPE_OPTIONAL: return "option";
         case TYPE_RESULT: return "result";
+        case TYPE_ENUM:
+            // Map enum names to method receiver types
+            if (type->name.length == 6 && memcmp(type->name.start, "Option", 6) == 0) {
+                return "option";
+            }
+            if (type->name.length == 6 && memcmp(type->name.start, "Result", 6) == 0) {
+                return "result";
+            }
+            return NULL;
         default: return NULL;
     }
 }
@@ -268,6 +278,9 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
         }
         if (strcmp(method_name, "split") == 0 && arg_count == 1) {
             out->c_function = "string_split"; return true;
+        }
+        if (strcmp(method_name, "charAt") == 0 && arg_count == 1) {
+            out->c_function = "wyn_string_charat"; return true;
         }
         if (strcmp(method_name, "chars") == 0 && arg_count == 0) {
             out->c_function = "string_chars"; return true;
@@ -402,6 +415,17 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
         }
         if (strcmp(method_name, "to_hex") == 0 && arg_count == 0) {
             out->c_function = "int_to_hex"; return true;
+        }
+        return false;
+    }
+    
+    if (strcmp(receiver_type, "bool") == 0) {
+        // Bool methods
+        if (strcmp(method_name, "to_string") == 0 && arg_count == 0) {
+            out->c_function = "bool_to_string"; return true;
+        }
+        if (strcmp(method_name, "to_int") == 0 && arg_count == 0) {
+            out->c_function = "bool_to_int"; return true;
         }
         return false;
     }
@@ -574,9 +598,29 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
         return false;
     }
     
+    if (strcmp(receiver_type, "arena") == 0) {
+        // Arena methods
+        if (strcmp(method_name, "alloc") == 0 && arg_count == 1) {
+            out->c_function = "wyn_arena_alloc_int"; return true;
+        }
+        if (strcmp(method_name, "clear") == 0 && arg_count == 0) {
+            out->c_function = "wyn_arena_clear"; return true;
+        }
+        if (strcmp(method_name, "free") == 0 && arg_count == 0) {
+            out->c_function = "wyn_arena_free"; return true;
+        }
+        return false;
+    }
+    
     if (strcmp(receiver_type, "map") == 0) {
         // HashMap methods
+        if (strcmp(method_name, "insert") == 0 && arg_count == 2) {
+            out->c_function = "hashmap_insert_int"; return true;
+        }
         if (strcmp(method_name, "has") == 0 && arg_count == 1) {
+            out->c_function = "hashmap_has"; return true;
+        }
+        if (strcmp(method_name, "contains") == 0 && arg_count == 1) {
             out->c_function = "hashmap_has"; return true;
         }
         if (strcmp(method_name, "get") == 0 && arg_count == 1) {
@@ -594,6 +638,9 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
         if (strcmp(method_name, "clear") == 0 && arg_count == 0) {
             out->c_function = "wyn_hashmap_clear"; return true;
         }
+        if (strcmp(method_name, "free") == 0 && arg_count == 0) {
+            out->c_function = "hashmap_free"; return true;
+        }
         return false;
     }
     
@@ -605,8 +652,14 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
         if (strcmp(method_name, "insert") == 0 && arg_count == 1) {
             out->c_function = "hashset_add"; return true;
         }
+        if (strcmp(method_name, "add_int") == 0 && arg_count == 1) {
+            out->c_function = "wyn_hashset_add_int"; return true;
+        }
         if (strcmp(method_name, "contains") == 0 && arg_count == 1) {
             out->c_function = "hashset_contains"; return true;
+        }
+        if (strcmp(method_name, "contains_int") == 0 && arg_count == 1) {
+            out->c_function = "wyn_hashset_contains_int"; return true;
         }
         if (strcmp(method_name, "remove") == 0 && arg_count == 1) {
             out->c_function = "hashset_remove"; return true;
@@ -644,16 +697,16 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
     if (strcmp(receiver_type, "option") == 0) {
         // Option methods
         if (strcmp(method_name, "is_some") == 0 && arg_count == 0) {
-            out->c_function = "wyn_optional_is_some"; return true;
+            out->c_function = "Option_is_some"; return true;
         }
         if (strcmp(method_name, "is_none") == 0 && arg_count == 0) {
-            out->c_function = "wyn_optional_is_none"; return true;
+            out->c_function = "Option_is_none"; return true;
         }
         if (strcmp(method_name, "unwrap") == 0 && arg_count == 0) {
-            out->c_function = "wyn_optional_unwrap"; return true;
+            out->c_function = "Option_unwrap"; return true;
         }
         if (strcmp(method_name, "unwrap_or") == 0 && arg_count == 1) {
-            out->c_function = "wyn_optional_unwrap_or"; return true;
+            out->c_function = "Option_unwrap_or"; return true;
         }
         if (strcmp(method_name, "expect") == 0 && arg_count == 1) {
             out->c_function = "wyn_optional_expect"; return true;
@@ -676,16 +729,16 @@ bool dispatch_method(const char* receiver_type, const char* method_name, int arg
     if (strcmp(receiver_type, "result") == 0) {
         // Result methods
         if (strcmp(method_name, "is_ok") == 0 && arg_count == 0) {
-            out->c_function = "wyn_result_is_ok"; return true;
+            out->c_function = "Result_is_ok"; return true;
         }
         if (strcmp(method_name, "is_err") == 0 && arg_count == 0) {
-            out->c_function = "wyn_result_is_err"; return true;
+            out->c_function = "Result_is_err"; return true;
         }
         if (strcmp(method_name, "unwrap") == 0 && arg_count == 0) {
-            out->c_function = "wyn_result_unwrap"; return true;
+            out->c_function = "Result_unwrap"; return true;
         }
         if (strcmp(method_name, "unwrap_or") == 0 && arg_count == 1) {
-            out->c_function = "wyn_result_unwrap_or"; return true;
+            out->c_function = "Result_unwrap_or"; return true;
         }
         if (strcmp(method_name, "expect") == 0 && arg_count == 1) {
             out->c_function = "wyn_result_expect"; return true;

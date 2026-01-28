@@ -112,14 +112,14 @@ static WynTokenType keyword_type(const char* start, int length) {
             if (length == 5 && memcmp(start, "catch", 5) == 0) return TOKEN_CATCH;
             break;
         case 'E':
-            if (length == 3 && memcmp(start, "Err", 3) == 0) return TOKEN_ERR;
+            // Removed TOKEN_ERR - let Err be a regular identifier for enum variants
             break;
         case 'e':
             if (length == 4 && memcmp(start, "else", 4) == 0) return TOKEN_ELSE;
             if (length == 6 && memcmp(start, "elseif", 6) == 0) return TOKEN_ELSEIF;
             if (length == 4 && memcmp(start, "enum", 4) == 0) return TOKEN_ENUM;
             if (length == 6 && memcmp(start, "export", 6) == 0) return TOKEN_EXPORT;
-            if (length == 3 && memcmp(start, "err", 3) == 0) return TOKEN_ERR;
+            // Removed TOKEN_ERR - let err be a regular identifier
             if (length == 6 && memcmp(start, "extern", 6) == 0) return TOKEN_EXTERN;
             break;
         case 'f':
@@ -141,25 +141,24 @@ static WynTokenType keyword_type(const char* start, int length) {
         case 'm':
             if (length == 5 && memcmp(start, "match", 5) == 0) return TOKEN_MATCH;
             if (length == 3 && memcmp(start, "mut", 3) == 0) return TOKEN_MUT;
-            if (length == 3 && memcmp(start, "map", 3) == 0) return TOKEN_MAP;
+            // "map" is not a keyword - use {} for hashmaps
+            // if (length == 3 && memcmp(start, "map", 3) == 0) return TOKEN_MAP;
             if (length == 6 && memcmp(start, "module", 6) == 0) return TOKEN_MODULE;
             if (length == 5 && memcmp(start, "macro", 5) == 0) return TOKEN_MACRO;
             break;
         case 'n': 
             if (length == 3 && memcmp(start, "not", 3) == 0) return TOKEN_NOT;
-            if (length == 4 && memcmp(start, "none", 4) == 0) return TOKEN_NONE;
             if (length == 4 && memcmp(start, "null", 4) == 0) return TOKEN_NULL;
             break;
         case 'N':
-            if (length == 4 && memcmp(start, "None", 4) == 0) return TOKEN_NONE;
             break;
         case 'O':
-            if (length == 2 && memcmp(start, "Ok", 2) == 0) return TOKEN_OK;
+            // Removed TOKEN_OK - let Ok be a regular identifier for enum variants
             break;
         case 'o': 
             if (length == 2 && memcmp(start, "or", 2) == 0) return TOKEN_OR;
             if (length == 6 && memcmp(start, "object", 6) == 0) return TOKEN_OBJECT;
-            if (length == 2 && memcmp(start, "ok", 2) == 0) return TOKEN_OK;
+            // Removed TOKEN_OK - let ok be a regular identifier
             break;
         case 'p': if (length == 3 && memcmp(start, "pub", 3) == 0) return TOKEN_PUB; break;
         case 'r': 
@@ -168,12 +167,10 @@ static WynTokenType keyword_type(const char* start, int length) {
             break;
         case 's': 
             if (length == 6 && memcmp(start, "struct", 6) == 0) return TOKEN_STRUCT;
-            if (length == 4 && memcmp(start, "some", 4) == 0) return TOKEN_SOME;
             if (length == 5 && memcmp(start, "spawn", 5) == 0) return TOKEN_SPAWN;
             if (length == 4 && memcmp(start, "self", 4) == 0) return TOKEN_SELF;
             break;
         case 'S':
-            if (length == 4 && memcmp(start, "Some", 4) == 0) return TOKEN_SOME;
             break;
         case 't':
             if (length == 4 && memcmp(start, "true", 4) == 0) return TOKEN_TRUE;

@@ -77,6 +77,28 @@ static int compile_file_with_output(const char* filename, const char* output_nam
     char* wyn_path = getenv("WYN_ROOT");
     if (wyn_path) {
         snprintf(wyn_dir, sizeof(wyn_dir), "%s", wyn_path);
+    } else {
+        // Auto-detect: try common locations
+        const char* search_paths[] = {
+            ".",
+            "./wyn",
+            "../",
+            "../../",
+            "/usr/local/share/wyn",
+            "/usr/share/wyn",
+            NULL
+        };
+        
+        for (int i = 0; search_paths[i] != NULL; i++) {
+            char test_path[1024];
+            snprintf(test_path, sizeof(test_path), "%s/src/wyn_wrapper.c", search_paths[i]);
+            FILE* test = fopen(test_path, "r");
+            if (test) {
+                fclose(test);
+                snprintf(wyn_dir, sizeof(wyn_dir), "%s", search_paths[i]);
+                break;
+            }
+        }
     }
     
     char cmd[4096];
@@ -85,13 +107,15 @@ static int compile_file_with_output(const char* filename, const char* output_nam
              "%s/src/io.c %s/src/optional.c %s/src/result.c %s/src/arc_runtime.c "
              "%s/src/concurrency.c %s/src/async_runtime.c "
              "%s/src/safe_memory.c %s/src/error.c %s/src/string_runtime.c "
-             "%s/src/hashmap.c %s/src/hashset.c %s/src/json.c "
+             "%s/src/hashmap.c %s/src/hashset.c %s/src/json.c %s/src/json_runtime.c %s/src/stdlib_runtime.c %s/src/hashmap_runtime.c "
              "%s/src/stdlib_string.c %s/src/stdlib_array.c %s/src/stdlib_time.c %s/src/stdlib_crypto.c "
-             "%s/src/spawn.c -lm 2>&1",
+             "%s/src/spawn.c %s/src/net.c %s/src/net_runtime.c "
+             "%s/src/test_runtime.c %s/src/net_advanced.c -lm 2>&1",
              wyn_dir, output_bin, output_c,
              wyn_dir, wyn_dir, wyn_dir, wyn_dir, wyn_dir, wyn_dir, wyn_dir, wyn_dir,
-             wyn_dir, wyn_dir, wyn_dir, wyn_dir, wyn_dir, wyn_dir,
-             wyn_dir, wyn_dir, wyn_dir, wyn_dir, wyn_dir);
+             wyn_dir, wyn_dir, wyn_dir, wyn_dir, wyn_dir, wyn_dir, wyn_dir,
+             wyn_dir, wyn_dir, wyn_dir, wyn_dir, wyn_dir, wyn_dir, wyn_dir,
+             wyn_dir, wyn_dir, wyn_dir, wyn_dir);
     
     int result = system(cmd);
     if (result != 0) {
